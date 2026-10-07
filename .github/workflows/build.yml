@@ -23,12 +23,18 @@ jobs:
         shell: powershell
         run: .\build.ps1
 
-      - name: Suma SHA-256
+      - name: Paquete MSI
+        shell: powershell
+        run: .\tools\build-msi.ps1
+
+      - name: Sumas SHA-256
         shell: powershell
         run: |
-          $h = (Get-FileHash bin\Stackshot.exe -Algorithm SHA256).Hash.ToLower()
-          "$h  Stackshot.exe" | Set-Content bin\Stackshot.exe.sha256 -Encoding ascii
-          Write-Host "SHA-256: $h"
+          foreach ($f in 'Stackshot.exe', 'Stackshot.msi') {
+            $h = (Get-FileHash "bin\$f" -Algorithm SHA256).Hash.ToLower()
+            "$h  $f" | Set-Content "bin\$f.sha256" -Encoding ascii
+            Write-Host "$f SHA-256: $h"
+          }
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -36,6 +42,8 @@ jobs:
           path: |
             bin/Stackshot.exe
             bin/Stackshot.exe.sha256
+            bin/Stackshot.msi
+            bin/Stackshot.msi.sha256
           if-no-files-found: error
 
   release:
@@ -56,26 +64,32 @@ jobs:
           name: Stackshot
           path: dist
 
-      # Prueba verificable de que el .exe sale de este código y de este flujo:
+      # Prueba verificable de que el .exe y el .msi salen de este código y de este flujo:
       #   gh attestation verify Stackshot.exe --repo rubenitx/stackshot
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: dist/Stackshot.exe
+          subject-path: |
+            dist/Stackshot.exe
+            dist/Stackshot.msi
 
       - name: Notas de la versión
         run: |
           v="${GITHUB_REF_NAME#v}"
           awk -v v="$v" '/^## /{p = index($0, "## " v) == 1; next} p' CHANGELOG.md > notes.md
-          sha=$(cut -d' ' -f1 dist/Stackshot.exe.sha256)
+          base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}"
+          exe=$(cut -d' ' -f1 dist/Stackshot.exe.sha256)
+          msi=$(cut -d' ' -f1 dist/Stackshot.msi.sha256)
           {
             echo
             echo "### Download"
             echo
-            echo "**[Stackshot.exe](https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/Stackshot.exe)**. Run it and follow the welcome window (Windows 10/11, no administrator rights needed)."
+            echo "| File | For | SHA-256 |"
+            echo "|---|---|---|"
+            echo "| **[Stackshot.exe]($base/Stackshot.exe)** | Individual use: run it and follow the welcome window | \`$exe\` |"
+            echo "| **[Stackshot.msi]($base/Stackshot.msi)** | IT deployment (Intune, SCCM, \`msiexec /i Stackshot.msi /qn\`) | \`$msi\` |"
             echo
-            echo "SHA-256: \`$sha\`"
-            echo
-            echo "Verify that it was built from this repository: \`gh attestation verify Stackshot.exe --repo ${GITHUB_REPOSITORY}\`"
+            echo "Both install per user on Windows 10/11 without administrator rights."
+            echo "Verify that a file was built from this repository: \`gh attestation verify <file> --repo ${GITHUB_REPOSITORY}\`"
           } >> notes.md
           cat notes.md
 
@@ -85,3 +99,5 @@ jobs:
           files: |
             dist/Stackshot.exe
             dist/Stackshot.exe.sha256
+            dist/Stackshot.msi
+            dist/Stackshot.msi.sha256
