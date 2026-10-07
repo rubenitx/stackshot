@@ -201,25 +201,22 @@ namespace Stackshot
         }
     }
 
-    // Bienvenida (primera vez) y ajustes (desde la bandeja): la misma ventana con más o menos cosas.
+    // Bienvenida (la primera vez que se abre el .exe descargado): lo básico para empezar e instalar. El resto de
+    // ajustes está en la ventana principal.
     public class SetupWindow : DarkForm
     {
-        static readonly string[] ActionNames = { "Capturar un \u00E1rea", "Capturar la pantalla", "Ventana activa", "Grabar v\u00EDdeo", "Grabar GIF" };
-
         readonly Settings settings;
-        readonly bool welcome;
-        readonly Toggle startup, printScreen, sound, copy, follow;
+        readonly Toggle startup, printScreen, sound, copy;
         readonly Label folderLabel;
-        readonly List<HotkeyBox> hotkeys = new List<HotkeyBox>();
         readonly Image logo;
         string folder;
 
         public bool StartWithWindows { get { return startup.Checked; } }
 
-        // Primera vez: devuelve false si se cierra sin instalar.
+        // Devuelve false si se cierra sin instalar.
         public static bool Welcome(Settings s, out bool startWithWindows)
         {
-            using (SetupWindow w = new SetupWindow(s, true))
+            using (SetupWindow w = new SetupWindow(s))
             {
                 bool ok = w.ShowDialog() == DialogResult.OK;
                 startWithWindows = w.StartWithWindows;
@@ -227,42 +224,24 @@ namespace Stackshot
             }
         }
 
-        public static bool Edit(Settings s)
-        {
-            using (SetupWindow w = new SetupWindow(s, false)) return w.ShowDialog() == DialogResult.OK;
-        }
-
-        SetupWindow(Settings s, bool welcome) : base(welcome ? 520 : 780, welcome ? 668 : 560)
+        SetupWindow(Settings s) : base(520, 668)
         {
             settings = s;
-            this.welcome = welcome;
             folder = s.SaveFolder;
             logo = ShotStack.LoadResourceImage("logo.png");
-            int x = 36, w = welcome ? 448 : 340;
-            int y;
-            if (welcome)
-            {
-                Label t = AddLabel("Bienvenido a Stackshot", 0, 140, 520, 26, Theme.Fg, true, ContentAlignment.TopCenter);
-                t.Font = new Font(Fonts.DisplaySemibold, P(27), GraphicsUnit.Pixel);
-                t.Height = P(40);
-                AddLabel("Capturas de pantalla preciosas para Windows.\nPulsa Impr Pant y listo.", 40, 186, 440, 14, Theme.Fg2, false, ContentAlignment.TopCenter);
-                y = 252;
-            }
-            else
-            {
-                Label t = AddLabel("Ajustes", x, 30, 300, 24, Theme.Fg, true, ContentAlignment.TopLeft);
-                t.Height = P(36);
-                y = 82;
-            }
+            int x = 36, w = 448;
+            Label t = AddLabel("Bienvenido a Stackshot", 0, 140, 520, 26, Theme.Fg, true, ContentAlignment.TopCenter);
+            t.Font = new Font(Fonts.DisplaySemibold, P(27), GraphicsUnit.Pixel);
+            t.Height = P(40);
+            AddLabel("Capturas de pantalla preciosas para Windows.\nPulsa Impr Pant y listo.", 40, 186, 440, 14, Theme.Fg2, false, ContentAlignment.TopCenter);
+            int y = 252;
 
-            startup = AddToggleRow(x, ref y, w, "Iniciar con Windows", "Stackshot se abre solo al encender el equipo.", welcome || Installer.StartupEnabled);
+            startup = AddToggleRow(x, ref y, w, "Iniciar con Windows", "Stackshot se abre solo (en segundo plano) al encender el equipo.", true);
             printScreen = null;
             if (Installer.SnippingOwnsPrintScreen)
                 printScreen = AddToggleRow(x, ref y, w, "Usar la tecla Impr Pant", "Windows la usa para Recortes; Stackshot se la queda solo en tu usuario.", true);
             sound = AddToggleRow(x, ref y, w, "Sonido al capturar", "Un peque\u00F1o clic de c\u00E1mara.", s.Sound);
             copy = AddToggleRow(x, ref y, w, "Copiar cada captura", "Lista para pegar con Ctrl+V nada m\u00E1s hacerla.", s.CopyToClipboard);
-            follow = null;
-            if (!welcome) follow = AddToggleRow(x, ref y, w, "Seguir al rat\u00F3n", "Con varias pantallas, las miniaturas van a la del rat\u00F3n.", s.FollowMouse);
 
             y += 6;
             AddLabel("Tus capturas guardadas", x, y, w - 116, 14, Theme.Fg, true, ContentAlignment.TopLeft);
@@ -272,60 +251,24 @@ namespace Stackshot
             ShowFolder();
             Pill change = MakePill("Cambiar\u2026", false, x + w - 104, y + 4, 104, 34);
             change.Click += delegate { PickFolder(); };
-            y += 64;
+            y += 68;
 
-            if (welcome)
+            // Lo básico, para empezar sin leer nada más.
+            string[,] keys = { { Hotkeys.Display(s.HotRegion), "Capturar un \u00E1rea (o clic en una ventana)" },
+                               { Hotkeys.Display(s.HotVideo), "Grabar v\u00EDdeo" },
+                               { "Clic en la miniatura", "Editar: flechas, recuadros, n\u00FAmeros, texto\u2026" } };
+            for (int i = 0; i < keys.GetLength(0); i++)
             {
-                // Lo b\u00e1sico, para empezar sin leer nada m\u00e1s.
-                y += 4;
-                string[,] keys = { { Hotkeys.Display(s.HotRegion), "Capturar un \u00e1rea (o clic en una ventana)" },
-                                   { Hotkeys.Display(s.HotVideo), "Grabar v\u00eddeo" },
-                                   { "Clic en la miniatura", "Editar: flechas, recuadros, n\u00fameros, texto\u2026" } };
-                for (int i = 0; i < keys.GetLength(0); i++)
-                {
-                    Label k = AddLabel(keys[i, 0], x, y, 170, 12, Theme.Accent, true, ContentAlignment.TopLeft);
-                    k.Height = P(18);
-                    Label d = AddLabel(keys[i, 1], x + 176, y, w - 176, 12, Theme.Fg2, false, ContentAlignment.TopLeft);
-                    d.Height = P(18);
-                    y += 26;
-                }
+                Label k = AddLabel(keys[i, 0], x, y, 170, 12, Theme.Accent, true, ContentAlignment.TopLeft);
+                k.Height = P(18);
+                Label d = AddLabel(keys[i, 1], x + 176, y, w - 176, 12, Theme.Fg2, false, ContentAlignment.TopLeft);
+                d.Height = P(18);
+                y += 26;
             }
 
-            if (!welcome)
-            {
-                // Columna derecha: atajos.
-                int hx = 420, hy = 82, hw = 324;
-                AddLabel("Atajos", hx, hy, hw, 14, Theme.Fg, true, ContentAlignment.TopLeft);
-                AddLabel("Haz clic en uno y pulsa la combinaci\u00F3n que quieras. Supr lo quita.", hx, hy + 22, hw, 12, Theme.Muted, false, ContentAlignment.TopLeft);
-                hy += 62;
-                for (int i = 0; i < Settings.Actions.Length; i++)
-                {
-                    AddLabel(ActionNames[i], hx, hy + 9, 150, 13, Theme.Fg2, false, ContentAlignment.TopLeft);
-                    HotkeyBox hb = new HotkeyBox(s.HotkeysFor(Settings.Actions[i]));
-                    hb.Font = new Font("Segoe UI Semibold", P(12), GraphicsUnit.Pixel);
-                    hb.Bounds = new Rectangle(P(hx + 160), P(hy), P(hw - 160), P(36));
-                    Controls.Add(hb);
-                    hotkeys.Add(hb);
-                    hy += 46;
-                }
-                Label about = AddLabel("Stackshot " + Installer.MyVersion.ToString(3) + "  \u00B7  libre y gratuito (MIT)", hx, hy + 16, hw, 12, Theme.Muted, false, ContentAlignment.TopLeft);
-                about.Height = P(18);
-                LinkLabel gh = AddLink("Ver en GitHub", hx, hy + 40);
-                gh.LinkClicked += delegate { try { Process.Start(Program.RepoUrl); } catch { } };
-                if (Installer.RunningInstalled)
-                {
-                    LinkLabel un = AddLink("Desinstalar\u2026", hx + 120, hy + 40);
-                    un.LinkClicked += delegate
-                    {
-                        try { Process.Start(Settings.InstalledExe, "--uninstall"); } catch { }
-                    };
-                }
-            }
-
-            int by = welcome ? 598 : 492;
-            Pill ok = MakePill(welcome ? "Instalar y empezar" : "Guardar", true, welcome ? 286 : 600, by, welcome ? 198 : 144, 42);
+            Pill ok = MakePill("Instalar y empezar", true, 286, 598, 198, 42);
             ok.Click += delegate { Save(); };
-            Pill cancel = MakePill(welcome ? "Ahora no" : "Cancelar", false, welcome ? 36 : 448, by, welcome ? 120 : 140, 42);
+            Pill cancel = MakePill("Ahora no", false, 36, 598, 120, 42);
             cancel.Click += delegate { DialogResult = DialogResult.Cancel; Close(); };
             AcceptButton = null;
         }
@@ -338,22 +281,6 @@ namespace Stackshot
             Controls.Add(p);
             p.BringToFront(); // por encima de cualquier etiqueta que pase por detrás
             return p;
-        }
-
-        LinkLabel AddLink(string text, int x, int y)
-        {
-            LinkLabel l = new LinkLabel();
-            l.Text = text;
-            l.AutoSize = true;
-            l.BackColor = Color.Transparent;
-            l.LinkColor = Theme.Accent;
-            l.ActiveLinkColor = Theme.Purple;
-            l.VisitedLinkColor = Theme.Accent;
-            l.LinkBehavior = LinkBehavior.HoverUnderline;
-            l.Font = new Font("Segoe UI Semibold", P(12), GraphicsUnit.Pixel);
-            l.Location = new Point(P(x), P(y));
-            Controls.Add(l);
-            return l;
         }
 
         // Fila con título, explicación y un interruptor a la derecha.
@@ -390,12 +317,9 @@ namespace Stackshot
             settings.SaveFolder = folder;
             settings.Sound = sound.Checked;
             settings.CopyToClipboard = copy.Checked;
-            if (follow != null) settings.FollowMouse = follow.Checked;
-            for (int i = 0; i < hotkeys.Count; i++) settings.SetHotkeys(Settings.Actions[i], hotkeys[i].Value);
             settings.FirstRunDone = true;
             settings.Save();
             if (printScreen != null && printScreen.Checked) Installer.FreePrintScreen();
-            if (!welcome) Installer.SetStartup(startup.Checked);
             DialogResult = DialogResult.OK;
             Close();
         }
@@ -406,29 +330,22 @@ namespace Stackshot
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            if (welcome)
+            // Un halo suave detrás del logo.
+            Rectangle halo = new Rectangle(ClientSize.Width / 2 - P(150), P(-40), P(300), P(220));
+            using (GraphicsPath gp = new GraphicsPath())
             {
-                // Un halo suave detrás del logo.
-                Rectangle halo = new Rectangle(ClientSize.Width / 2 - P(150), P(-40), P(300), P(220));
-                using (GraphicsPath gp = new GraphicsPath())
+                gp.AddEllipse(halo);
+                using (PathGradientBrush pb = new PathGradientBrush(gp))
                 {
-                    gp.AddEllipse(halo);
-                    using (PathGradientBrush pb = new PathGradientBrush(gp))
-                    {
-                        pb.CenterColor = Color.FromArgb(70, 110, 120, 255);
-                        pb.SurroundColors = new Color[] { Color.FromArgb(0, Theme.Bg) };
-                        g.FillEllipse(pb, halo);
-                    }
+                    pb.CenterColor = Color.FromArgb(70, 110, 120, 255);
+                    pb.SurroundColors = new Color[] { Color.FromArgb(0, Theme.Bg) };
+                    g.FillEllipse(pb, halo);
                 }
-                int d = P(96);
-                Rectangle lr = new Rectangle((ClientSize.Width - d) / 2, P(30), d, d);
-                if (logo != null) g.DrawImage(logo, lr);
-                else if (ShotStack.AppIcon != null) g.DrawIcon(ShotStack.AppIcon, lr);
             }
-            else
-            {
-                using (Pen p = new Pen(Theme.Border)) g.DrawLine(p, P(396), P(82), P(396), P(470));
-            }
+            int d = P(96);
+            Rectangle lr = new Rectangle((ClientSize.Width - d) / 2, P(30), d, d);
+            if (logo != null) g.DrawImage(logo, lr);
+            else if (ShotStack.AppIcon != null) g.DrawIcon(ShotStack.AppIcon, lr);
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)

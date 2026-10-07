@@ -1,4 +1,4 @@
-// Stackshot - Controles de interfaz propios: ventana oscura sin marco, botones, interruptores, atajos y progreso.
+// Stackshot - Controles de interfaz propios: ventana oscura sin marco, botones, interruptores y progreso.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Drawing;
@@ -149,7 +149,7 @@ namespace Stackshot
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
-            if (e.KeyCode == Keys.Escape && !(ActiveControl is HotkeyBox && ((HotkeyBox)ActiveControl).Listening)) { DialogResult = DialogResult.Cancel; Close(); }
+            if (e.KeyCode == Keys.Escape) { DialogResult = DialogResult.Cancel; Close(); }
         }
 
         // Etiqueta de texto sin fondo.
@@ -273,97 +273,6 @@ namespace Stackshot
         {
             if (disposing) anim.Dispose();
             base.Dispose(disposing);
-        }
-    }
-
-    // Caja para elegir un atajo: clic y se pulsa la combinación. Esc cancela; Supr lo quita.
-    public class HotkeyBox : Control
-    {
-        string value;     // como se guarda en los ajustes (puede llevar varias combinaciones separadas por comas)
-        bool listening, hot;
-        public event EventHandler ValueChanged;
-
-        public HotkeyBox(string value)
-        {
-            this.value = value ?? "";
-            Cursor = Cursors.Hand;
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint |
-                     ControlStyles.ResizeRedraw | ControlStyles.Selectable | ControlStyles.SupportsTransparentBackColor, true);
-            BackColor = Color.Transparent;
-            TabStop = true;
-        }
-
-        public string Value { get { return value; } }
-        public bool Listening { get { return listening; } }
-
-        protected override void OnMouseDown(MouseEventArgs e)
-        {
-            base.OnMouseDown(e);
-            Focus();
-            listening = true;
-            Invalidate();
-        }
-
-        protected override void OnLostFocus(EventArgs e)
-        {
-            base.OnLostFocus(e);
-            listening = false;
-            Invalidate();
-        }
-
-        protected override bool IsInputKey(Keys keyData) { return listening || base.IsInputKey(keyData); }
-
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-        {
-            if (!listening) return base.ProcessCmdKey(ref msg, keyData);
-            Take(keyData);
-            return true;
-        }
-
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            if (listening) { Take(e.KeyData); e.Handled = true; e.SuppressKeyPress = true; }
-            base.OnKeyDown(e);
-        }
-
-        // Impr Pant solo llega al soltarla.
-        protected override void OnKeyUp(KeyEventArgs e)
-        {
-            if (listening && e.KeyCode == Keys.PrintScreen) Take(e.KeyData);
-            base.OnKeyUp(e);
-        }
-
-        void Take(Keys keyData)
-        {
-            Keys key = keyData & Keys.KeyCode;
-            if (key == Keys.ControlKey || key == Keys.ShiftKey || key == Keys.Menu || key == Keys.LWin || key == Keys.RWin) return;
-            if (key == Keys.Escape && (keyData & Keys.Modifiers) == 0) { listening = false; Invalidate(); return; }
-            string rest = "";
-            int comma = value.IndexOf(',');
-            if (comma >= 0) rest = value.Substring(comma);  // se conservan las combinaciones extra del fichero de ajustes
-            if ((key == Keys.Delete || key == Keys.Back) && (keyData & Keys.Modifiers) == 0) value = rest.TrimStart(',', ' ');
-            else value = Hotkeys.ToSetting(keyData) + rest;
-            listening = false;
-            Invalidate();
-            if (ValueChanged != null) ValueChanged(this, EventArgs.Empty);
-        }
-
-        protected override void OnMouseEnter(EventArgs e) { base.OnMouseEnter(e); hot = true; Invalidate(); }
-        protected override void OnMouseLeave(EventArgs e) { base.OnMouseLeave(e); hot = false; Invalidate(); }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            Graphics g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
-            using (GraphicsPath p = Theme.Round(r, Height / 3f))
-            {
-                using (SolidBrush b = new SolidBrush(listening ? Theme.Dark : hot ? Theme.ButtonHover : Theme.Button)) g.FillPath(b, p);
-                using (Pen pen = new Pen(listening ? Theme.Accent : Theme.Border, listening ? 2f : 1f)) g.DrawPath(pen, p);
-            }
-            string text = listening ? "Pulsa la combinaci\u00F3n\u2026" : Hotkeys.Display(value);
-            TextRenderer.DrawText(g, text, Font, ClientRectangle, listening ? Theme.Accent : Theme.Fg,
-                                  TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
         }
     }
 
