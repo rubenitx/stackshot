@@ -11,8 +11,8 @@ using System.Windows.Forms;
 [assembly: AssemblyDescription("Capturas de pantalla, v\u00EDdeo y GIF para Windows, con miniaturas flotantes y editor r\u00E1pido")]
 [assembly: AssemblyCompany("rubenitx")]
 [assembly: AssemblyCopyright("Copyright \u00A9 2026 rubenitx \u00B7 MIT License")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0.0")]
 
 namespace Stackshot
 {
