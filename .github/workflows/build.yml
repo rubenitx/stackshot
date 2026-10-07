@@ -6,8 +6,8 @@ on:
     tags: ['v*']
   pull_request:
 
-# Por defecto, solo lectura. Únicamente el trabajo de publicar (con una etiqueta v*) puede escribir.
-# Las acciones van fijadas a un commit concreto (no a una etiqueta, que se puede mover).
+# Read-only by default; only the release job (v* tags) can write.
+# Actions are pinned to commit SHAs (tags can be moved).
 permissions:
   contents: read
 
@@ -32,10 +32,26 @@ jobs:
         run: |
           foreach ($f in 'Stackshot.exe', 'Stackshot.msi') {
             $h = (Get-FileHash "bin\$f" -Algorithm SHA256).Hash.ToLower()
-            # Formato de sha256sum, con salto de línea Unix: `sha256sum -c` funciona también en Linux y macOS.
+            # sha256sum format with a Unix newline, so `sha256sum -c` also works on Linux and macOS.
             [IO.File]::WriteAllText("bin\$f.sha256", "$h  $f`n")
             Write-Host "$f SHA-256: $h"
           }
+
+      # In-app updates only install a Stackshot.exe signed with this key (RSA-PSS, public key in src/Updater.cs).
+      # Without the secret (forks, pull requests) the build still works, but the app won't install that version.
+      - name: Firma de actualizaciones
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: powershell
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          if (-not $env:UPDATE_SIGNING_KEY) { Write-Host '::warning::UPDATE_SIGNING_KEY not set: this release cannot be installed from the app.'; exit 0 }
+          $rsa = New-Object System.Security.Cryptography.RSACng
+          $rsa.FromXmlString($env:UPDATE_SIGNING_KEY)
+          $data = [IO.File]::ReadAllBytes('bin\Stackshot.exe')
+          $sig = $rsa.SignData($data, [Security.Cryptography.HashAlgorithmName]::SHA256, [Security.Cryptography.RSASignaturePadding]::Pss)
+          [IO.File]::WriteAllText('bin\Stackshot.exe.sig', [Convert]::ToBase64String($sig))
+          $rsa.Dispose()
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -43,6 +59,7 @@ jobs:
           path: |
             bin/Stackshot.exe
             bin/Stackshot.exe.sha256
+            bin/Stackshot.exe.sig
             bin/Stackshot.msi
             bin/Stackshot.msi.sha256
           if-no-files-found: error
@@ -52,9 +69,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
-      contents: write      # crear la versión y subir los ficheros
-      id-token: write      # firmar la procedencia (Sigstore)
-      attestations: write  # guardar la atestación en GitHub
+      contents: write      # create the release and upload assets
+      id-token: write      # sign provenance (Sigstore)
+      attestations: write  # store the attestation on GitHub
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -65,7 +82,7 @@ jobs:
           name: Stackshot
           path: dist
 
-      # Prueba verificable de que el .exe y el .msi salen de este código y de este flujo:
+      # Verifiable proof that the .exe and .msi were built from this code by this workflow:
       #   gh attestation verify Stackshot.exe --repo rubenitx/stackshot
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
@@ -100,5 +117,6 @@ jobs:
           files: |
             dist/Stackshot.exe
             dist/Stackshot.exe.sha256
+            dist/Stackshot.exe.sig
             dist/Stackshot.msi
             dist/Stackshot.msi.sha256
