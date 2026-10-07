@@ -5,7 +5,7 @@
 # Stackshot
 
 **Capturas de pantalla preciosas para Windows.**<br>
-Miniaturas flotantes, editor rápido, vídeo y GIF. Gratis y libre.
+La experiencia de CleanShot X, por fin en Windows: miniaturas flotantes, editor rápido, vídeo y GIF. Gratis y libre.
 
 [![Descargar para Windows](https://img.shields.io/badge/Descargar-Stackshot.exe-4F7BFF?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.exe)
 

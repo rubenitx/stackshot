@@ -5,7 +5,7 @@
 # Stackshot
 
 **Beautiful screenshots for Windows.**<br>
-Floating thumbnails, a lightning-fast editor, video and GIF. Free and open source.
+The CleanShot X experience, finally on Windows: floating thumbnails, a lightning-fast editor, video and GIF. Free and open source.
 
 [![Download for Windows](https://img.shields.io/badge/Download-Stackshot.exe-4F7BFF?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.exe)
 
