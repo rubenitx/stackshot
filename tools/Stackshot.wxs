@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Stackshot - Paquete MSI (WiX Toolset 3.14). Lo genera tools\build-msi.ps1.
+  MIT License - https://github.com/rubenitx/stackshot
+
+  Instalación por usuario, sin administrador (como el instalador del .exe), en %LOCALAPPDATA%\Programs\Stackshot:
+  sirve para desplegarlo con Intune, SCCM o a mano. Propiedades públicas:
+    STARTWITHWINDOWS=1|0   arrancar con Windows, en segundo plano (por defecto, 1)
+    LAUNCHAPP=1|0          abrir Stackshot al terminar (por defecto, 1)
+  Ejemplos:
+    msiexec /i Stackshot.msi /qn
+    msiexec /i Stackshot.msi /qn STARTWITHWINDOWS=0 LAUNCHAPP=0
+    msiexec /x Stackshot.msi /qn
+
+  El UpgradeCode no se cambia nunca: es lo que hace que cada versión nueva sustituya a la anterior.
+-->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+  <Product Id="*" Name="Stackshot" Language="1033" Version="$(var.Version)" Manufacturer="rubenitx"
+           UpgradeCode="A710C972-6A20-4CE3-9EC6-BE684F9CD7FB">
+
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser" InstallPrivileges="limited"
+             Description="Stackshot $(var.Version)" Comments="Capture, annotate and share in seconds." Manufacturer="rubenitx" />
+
+    <!-- Cada versión sustituye a la anterior (y una más vieja no puede pisar a una más nueva). -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes" Schedule="afterInstallInitialize"
+                  DowngradeErrorMessage="A newer version of Stackshot is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="StackshotIcon" SourceFile="$(var.Icon)" />
+    <Property Id="ARPPRODUCTICON" Value="StackshotIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/rubenitx/stackshot" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/rubenitx/stackshot/issues" />
+    <Property Id="ARPCOMMENTS" Value="Capture, annotate and share in seconds." />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Property Id="STARTWITHWINDOWS" Value="1" Secure="yes" />
+    <Property Id="LAUNCHAPP" Value="1" Secure="yes" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="LocalAppDataFolder">
+        <Directory Id="ProgramsDir" Name="Programs">
+          <Directory Id="INSTALLFOLDER" Name="Stackshot" />
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder" />
+      <Directory Id="StartupFolder" />
+    </Directory>
+
+    <!-- En una instalación por usuario, la clave de cada componente va en HKCU (así lo exige Windows Installer). -->
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MainExe" Guid="E1DFC751-244F-4DBD-B736-308A512E22D8">
+        <File Id="StackshotExe" Name="Stackshot.exe" Source="$(var.Exe)" KeyPath="no" Checksum="yes" />
+        <!-- La app lo lee para saber que la gestiona el MSI (no crea sus propios accesos y desinstala con msiexec). -->
+        <RegistryValue Root="HKCU" Key="Software\Stackshot" Name="Installer" Type="string" Value="msi" KeyPath="yes" />
+        <RegistryValue Root="HKCU" Key="Software\Stackshot" Name="ProductCode" Type="string" Value="[ProductCode]" />
+        <!-- Quien lo tuviera instalado con el .exe: el MSI se queda con todo y no hay dos entradas en Aplicaciones. -->
+        <RemoveRegistryKey Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\Stackshot" Action="removeOnInstall" />
+        <RemoveFolder Id="RemoveInstallFolder" On="uninstall" />
+        <RemoveFolder Id="RemoveProgramsDir" Directory="ProgramsDir" On="uninstall" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="ProgramMenuFolder">
+      <Component Id="MenuShortcut" Guid="3DF2F6B9-44AD-410F-A488-DA64ACEE97AB">
+        <Shortcut Id="MenuLink" Name="Stackshot" Description="Capture, annotate and share in seconds"
+                  Target="[#StackshotExe]" WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" Key="Software\Stackshot" Name="MenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="StartupFolder">
+      <Component Id="StartupShortcut" Guid="1C0395EE-97DE-4878-9E69-FF0E21EBD33E">
+        <Condition>STARTWITHWINDOWS = "1"</Condition>
+        <Shortcut Id="StartupLink" Name="Stackshot" Description="Stackshot" Arguments="--background"
+                  Target="[#StackshotExe]" WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" Key="Software\Stackshot" Name="StartupShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="Main" Title="Stackshot" Level="1">
+      <ComponentRef Id="MainExe" />
+      <ComponentRef Id="MenuShortcut" />
+      <ComponentRef Id="StartupShortcut" />
+    </Feature>
+
+    <!-- Antes de tocar ficheros, se le pide a Stackshot que se cierre (lo atiende su ventana invisible, CloseListener);
+         si no lo hace en unos segundos, se cierra a la fuerza. Así nunca hace falta reiniciar. -->
+    <util:CloseApplication Id="CloseStackshot" Target="Stackshot.exe" CloseMessage="yes" EndSessionMessage="no"
+                           RebootPrompt="no" TerminateProcess="0" Timeout="8" />
+
+    <!-- Al desinstalar de verdad (no al actualizar), se borran también sus datos: ajustes, capturas temporales,
+         registro y FFmpeg. Las capturas guardadas por el usuario están en otra carpeta y no se tocan. -->
+    <CustomAction Id="RemoveUserData" Directory="LocalAppDataFolder" Execute="deferred" Impersonate="yes" Return="ignore"
+                  ExeCommand="&quot;[SystemFolder]cmd.exe&quot; /d /c rmdir /s /q &quot;[LocalAppDataFolder]Stackshot&quot;" />
+    <CustomAction Id="LaunchStackshot" FileKey="StackshotExe" ExeCommand="" Return="asyncNoWait" Impersonate="yes" />
+
+    <InstallExecuteSequence>
+      <Custom Action="RemoveUserData" After="RemoveFiles">REMOVE = "ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="LaunchStackshot" After="InstallFinalize">NOT REMOVE AND LAUNCHAPP = "1"</Custom>
+    </InstallExecuteSequence>
+  </Product>
+</Wix>
