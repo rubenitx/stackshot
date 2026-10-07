@@ -1,4 +1,4 @@
-// Stackshot - La mascota: un robotito flotante con visera y ojos de luz que sigue al ratón y reacciona.
+// Stackshot - The mascot: a customizable little character that floats, follows the mouse and reacts.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -7,71 +7,64 @@ using System.Drawing.Drawing2D;
 
 namespace Stackshot
 {
-    // Todo se dibuja a mano (sin imágenes) y con física sencilla: flota, parpadea, sigue al ratón con la mirada
-    // (aunque esté fuera de la ventana), se aplasta y salta al tocarla, saluda con la mano, se duerme si nadie le
-    // hace caso y se marea si se le hace demasiado caso. La ventana le da el tiempo y el ratón en cada fotograma.
+    // Drawn in code with simple physics: floats, blinks, follows the mouse (even outside its window), fidgets when
+    // idle, yawns and falls asleep when ignored, and gets dizzy when poked too much. The owner feeds it the time and
+    // mouse each frame; the look (character, colors, clothes) comes from MascotLook.
     public class Mascot
     {
-        public enum Mood { Idle, Happy, Surprised, Sleep, Dizzy, Wink, Love }
-
-        // Colores del cuerpo (claro, oscuro) y nombre de cada uno.
-        public static readonly Color[,] Bodies =
-        {
-            { Color.FromArgb(150, 110, 255), Color.FromArgb(40, 150, 245) },   // Aurora (la marca)
-            { Color.FromArgb(52, 211, 153), Color.FromArgb(6, 152, 200) },     // Menta
-            { Color.FromArgb(255, 128, 140), Color.FromArgb(245, 140, 30) },   // Coral
-            { Color.FromArgb(196, 160, 255), Color.FromArgb(236, 72, 153) },   // Lavanda
-            { Color.FromArgb(96, 165, 250), Color.FromArgb(37, 70, 235) },     // Océano
-            { Color.FromArgb(250, 204, 21), Color.FromArgb(249, 115, 22) },    // Sol
-            { Color.FromArgb(190, 242, 100), Color.FromArgb(22, 163, 74) },    // Lima
-            { Color.FromArgb(160, 166, 180), Color.FromArgb(70, 76, 92) }      // Grafito
-        };
-        public static readonly string[] BodyNames = { "Aurora", "Menta", "Coral", "Lavanda", "Oc\u00E9ano", "Sol", "Lima", "Grafito" };
+        public enum Mood { Idle, Happy, Surprised, Sleep, Dizzy, Wink, Love, Yawn }
 
         static readonly Color EyeCore = Color.FromArgb(236, 254, 255);
         static readonly Color EyeGlow = Color.FromArgb(103, 232, 249);
         static readonly Color LoveColor = Color.FromArgb(255, 92, 140);
+        static readonly Color Ink = Color.FromArgb(36, 32, 56);
 
         class Particle
         {
-            public char Kind;          // h = corazón, s = estrella, z = zeta, p = chispa
+            public char Kind;          // h heart, s star, z sleep, p spark, b bat
             public double X, Y, Vx, Vy, Age, Life, Rot, Vr, Size;
         }
 
-        public int Hue = 0;
-        public string Bubble;          // lo que dice ahora mismo (null = nada)
-        public double BubbleAlpha;     // para que el bocadillo entre y salga con fundido
-        public RectangleF Box;         // dónde se dibuja, en coordenadas de la ventana (lo pone quien la pinta)
+        public MascotLook Look = new MascotLook();
+        public string Bubble;          // current speech bubble (null = none)
+        public double BubbleAlpha;     // bubble fade in/out
+        public RectangleF Box;         // where it is drawn (set by the owner)
+        public bool ShowShadow = true;
+        public double Facing;          // -1..1: leans that way (the desktop pet walking)
+        public bool Dangling;          // held by the mouse
 
         readonly Random rnd = new Random();
         readonly List<Particle> parts = new List<Particle>();
+        readonly MascotPose pose = new MascotPose();
         Mood mood = Mood.Idle;
-        double now, last, moodUntil, bubbleUntil, nextBlink, blinkStart = -1, waveUntil, lastPoke, lastSeen, lastSpark;
+        double now, last, moodUntil, bubbleUntil, nextBlink, blinkStart = -1, waveUntil, lastPoke, lastSeen, lastSpark, nextFidget;
         double lookX, lookY, tilt, tiltV, antenna, antennaV, squashX = 1, squashXV, squashY = 1, squashYV, jump, jumpV;
-        double spin, spinV, appear = 1, pulse;
+        double earL, earLV, earR, earRV, spin, spinV, appear = 1, sweepUntil, danceUntil;
         int pokes;
-        bool hovering;
+        bool hovering, pendingHappy, forcedSleep;
 
         public Mascot()
         {
             nextBlink = 1800;
+            nextFidget = 9000;
         }
 
         public Mood Current { get { return mood; } }
         public bool Sleeping { get { return mood == Mood.Sleep; } }
 
-        // Haciendo algo más que flotar (la ventana sube los fotogramas solo cuando hace falta).
+        // Doing more than floating (owners raise the frame rate only then).
         public bool Lively
         {
             get
             {
-                return parts.Count > 0 || (mood != Mood.Idle && mood != Mood.Sleep) || blinkStart >= 0 || now < waveUntil ||
+                return parts.Count > 0 || (mood != Mood.Idle && mood != Mood.Sleep) || blinkStart >= 0 || now < waveUntil || now < danceUntil ||
                        Math.Abs(jumpV) > 0.15 || Math.Abs(squashXV) > 0.15 || Math.Abs(squashYV) > 0.15 || Math.Abs(antennaV) > 60 ||
-                       appear < 0.99 || (BubbleAlpha > 0.02 && BubbleAlpha < 0.98);
+                       Math.Abs(earLV) > 40 || appear < 0.99 || (BubbleAlpha > 0.02 && BubbleAlpha < 0.98) || Dangling;
             }
         }
 
-        // ------------------------------------------------------------ Reacciones
+        double SleepAfter { get { return Look.Personality == 1 ? 25000 : Look.Personality == 2 ? 90000 : 45000; } }
+        double FidgetScale { get { return Look.Personality == 1 ? 1.8 : Look.Personality == 2 ? 0.55 : 1.0; } }
 
         public void Say(string text, double ms)
         {
@@ -87,7 +80,7 @@ namespace Stackshot
             moodUntil = now + ms;
         }
 
-        // Aparece de golpe con un rebote (al abrir la ventana).
+        // Pops in with a bounce.
         public void PopIn()
         {
             appear = 0.01;
@@ -113,12 +106,12 @@ namespace Stackshot
             squashX = 1.18; squashY = 0.84;
             jumpV -= 1.8;
             for (int i = 0; i < 10; i++) Spawn('p', 0, -0.05, 0.9);
+            if (DateTime.Now.Month == 10) for (int i = 0; i < 3; i++) Spawn('b', 0, -0.2, 0.55);
             if (text != null) Say(text, 2600);
             pendingHappy = true;
         }
-        bool pendingHappy;
 
-        // Un clic encima: cada vez una cosa distinta; muchos seguidos, se marea.
+        // Each poke does something different; too many in a row make it dizzy.
         public void Poke(string[] lines)
         {
             now = Anim.Now;
@@ -127,7 +120,8 @@ namespace Stackshot
             lastPoke = now;
             squashX = 1.22; squashY = 0.8;
             antennaV += 900;
-            if (pokes >= 5)
+            earLV += 500; earRV -= 500;
+            if (pokes >= 4)
             {
                 pokes = 0;
                 SetMood(Mood.Dizzy, 2600);
@@ -136,24 +130,17 @@ namespace Stackshot
                 Say("\u00A1Qu\u00E9 mareo! \u00BFPor qu\u00E9 hay tres ratones?", 2600);
                 return;
             }
-            switch (rnd.Next(4))
+            switch (rnd.Next(6))
             {
-                case 0:
-                    jumpV -= 2.6;
-                    SetMood(Mood.Happy, 1400);
-                    break;
+                case 0: jumpV -= 2.6; SetMood(Mood.Happy, 1400); break;
+                case 4: Dance(); break;
+                case 5: Twirl(); break;
                 case 1:
                     SetMood(Mood.Love, 1800);
                     for (int i = 0; i < 5; i++) Spawn('h', 0, -0.2, 0.7);
                     break;
-                case 2:
-                    SetMood(Mood.Wink, 1200);
-                    tiltV += 140;
-                    break;
-                default:
-                    SetMood(Mood.Surprised, 700);
-                    jumpV -= 1.4;
-                    break;
+                case 2: SetMood(Mood.Wink, 1200); tiltV += 140; break;
+                default: SetMood(Mood.Surprised, 700); jumpV -= 1.4; break;
             }
             if (lines != null && lines.Length > 0) Say(lines[rnd.Next(lines.Length)], 2600);
         }
@@ -162,14 +149,41 @@ namespace Stackshot
         {
             if (on == hovering) return;
             hovering = on;
-            if (on) { Wake(); antennaV += 260; }
+            if (on) { Wake(); antennaV += 260; earLV -= 200; earRV += 200; }
+        }
+
+        public void Hop(double strength)
+        {
+            jumpV -= strength;
+            squashX = 1.12; squashY = 0.9;
+            earLV += 250 * strength; earRV -= 250 * strength;
+        }
+
+        public void Land(double impact)
+        {
+            squashX = 1 + 0.25 * impact; squashY = 1 - 0.22 * impact;
+            earLV += 600 * impact; earRV -= 600 * impact;
+            antennaV += 500 * impact;
+        }
+
+        public void SleepNow()
+        {
+            forcedSleep = true;
+            if (mood != Mood.Sleep) { mood = Mood.Sleep; Bubble = null; }
+        }
+
+        public void WakeUp()
+        {
+            forcedSleep = false;
+            Wake();
         }
 
         void Wake()
         {
             now = Anim.Now;
             lastSeen = now;
-            if (mood == Mood.Sleep) { mood = Mood.Idle; squashY = 1.12; jumpV -= 1; }
+            forcedSleep = false;
+            if (mood == Mood.Sleep || mood == Mood.Yawn) { mood = Mood.Idle; squashY = 1.12; jumpV -= 1; }
         }
 
         void Spawn(char kind, double x, double y, double speed)
@@ -182,17 +196,49 @@ namespace Stackshot
             p.Y = y;
             p.Vx = Math.Cos(a) * v;
             p.Vy = Math.Sin(a) * v;
-            p.Life = kind == 'z' ? 2200 : kind == 'p' ? 700 : 1300;
+            p.Life = kind == 'z' ? 2200 : kind == 'p' ? 700 : kind == 'b' ? 1600 : 1300;
             p.Rot = rnd.NextDouble() * 360;
             p.Vr = (rnd.NextDouble() - 0.5) * 360;
-            p.Size = kind == 'p' ? 0.035 + rnd.NextDouble() * 0.03 : 0.07 + rnd.NextDouble() * 0.04;
+            p.Size = kind == 'p' ? 0.035 + rnd.NextDouble() * 0.03 : kind == 'b' ? 0.09 : 0.07 + rnd.NextDouble() * 0.04;
             parts.Add(p);
         }
 
-        // ------------------------------------------------------------ Física
+        // A little dance: sways to the beat, bounces and gives off music notes.
+        public void Dance()
+        {
+            now = Anim.Now;
+            Wake();
+            danceUntil = now + 2000;
+            SetMood(Mood.Happy, 2000);
+        }
 
-        // Avanza la animación. mouse: posición del ratón en coordenadas de la ventana; moved: si se ha movido.
-        // Devuelve true si algo cambia y hay que repintar (casi siempre: flota).
+        // A full pirouette with a burst of sparkles.
+        public void Twirl()
+        {
+            now = Anim.Now;
+            Wake();
+            spinV = 1100;
+            jumpV -= 1.6;
+            SetMood(Mood.Wink, 900);
+            for (int i = 0; i < 8; i++) Spawn('p', 0, -0.1, 0.8);
+        }
+
+        // Small things it does on its own while idle, so it never looks frozen.
+        void Fidget()
+        {
+            switch (rnd.Next(7))
+            {
+                case 0: Hop(1.6); break;
+                case 5: danceUntil = now + 1400; break;
+                case 1: spinV = 720; break;
+                case 2: waveUntil = now + 1500; break;
+                case 3: sweepUntil = now + 2200; break;
+                case 4: squashX = 0.86; squashY = 1.18; earLV += 300; earRV -= 300; break;
+                default: SetMood(Mood.Wink, 700); break;
+            }
+        }
+
+        // Advances the animation. mouse: cursor in the owner's coordinates; moved: whether it moved.
         public void Step(double t, PointF mouse, bool moved)
         {
             now = t;
@@ -204,32 +250,53 @@ namespace Stackshot
 
             if (mood != Mood.Idle && mood != Mood.Sleep && now > moodUntil) mood = Mood.Idle;
             if (pendingHappy && mood == Mood.Idle) { pendingHappy = false; SetMood(Mood.Happy, 1500); }
-            if (mood == Mood.Idle && now - lastSeen > 45000) { mood = Mood.Sleep; Bubble = null; }
+            if (mood == Mood.Idle && !forcedSleep && now - lastSeen > SleepAfter - 2200 && now - lastSeen < SleepAfter) SetMood(Mood.Yawn, 1900);
+            if ((mood == Mood.Idle || mood == Mood.Yawn) && (forcedSleep || now - lastSeen > SleepAfter)) { mood = Mood.Sleep; Bubble = null; }
+            if (mood == Mood.Idle && now > nextFidget)
+            {
+                nextFidget = now + (7000 + rnd.NextDouble() * 9000) * FidgetScale;
+                if (now - lastSeen > 1500) Fidget();
+            }
             if (Bubble != null && now > bubbleUntil) Bubble = null;
             BubbleAlpha += ((Bubble != null ? 1 : 0) - BubbleAlpha) * (1 - Math.Exp(-dt / 0.09));
             if (Bubble == null && BubbleAlpha < 0.02) BubbleAlpha = 0;
 
-            // Mirada: hacia el ratón, esté donde esté.
+            // Gaze follows the mouse; while looking around it sweeps side to side instead.
             float d = Math.Max(1, Box.Width);
             double cx = Box.X + d / 2, cy = Box.Y + d * 0.45;
             double tx = Math.Max(-1, Math.Min(1, (mouse.X - cx) / (d * 2.2)));
             double ty = Math.Max(-1, Math.Min(1, (mouse.Y - cy) / (d * 2.2)));
+            if (now < sweepUntil) { tx = Math.Sin((sweepUntil - now) / 350.0) * 0.9; ty = -0.2; }
             if (mood == Mood.Sleep || mood == Mood.Dizzy) { tx = 0; ty = 0.3; }
             double follow = 1 - Math.Exp(-dt / 0.07);
             lookX += (tx - lookX) * follow;
             lookY += (ty - lookY) * follow;
 
-            // Inclinación hacia donde mira; la antena se balancea con retraso.
-            Anim.Spring(ref tilt, ref tiltV, lookX * 7, 90, 0.5, dt);
+            double lean = lookX * 7 + Facing * 9 + (Dangling ? Math.Sin(now / 160.0) * 10 : 0);
+            if (now < danceUntil)
+            {
+                double beat = Math.Sin(now / 150.0);
+                lean += beat * 13;
+                if (Math.Abs(beat) > 0.97 && jumpV > -0.2) { jumpV -= 0.55; squashY = 0.93; squashX = 1.06; }
+                if (now - lastSpark > 330) { lastSpark = now; Spawn('n', beat > 0 ? 0.3 : -0.3, -0.28, 0.32); }
+            }
+            Anim.Spring(ref tilt, ref tiltV, lean, 90, 0.5, dt);
             Anim.Spring(ref antenna, ref antennaV, -tilt * 1.6, 60, 0.12, dt);
+            Anim.Spring(ref earL, ref earLV, -tilt * 0.8 + (mood == Mood.Sleep ? 18 : 0), 70, 0.18, dt);
+            Anim.Spring(ref earR, ref earRV, tilt * 0.8 + (mood == Mood.Sleep ? 18 : 0), 70, 0.18, dt);
             Anim.Spring(ref squashX, ref squashXV, 1, 380, 0.28, dt);
             Anim.Spring(ref squashY, ref squashYV, 1, 380, 0.28, dt);
             Anim.Spring(ref jump, ref jumpV, 0, 120, 0.4, dt);
-            if (mood == Mood.Dizzy) spin += spinV * dt; else Anim.Spring(ref spin, ref spinV, Math.Round(spin / 360) * 360, 60, 0.6, dt);
+            if (mood == Mood.Dizzy) spin += spinV * dt;
+            else
+            {
+                double target = Math.Round(spin / 360) * 360;
+                if (spinV > 200) spin += spinV * dt * 0.5;
+                Anim.Spring(ref spin, ref spinV, target, 60, 0.6, dt);
+            }
             appear += (1 - appear) * (1 - Math.Exp(-dt / 0.12));
-            pulse = 0.5 + 0.5 * Math.Sin(now / 520.0);
+            if (Look.Kind == 4) squashX += Math.Sin(now / 260.0) * 0.0015; // jelly wobble
 
-            // Parpadeo cada pocos segundos (a veces doble).
             if (blinkStart < 0 && now > nextBlink)
             {
                 blinkStart = now;
@@ -242,21 +309,26 @@ namespace Stackshot
             if (mood == Mood.Love && now - lastSpark > 380) { lastSpark = now; Spawn('h', 0, -0.25, 0.45); }
             if (mood == Mood.Dizzy && now - lastSpark > 500) { lastSpark = now; Spawn('s', 0, -0.36, 0.3); }
 
+            pMinX = pMinY = 0; pMaxX = pMaxY = 0;
             for (int i = parts.Count - 1; i >= 0; i--)
             {
                 Particle p = parts[i];
+                pMinX = Math.Min(pMinX, p.X - p.Size); pMaxX = Math.Max(pMaxX, p.X + p.Size);
+                pMinY = Math.Min(pMinY, p.Y - p.Size); pMaxY = Math.Max(pMaxY, p.Y + p.Size);
                 p.Age += dt * 1000;
                 if (p.Age > p.Life) { parts.RemoveAt(i); continue; }
                 p.X += p.Vx * dt;
                 p.Y += p.Vy * dt;
                 if (p.Kind == 'p') { p.Vx *= 0.92; p.Vy *= 0.92; }
-                else if (p.Kind == 'z') p.X += Math.Sin(p.Age / 300.0) * 0.002;
+                else if (p.Kind == 'z' || p.Kind == 'n') p.X += Math.Sin(p.Age / 300.0) * 0.002;
+                else if (p.Kind == 'b') { p.Vy -= 0.05 * dt; p.X += Math.Sin(p.Age / 120.0) * 0.003; }
                 else p.Vy += 0.12 * dt;
                 p.Rot += p.Vr * dt;
             }
         }
 
-        // ------------------------------------------------------------ Dibujo
+        Color C1 { get { return MascotParts.Colors[Look.Color, 0]; } }
+        Color C2 { get { return MascotParts.Colors[Look.Color, 1]; } }
 
         public void Paint(Graphics g)
         {
@@ -266,207 +338,104 @@ namespace Stackshot
             GraphicsState st = g.Save();
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-            Color c1 = Bodies[Math.Max(0, Math.Min(Bodies.GetLength(0) - 1, Hue)), 0];
-            Color c2 = Bodies[Math.Max(0, Math.Min(Bodies.GetLength(0) - 1, Hue)), 1];
+            Color c1 = C1, c2 = C2;
+            MascotParts.Geo geo = MascotParts.GeoFor(Look.Kind);
 
             double speed = mood == Mood.Sleep ? 4200.0 : 2600.0;
-            float bob = (float)(Math.Sin(now / speed * Math.PI * 2) * D * 0.022);
+            float amp = Look.Kind == 3 ? 0.035f : 0.022f;
+            float bob = Dangling ? 0 : (float)(Math.Sin(now / speed * Math.PI * 2) * D * amp);
             float jy = (float)(jump * D * 0.1);
             float cx = box.X + D / 2, cy = box.Y + D * 0.46f + bob + jy;
-            float W = D * 0.72f, H = D * 0.58f;
             float scale = (float)Math.Max(0.01, appear);
+            float breathe = (float)(mood == Mood.Sleep ? Math.Sin(now / 900.0) * 0.02 : Math.Sin(now / 1300.0) * 0.007);
 
-            // Sombra en el suelo: más pequeña y tenue cuanto más alto está.
-            float lift = Math.Max(0, -(bob + jy)) / D;
-            float sw = D * 0.5f * (1 - lift * 1.6f) * scale, sh = D * 0.075f * (1 - lift * 1.2f) * scale;
-            RectangleF shadow = new RectangleF(cx - sw / 2, box.Y + D * 0.9f - sh / 2, sw, sh);
-            if (sw > 1 && sh > 1)
+            if (ShowShadow)
             {
-                using (GraphicsPath sp = new GraphicsPath())
-                {
-                    sp.AddEllipse(shadow);
-                    using (PathGradientBrush pb = new PathGradientBrush(sp))
-                    {
-                        pb.CenterColor = System.Drawing.Color.FromArgb((int)(110 * (1 - lift)), 0, 0, 0);
-                        pb.SurroundColors = new Color[] { System.Drawing.Color.FromArgb(0, 0, 0, 0) };
-                        g.FillEllipse(pb, shadow);
-                    }
-                }
+                float lift = Math.Max(0, -(bob + jy)) / D;
+                float sw = D * 0.5f * (1 - lift * 1.6f) * scale, sh = D * 0.075f * (1 - lift * 1.2f) * scale;
+                if (Look.Kind == 3) { sw *= 0.8f; sh *= 0.8f; }
+                RectangleF shadow = new RectangleF(cx - sw / 2, box.Y + D * 0.9f - sh / 2, sw, sh);
+                if (sw > 2 && sh > 2)
+                    MascotParts.Glow(g, shadow.X + sw / 2, shadow.Y + sh / 2, sw, sh, Color.Black, (int)(110 * (1 - lift) * (Look.Kind == 3 ? 0.6 : 1)));
             }
 
             g.TranslateTransform(cx, cy);
             g.RotateTransform((float)(tilt + spin % 360));
-            g.ScaleTransform((float)squashX * scale, (float)squashY * scale);
+            g.ScaleTransform((float)squashX * scale * (1 - breathe), (float)squashY * scale * (1 + breathe));
 
-            PaintHands(g, D, W, H, c1, c2);
-            PaintAntenna(g, D, H, c1, c2);
+            pose.Now = now;
+            pose.EarL = earL;
+            pose.EarR = earR;
+            pose.Antenna = antenna;
+            pose.Pulse = 0.5 + 0.5 * Math.Sin(now / 520.0);
+            pose.Sleeping = mood == Mood.Sleep;
+            pose.Wave = now < waveUntil ? Math.Min(1, (waveUntil - now) / 1800.0 * 3) : 0;
+            pose.WaveRot = Math.Sin(now / 90.0) * 28;
 
-            // Orejeras a los lados.
-            foreach (int side in new int[] { -1, 1 })
+            MascotParts.PaintBack(g, Look, D, c1, c2, pose);
+            if (Look.Kind != 0) MascotParts.PaintHands(g, Look, D, c1, c2, pose);
+            using (GraphicsPath plate = MascotParts.PaintBody(g, Look, D, c1, c2, pose))
             {
-                RectangleF ear = new RectangleF(side < 0 ? -W / 2 - D * 0.05f : W / 2 - D * 0.02f, -D * 0.1f, D * 0.07f, D * 0.2f);
-                using (GraphicsPath ep = Theme.Round(ear, D * 0.035f))
-                using (LinearGradientBrush eb = new LinearGradientBrush(ear, Mac.Mix(c2, System.Drawing.Color.Black, 0.25), Mac.Mix(c2, System.Drawing.Color.Black, 0.5), 90f))
-                    g.FillPath(eb, ep);
-            }
-
-            // La cabeza: degradado del color elegido, brillo arriba y un filo de luz.
-            RectangleF head = new RectangleF(-W / 2, -H / 2, W, H);
-            using (GraphicsPath hp = Theme.Round(head, H * 0.42f))
-            {
-                using (LinearGradientBrush hb = new LinearGradientBrush(RectangleF.Inflate(head, 1, 1), c1, c2, 55f)) g.FillPath(hb, hp);
-                Region old = g.Clip;
-                g.SetClip(hp, CombineMode.Intersect);
-                RectangleF shine = new RectangleF(-W * 0.46f, -H * 0.62f, W * 0.8f, H * 0.6f);
-                using (GraphicsPath shp = new GraphicsPath())
+                if (plate != null)
                 {
-                    shp.AddEllipse(shine);
-                    using (PathGradientBrush pb = new PathGradientBrush(shp))
-                    {
-                        pb.CenterColor = System.Drawing.Color.FromArgb(110, 255, 255, 255);
-                        pb.SurroundColors = new Color[] { System.Drawing.Color.FromArgb(0, 255, 255, 255) };
-                        g.FillEllipse(pb, shine);
-                    }
+                    Region old = g.Clip;
+                    g.SetClip(plate, CombineMode.Intersect);
+                    PaintFace(g, D, geo, true);
+                    g.Clip = old;
+                    old.Dispose();
+                    MascotParts.Stroke(g, plate, Color.FromArgb(40, 255, 255, 255), Math.Max(1f, D * 0.006f));
                 }
-                RectangleF bottom = new RectangleF(-W / 2, H * 0.1f, W, H * 0.42f);
-                using (LinearGradientBrush bb = new LinearGradientBrush(RectangleF.Inflate(bottom, 0, 1), System.Drawing.Color.FromArgb(0, 0, 0, 0), System.Drawing.Color.FromArgb(60, 0, 0, 0), 90f))
-                    g.FillRectangle(bb, bottom);
-                g.Clip = old;
-                old.Dispose();
-                using (Pen rim = new Pen(System.Drawing.Color.FromArgb(70, 255, 255, 255), Math.Max(1f, D * 0.008f))) g.DrawPath(rim, hp);
+                else PaintFace(g, D, geo, false);
             }
-
-            // Visera oscura con un reflejo de cristal.
-            float vw = W * 0.8f, vh = H * 0.6f;
-            RectangleF visor = new RectangleF(-vw / 2, -vh / 2 - D * 0.012f, vw, vh);
-            using (GraphicsPath vp = Theme.Round(visor, vh * 0.42f))
-            {
-                using (LinearGradientBrush vb = new LinearGradientBrush(RectangleF.Inflate(visor, 1, 1), System.Drawing.Color.FromArgb(14, 16, 30), System.Drawing.Color.FromArgb(24, 28, 50), 90f))
-                    g.FillPath(vb, vp);
-                Region old = g.Clip;
-                g.SetClip(vp, CombineMode.Intersect);
-                using (GraphicsPath glass = new GraphicsPath())
-                {
-                    glass.AddPolygon(new PointF[] { new PointF(-vw * 0.2f, -vh), new PointF(vw * 0.02f, -vh), new PointF(-vw * 0.3f, vh), new PointF(-vw * 0.52f, vh) });
-                    using (SolidBrush gb = new SolidBrush(System.Drawing.Color.FromArgb(12, 255, 255, 255))) g.FillPath(gb, glass);
-                }
-                PaintFace(g, D, vw, vh, visor);
-                g.Clip = old;
-                old.Dispose();
-                using (Pen vr = new Pen(System.Drawing.Color.FromArgb(40, 255, 255, 255), Math.Max(1f, D * 0.006f))) g.DrawPath(vr, vp);
-            }
-            if (mood == Mood.Happy || mood == Mood.Love || mood == Mood.Wink)
-            {
-                foreach (int side in new int[] { -1, 1 })
-                {
-                    RectangleF ch = new RectangleF(side * W * 0.31f - D * 0.04f, H * 0.2f, D * 0.08f, D * 0.04f);
-                    using (SolidBrush cb = new SolidBrush(System.Drawing.Color.FromArgb(120, 255, 120, 160))) g.FillEllipse(cb, ch);
-                }
-            }
+            MascotParts.PaintDetails(g, Look, D, c2, pose);
+            if (Look.Kind == 0) MascotParts.PaintHands(g, Look, D, c1, c2, pose);
+            MascotParts.PaintOutfit(g, Look, D, now);
+            MascotParts.PaintFaceAccessory(g, Look, D);
+            MascotParts.PaintHat(g, Look, Look.EffectiveHat(DateTime.Now), D, now);
             g.Restore(st);
             PaintParticles(g, box);
         }
 
-        void PaintAntenna(Graphics g, float D, float H, Color c1, Color c2)
+        // Eyes, mouth and cheeks, depending on mood and eye style. On the robot they glow inside the visor.
+        void PaintFace(Graphics g, float D, MascotParts.Geo geo, bool visor)
         {
-            GraphicsState st = g.Save();
-            g.TranslateTransform(0, -H / 2 + D * 0.01f);
-            g.RotateTransform((float)antenna);
-            float len = D * 0.15f;
-            using (Pen p = new Pen(Mac.Mix(c2, System.Drawing.Color.Black, 0.3), Math.Max(1.2f, D * 0.022f)))
-            {
-                p.StartCap = LineCap.Round;
-                g.DrawLine(p, 0, 0, 0, -len);
-            }
-            float r = D * 0.042f, gr = r * (2.6f + (float)pulse * 0.6f);
-            Color glow = Mac.Mix(c1, System.Drawing.Color.White, 0.35);
-            using (GraphicsPath gp = new GraphicsPath())
-            {
-                gp.AddEllipse(-gr, -len - gr, gr * 2, gr * 2);
-                using (PathGradientBrush pb = new PathGradientBrush(gp))
-                {
-                    pb.CenterColor = System.Drawing.Color.FromArgb((int)(90 + 70 * pulse), glow);
-                    pb.SurroundColors = new Color[] { System.Drawing.Color.FromArgb(0, glow) };
-                    g.FillEllipse(pb, -gr, -len - gr, gr * 2, gr * 2);
-                }
-            }
-            using (SolidBrush b = new SolidBrush(Mac.Mix(c1, System.Drawing.Color.White, 0.55))) g.FillEllipse(b, -r, -len - r, r * 2, r * 2);
-            using (SolidBrush b = new SolidBrush(System.Drawing.Color.FromArgb(200, 255, 255, 255))) g.FillEllipse(b, -r * 0.45f, -len - r * 0.6f, r * 0.6f, r * 0.6f);
-            g.Restore(st);
-        }
-
-        // Dos manitas que flotan a los lados; la derecha saluda.
-        void PaintHands(Graphics g, float D, float W, float H, Color c1, Color c2)
-        {
-            foreach (int side in new int[] { -1, 1 })
-            {
-                double phase = side * 0.9;
-                float hy = H * 0.42f + (float)(Math.Sin(now / 2600.0 * Math.PI * 2 + phase) * D * 0.025);
-                float hx = side * (W / 2 + D * 0.085f);
-                float rot = 0;
-                if (side > 0 && now < waveUntil)
-                {
-                    double w = (waveUntil - now) / 1800.0;
-                    hy -= (float)(D * 0.22 * Math.Min(1, w * 3));
-                    rot = (float)(Math.Sin(now / 90.0) * 28);
-                }
-                GraphicsState st = g.Save();
-                g.TranslateTransform(hx, hy);
-                g.RotateTransform(rot);
-                RectangleF hand = new RectangleF(-D * 0.05f, -D * 0.06f, D * 0.1f, D * 0.12f);
-                using (GraphicsPath hp = Theme.Round(hand, D * 0.05f))
-                using (LinearGradientBrush hb = new LinearGradientBrush(RectangleF.Inflate(hand, 1, 1), c1, c2, 60f))
-                {
-                    g.FillPath(hb, hp);
-                    using (Pen rim = new Pen(System.Drawing.Color.FromArgb(60, 255, 255, 255), Math.Max(1f, D * 0.006f))) g.DrawPath(rim, hp);
-                }
-                g.Restore(st);
-            }
-        }
-
-        // Los ojos (y la boca, si toca) según el humor.
-        void PaintFace(Graphics g, float D, float vw, float vh, RectangleF visor)
-        {
-            float ex = (float)(lookX * vw * 0.13), ey = (float)(lookY * vh * 0.16) - D * 0.006f;
-            float ew = D * 0.072f, eh = D * 0.145f, gap = vw * 0.2f;
+            Color ink = visor ? EyeCore : Ink;
+            float fy = geo.FaceY * D, gap = geo.EyeGap * D;
+            float ex = (float)(lookX * D * (visor ? 0.075 : 0.05)), ey = fy + (float)(lookY * D * (visor ? 0.055 : 0.035));
             float blink = 1;
             if (blinkStart >= 0)
             {
                 double p = (now - blinkStart) / 150.0;
                 blink = (float)Math.Max(0.1, 1 - Math.Sin(Math.PI * Math.Min(1, p)) * 0.95);
             }
-            Color core = mood == Mood.Love ? Mac.Mix(LoveColor, System.Drawing.Color.White, 0.25) : EyeCore;
-            Color glow = mood == Mood.Love ? LoveColor : EyeGlow;
-            float stroke = Math.Max(1.5f, D * 0.03f);
+            float stroke = Math.Max(1.5f, D * (visor ? 0.03f : 0.026f));
+            bool cheeks = !visor || mood == Mood.Happy || mood == Mood.Love || mood == Mood.Wink;
+            if (cheeks)
+            {
+                int a = mood == Mood.Happy || mood == Mood.Love ? 140 : 70;
+                foreach (int s in new int[] { -1, 1 })
+                    MascotParts.Glow(g, s * (gap + D * 0.075f), fy + D * (visor ? 0.11f : 0.075f), D * 0.13f, D * 0.07f, Color.FromArgb(255, 110, 150), a);
+            }
             for (int i = 0; i < 2; i++)
             {
                 float x = (i == 0 ? -gap : gap) + ex, y = ey;
-                Glow(g, x, y, ew * 2.6f, eh * 1.5f, glow, mood == Mood.Sleep ? 40 : 95);
                 Mood m = mood;
                 if (m == Mood.Wink && i == 1) m = Mood.Sleep;
+                if (visor) MascotParts.Glow(g, x, y, D * 0.19f, D * 0.22f, m == Mood.Love ? LoveColor : EyeGlow, mood == Mood.Sleep ? 40 : 95);
+                Color core = m == Mood.Love ? (visor ? Mac.Mix(LoveColor, Color.White, 0.25) : LoveColor) : ink;
                 switch (m)
                 {
                     case Mood.Happy:
                     case Mood.Wink:
-                        using (Pen p = new Pen(core, stroke))
-                        {
-                            p.StartCap = LineCap.Round; p.EndCap = LineCap.Round;
-                            g.DrawArc(p, x - ew * 0.9f, y - eh * 0.15f, ew * 1.8f, eh * 0.75f, 200, 140);
-                        }
+                        using (Pen p = new Pen(core, stroke)) { p.StartCap = LineCap.Round; p.EndCap = LineCap.Round; g.DrawArc(p, x - D * 0.06f, y - D * 0.02f, D * 0.12f, D * 0.1f, 200, 140); }
                         break;
                     case Mood.Sleep:
-                        using (Pen p = new Pen(Mac.Alpha(core, mood == Mood.Sleep ? 0.75 : 1), stroke))
-                        {
-                            p.StartCap = LineCap.Round; p.EndCap = LineCap.Round;
-                            g.DrawArc(p, x - ew * 0.85f, y - eh * 0.3f, ew * 1.7f, eh * 0.5f, 20, 140);
-                        }
+                    case Mood.Yawn:
+                        using (Pen p = new Pen(Mac.Alpha(core, 0.8), stroke)) { p.StartCap = LineCap.Round; p.EndCap = LineCap.Round; g.DrawArc(p, x - D * 0.055f, y - D * 0.04f, D * 0.11f, D * 0.07f, 20, 140); }
                         break;
                     case Mood.Surprised:
-                    {
-                        float r = ew * 0.95f;
-                        using (SolidBrush b = new SolidBrush(core)) g.FillEllipse(b, x - r, y - r, r * 2, r * 2);
+                        EyeShape(g, x, y, D, visor, 1, core, true);
                         break;
-                    }
                     case Mood.Dizzy:
                         using (Pen p = new Pen(core, stroke * 0.8f))
                         using (GraphicsPath sp = new GraphicsPath())
@@ -476,7 +445,7 @@ namespace Stackshot
                             double rot = now / 120.0 * (i == 0 ? 1 : -1);
                             for (int k = 0; k <= 30; k++)
                             {
-                                double a = rot + k * 0.42, rr = ew * 0.12 + k * ew * 0.03;
+                                double a = rot + k * 0.42, rr = D * 0.008 + k * D * 0.0022;
                                 pts.Add(new PointF(x + (float)(Math.Cos(a) * rr), y + (float)(Math.Sin(a) * rr)));
                             }
                             sp.AddCurve(pts.ToArray());
@@ -484,72 +453,120 @@ namespace Stackshot
                         }
                         break;
                     case Mood.Love:
-                        using (GraphicsPath hp = Heart(x, y, ew * 2.1f))
-                        using (SolidBrush b = new SolidBrush(core)) g.FillPath(b, hp);
+                        using (GraphicsPath hp = MascotParts.Heart(x, y, D * 0.15f)) MascotParts.FillSolid(g, hp, core);
                         break;
                     default:
-                    {
-                        float h = eh * blink;
-                        using (GraphicsPath ep = Theme.Round(new RectangleF(x - ew / 2, y - h / 2, ew, h), ew / 2))
-                        using (SolidBrush b = new SolidBrush(core)) g.FillPath(b, ep);
+                        EyeShape(g, x, y, D, visor, blink, core, false);
                         break;
-                    }
                 }
             }
-            if (mood == Mood.Happy || mood == Mood.Love || (Bubble != null && mood != Mood.Sleep && mood != Mood.Dizzy))
-            {
-                // Sonrisita (y, mientras habla, la boca se mueve).
-                float mw = D * 0.08f, mh = D * 0.045f;
-                if (Bubble != null && mood == Mood.Idle) mh *= (float)(0.5 + 0.5 * Math.Abs(Math.Sin(now / 110.0)));
-                using (Pen p = new Pen(Mac.Alpha(EyeCore, 0.9), Math.Max(1.2f, D * 0.018f)))
-                {
-                    p.StartCap = LineCap.Round; p.EndCap = LineCap.Round;
-                    g.DrawArc(p, ex * 0.6f - mw / 2, ey + eh * 0.42f, mw, mh, 20, 140);
-                }
-            }
-            else if (mood == Mood.Surprised || mood == Mood.Dizzy)
-            {
-                float r = D * 0.022f;
-                using (SolidBrush b = new SolidBrush(Mac.Alpha(EyeCore, 0.85))) g.FillEllipse(b, ex * 0.6f - r, ey + eh * 0.55f, r * 2, r * 2.4f);
-            }
+            PaintMouth(g, D, ex * 0.6f, fy, visor);
         }
 
-        static void Glow(Graphics g, float x, float y, float w, float h, Color c, int alpha)
+        void EyeShape(Graphics g, float x, float y, float D, bool visor, float blink, Color core, bool surprised)
         {
-            using (GraphicsPath gp = new GraphicsPath())
+            int style = surprised ? 1 : Look.Eyes;
+            float w, h;
+            switch (style)
             {
-                RectangleF r = new RectangleF(x - w / 2, y - h / 2, w, h);
-                gp.AddEllipse(r);
-                using (PathGradientBrush pb = new PathGradientBrush(gp))
-                {
-                    pb.CenterColor = System.Drawing.Color.FromArgb(alpha, c);
-                    pb.SurroundColors = new Color[] { System.Drawing.Color.FromArgb(0, c) };
-                    g.FillEllipse(pb, r);
-                }
+                case 1: w = h = D * 0.12f; break;
+                case 2: w = h = D * 0.058f; break;
+                case 3: w = D * 0.085f; h = D * 0.13f; break;
+                case 4: w = D * 0.1f; h = D * 0.07f; break;
+                default: w = D * (visor ? 0.072f : 0.066f); h = D * (visor ? 0.145f : 0.115f); break;
             }
+            if (surprised) { w *= 1.1f; h *= 1.1f; }
+            h *= blink;
+            RectangleF r = new RectangleF(x - w / 2, y - h / 2, w, h);
+            if (style == 4)
+            {
+                // Half-closed, unbothered eyes: an ellipse cut by a straight lid.
+                RectangleF full = new RectangleF(x - w / 2, y - w / 2, w, w);
+                Region old = g.Clip;
+                g.SetClip(new RectangleF(full.X - 2, y - w * 0.05f, full.Width + 4, full.Height), CombineMode.Intersect);
+                MascotParts.Ellipse(g, core, full.X, full.Y, full.Width, full.Height * blink);
+                g.Clip = old;
+                old.Dispose();
+                MascotParts.Line(g, core, D * 0.022f, x - w * 0.6f, y - w * 0.05f, x + w * 0.6f, y - w * 0.1f);
+                return;
+            }
+            using (GraphicsPath p = style == 0 ? Theme.Round(r, w / 2) : Ellipse(r))
+            {
+                if (style == 3 && !visor) MascotParts.Fill(g, p, r, Mac.Mix(C2, Ink, 0.35), Ink, 90f);
+                else MascotParts.FillSolid(g, p, core);
+            }
+            if (blink < 0.5 || style == 2) return;
+            // Highlights: what makes eyes look cute.
+            Color hl = visor ? Color.FromArgb(150, 20, 30, 60) : Color.FromArgb(240, 255, 255, 255);
+            float hr = Math.Min(w, h) * 0.32f;
+            MascotParts.Ellipse(g, hl, x + w * 0.04f, y - h * 0.32f, hr, hr);
+            if (style == 1 || style == 3) MascotParts.Ellipse(g, hl, x - w * 0.28f, y + h * 0.12f, hr * 0.5f, hr * 0.5f);
         }
 
-        static GraphicsPath Heart(float x, float y, float size)
+        static GraphicsPath Ellipse(RectangleF r)
         {
             GraphicsPath p = new GraphicsPath();
-            float s = size / 2;
-            p.AddBezier(x, y + s * 0.85f, x - s * 1.25f, y - s * 0.05f, x - s * 0.55f, y - s * 0.95f, x, y - s * 0.3f);
-            p.AddBezier(x, y - s * 0.3f, x + s * 0.55f, y - s * 0.95f, x + s * 1.25f, y - s * 0.05f, x, y + s * 0.85f);
-            p.CloseFigure();
+            p.AddEllipse(r);
             return p;
         }
 
-        static GraphicsPath Star(float x, float y, float r)
+        void PaintMouth(Graphics g, float D, float mx, float fy, bool visor)
         {
-            GraphicsPath p = new GraphicsPath();
-            PointF[] pts = new PointF[10];
-            for (int i = 0; i < 10; i++)
+            float my = fy + D * (visor ? 0.085f : 0.085f);
+            Color ink = visor ? Mac.Alpha(EyeCore, 0.9) : Ink;
+            float lw = Math.Max(1.2f, D * (visor ? 0.018f : 0.016f));
+            bool talking = Bubble != null && mood != Mood.Sleep && mood != Mood.Dizzy;
+            if (mood == Mood.Yawn)
             {
-                double a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 == 0 ? r : r * 0.45;
-                pts[i] = new PointF(x + (float)(Math.Cos(a) * rr), y + (float)(Math.Sin(a) * rr));
+                double o = Math.Sin(Math.Min(1, (moodUntil - now) / 1900.0) * Math.PI);
+                float r = D * (0.025f + 0.035f * (float)o);
+                MascotParts.Ellipse(g, visor ? ink : Color.FromArgb(70, 30, 50), mx - r * 0.8f, my - r * 0.6f, r * 1.6f, r * 2);
+                return;
             }
-            p.AddPolygon(pts);
-            return p;
+            if (mood == Mood.Surprised || mood == Mood.Dizzy)
+            {
+                float r = D * 0.02f;
+                MascotParts.Ellipse(g, visor ? ink : Color.FromArgb(70, 30, 50), mx - r, my - r * 0.4f, r * 2, r * 2.4f);
+                return;
+            }
+            if (mood == Mood.Happy || mood == Mood.Love || (talking && !visor))
+            {
+                float w = D * 0.1f, h = D * 0.06f;
+                if (talking && mood == Mood.Idle) h *= (float)(0.45 + 0.55 * Math.Abs(Math.Sin(now / 110.0)));
+                if (visor)
+                {
+                    using (Pen p = new Pen(ink, lw)) { p.StartCap = LineCap.Round; p.EndCap = LineCap.Round; g.DrawArc(p, mx - w * 0.4f, my - h * 0.5f, w * 0.8f, h * 0.8f, 20, 140); }
+                    return;
+                }
+                using (GraphicsPath m = new GraphicsPath())
+                {
+                    m.AddArc(mx - w / 2, my - h / 2, w, h, 0, 180);
+                    m.CloseFigure();
+                    MascotParts.FillSolid(g, m, Color.FromArgb(90, 30, 60));
+                    Region old = g.Clip;
+                    g.SetClip(m, CombineMode.Intersect);
+                    MascotParts.Ellipse(g, Color.FromArgb(255, 120, 150), mx - w * 0.3f, my + h * 0.1f, w * 0.6f, h * 0.6f);
+                    g.Clip = old;
+                    old.Dispose();
+                }
+                return;
+            }
+            if (visor) { if (!talking) return; float w = D * 0.08f, h = D * 0.045f * (float)(0.5 + 0.5 * Math.Abs(Math.Sin(now / 110.0)));
+                using (Pen p = new Pen(ink, lw)) { p.StartCap = LineCap.Round; p.EndCap = LineCap.Round; g.DrawArc(p, mx - w / 2, my - h * 0.5f, w, h, 20, 140); } return; }
+            if (mood == Mood.Sleep) { MascotParts.Line(g, ink, lw, mx - D * 0.02f, my, mx + D * 0.02f, my); return; }
+            using (Pen p = new Pen(ink, lw))
+            {
+                p.StartCap = LineCap.Round; p.EndCap = LineCap.Round;
+                float s = D * 0.028f;
+                if (Look.Kind == 1 || Look.Kind == 2 || Look.Kind == 5 || Look.Kind == MascotParts.KindDog || Look.Kind == MascotParts.KindPanda || Look.Kind == MascotParts.KindFox)
+                {
+                    // Cat-like "w" mouth.
+                    g.DrawArc(p, mx - s * 2, my - s * 0.7f, s * 2, s * 1.4f, 10, 160);
+                    g.DrawArc(p, mx, my - s * 0.7f, s * 2, s * 1.4f, 10, 160);
+                    if (Look.Kind == 2) { MascotParts.Ellipse(g, Color.White, mx - s * 0.55f, my + s * 0.55f, s * 0.5f, s * 0.6f); MascotParts.Ellipse(g, Color.White, mx + s * 0.05f, my + s * 0.55f, s * 0.5f, s * 0.6f); }
+                }
+                else g.DrawArc(p, mx - s * 1.3f, my - s, s * 2.6f, s * 1.6f, 20, 140);
+            }
         }
 
         void PaintParticles(Graphics g, RectangleF box)
@@ -564,27 +581,43 @@ namespace Stackshot
                 float x = cx + (float)(p.X * D), y = cy + (float)(p.Y * D), s = (float)(p.Size * D);
                 GraphicsState st = g.Save();
                 g.TranslateTransform(x, y);
-                g.RotateTransform((float)p.Rot * (p.Kind == 'z' ? 0.1f : 1));
+                g.RotateTransform((float)p.Rot * (p.Kind == 'z' || p.Kind == 'b' || p.Kind == 'n' ? 0.08f : 1));
                 switch (p.Kind)
                 {
                     case 'h':
-                        using (GraphicsPath hp = Heart(0, 0, s))
-                        using (SolidBrush b = new SolidBrush(System.Drawing.Color.FromArgb(a, LoveColor))) g.FillPath(b, hp);
+                        using (GraphicsPath hp = MascotParts.Heart(0, 0, s)) MascotParts.FillSolid(g, hp, Color.FromArgb(a, LoveColor));
                         break;
                     case 's':
-                        using (GraphicsPath sp = Star(0, 0, s * 0.6f))
-                        using (SolidBrush b = new SolidBrush(System.Drawing.Color.FromArgb(a, 255, 214, 10))) g.FillPath(b, sp);
+                        using (GraphicsPath sp = MascotParts.Star(0, 0, s * 0.6f, 0.45f)) MascotParts.FillSolid(g, sp, Color.FromArgb(a, 255, 214, 10));
                         break;
+                    case 'n':
+                    {
+                        Color nc = Color.FromArgb(a, Mac.Mix(C1, Color.White, 0.35));
+                        MascotParts.Ellipse(g, nc, -s * 0.45f, s * 0.1f, s * 0.5f, s * 0.38f);
+                        MascotParts.Line(g, nc, Math.Max(1f, s * 0.12f), s * 0.0f, s * 0.28f, s * 0.0f, -s * 0.6f);
+                        MascotParts.Line(g, nc, Math.Max(1f, s * 0.12f), s * 0.0f, -s * 0.6f, s * 0.35f, -s * 0.4f);
+                        break;
+                    }
                     case 'z':
-                        using (Font f = new Font("Segoe UI", Math.Max(6f, s * 1.2f), FontStyle.Bold, GraphicsUnit.Pixel))
-                        using (SolidBrush b = new SolidBrush(System.Drawing.Color.FromArgb(a * 3 / 4, 200, 210, 255)))
+                        Font f = Fonts.Get("Segoe UI Black", (float)Math.Round(Math.Max(6f, s * 1.2f)));
+                        using (SolidBrush b = new SolidBrush(Color.FromArgb(a * 3 / 4, 200, 210, 255)))
                             g.DrawString("z", f, b, -s * 0.4f, -s * 0.7f);
                         break;
+                    case 'b':
+                    {
+                        float flap = (float)Math.Abs(Math.Sin(p.Age / 70.0));
+                        using (GraphicsPath bat = new GraphicsPath())
+                        {
+                            bat.AddPolygon(new PointF[] { new PointF(0, -s * 0.1f), new PointF(-s * 0.5f, -s * 0.3f * flap), new PointF(-s * 0.35f, s * 0.05f),
+                                                          new PointF(0, s * 0.15f), new PointF(s * 0.35f, s * 0.05f), new PointF(s * 0.5f, -s * 0.3f * flap) });
+                            MascotParts.FillSolid(g, bat, Color.FromArgb(a, 40, 30, 60));
+                        }
+                        break;
+                    }
                     default:
                     {
-                        Color c = Bodies[Math.Max(0, Math.Min(Bodies.GetLength(0) - 1, Hue)), (int)(p.Rot) % 2 == 0 ? 0 : 1];
-                        using (GraphicsPath sp = Star(0, 0, s))
-                        using (SolidBrush b = new SolidBrush(System.Drawing.Color.FromArgb(a, Mac.Mix(c, System.Drawing.Color.White, 0.4)))) g.FillPath(b, sp);
+                        Color c = (int)(p.Rot) % 2 == 0 ? C1 : C2;
+                        using (GraphicsPath sp = MascotParts.Star(0, 0, s, 0.45f)) MascotParts.FillSolid(g, sp, Color.FromArgb(a, Mac.Mix(c, Color.White, 0.4)));
                         break;
                     }
                 }
@@ -592,15 +625,30 @@ namespace Stackshot
             }
         }
 
-        // Zona que puede ocupar al dibujarse (con manos, antena, partículas y saltos), para repintar solo eso.
+        // Area it may cover (hats, ears, hands, jumps and wherever its particles are now), so only that is repainted
+        // and nothing leaves trails.
         public RectangleF PaintBounds
         {
             get
             {
                 RectangleF r = Box;
-                r.Inflate(Box.Width * 0.45f, Box.Width * 0.6f);
-                return r;
+                r.Inflate(Box.Width * 0.6f, Box.Width * 0.75f);
+                float d = Box.Width, cx = Box.X + d / 2, cy = Box.Y + d * 0.46f;
+                RectangleF p = RectangleF.FromLTRB(cx + (float)(pMinX - 0.15) * d, cy + (float)(pMinY - 0.15) * d, cx + (float)(pMaxX + 0.15) * d, cy + (float)(pMaxY + 0.15) * d);
+                return RectangleF.Union(r, p);
             }
+        }
+        double pMinX, pMaxX, pMinY, pMaxY;
+
+        // A still, front-facing render for pickers and previews.
+        public static void RenderStill(Graphics g, RectangleF box, MascotLook look)
+        {
+            Mascot m = new Mascot();
+            m.Look = look;
+            m.Box = box;
+            m.now = 1;
+            m.blinkStart = -1;
+            m.Paint(g);
         }
     }
 }
