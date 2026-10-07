@@ -33,6 +33,8 @@ namespace Stackshot
             Program.Init();
             ShotStack.Test = true;
             FloatWindow.ExcludeFromCapture = false;
+            Backdrop.NoWallpaper = true; // la muestra "Tu escritorio" no debe mostrar el fondo de verdad
+            Settings.ReadOnly = true; // nunca escribir los ajustes de quien genera las capturas
             // La pantalla en la que NO está el ratón, para no molestar.
             target = Screen.PrimaryScreen;
             foreach (Screen s in Screen.AllScreens) if (!s.Bounds.Contains(Control.MousePosition)) { target = s; break; }
@@ -48,10 +50,10 @@ namespace Stackshot
             backdrop.BackgroundImageLayout = ImageLayout.None;
             backdrop.Show();
 
-            Settings settings = new Settings();
+            settings = new Settings();
             settings.FollowMouse = false;
             settings.Sound = false;
-            stack = new ShotStack(settings, false);
+            stack = new ShotStack(settings, false, false);
 
             List<KeyValuePair<int, Action>> steps = new List<KeyValuePair<int, Action>>();
             int t = 600;
@@ -62,11 +64,13 @@ namespace Stackshot
             steps.Add(Step(t, Recording)); t += 2600;
             steps.Add(Step(t, delegate { GrabRecording(); })); t += 600;
             steps.Add(Step(t, Editor)); t += 1600;
-            steps.Add(Step(t, delegate { GrabWindow(editor, "editor.png", 40); editor.Close(); })); t += 600;
+            steps.Add(Step(t, delegate { GrabWindow(editor, "editor.png", 40); typeof(Editor).GetMethod("ToggleBgPanel", NP).Invoke(editor, null); })); t += 1300;
+            steps.Add(Step(t, delegate { GrabWindow(editor, "backdrop.png", 40); typeof(Editor).GetField("closeWithoutAsking", NP).SetValue(editor, true); editor.Close(); })); t += 600;
             steps.Add(Step(t, delegate { ShowSetup(true); })); t += 1200;
             steps.Add(Step(t, delegate { GrabWindow(setup, "welcome.png", 40); setup.Close(); })); t += 400;
-            steps.Add(Step(t, delegate { ShowSetup(false); })); t += 1200;
-            steps.Add(Step(t, delegate { GrabWindow(setup, "settings.png", 40); setup.Close(); })); t += 400;
+            steps.Add(Step(t, ShowHome)); t += 2200;
+            steps.Add(Step(t, delegate { GrabWindow(home, "app.png", 40); typeof(HomeWindow).GetMethod("SetPage", NP).Invoke(home, new object[] { "general", true }); })); t += 1000;
+            steps.Add(Step(t, delegate { GrabWindow(home, "settings.png", 40); home.Dispose(); })); t += 400;
             steps.Add(Step(t, Hero)); t += 300;
             steps.Add(Step(t, delegate { stack.ExitThread(); backdrop.Close(); Application.ExitThread(); }));
 
@@ -101,7 +105,7 @@ namespace Stackshot
                 string f = Path.Combine(tmp, "Captura " + crops.Count + ".png");
                 using (Bitmap b = scene.Clone(r, PixelFormat.Format32bppArgb)) b.Save(f, ImageFormat.Png);
                 crops.Add(f);
-                stack.GetType().GetMethod("AddCard", NP).Invoke(stack, new object[] { f });
+                stack.GetType().GetMethod("AddCard", NP, null, new Type[] { typeof(string) }, null).Invoke(stack, new object[] { f });
                 stack.GetType().GetField("anchorDevice", NP).SetValue(stack, target.DeviceName);
                 stack.GetType().GetMethod("Relayout", NP).Invoke(stack, null);
             }
@@ -118,14 +122,15 @@ namespace Stackshot
 
         static void CloseCards()
         {
-            stack.GetType().GetMethod("CloseAll", NP).Invoke(stack, null);
+            stack.CloseAll();
         }
 
         // La selección de región se dibuja fuera de pantalla (sin taparte las tuyas) sobre el escritorio de mentira.
         static void Region()
         {
             Rectangle vs = target.Bounds;
-            Bitmap frozen = new Bitmap(scene);
+            Dib frozen = new Dib(vs.Width, vs.Height);
+            using (Graphics g = frozen.Graphics()) g.DrawImageUnscaled(scene, 0, 0);
             ConstructorInfo ci = typeof(RegionPicker).GetConstructors(NP)[0];
             RegionPicker p = (RegionPicker)ci.Invoke(new object[] { frozen, vs, new List<Grabber.Win>(), RegionPicker.Mode.Image });
             Point start = new Point(600, 250), cur = new Point(1180, 590);
@@ -133,15 +138,13 @@ namespace Stackshot
             typeof(RegionPicker).GetField("dragging", NP).SetValue(p, true);
             typeof(RegionPicker).GetField("start", NP).SetValue(p, start);
             typeof(RegionPicker).GetField("cur", NP).SetValue(p, cur);
+            typeof(RegionPicker).GetMethod("TrackMonitor", NP).Invoke(p, null);
             typeof(RegionPicker).GetField("sel", NP).SetValue(p, Rectangle.FromLTRB(start.X, start.Y, cur.X + 1, cur.Y + 1));
-            using (Bitmap outB = new Bitmap(vs.Width, vs.Height, PixelFormat.Format32bppArgb))
+            // La misma composición que en pantalla, de una vez.
+            using (Dib outD = new Dib(vs.Width, vs.Height))
             {
-                using (Graphics g = Graphics.FromImage(outB))
-                {
-                    g.DrawImageUnscaled(frozen, 0, 0);
-                    typeof(RegionPicker).GetMethod("PaintOverlay", NP).Invoke(p, new object[] { g, new Rectangle(0, 0, vs.Width, vs.Height) });
-                }
-                outB.Save(Path.Combine(docs, "region.png"), ImageFormat.Png);
+                typeof(RegionPicker).GetMethod("Compose", NP).Invoke(p, new object[] { outD, new Rectangle(0, 0, vs.Width, vs.Height) });
+                using (Bitmap outB = outD.ToBitmap()) outB.Save(Path.Combine(docs, "region.png"), ImageFormat.Png);
             }
             p.Dispose();
             frozen.Dispose();
@@ -206,10 +209,22 @@ namespace Stackshot
 
         static Form setup;
 
+        // La ventana principal, con la mascota saludando (sin la animación de entrada).
+        static HomeWindow home;
+        static Settings settings;
+        static void ShowHome()
+        {
+            home = new HomeWindow(stack, settings);
+            home.TopMost = true;
+            Rectangle wa = target.WorkingArea;
+            home.Location = new Point(wa.Left + (wa.Width - home.Width) / 2, wa.Top + (wa.Height - home.Height) / 2);
+            home.Present("home", false);
+        }
+
         static void ShowSetup(bool welcome)
         {
             ConstructorInfo ci = typeof(SetupWindow).GetConstructors(NP)[0];
-            setup = (Form)ci.Invoke(new object[] { new Settings(), welcome });
+            setup = (Form)ci.Invoke(new object[] { new Settings() });
             setup.TopMost = true;
             setup.Location = new Point(target.WorkingArea.Left + (target.WorkingArea.Width - setup.Width) / 2, target.WorkingArea.Top + (target.WorkingArea.Height - setup.Height) / 2);
             setup.Show();
