@@ -1,4 +1,4 @@
-// Stackshot - Secciones de la ventana principal y sus controles (interruptores, selectores, atajos, fichas).
+// Stackshot - Main window sections and their controls (toggles, segmented controls, hotkeys, tiles).
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -28,8 +28,6 @@ namespace Stackshot
         int X0 { get { return P(40); } }
         int CW { get { return ViewW - 2 * P(40); } }
 
-        // ------------------------------------------------------------ Piezas comunes
-
         void Header(ref int y, string title, string sub)
         {
             y = P(46);
@@ -53,7 +51,7 @@ namespace Stackshot
             return TextRenderer.MeasureText(text, f, new Size(w, 2000), TextFormatFlags.WordBreak | TextFormatFlags.NoPadding).Height + P(2);
         }
 
-        // Grupo al estilo de los Ajustes de macOS: título pequeño encima y las filas dentro de una tarjeta.
+        // macOS Settings-style group: small caption above, rows inside a card.
         void Group(ref int y, string caption, params Row[] rows)
         {
             if (caption != null)
@@ -97,22 +95,20 @@ namespace Stackshot
             Invalidate();
         }
 
-        // Una acción desde Inicio: la ventana se esconde primero para no salir en la captura.
+        // Actions from Home hide the window first so it doesn't appear in the capture.
         void RunAction(string action)
         {
             if (action != "video" || !Recorder.Recording) Hide();
             owner.Run(action);
         }
 
-        // ------------------------------------------------------------ Inicio
-
         void BuildHome()
         {
             int y = P(44);
             Hero hero = new Hero();
-            hero.R = new Rectangle(X0, y, CW, P(218));
+            hero.R = new Rectangle(X0, y, CW, P(266));
             items.Add(hero);
-            heroMascot = new RectangleF(X0 + P(30), y + P(26), P(166), P(166));
+            heroMascot = new RectangleF(X0 + P(30), y + P(84), P(166), P(166));
             y = hero.R.Bottom + P(28);
             TextW t = new TextW("Capturar", 13, 1, Mac.Text2);
             t.R = new Rectangle(X0 + P(4), y, CW, P(20));
@@ -126,8 +122,6 @@ namespace Stackshot
                 items.Add(tile);
             }
         }
-
-        // ------------------------------------------------------------ Atajos
 
         void BuildKeys()
         {
@@ -149,19 +143,67 @@ namespace Stackshot
             items.Add(reset);
         }
 
-        // ------------------------------------------------------------ General
+        // Presets for a few settings that weigh on performance; everything else stays as the user left it.
+        void ApplyProfile(int p)
+        {
+            settings.Profile = p;
+            settings.ShowIntro = p > 0;
+            settings.MascotTalks = p > 0;
+            settings.MascotDesktop = p == 2;
+            settings.VideoQuality = p == 2 ? 2 : 0;
+            if (p == 0) { settings.VideoFps = 30; settings.Webcam = 0; }
+            owner.MascotChanged();
+            owner.ApplySettings();
+        }
+
+        void AddBackground()
+        {
+            if (Backdrop.CustomCount >= Backdrop.MaxCustom)
+            {
+                MessageBox.Show(this, "Ya tienes " + Backdrop.MaxCustom + " fondos propios. Quita uno para a\u00F1adir otro.", "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            using (OpenFileDialog d = new OpenFileDialog())
+            {
+                d.Title = "Elige una imagen para usar de fondo";
+                d.Filter = "Im\u00E1genes|*.png;*.jpg;*.jpeg;*.bmp;*.gif|Todos los archivos|*.*";
+                if (d.ShowDialog(this) != DialogResult.OK) return;
+                int i = Backdrop.AddCustom(d.FileName);
+                if (i < 0)
+                {
+                    MessageBox.Show(this, "No se ha podido abrir esa imagen.", "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                settings.BgPreset = i;
+                settings.Save();
+                Rebuild();
+            }
+        }
 
         void BuildGeneral()
         {
             int y = 0;
             Header(ref y, "General", "C\u00F3mo arranca Stackshot y qu\u00E9 hace cada vez que capturas.");
+            string[] pdesc =
+            {
+                "Lo m\u00EDnimo: sin animaci\u00F3n al abrir, mascota quieta en la ventana y v\u00EDdeo ligero. Ideal para equipos justos.",
+                "El equilibrio de siempre: animaciones suaves y la mascota solo en la ventana.",
+                "Todo activado: mascota paseando por el escritorio, saludos y v\u00EDdeo en calidad alta."
+            };
+            Group(ref y, "Perfil",
+                new SegRow("Perfil r\u00E1pido", pdesc[Math.Max(0, Math.Min(2, settings.Profile))], "gear", Mac.Blue, Mac.Indigo,
+                           new string[] { "Rendimiento", "Equilibrado", "Completo" },
+                           delegate { return settings.Profile; }, delegate(int i) { ApplyProfile(i); Rebuild(); }));
+            Note(ref y, "Un perfil solo cambia unos pocos ajustes de golpe; despu\u00E9s puedes retocar cualquiera.");
             Group(ref y, "Arranque",
                 new ToggleRow("Iniciar con Windows", "Arranca en segundo plano al encender el equipo.", "power", Mac.Green, Color.FromArgb(0, 160, 90),
                               delegate { return Installer.StartupEnabled; }, delegate(bool v) { Installer.SetStartup(v); }),
                 new ToggleRow("Seguir en la bandeja al cerrar", "Al cerrar esta ventana, Stackshot sigue funcionando junto al reloj.", "stack", Mac.Blue, Mac.Indigo,
                               delegate { return settings.CloseToTray; }, delegate(bool v) { settings.CloseToTray = v; }),
                 new ToggleRow("Animaci\u00F3n al abrir", "La bienvenida con el logo cuando abres Stackshot.", "sparkle", Mac.Purple, Mac.Indigo,
-                              delegate { return settings.ShowIntro; }, delegate(bool v) { settings.ShowIntro = v; }));
+                              delegate { return settings.ShowIntro; }, delegate(bool v) { settings.ShowIntro = v; }),
+                new ToggleRow("Buscar actualizaciones", "Una vez al d\u00EDa pregunta a GitHub si hay versi\u00F3n nueva. No env\u00EDa nada tuyo.", "open", Mac.Teal, Mac.Blue,
+                              delegate { return settings.CheckUpdates; }, delegate(bool v) { settings.CheckUpdates = v; }));
             ButtonRow print = null;
             if (Installer.SnippingOwnsPrintScreen)
                 print = new ButtonRow("Usar la tecla Impr Pant", "Ahora la usa Recortes de Windows. Se cambia solo en tu usuario.", "keyboard", Mac.Orange, Mac.Red, "Usar", delegate
@@ -183,16 +225,26 @@ namespace Stackshot
             Note(ref y, "Lo que no guardas se borra solo al cabo de una hora (nunca mientras tenga miniatura o est\u00E9 en el editor).");
         }
 
-        // ------------------------------------------------------------ Grabación
-
         void BuildRecord()
         {
             int y = 0;
             Header(ref y, "Grabaci\u00F3n", "V\u00EDdeo en MP4 y GIF animado. Para parar, pulsa el atajo otra vez o el bot\u00F3n de la barrita roja.");
-            int[] vf = { 24, 30, 60 }, gf = { 10, 15, 20, 25 };
+            int[] vf = { 24, 30, 60 }, gf = { 10, 15, 20, 25 }, qv = { 0, 2, 1 }, qs = { 0, 2, 1 };
             Group(ref y, "V\u00EDdeo",
+                // Shown in quality order; stored values keep 1 = M\u00E1xima from earlier versions.
+                new SegRow("Calidad", settings.VideoQuality == 1 ? "60 fps sin p\u00E9rdida al grabar; texto n\u00EDtido como en pantalla. Tarda m\u00E1s en guardar."
+                                    : settings.VideoQuality == 2 ? "60 fps con mucho detalle y se guarda al momento. Archivos m\u00E1s grandes."
+                                                                 : "Ligera y fluida, perfecta para chats y correos.",
+                           "sparkle", Mac.Purple, Mac.Indigo, new string[] { "Est\u00E1ndar", "Alta", "M\u00E1xima" },
+                           delegate { return qv[Math.Max(0, Math.Min(2, settings.VideoQuality))]; }, delegate(int i) { settings.VideoQuality = qs[i]; Rebuild(); }),
+                settings.VideoQuality != 0 ? null :
                 new SegRow("Fotogramas por segundo", "M\u00E1s fotogramas, m\u00E1s fluido (y m\u00E1s pesado).", "video", Mac.Pink, Mac.Red, new string[] { "24", "30", "60" },
-                           delegate { return Nearest(vf, settings.VideoFps); }, delegate(int i) { settings.VideoFps = vf[i]; }));
+                           delegate { return Nearest(vf, settings.VideoFps); }, delegate(int i) { settings.VideoFps = vf[i]; }),
+                new SegRow("C\u00E1mara", settings.Webcam == 0 ? "A\u00F1ade tu cara en una burbuja, como en Loom." :
+                                       "Sale en una esquina de la zona grabada. Arr\u00E1strala; doble clic cambia la forma y clic derecho el tama\u00F1o.",
+                           "camera", Mac.Green, Mac.Teal, new string[] { "No", "Redonda", "Cuadrada" },
+                           delegate { return settings.Webcam; }, delegate(int i) { settings.Webcam = i; Rebuild(); }));
+            Note(ref y, "Despu\u00E9s de grabar, \u00ABEditar\u00BB en la miniatura abre el editor de v\u00EDdeo: recorta el principio y el final, cambia la velocidad, el tama\u00F1o o el formato, a\u00F1ade marcas y ponle fondo.");
             Group(ref y, "GIF",
                 new SegRow("Fotogramas por segundo", "Los GIF pesan mucho: 15 suele ser el punto justo.", "gif", Mac.Orange, Mac.Pink, new string[] { "10", "15", "20", "25" },
                            delegate { return Nearest(gf, settings.GifFps); }, delegate(int i) { settings.GifFps = gf[i]; }));
@@ -220,30 +272,58 @@ namespace Stackshot
             return p.StartsWith(home, StringComparison.OrdinalIgnoreCase) ? "~" + p.Substring(home.Length) : p;
         }
 
-        // ------------------------------------------------------------ Mascota
-
         void BuildMascot()
         {
             int y = 0;
-            Header(ref y, "Mascota", "Tu compa\u00F1ero de capturas. Hazle clic para jugar; si le insistes mucho, se marea.");
+            Header(ref y, "Mascota", "Tu compa\u00F1ero de capturas. Elige personaje, colores, gorro y ropa: todo se aplica al momento.");
             MascotStage stage = new MascotStage();
-            stage.R = new Rectangle(X0, y, CW, P(220));
+            stage.R = new Rectangle(X0, y, CW, P(276));
             items.Add(stage);
-            heroMascot = new RectangleF(X0 + P(40), y + P(24), P(168), P(168));
+            heroMascot = new RectangleF(X0 + P(44), y + P(82), P(166), P(166));
             y = stage.R.Bottom + P(26);
+            Group(ref y, "Estilos r\u00E1pidos", new StyleRow("Estilos", "Un clic y listo; despu\u00E9s puedes retocar cada pieza.", "sparkle", Mac.Pink, Mac.Purple,
+                MascotParts.StyleNames, MascotParts.ApplyStyle, "style", true));
+            Group(ref y, "Personajes", new StyleRow("Homenajes fan", "Anime, series, juegos y m\u00e1s. Pasa el rat\u00f3n para ver de d\u00f3nde sale cada uno.", "sparkle", Mac.Orange, Mac.Red,
+                MascotParts.AnimeNames, MascotParts.ApplyAnime, "anime", false) { Hints = MascotParts.AnimeInspiration });
             NameRow name = new NameRow();
-            Group(ref y, null,
+            Group(ref y, "Personaje",
                 name,
-                new SwatchRow(),
+                new PickerRow("Especie", "bot", Mac.Blue, Mac.Purple, MascotParts.Kinds,
+                              delegate(MascotLook l) { return l.Kind; }, delegate(MascotLook l, int i) { l.Kind = i; }, null),
+                new PickerRow("Color", "brush", Mac.Pink, Mac.Orange, MascotParts.ColorNames,
+                              delegate(MascotLook l) { return l.Color; }, delegate(MascotLook l, int i) { l.Color = i; }, MascotParts.ColorUnlock),
+                new SegRow("Ojos", null, null, Color.Empty, Color.Empty, MascotParts.EyeNames,
+                           delegate { return settings.MascotEyes; },
+                           delegate(int i) { MascotLook l = MascotLook.From(settings); l.Eyes = i; LookChanged(l, null); }));
+            Group(ref y, "Armario",
+                new PickerRow("Gorro", "sparkle", Mac.Purple, Mac.Indigo, MascotParts.HatNames,
+                              delegate(MascotLook l) { return l.Hat; }, delegate(MascotLook l, int i) { l.Hat = i; }, MascotParts.HatUnlock),
+                new PickerRow("Ropa", "stack", Mac.Red, Mac.Orange, MascotParts.OutfitNames,
+                              delegate(MascotLook l) { return l.Outfit; }, delegate(MascotLook l, int i) { l.Outfit = i; }, null),
+                new PickerRow("Complementos", "photo", Mac.Teal, Mac.Blue, MascotParts.FaceNames,
+                              delegate(MascotLook l) { return l.Face; }, delegate(MascotLook l, int i) { l.Face = i; }, null),
+                new ToggleRow("Disfraz de temporada", "Sin gorro, se pone la calabaza en Halloween y el de Pap\u00E1 Noel en Navidad.", "sparkle", Mac.Orange, Mac.Red,
+                              delegate { return settings.MascotSeasonal; },
+                              delegate(bool v) { MascotLook l = MascotLook.From(settings); l.Seasonal = v; LookChanged(l, null); }));
+            Group(ref y, "Car\u00E1cter",
+                new SegRow("Personalidad", "Lo que dice y c\u00F3mo se mueve.", "bot", Mac.Green, Color.FromArgb(0, 160, 90), MascotParts.Personalities,
+                           delegate { return settings.MascotPersonality; },
+                           delegate(int i) { MascotLook l = MascotLook.From(settings); l.Personality = i; LookChanged(l, null); mascot.Say(MascotTalk.Hello(settings), 3000); }),
                 new ToggleRow("Mostrar la mascota", "En Inicio y abajo en la barra lateral.", "bot", Mac.Blue, Mac.Purple,
-                              delegate { return settings.MascotOn; }, delegate(bool v) { settings.MascotOn = v; if (v) { mascot.PopIn(); mascot.Greet("\u00A1He vuelto!"); } }),
+                              delegate { return settings.MascotOn; }, delegate(bool v) { settings.MascotOn = v; if (v) { mascot.PopIn(); mascot.Greet("\u00A1He vuelto!"); } owner.MascotChanged(); }),
                 new ToggleRow("Saludos y consejos", "De vez en cuando te cuenta trucos de Stackshot.", "sparkle", Mac.Orange, Mac.Pink,
                               delegate { return settings.MascotTalks; }, delegate(bool v) { settings.MascotTalks = v; if (!v) mascot.Bubble = null; }));
+            Group(ref y, "En el escritorio",
+                new ToggleRow("Mascota en el escritorio", "Pasea junto a la barra de tareas, te mira, juega y se echa la siesta.", "screen", Mac.Indigo, Mac.Purple,
+                              delegate { return settings.MascotDesktop; }, delegate(bool v) { settings.MascotDesktop = v; owner.MascotChanged(); }),
+                new ToggleRow("Sube a las ventanas", "De vez en cuando salta a la ventana que tienes delante y pasea por encima. Si la mueves, viaja con ella.", "window", Mac.Teal, Mac.Blue,
+                              delegate { return settings.MascotClimb; }, delegate(bool v) { settings.MascotClimb = v; owner.MascotChanged(); }));
+            Note(ref y, "En el escritorio consume algo m\u00E1s: unos 10 MB de memoria y en torno al 1 % de CPU mientras se mueve (casi nada cuando duerme). " +
+                        "Se esconde sola con juegos o presentaciones a pantalla completa y nunca sale en tus capturas ni al compartir pantalla. " +
+                        "Un clic abre su men\u00FA y varios seguidos le hacen cosquillas; puedes arrastrarla a donde quieras.");
             name.Layout(this);
             nameRect = name.Field;
         }
-
-        // ------------------------------------------------------------ Fondo y editor
 
         void BuildEditor()
         {
@@ -257,6 +337,13 @@ namespace Stackshot
             string[] ratios = { "auto", "16:9", "4:3", "1:1" };
             Group(ref y, null,
                 new PresetRow(),
+                new ButtonRow("Tus fondos", Backdrop.IsCustom(settings.BgPreset) ? "Est\u00E1s usando una imagen tuya. Puedes a\u00F1adir m\u00E1s o quitar esta."
+                                                                                  : "A\u00F1ade una foto o imagen tuya y \u00FAsala como fondo de tus capturas.",
+                              "photo", Mac.Teal, Mac.Blue, "A\u00F1adir imagen\u2026", AddBackground),
+                Backdrop.IsCustom(settings.BgPreset)
+                    ? new ButtonRow("Quitar este fondo", "Se borra la copia guardada en Stackshot; tu imagen original no se toca.", "close", Mac.Red, Mac.Orange, "Quitar",
+                                    delegate { int idx = settings.BgPreset; if (!Backdrop.IsCustom(idx)) return; Backdrop.RemoveCustom(idx); settings.BgPreset = 0; settings.Save(); Rebuild(); })
+                    : null,
                 new ToggleRow("Abrir el editor con el fondo puesto", "Si no, se pone con el bot\u00F3n Fondo cuando quieras.", "photo", Mac.Purple, Mac.Pink,
                               delegate { return settings.BgAuto; }, delegate(bool v) { settings.BgAuto = v; }));
             Group(ref y, "Estilo",
@@ -309,8 +396,6 @@ namespace Stackshot
             nameBox = null;
         }
 
-        // ------------------------------------------------------------ Acerca de
-
         void BuildAbout()
         {
             int y = P(70);
@@ -320,14 +405,18 @@ namespace Stackshot
             y = head.R.Bottom + P(8);
             Font bf = F(13, 1);
             PillW gh = new PillW("Ver en GitHub", true, delegate { try { Process.Start(Program.RepoUrl); } catch { } });
-            PillW data = new PillW("Carpeta de datos", false, delegate { try { Process.Start("explorer.exe", "\"" + Settings.DataDir + "\""); } catch { } });
+            PillW data = new PillW("Carpeta de datos", false, delegate { try { Process.Start(Native.Explorer, "\"" + Settings.DataDir + "\""); } catch { } });
             int w1 = PillWidth(gh.Label, bf), w2 = PillWidth(data.Label, bf), gap = P(12);
             int x = X0 + (CW - w1 - w2 - gap) / 2;
             gh.R = new Rectangle(x, y, w1, P(36));
             data.R = new Rectangle(x + w1 + gap, y, w2, P(36));
             items.Add(gh);
             items.Add(data);
-            y += P(64);
+            y += P(60);
+            UpdateCard card = new UpdateCard();
+            card.R = new Rectangle(X0, y, CW, card.HeightFor(this));
+            items.Add(card);
+            y = card.R.Bottom + P(22);
             if (Installer.RunningInstalled)
             {
                 LinkW un = new LinkW("Desinstalar Stackshot\u2026", Mac.Red, delegate
@@ -340,6 +429,87 @@ namespace Stackshot
             }
         }
 
+        static string updateStatus;
+
+        // Updates: what's new and a one-click update (or, if IT manages the install, a link to the release).
+        class UpdateCard : Widget
+        {
+            Rectangle btn;
+            public override bool Clickable { get { return false; } }
+            public override bool Hit(Point p) { return !Updater.Busy && btn.Contains(p); }
+
+            public int HeightFor(HomeWindow w)
+            {
+                int notes = Updater.Available != null ? Updater.Available.Notes.Count : 0;
+                return w.P(92) + notes * w.P(20) + (updateStatus != null ? w.P(22) : 0);
+            }
+
+            string Label
+            {
+                get
+                {
+                    if (Updater.Available == null) return Updater.Busy ? "Buscando\u2026" : "Buscar ahora";
+                    if (Updater.Busy) return "Un momento\u2026";
+                    return Updater.CanInstall ? "Actualizar ahora" : "Ver la versi\u00F3n";
+                }
+            }
+
+            public override void Paint(Graphics g, HomeWindow w)
+            {
+                Fill(g, R, w.P(14), Mac.Card);
+                using (GraphicsPath p = Theme.Round(R, w.P(14)))
+                using (Pen pen = new Pen(Updater.Available != null ? Mac.Alpha(Mac.Blue, 0.6) : Color.FromArgb(18, 255, 255, 255))) g.DrawPath(pen, p);
+                Updater.Release r = Updater.Available;
+                int x = R.X + w.P(18), top = R.Y + w.P(18);
+                w.IconTile(g, new Rectangle(x, top, w.P(34), w.P(34)), r != null ? "sparkle" : "open", r != null ? Mac.Blue : Color.FromArgb(142, 142, 147), r != null ? Mac.Purple : Color.FromArgb(99, 99, 104));
+                int tx = x + w.P(48);
+                Font bf = w.F(13, 1);
+                int bw = w.PillWidth(Label, bf), bh = w.P(32);
+                btn = new Rectangle(R.Right - w.P(18) - bw, top + w.P(2), bw, bh);
+                string title = r != null ? "Stackshot " + r.Version.ToString(3) + " disponible"
+                             : string.IsNullOrEmpty(owner(w).Settings.LastUpdateCheck) ? "Actualizaciones" : "Est\u00E1s al d\u00EDa";
+                string sub = r != null ? (Installer.ManagedByMsi ? "Lo gestiona inform\u00E1tica: instala el nuevo Stackshot.msi." : "Se descarga, se verifica su firma y se instala sola.")
+                                       : "Versi\u00F3n " + Installer.MyVersion.ToString(3) + (owner(w).Settings.CheckUpdates ? "  \u00B7  se comprueba una vez al d\u00EDa" : "  \u00B7  b\u00FAsqueda autom\u00E1tica desactivada");
+                Txt(g, title, w.F(14, 1), new Rectangle(tx, top - w.P(1), btn.X - tx - w.P(12), w.P(20)), Mac.Text, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                Txt(g, sub, w.F(12, 0), new Rectangle(tx, top + w.P(19), btn.X - tx - w.P(12), w.P(18)), Mac.Text2, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                int y = top + w.P(48);
+                if (r != null)
+                    foreach (string n in r.Notes)
+                    {
+                        Txt(g, "\u2022  " + n, w.F(12, 0), new Rectangle(tx, y, R.Right - tx - w.P(18), w.P(18)), Mac.Text2, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                        y += w.P(20);
+                    }
+                if (updateStatus != null)
+                    Txt(g, updateStatus, w.F(12, 0), new Rectangle(tx, y + w.P(2), R.Right - tx - w.P(18), w.P(18)), Mac.Orange, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                Color bg = r != null && !Updater.Busy ? Mac.Mix(Mac.Blue, Color.FromArgb(64, 156, 255), hotT.Value) : Mac.Mix(Color.FromArgb(58, 58, 62), Color.FromArgb(78, 78, 84), hotT.Value);
+                Fill(g, btn, bh / 2f, bg);
+                Txt(g, Label, bf, btn, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+            }
+
+            static ShotStack owner(HomeWindow w) { return w.owner; }
+
+            public override void Click(HomeWindow w, Point p)
+            {
+                updateStatus = null;
+                Action<string> status = delegate(string t) { updateStatus = t; w.Rebuild(); };
+                if (Updater.Available == null)
+                {
+                    Updater.Check(delegate(string err) { updateStatus = err; w.Rebuild(); });
+                    return;
+                }
+                if (!Updater.CanInstall) { Updater.OpenPage(); return; }
+                Updater.Install(status, status);
+            }
+        }
+
+        // Rebuilds the current section (e.g. when update information arrives).
+        void Rebuild()
+        {
+            if (IsDisposed) return;
+            Build();
+            Invalidate();
+        }
+
         static int IndexAt(Rectangle[] rs, Point p)
         {
             for (int i = 0; i < rs.Length; i++) if (rs[i].Contains(p)) return i;
@@ -350,8 +520,6 @@ namespace Stackshot
         {
             return TextRenderer.MeasureText(label, f).Width + P(36);
         }
-
-        // ================================================================= Controles
 
         public abstract class Widget
         {
@@ -404,42 +572,63 @@ namespace Stackshot
             public override void Click(HomeWindow w, Point p) { if (w.page != id) w.SetPage(id, true); }
         }
 
-        // Abajo en la barra lateral: la mascota en pequeño con su nombre y cómo está Stackshot.
+        // Bottom of the sidebar: small mascot with its name and app status.
         class MiniMascot : Widget
         {
             public override bool Clickable { get { return true; } }
+            bool ShowMascot(HomeWindow w) { return w.settings.MascotOn && w.page != "home" && w.page != "mascot"; }
+
             public override void Paint(Graphics g, HomeWindow w)
             {
-                Fill(g, R, w.P(14), Color.FromArgb(10, 255, 255, 255));
-                using (GraphicsPath p = Theme.Round(R, w.P(14)))
-                using (Pen pen = new Pen(Color.FromArgb(18, 255, 255, 255))) g.DrawPath(pen, p);
-                bool big = w.page == "home" || w.page == "mascot";
-                bool show = w.settings.MascotOn && !big;
-                int tx = show ? R.X + w.P(92) : R.X + w.P(16);
-                string title = show ? w.settings.MascotName : "Capturar un \u00E1rea";
-                Txt(g, title, w.F(14, 1), new Rectangle(tx, R.Y + w.P(show ? 28 : 16), R.Right - tx - w.P(10), w.P(20)), Mac.Text, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                double h = hotT.Value, d = downT.Value;
+                Rectangle r = R;
+                r.Offset(0, (int)Math.Round(-w.P(2) * h + w.P(1) * d));
+                LayeredCard(g, w, r, w.P(16), h);
                 Color dot;
                 string status = w.Status(out dot);
-                if (show)
+                if (ShowMascot(w))
                 {
-                    using (SolidBrush b = new SolidBrush(dot)) g.FillEllipse(b, tx, R.Y + w.P(57), w.P(7), w.P(7));
-                    Txt(g, status, w.F(11.5f, 0), new Rectangle(tx + w.P(12), R.Y + w.P(51), R.Right - tx - w.P(20), w.P(36)), Mac.Text2, TextFormatFlags.WordBreak);
+                    int tx = r.X + w.P(92);
+                    Txt(g, w.settings.MascotName, w.F(14, 1), new Rectangle(tx, r.Y + w.P(30), r.Right - tx - w.P(10), w.P(20)), Mac.Text, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                    using (SolidBrush b = new SolidBrush(dot)) g.FillEllipse(b, tx, r.Y + w.P(58), w.P(7), w.P(7));
+                    Txt(g, status, w.F(11.5f, 0), new Rectangle(tx + w.P(12), r.Y + w.P(52), r.Right - tx - w.P(20), w.P(36)), Mac.Text2, TextFormatFlags.WordBreak);
+                    return;
                 }
-                else
+                // Capture widget: icon, title, status and a real button with the shortcut, like a macOS widget.
+                int pad = w.P(14);
+                Rectangle ic = new Rectangle(r.X + pad, r.Y + pad, w.P(32), w.P(32));
+                using (GraphicsPath p = Theme.Round(ic, w.P(9)))
+                using (LinearGradientBrush lb = new LinearGradientBrush(Rectangle.Inflate(ic, 1, 1), ActionColors[0, 0], ActionColors[0, 1], 60f)) g.FillPath(lb, p);
+                Icons.Draw(g, "area", Rectangle.Inflate(ic, -w.P(7), -w.P(7)), Color.White);
+                int tx2 = ic.Right + w.P(10);
+                Txt(g, "Capturar un \u00E1rea", w.F(13.5f, 1), new Rectangle(tx2, ic.Y - w.P(1), r.Right - tx2 - pad, w.P(18)), Mac.Text, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                using (SolidBrush b = new SolidBrush(dot)) g.FillEllipse(b, tx2, ic.Y + w.P(23), w.P(6), w.P(6));
+                Txt(g, status, w.F(11.5f, 0), new Rectangle(tx2 + w.P(10), ic.Y + w.P(18), r.Right - tx2 - pad - w.P(10), w.P(16)), Mac.Text2, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                Rectangle btn = new Rectangle(r.X + pad, r.Bottom - pad - w.P(30), r.Width - pad * 2, w.P(30));
+                using (GraphicsPath p = Theme.Round(btn, btn.Height / 2f))
+                using (LinearGradientBrush lb = new LinearGradientBrush(Rectangle.Inflate(btn, 0, 1), Mac.Mix(Color.FromArgb(48, 148, 255), Color.FromArgb(84, 168, 255), h), Mac.Blue, 90f))
                 {
-                    w.Keycaps(g, Hotkeys.Display(w.settings.HotRegion), R.Right - w.P(16), R.Y + w.P(52), false, Mac.Text, Mac.Control);
-                    using (SolidBrush b = new SolidBrush(dot)) g.FillEllipse(b, tx, R.Y + w.P(80), w.P(7), w.P(7));
-                    Txt(g, status, w.F(11.5f, 0), new Rectangle(tx + w.P(12), R.Y + w.P(74), R.Width - w.P(40), w.P(18)), Mac.Text2, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                    g.FillPath(lb, p);
+                    using (Pen hl = new Pen(Color.FromArgb(60, 255, 255, 255))) g.DrawLine(hl, btn.X + btn.Height / 2, btn.Y + 1, btn.Right - btn.Height / 2, btn.Y + 1);
                 }
+                Txt(g, "Capturar", w.F(12.5f, 1), new Rectangle(btn.X + w.P(14), btn.Y, btn.Width, btn.Height), Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+                string key = Hotkeys.Display(w.settings.HotRegion).Replace(" + ", "+");
+                Txt(g, key, w.F(11.5f, 0), new Rectangle(btn.X, btn.Y, btn.Width - w.P(14), btn.Height), Color.FromArgb(205, 255, 255, 255), TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
             }
-            public override void Click(HomeWindow w, Point p) { if (w.page != "home") w.SetPage("home", true); }
+
+            public override void Click(HomeWindow w, Point p)
+            {
+                if (ShowMascot(w)) w.SetPage("home", true);
+                else w.RunAction("region");
+            }
         }
 
-        // Cómo está Stackshot ahora mismo (para la barra lateral y la portada).
+        // Current app status (sidebar and hero).
         string Status(out Color dot)
         {
             if (Recorder.Recording) { dot = Mac.Red; return "Grabando\u2026"; }
             if (ScrollCapture.Active) { dot = Mac.Blue; return "Capturando con desplazamiento"; }
+            if (Updater.Available != null) { dot = Mac.Blue; return "Versi\u00F3n " + Updater.Available.Version.ToString(3) + " disponible"; }
             if (settings.MascotOn && mascot.Sleeping) { dot = Mac.Text3; return "Echando una siesta"; }
             dot = Mac.Green;
             return "Listo para capturar";
@@ -465,15 +654,15 @@ namespace Stackshot
             }
         }
 
-        // Fila de ajuste: icono de color, título y explicación; el control va a la derecha.
+        // Setting row: colored icon, title and description; the control sits on the right.
         public abstract class Row : Widget
         {
             public string Title, Sub, Icon;
             public Color C1, C2;
             protected Row(string title, string sub, string icon, Color c1, Color c2) { Title = title; Sub = sub; Icon = icon; C1 = c1; C2 = c2; }
             public virtual int Height(HomeWindow w) { return w.P(Sub != null ? 60 : 50); }
-            protected int ControlLeft;   // donde empieza el control (para no pisar el texto)
-            // Coloca el control (y ControlLeft) antes de dibujar el texto.
+            protected int ControlLeft;   // where the control starts (keeps text clear of it)
+            // Lay out the control (and ControlLeft) before drawing text.
             public virtual void Layout(HomeWindow w) { }
             public override void Paint(Graphics g, HomeWindow w)
             {
@@ -503,7 +692,6 @@ namespace Stackshot
             protected abstract void PaintControl(Graphics g, HomeWindow w);
         }
 
-        // Interruptor verde como los de Apple: toda la fila lo cambia.
         class ToggleRow : Row
         {
             readonly Func<bool> get;
@@ -547,7 +735,7 @@ namespace Stackshot
             }
         }
 
-        // Control segmentado (varias opciones, una elegida) con la pastilla deslizándose.
+        // Segmented control with a sliding selection pill.
         class SegRow : Row
         {
             readonly string[] options;
@@ -600,7 +788,7 @@ namespace Stackshot
             }
         }
 
-        // Fila con un botón a la derecha (o sin él, si el texto es null).
+        // Row with a button on the right (none if the label is null).
         class ButtonRow : Row
         {
             readonly string label;
@@ -630,14 +818,14 @@ namespace Stackshot
             public override void Click(HomeWindow w, Point p) { if (act != null) act(); }
         }
 
-        // Atajo de una acción: teclas dibujadas como teclas; al pincharlo, escucha la combinación nueva.
+        // Hotkey field drawn as keycaps; click it to record a new combination.
         class HotkeyRow : Row
         {
             readonly string action;
             Rectangle field;
             bool on, needsModifier;
 
-            // Teclas que no se usan para escribir y pueden ser atajo por sí solas.
+            // Non-typing keys that may be used as a hotkey on their own.
             static bool StandsAlone(Keys k)
             {
                 return (k >= Keys.F1 && k <= Keys.F24) || k == Keys.PrintScreen || k == Keys.Pause || k == Keys.Scroll ||
@@ -696,13 +884,13 @@ namespace Stackshot
                 w.contentDirty = true;
                 w.Invalidate();
             }
-            // Igual que en la caja de atajos clásica: Supr lo quita y se conservan las combinaciones extra del fichero.
+            // Like a classic hotkey box: Delete clears it; extra combos from the settings file are kept.
             public void Take(HomeWindow w, Keys keyData)
             {
                 Keys key = keyData & Keys.KeyCode;
                 if (key == Keys.Escape && (keyData & Keys.Modifiers) == 0) { Stop(w); return; }
                 bool clear = (key == Keys.Delete || key == Keys.Back) && (keyData & Keys.Modifiers) == 0;
-                // Una tecla normal sola (una letra, el espacio, Enter…) dejaría de funcionar en todo Windows.
+                // A plain key alone (letter, Space, Enter...) would stop working system-wide.
                 if (!clear && (keyData & Keys.Modifiers) == 0 && !StandsAlone(key))
                 {
                     needsModifier = true;
@@ -715,7 +903,7 @@ namespace Stackshot
                 string combo;
                 if ((key == Keys.Delete || key == Keys.Back) && (keyData & Keys.Modifiers) == 0) { combo = ""; value = rest.TrimStart(',', ' '); }
                 else { combo = Hotkeys.ToSetting(keyData); value = combo + rest; }
-                // La misma combinación en otra acción: se la quita a esa (solo puede hacer una cosa).
+                // Same combo on another action: remove it there (a combo maps to one action).
                 if (combo.Length > 0)
                 {
                     foreach (string a in Settings.Actions)
@@ -743,7 +931,7 @@ namespace Stackshot
             Point last;
             public override void Move(HomeWindow w, Point p)
             {
-                if ((open.Contains(p) != open.Contains(last)) || (change.Contains(p) != change.Contains(last))) w.contentDirty = true;
+                if ((open.Contains(p) != open.Contains(last)) || (change.Contains(p) != change.Contains(last))) w.DirtyContent(R);
                 last = p;
             }
             public override void Layout(HomeWindow w)
@@ -784,7 +972,7 @@ namespace Stackshot
         {
             public Rectangle Field;
             public NameRow() : base("Nombre", null, "bot", Mac.Blue, Mac.Purple) { Interactive = false; }
-            // Encima del campo se pone el cuadro de texto de verdad (HomeWindow.PlaceNameBox).
+            // The real TextBox is placed over this field (HomeWindow.PlaceNameBox).
             public override void Layout(HomeWindow w)
             {
                 int fw = w.P(220), fh = w.P(32);
@@ -797,56 +985,228 @@ namespace Stackshot
             }
         }
 
-        class SwatchRow : Row
+        // Header with icon, title and the hovered (or selected) option name; shared by the mascot grids.
+        static void GridHeader(Graphics g, HomeWindow w, Row r)
         {
-            Rectangle[] dots = new Rectangle[0];
-            Point last;
-            public SwatchRow() : base("Color", null, "sparkle", Mac.Pink, Mac.Orange) { }
-            public override bool Clickable { get { return false; } }
-            public override bool Hit(Point p) { foreach (Rectangle d in dots) if (d.Contains(p)) return true; return false; }
-            public override void Move(HomeWindow w, Point p)
+            Rectangle head = new Rectangle(r.R.X, r.R.Y, r.R.Width, w.P(56));
+            int x = r.R.X + w.P(16);
+            if (r.Icon != null)
             {
-                int was = IndexAt(dots, last), now = IndexAt(dots, p);
-                last = p;
-                if (was != now) { w.contentDirty = true; w.Invalidate(); } // solo si cambia la muestra de debajo
+                w.IconTile(g, new Rectangle(x, head.Y + (head.Height - w.P(30)) / 2, w.P(30), w.P(30)), r.Icon, r.C1, r.C2);
+                x += w.P(42);
+            }
+            int cy = head.Y + head.Height / 2;
+            Txt(g, r.Title, w.F(13.5f, 0), new Rectangle(x, cy - w.P(20), r.R.Right - x - w.P(16), w.P(20)), Mac.Text, TextFormatFlags.SingleLine);
+            Txt(g, r.Sub ?? "", w.F(12, 0), new Rectangle(x, cy + w.P(1), r.R.Right - x - w.P(16), w.P(18)), Mac.Text2, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+        }
+
+        // Hover moved between grid cells: repaint those two cells (plus a label strip below) and the header name.
+        static void HoverMoved(HomeWindow w, Row row, Rectangle[] cells, int was, int now, int below)
+        {
+            if (was >= 0) w.DirtyContent(new Rectangle(cells[was].X, cells[was].Y, cells[was].Width, cells[was].Height + below));
+            if (now >= 0) w.DirtyContent(new Rectangle(cells[now].X, cells[now].Y, cells[now].Width, cells[now].Height + below));
+            w.DirtyContent(new Rectangle(row.R.X, row.R.Y, row.R.Width, w.P(56)));
+        }
+
+        static void Padlock(Graphics g, HomeWindow w, Rectangle c, int level)
+        {
+            Fill(g, c, w.P(12), Color.FromArgb(150, 18, 18, 20));
+            int s = w.P(16), x = c.X + (c.Width - s) / 2, y = c.Y + c.Height / 2 - s / 2 - w.P(4);
+            using (Pen p = new Pen(Mac.Text, Math.Max(1.5f, w.P(2)))) g.DrawArc(p, x + s * 0.2f, y - s * 0.35f, s * 0.6f, s * 0.7f, 180, 180);
+            Fill(g, new Rectangle(x, y, s, (int)(s * 0.8f)), w.P(3), Mac.Text);
+            Txt(g, "Nv. " + (level + 1), w.F(10.5f, 1), new Rectangle(c.X, y + s, c.Width, w.P(16)), Mac.Text, TextFormatFlags.HorizontalCenter | TextFormatFlags.SingleLine);
+        }
+
+        // Grid of variations, each one previewed on the mascot itself. Locked items show the level that unlocks them.
+        class PickerRow : Row
+        {
+            readonly string[] names;
+            readonly Func<MascotLook, int> get;
+            readonly Action<MascotLook, int> set;
+            readonly Func<int, int> unlock;
+            Rectangle[] cells = new Rectangle[0];
+            Point last;
+
+            public PickerRow(string title, string icon, Color c1, Color c2, string[] names, Func<MascotLook, int> get, Action<MascotLook, int> set, Func<int, int> unlock)
+                : base(title, "", icon, c1, c2)
+            {
+                this.names = names; this.get = get; this.set = set; this.unlock = unlock;
+            }
+
+            public override bool Clickable { get { return false; } }
+            int Cell(HomeWindow w) { return w.P(66); }
+            int Gap(HomeWindow w) { return w.P(8); }
+            int Cols(HomeWindow w) { return Math.Max(1, (w.CW - w.P(32) + Gap(w)) / (Cell(w) + Gap(w))); }
+            public override int Height(HomeWindow w)
+            {
+                int rows = (names.Length + Cols(w) - 1) / Cols(w);
+                return w.P(58) + rows * (Cell(w) + Gap(w)) + w.P(8);
             }
             public override void Layout(HomeWindow w)
             {
-                int n = Mascot.BodyNames.Length, d = w.P(22), gap = w.P(9);
-                int x = R.Right - w.P(16) - n * d - (n - 1) * gap;
-                ControlLeft = x;
-                dots = new Rectangle[n];
-                for (int i = 0; i < n; i++) dots[i] = new Rectangle(x + i * (d + gap), R.Y + (R.Height - d) / 2, d, d);
+                int cols = Cols(w), cs = Cell(w), gap = Gap(w);
+                cells = new Rectangle[names.Length];
+                for (int i = 0; i < cells.Length; i++)
+                    cells[i] = new Rectangle(R.X + w.P(16) + (i % cols) * (cs + gap), R.Y + w.P(56) + (i / cols) * (cs + gap), cs, cs);
+                ControlLeft = 0;
             }
-            protected override void PaintControl(Graphics g, HomeWindow w)
+            public override bool Hit(Point p) { return IndexAt(cells, p) >= 0; }
+            public override void Move(HomeWindow w, Point p)
             {
-                for (int i = 0; i < dots.Length; i++)
+                int was = IndexAt(cells, last), now = IndexAt(cells, p);
+                last = p;
+                if (was == now) return;
+                HoverMoved(w, this, cells, was, now, 0);
+                // Try it on: the big mascot wears the hovered option until the mouse leaves.
+                if (now >= 0 && !Locked(w, now))
                 {
-                    Rectangle r = dots[i];
-                    bool sel = w.settings.MascotColor == i, h = hotT.Value > 0 && r.Contains(last);
-                    if (sel || h)
-                    {
-                        Rectangle ring = Rectangle.Inflate(r, w.P(4), w.P(4));
-                        using (Pen p = new Pen(sel ? Mac.Text : Color.FromArgb(90, 255, 255, 255), w.P(2))) g.DrawEllipse(p, ring);
-                    }
-                    using (LinearGradientBrush b = new LinearGradientBrush(Rectangle.Inflate(r, 1, 1), Mascot.Bodies[i, 0], Mascot.Bodies[i, 1], 55f)) g.FillEllipse(b, r);
+                    MascotLook l = MascotLook.From(w.settings);
+                    set(l, now);
+                    w.TryOn(l);
+                }
+                else w.TryOn(null);
+            }
+            bool Locked(HomeWindow w, int i) { return unlock != null && unlock(i) > MascotParts.Level(w.settings.MascotLove); }
+
+            public override void Paint(Graphics g, HomeWindow w)
+            {
+                Layout(w);
+                MascotLook cur = MascotLook.From(w.settings);
+                int sel = get(cur), hov = hotT.Value > 0 ? IndexAt(cells, last) : -1, shown = hov >= 0 ? hov : sel;
+                Sub = names[shown];
+                if (Locked(w, shown))
+                    Sub += "  \u00B7  se desbloquea al ser \u00AB" + MascotParts.LevelNames[unlock(shown)].ToLowerInvariant() + "\u00BB (" + MascotParts.UnlockLove(unlock(shown)) + " capturas)";
+                RectangleF clip = g.ClipBounds;
+                if (clip.IntersectsWith(new Rectangle(R.X, R.Y, R.Width, w.P(56)))) GridHeader(g, w, this);
+                for (int i = 0; i < cells.Length; i++)
+                {
+                    Rectangle c = cells[i];
+                    if (!clip.IntersectsWith(Rectangle.Inflate(c, w.P(4), w.P(4)))) continue; // partial repaint: skip cells outside it
+                    Fill(g, c, w.P(12), i == sel ? Color.FromArgb(34, 10, 132, 255) : i == hov ? Color.FromArgb(48, 48, 53) : Color.FromArgb(33, 33, 36));
+                    MascotLook l = cur.Clone();
+                    l.Seasonal = false;
+                    set(l, i);
+                    Bitmap pv = w.Preview(l, c.Width, Title + i, c);
+                    if (pv != null) g.DrawImageUnscaled(pv, c.X, c.Y);
+                    if (Locked(w, i)) Padlock(g, w, c, unlock(i));
+                    if (i == sel || i == hov)
+                        using (GraphicsPath p = Theme.Round(Rectangle.Inflate(c, w.P(2), w.P(2)), w.P(13)))
+                        using (Pen pen = new Pen(i == sel ? Mac.Blue : Color.FromArgb(70, 255, 255, 255), w.P(2))) g.DrawPath(pen, p);
                 }
             }
+            protected override void PaintControl(Graphics g, HomeWindow w) { }
             public override void Click(HomeWindow w, Point p)
             {
-                for (int i = 0; i < dots.Length; i++)
+                int i = IndexAt(cells, p);
+                if (i < 0) return;
+                if (Locked(w, i))
                 {
-                    if (!dots[i].Contains(p)) continue;
-                    w.settings.MascotColor = i;
-                    w.mascot.Hue = i;
-                    w.mascot.Celebrate(w.settings.MascotTalks ? "\u00A1" + Mascot.BodyNames[i] + "! Me queda bien, \u00BFa que s\u00ED?" : null);
-                    w.Changed();
+                    int left = MascotParts.UnlockLove(unlock(i)) - w.settings.MascotLove;
+                    if (w.settings.MascotOn) w.mascot.Say("\u00A1A\u00FAn no! Te faltan " + left + (left == 1 ? " captura" : " capturas") + " para eso.", 2800);
                     return;
+                }
+                MascotLook l = MascotLook.From(w.settings);
+                if (get(l) == i) return;
+                set(l, i);
+                w.LookChanged(l, i > 0 ? "\u00A1" + names[i] + "! \u00BFQu\u00E9 tal me queda?" : null);
+            }
+        }
+
+        // One-click looks, plus a random one.
+        class StyleRow : Row
+        {
+            Rectangle[] cells = new Rectangle[0];
+            Point last;
+            static readonly Random rnd = new Random();
+            readonly string[] names;
+            readonly Action<MascotLook, int> apply;
+            readonly string slot;
+            readonly bool surprise;
+            public string[] Hints;   // where each costume comes from, shown in the header while hovering a cell
+            readonly string baseSub;
+            public StyleRow(string title, string desc, string icon, Color c1, Color c2, string[] names, Action<MascotLook, int> apply, string slot, bool surprise)
+                : base(title, desc, icon, c1, c2)
+            {
+                this.names = names; this.apply = apply; this.slot = slot; this.surprise = surprise;
+                baseSub = desc;
+            }
+            public override bool Clickable { get { return false; } }
+            int Count { get { return names.Length + (surprise ? 1 : 0); } }
+            int PerRow(HomeWindow w) { return Math.Max(1, (w.CW - w.P(24)) / (w.P(88) + w.P(8))); } // rows are as wide as the content column
+            public override int Height(HomeWindow w) { int rows = (Count + PerRow(w) - 1) / PerRow(w); return w.P(58) + rows * (w.P(66) + w.P(26)) - w.P(4) + w.P(4); }
+            public override void Layout(HomeWindow w)
+            {
+                int gap = w.P(8), per = Math.Min(Count, PerRow(w)), cs = Math.Min(w.P(88), (R.Width - w.P(32) - gap * (per - 1)) / per);
+                cells = new Rectangle[Count];
+                for (int i = 0; i < Count; i++)
+                    cells[i] = new Rectangle(R.X + w.P(16) + (i % per) * (cs + gap), R.Y + w.P(56) + (i / per) * (w.P(66) + w.P(26)), cs, w.P(66));
+                ControlLeft = 0;
+            }
+            public override bool Hit(Point p) { return IndexAt(cells, p) >= 0; }
+            public override void Move(HomeWindow w, Point p)
+            {
+                int was = IndexAt(cells, last), now = IndexAt(cells, p);
+                last = p;
+                if (was == now) return;
+                HoverMoved(w, this, cells, was, now, w.P(26));
+                if (Hints != null) w.DirtyContent(new Rectangle(R.X, R.Y, R.Width, w.P(56)));
+                if (now >= 0 && now < names.Length)
+                {
+                    MascotLook l = MascotLook.From(w.settings);
+                    apply(l, now);
+                    w.TryOn(l);
+                }
+                else w.TryOn(null);
+            }
+            public override void Paint(Graphics g, HomeWindow w)
+            {
+                Layout(w);
+                int hv = hotT.Value > 0 ? IndexAt(cells, last) : -1;
+                if (Hints != null) Sub = hv >= 0 && hv < Hints.Length && Hints[hv] != null ? "Homenaje fan \u00B7 " + Hints[hv] : baseSub;
+                GridHeader(g, w, this);
+                int hov = hotT.Value > 0 ? IndexAt(cells, last) : -1;
+                for (int i = 0; i < cells.Length; i++)
+                {
+                    Rectangle c = cells[i];
+                    Fill(g, c, w.P(12), i == hov ? Color.FromArgb(48, 48, 53) : Color.FromArgb(33, 33, 36));
+                    if (i < names.Length)
+                    {
+                        MascotLook l = MascotLook.From(w.settings);
+                        l.Seasonal = false;
+                        apply(l, i);
+                        Bitmap pv = w.Preview(l, c.Height, slot + i, c);
+                        if (pv != null) g.DrawImageUnscaled(pv, c.X + (c.Width - pv.Width) / 2, c.Y);
+                    }
+                    else
+                    {
+                        int s = w.P(30);
+                        w.IconTile(g, new Rectangle(c.X + (c.Width - s) / 2, c.Y + (c.Height - s) / 2, s, s), "sparkle", Mac.Pink, Mac.Blue);
+                    }
+                    string name = i < names.Length ? names[i] : "Sorpr\u00E9ndeme";
+                    Txt(g, name, w.F(11.5f, i == hov ? 1 : 0), new Rectangle(c.X - w.P(4), c.Bottom + w.P(4), c.Width + w.P(8), w.P(18)), i == hov ? Mac.Text : Mac.Text2,
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                }
+            }
+            protected override void PaintControl(Graphics g, HomeWindow w) { }
+            public override void Click(HomeWindow w, Point p)
+            {
+                int i = IndexAt(cells, p);
+                if (i < 0) return;
+                MascotLook l = MascotLook.From(w.settings);
+                if (i < names.Length)
+                {
+                    apply(l, i);
+                    w.LookChanged(l, Hints != null ? "\u00A1Hoy soy " + names[i] + "!" : "\u00A1Modo " + names[i].ToLowerInvariant() + " activado!");
+                }
+                else
+                {
+                    MascotParts.Randomize(l, MascotParts.Level(w.settings.MascotLove), rnd);
+                    w.LookChanged(l, "\u00A1Tach\u00E1n! \u00BFQu\u00E9 te parece?");
                 }
             }
         }
 
-        // Botón suelto (pastilla). Accent = el principal, en azul.
+        // Standalone pill button. Accent = primary (blue).
         class PillW : Widget
         {
             public readonly string Label;
@@ -882,45 +1242,80 @@ namespace Stackshot
             public override void Click(HomeWindow w, Point p) { if (act != null) act(); }
         }
 
-        // Portada de Inicio: la mascota a la izquierda (se dibuja aparte) y a la derecha cómo está Stackshot y el atajo.
-        class Hero : Widget
+        // Card with real depth: a soft multi-layer shadow, a subtle vertical gradient, a lit top edge and a hairline
+        // border. hot (0-1) lifts it slightly. Used for every surface of the home page and the sidebar widget.
+        static void LayeredCard(Graphics g, HomeWindow w, Rectangle r, float radius, double hot)
         {
-            public Hero() { Interactive = false; }
-            public override void Paint(Graphics g, HomeWindow w)
+            for (int i = 3; i >= 1; i--)
             {
-                Fill(g, R, w.P(18), Mac.Card);
-                using (GraphicsPath p = Theme.Round(R, w.P(18)))
-                {
-                    Region old = g.Clip;
-                    g.SetClip(p, CombineMode.Intersect);
-                    Intro.PaintGlow(g, R.X + w.P(110), R.Y + w.P(80), w.P(420), Color.FromArgb(70, Mac.Brand1));
-                    Intro.PaintGlow(g, R.Right - w.P(60), R.Bottom - w.P(10), w.P(460), Color.FromArgb(55, Mac.Brand3));
-                    Intro.PaintGlow(g, R.X + R.Width / 2, R.Y - w.P(40), w.P(380), Color.FromArgb(40, Mac.Brand2));
-                    g.Clip = old;
-                    old.Dispose();
-                    using (Pen pen = new Pen(Color.FromArgb(22, 255, 255, 255))) g.DrawPath(pen, p);
-                }
-                int colW = w.P(236), cx = R.Right - w.P(28) - colW;
-                if (!w.settings.MascotOn)
-                {
-                    Txt(g, Greeting(), w.F(28, 2), new Rectangle(R.X + w.P(32), R.Y + w.P(56), cx - R.X - w.P(40), w.P(40)), Mac.Text, TextFormatFlags.SingleLine);
-                    Txt(g, "Todo listo para capturar.", w.F(14, 0), new Rectangle(R.X + w.P(32), R.Y + w.P(102), cx - R.X - w.P(40), w.P(22)), Mac.Text2, TextFormatFlags.SingleLine);
-                }
-                Color dot;
-                string status = w.Status(out dot);
-                int y = R.Y + w.P(52);
-                using (SolidBrush b = new SolidBrush(dot)) g.FillEllipse(b, R.Right - w.P(28) - w.P(8), y + w.P(6), w.P(8), w.P(8));
-                Txt(g, status, w.F(13, 1), new Rectangle(cx, y, colW - w.P(16), w.P(20)), Mac.Text, TextFormatFlags.SingleLine | TextFormatFlags.Right);
-                y += w.P(52);
-                string region = w.settings.HotkeysFor("region");
-                if (Hotkeys.Split(region).Count > 0) w.Keycaps(g, Hotkeys.Display(region), R.Right - w.P(28), y, true, Mac.Text, Color.FromArgb(70, 70, 78));
-                y += w.P(30);
-                Txt(g, "para capturar un \u00E1rea", w.F(12.5f, 0), new Rectangle(cx, y, colW, w.P(20)), Mac.Text2, TextFormatFlags.SingleLine | TextFormatFlags.Right);
-                Txt(g, "o elige abajo qu\u00E9 quieres hacer", w.F(12.5f, 0), new Rectangle(cx, y + w.P(20), colW, w.P(20)), Mac.Text3, TextFormatFlags.SingleLine | TextFormatFlags.Right);
+                Rectangle sh = r;
+                sh.Inflate(-w.P(2) + i, 0);
+                sh.Offset(0, (int)(w.P(2) * i + w.P(2) * hot));
+                Fill(g, sh, radius + i, Color.FromArgb((int)((16 + 10 * hot) / i * 1.4), 0, 0, 0));
+            }
+            using (GraphicsPath p = Theme.Round(r, radius))
+            {
+                Color top = Mac.Mix(Color.FromArgb(46, 46, 50), Color.FromArgb(56, 56, 61), hot), bottom = Mac.Mix(Color.FromArgb(37, 37, 40), Color.FromArgb(45, 45, 49), hot);
+                using (LinearGradientBrush b = new LinearGradientBrush(Rectangle.Inflate(r, 0, 1), top, bottom, 90f)) g.FillPath(b, p);
+                Region old = g.Clip;
+                g.SetClip(p, CombineMode.Intersect);
+                using (LinearGradientBrush hl = new LinearGradientBrush(new Rectangle(r.X, r.Y, r.Width, (int)(radius * 1.6f) + 1), Color.FromArgb(34, 255, 255, 255), Color.FromArgb(0, 255, 255, 255), 90f))
+                    g.FillRectangle(hl, r.X, r.Y, r.Width, radius * 1.6f);
+                g.Clip = old;
+                old.Dispose();
+                using (Pen pen = new Pen(Color.FromArgb((int)(16 + 18 * hot), 255, 255, 255))) g.DrawPath(pen, p);
             }
         }
 
-        // Ficha de Inicio: un tipo de captura con su icono, su nombre y su atajo. Se eleva un poco al pasar por encima.
+        // Home hero, Apple-style: calm card, the mascot on the left (drawn separately), a big question and one
+        // primary action.
+        class Hero : Widget
+        {
+            Rectangle btn;
+            public override bool Clickable { get { return false; } }
+            public override bool Hit(Point p) { return btn.Contains(p); }
+            public override void Paint(Graphics g, HomeWindow w)
+            {
+                LayeredCard(g, w, R, w.P(22), 0);
+                if (w.settings.MascotOn)
+                    using (GraphicsPath p = Theme.Round(R, w.P(22)))
+                    {
+                        Region old = g.Clip;
+                        g.SetClip(p, CombineMode.Intersect);
+                        Color c = MascotParts.Colors[MascotLook.From(w.settings).Color, 0];
+                        Intro.PaintGlow(g, R.X + w.P(118), R.Y + R.Height / 2, w.P(330), Color.FromArgb(42, c));
+                        g.Clip = old;
+                        old.Dispose();
+                    }
+                int x = w.settings.MascotOn ? R.X + w.P(262) : R.X + w.P(36), right = R.Right - w.P(32);
+                int y = R.Y + (R.Height - w.P(150)) / 2;
+                Txt(g, MascotTalk.Greeting().Replace("\u00A1", "").TrimEnd('!'), w.F(13, 1), new Rectangle(x, y, right - x, w.P(18)), Mac.Text2, TextFormatFlags.SingleLine);
+                Txt(g, "\u00BFQu\u00E9 capturamos?", w.F(30, 2), new Rectangle(x, y + w.P(20), right - x, w.P(42)), Mac.Text, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                Color dot;
+                string status = w.Status(out dot);
+                using (SolidBrush b = new SolidBrush(dot)) g.FillEllipse(b, x + w.P(1), y + w.P(73), w.P(7), w.P(7));
+                Txt(g, status, w.F(13, 0), new Rectangle(x + w.P(14), y + w.P(67), right - x - w.P(14), w.P(20)), Mac.Text2, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+
+                // Primary action: blue pill with the shortcut inside, as on macOS.
+                string key = Hotkeys.Display(w.settings.HotRegion).Replace(" + ", "+");
+                Font bf = w.F(13.5f, 1), kf = w.F(12, 0);
+                int bw = TextRenderer.MeasureText("Capturar un \u00E1rea", bf).Width + TextRenderer.MeasureText(key, kf).Width + w.P(56);
+                btn = new Rectangle(x, y + w.P(104), bw, w.P(40));
+                double h = hotT.Value, d = downT.Value;
+                Rectangle br = btn;
+                br.Offset(0, (int)Math.Round(w.P(1) * d));
+                Fill(g, new Rectangle(br.X + w.P(4), br.Y + w.P(4), br.Width - w.P(8), br.Height), br.Height / 2f, Color.FromArgb((int)(50 + 30 * h), 10, 80, 200));
+                using (GraphicsPath p = Theme.Round(br, br.Height / 2f))
+                using (LinearGradientBrush lb = new LinearGradientBrush(Rectangle.Inflate(br, 0, 1), Mac.Mix(Color.FromArgb(54, 152, 255), Color.FromArgb(88, 172, 255), h), Mac.Blue, 90f))
+                    g.FillPath(lb, p);
+                using (Pen hl = new Pen(Color.FromArgb(70, 255, 255, 255))) g.DrawLine(hl, br.X + br.Height / 2, br.Y + 1, br.Right - br.Height / 2, br.Y + 1);
+                Txt(g, "Capturar un \u00E1rea", bf, new Rectangle(br.X + w.P(20), br.Y, br.Width, br.Height), Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+                Txt(g, key, kf, new Rectangle(br.X, br.Y, br.Width - w.P(20), br.Height), Color.FromArgb(200, 255, 255, 255), TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+            }
+            public override void Click(HomeWindow w, Point p) { if (btn.Contains(p)) w.RunAction("region"); }
+        }
+
+        // Home tile: a capture type. Minimal: icon, name and its shortcut in quiet text; lifts on hover.
         class Tile : Widget
         {
             readonly string action;
@@ -931,38 +1326,23 @@ namespace Stackshot
                 double h = hotT.Value, d = downT.Value;
                 Rectangle r = R;
                 r.Offset(0, (int)Math.Round(-w.P(3) * h + w.P(2) * d));
-                Rectangle sh = r;
-                sh.Inflate(-w.P(4), 0);
-                sh.Offset(0, (int)(w.P(4) + w.P(5) * h));
-                Fill(g, sh, w.P(14), Color.FromArgb((int)(30 + 40 * h), 0, 0, 0));
-                Fill(g, r, w.P(14), Mac.Mix(Mac.Card, Color.FromArgb(52, 52, 57), h));
-                using (GraphicsPath p = Theme.Round(r, w.P(14)))
-                using (Pen pen = new Pen(Color.FromArgb((int)(14 + 20 * h), 255, 255, 255))) g.DrawPath(pen, p);
-                Rectangle ic = new Rectangle(r.X + w.P(16), r.Y + w.P(16), w.P(38), w.P(38));
+                LayeredCard(g, w, r, w.P(16), h);
+                Rectangle ic = new Rectangle(r.X + w.P(18), r.Y + w.P(18), w.P(34), w.P(34));
                 bool stop = action == "video" && Recorder.Recording;
-                using (GraphicsPath p = Theme.Round(ic, w.P(11)))
+                using (GraphicsPath p = Theme.Round(ic, w.P(10)))
                 using (LinearGradientBrush b = new LinearGradientBrush(Rectangle.Inflate(ic, 1, 1), ActionColors[index, 0], ActionColors[index, 1], 60f)) g.FillPath(b, p);
-                int m = w.P(9);
+                int m = w.P(8);
                 Icons.Draw(g, stop ? "stop" : ActionIcons[index], Rectangle.Inflate(ic, -m, -m), Color.White);
                 string title = stop ? "Detener grabaci\u00F3n" : ActionShort[index];
-                Txt(g, title, w.F(14, 1), new Rectangle(r.X + w.P(16), r.Bottom - w.P(36), r.Width - w.P(24), w.P(22)), Mac.Text, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                Txt(g, title, w.F(14, 1), new Rectangle(r.X + w.P(18), r.Bottom - w.P(46), r.Width - w.P(28), w.P(20)), Mac.Text, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
                 string combo = w.settings.HotkeysFor(action);
-                if (Hotkeys.Split(combo).Count > 0)
-                {
-                    Font small = w.F(11, 0); // en la caché de fuentes: nada que crear en cada repintado
-                    {
-                        string disp = Hotkeys.Display(combo).Replace(" + ", "+");
-                        Size ts = TextRenderer.MeasureText(disp, small);
-                        Rectangle kr = new Rectangle(r.Right - w.P(14) - ts.Width - w.P(14), r.Y + w.P(16), ts.Width + w.P(14), w.P(22));
-                        Fill(g, kr, w.P(6), Color.FromArgb(28, 255, 255, 255));
-                        Txt(g, disp, small, kr, Mac.Text2, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
-                    }
-                }
+                string disp = Hotkeys.Split(combo).Count > 0 ? Hotkeys.Display(combo).Replace(" + ", "+") : "Sin atajo";
+                Txt(g, disp, w.F(12, 0), new Rectangle(r.X + w.P(18), r.Bottom - w.P(26), r.Width - w.P(28), w.P(18)), Mac.Text3, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
             }
             public override void Click(HomeWindow w, Point p) { w.RunAction(action); }
         }
 
-        // Escenario de la sección Mascota: la mascota en grande (se dibuja aparte) y su nombre.
+        // Mascot section stage: the big mascot (drawn separately) and its name.
         class MascotStage : Widget
         {
             public MascotStage() { Interactive = false; }
@@ -973,25 +1353,43 @@ namespace Stackshot
                 {
                     Region old = g.Clip;
                     g.SetClip(p, CombineMode.Intersect);
-                    Color c = Mascot.Bodies[Math.Max(0, Math.Min(Mascot.Bodies.GetLength(0) - 1, w.settings.MascotColor)), 0];
+                    Color c = MascotParts.Colors[Math.Max(0, Math.Min(MascotParts.Colors.GetLength(0) - 1, w.settings.MascotColor)), 0];
                     Intro.PaintGlow(g, R.X + w.P(124), R.Y + R.Height / 2, w.P(420), Color.FromArgb(70, c));
                     g.Clip = old;
                     old.Dispose();
                     using (Pen pen = new Pen(Color.FromArgb(22, 255, 255, 255))) g.DrawPath(pen, p);
                 }
-                int x = R.X + w.P(250);
-                Txt(g, w.settings.MascotOn ? w.settings.MascotName : "Escondido", w.F(28, 2), new Rectangle(x, R.Y + w.P(58), R.Right - x - w.P(24), w.P(40)), Mac.Text, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
-                string sub = w.settings.MascotOn ? "Mira al rat\u00F3n, salta, saluda y se duerme si le ignoras un rato. Celebra cada captura contigo."
-                                                  : "Activa \u00ABMostrar la mascota\u00BB para que vuelva.";
-                Txt(g, sub, w.F(13, 0), new Rectangle(x, R.Y + w.P(106), R.Right - x - w.P(28), w.P(60)), Mac.Text2, TextFormatFlags.WordBreak);
+                int x = R.X + w.P(262), right = R.Right - w.P(28);
+                Settings s = w.settings;
+                Txt(g, s.MascotOn ? s.MascotName : "Escondido", w.F(28, 2), new Rectangle(x, R.Y + w.P(56), right - x, w.P(40)), Mac.Text, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+                string who = s.MascotOn ? MascotParts.Kinds[MascotLook.From(s).Kind] + "  \u00B7  " + MascotParts.Personalities[MascotLook.From(s).Personality]
+                                        : "Activa \u00ABMostrar la mascota\u00BB para que vuelva.";
+                Txt(g, who, w.F(13, 0), new Rectangle(x, R.Y + w.P(100), right - x, w.P(20)), Mac.Text2, TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+
+                // Friendship: hearts, level name and progress to the next one.
+                int level = MascotParts.Level(s.MascotLove), left;
+                double prog = MascotParts.Progress(s.MascotLove, out left);
+                int hy = R.Y + w.P(140), hs = w.P(18);
+                for (int i = 0; i < MascotParts.LevelNames.Length; i++)
+                    using (GraphicsPath h = MascotParts.Heart(x + i * (hs + w.P(6)) + hs / 2f, hy + hs / 2f, hs))
+                        MascotParts.FillSolid(g, h, i <= level ? Color.FromArgb(255, 92, 140) : Color.FromArgb(60, 255, 255, 255));
+                Txt(g, MascotParts.LevelNames[level], w.F(13, 1), new Rectangle(x, hy + w.P(26), right - x, w.P(20)), Mac.Text, TextFormatFlags.SingleLine);
+                Rectangle bar = new Rectangle(x, hy + w.P(54), Math.Min(w.P(320), right - x), w.P(8));
+                Fill(g, bar, bar.Height / 2f, Color.FromArgb(50, 255, 255, 255));
+                Rectangle done = new Rectangle(bar.X, bar.Y, Math.Max(bar.Height, (int)(bar.Width * prog)), bar.Height);
+                using (GraphicsPath p = Theme.Round(done, bar.Height / 2f))
+                using (LinearGradientBrush b = new LinearGradientBrush(Rectangle.Inflate(bar, 1, 1), Color.FromArgb(255, 92, 140), Mac.Purple, 0f)) g.FillPath(b, p);
+                string next = left > 0 ? "Te faltan " + left + (left == 1 ? " captura" : " capturas") + " para \u00AB" + MascotParts.LevelNames[level + 1].ToLowerInvariant() + "\u00BB. Cada captura suma."
+                                       : "Nivel m\u00E1ximo: lo hab\u00E9is desbloqueado todo.";
+                Txt(g, next, w.F(12, 0), new Rectangle(x, bar.Bottom + w.P(8), right - x, w.P(36)), Mac.Text3, TextFormatFlags.WordBreak);
             }
         }
 
-        // Vista previa del fondo con una ventana de ejemplo (nunca una captura de verdad).
+        // Backdrop preview with a sample window (never a real capture).
         class BackdropPreview : Widget
         {
             static Bitmap sample;
-            static Bitmap composed;      // compartida entre visitas a la sección: no se queda una por visita
+            static Bitmap composed;      // shared across visits so each visit doesn't leak one
             static string composedFor;
             public BackdropPreview() { Interactive = false; }
 
@@ -1050,7 +1448,7 @@ namespace Stackshot
             }
         }
 
-        // Rejilla con todos los fondos; el elegido lleva un aro.
+        // Grid with every backdrop; the selected one has a ring.
         class PresetRow : Row
         {
             Rectangle[] cells = new Rectangle[0];
@@ -1076,7 +1474,7 @@ namespace Stackshot
             {
                 int was = IndexAt(cells, last), now = IndexAt(cells, p);
                 last = p;
-                if (was != now) { w.contentDirty = true; w.Invalidate(); }
+                if (was != now) HoverMoved(w, this, cells, was, now, 0);
             }
             public override void Paint(Graphics g, HomeWindow w)
             {
@@ -1119,8 +1517,10 @@ namespace Stackshot
                 for (int i = 0; i < cells.Length; i++)
                 {
                     if (!cells[i].Contains(p)) continue;
+                    bool wasCustom = Backdrop.IsCustom(w.settings.BgPreset);
                     w.settings.BgPreset = i;
                     w.Changed();
+                    if (wasCustom != Backdrop.IsCustom(i)) w.Rebuild(); // show or hide "Quitar este fondo"
                     return;
                 }
             }

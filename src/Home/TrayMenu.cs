@@ -1,4 +1,4 @@
-// Stackshot - Menú de la bandeja con el aspecto de los menús de macOS: oscuro, redondeado, con iconos.
+// Stackshot - macOS-style tray menu: dark, rounded, with icons.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Drawing;
@@ -8,8 +8,8 @@ using System.Windows.Forms;
 
 namespace Stackshot
 {
-    // Cada opción lleva en Tag el nombre de su icono (Icons). El menú se reajusta a la escala de la pantalla en
-    // la que se abre; en Windows 11 las esquinas, el borde y la sombra los pone el propio sistema.
+    // Each item's Tag holds its icon name (Icons). The menu rescales to the DPI of the monitor it opens on; on Windows
+    // 11 the system draws corners, border and shadow.
     public static class TrayMenu
     {
         public static ContextMenuStrip Create()
@@ -21,7 +21,7 @@ namespace Stackshot
             menu.ShowCheckMargin = false;
             menu.BackColor = Mac.Menu;
             menu.ForeColor = Mac.Text;
-            menu.DropShadowEnabled = Environment.OSVersion.Version.Build < 22000; // en 11 la sombra es la de DWM
+            menu.DropShadowEnabled = Environment.OSVersion.Version.Build < 22000; // on Windows 11 DWM draws the shadow
             menu.Opening += delegate { Restyle(menu, r); };
             menu.Opened += delegate { Round(menu.Handle); };
             return menu;
@@ -46,7 +46,7 @@ namespace Stackshot
             if (r.S == s && menu.Font != null && menu.Tag != null) return;
             r.S = s;
             menu.Tag = "ok";
-            // Solo se sueltan las fuentes creadas aquí (la de serie de los menús es compartida).
+            // Only dispose fonts created here (the default menu font is shared).
             Font oldFont = menuFont, oldBold = appFont;
             menuFont = new Font(Mac.TextFont, 13 * s, GraphicsUnit.Pixel);
             appFont = new Font(Mac.TextFont, 13 * s, FontStyle.Bold, GraphicsUnit.Pixel);
@@ -58,7 +58,7 @@ namespace Stackshot
                 if (it is ToolStripSeparator) { it.AutoSize = false; it.Height = P(11, s); continue; }
                 it.Padding = new Padding(P(2, s), P(5, s), P(10, s), P(5, s));
                 if (it.Image != null) it.Image.Dispose();
-                // Hueco para el icono (que se dibuja a mano, nítido, en OnRenderItemImage).
+                // Placeholder for the icon, which is drawn crisp in OnRenderItemImage.
                 it.Image = new Bitmap(P(18, s), P(18, s), PixelFormat.Format32bppPArgb);
                 if ((it.Tag as string) == "app") it.Font = appFont;
             }
@@ -69,7 +69,7 @@ namespace Stackshot
 
         static int P(float v, float s) { return (int)Math.Round(v * s); }
 
-        // Esquinas redondeadas, modo oscuro y borde fino del sistema (Windows 11).
+        // Rounded corners, dark mode and thin system border (Windows 11).
         public static void Round(IntPtr h)
         {
             try
@@ -99,7 +99,7 @@ namespace Stackshot
 
         protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
         {
-            if (Environment.OSVersion.Version.Build >= 22000) return; // el borde lo pone Windows
+            if (Environment.OSVersion.Version.Build >= 22000) return; // Windows draws the border
             using (Pen p = new Pen(Mac.Separator)) e.Graphics.DrawRectangle(p, 0, 0, e.ToolStrip.Width - 1, e.ToolStrip.Height - 1);
         }
 

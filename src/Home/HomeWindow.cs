@@ -1,22 +1,17 @@
-// Stackshot - Ventana principal: inicio con la mascota, atajos y todos los ajustes, al estilo de macOS.
+// Stackshot - Main window: home with the mascot, hotkeys and all settings, macOS-style.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.IO;
 using System.Windows.Forms;
 
 namespace Stackshot
 {
-    // Una sola ventana dibujada a mano: barra lateral con secciones y, a la derecha, la sección elegida. Los
-    // cambios se aplican al momento (como en los Ajustes de macOS: no hay botón de guardar). Cerrarla la deja en
-    // segundo plano, en la bandeja.
-    //
-    // Rendimiento: la barra lateral y el contenido se dibujan en dos lienzos que solo se rehacen cuando algo
-    // cambia; en cada fotograma se copian (casi gratis) y encima van la mascota y lo que se esté animando. Con la
-    // ventana escondida no hay temporizador ni consumo.
+    // A single owner-drawn window: sidebar on the left, current section on the right. Changes apply immediately (no
+    // Save button). Closing it keeps Stackshot in the tray.
+    // Performance: sidebar and content are drawn into two DIBs that are rebuilt only on change; each frame blits them
+    // and draws the mascot and animations on top. No timer runs while hidden.
     public partial class HomeWindow : Form
     {
         const int LW = 980, LH = 660, Side = 240, Bar = 52;
@@ -28,10 +23,10 @@ namespace Stackshot
         readonly Settings settings;
         float s = 1f;
         string page = "home";
-        readonly List<Widget> items = new List<Widget>();     // la sección actual (coordenadas de contenido)
-        readonly List<Widget> nav = new List<Widget>();       // la barra lateral (coordenadas de ventana)
+        readonly List<Widget> items = new List<Widget>();     // current section (content coordinates)
+        readonly List<Widget> nav = new List<Widget>();       // sidebar (window coordinates)
         Widget hot, pressed;
-        Dib side, content;
+        Dib side, content, frame;   // frame: our own back buffer, so each repaint composes and copies only what changed
         bool sideDirty = true, contentDirty = true;
         int contentHeight;
         double scroll, scrollTarget;
@@ -48,9 +43,10 @@ namespace Stackshot
         int captionHot = -1, captionDown = -1;
         double nextTip, lastFrame;
         string bubbleText;
-        RectangleF heroMascot;          // dónde va la mascota grande (contenido) en Inicio
-        readonly Dictionary<string, Font> fonts = new Dictionary<string, Font>();
+        RectangleF heroMascot;          // where the big mascot goes on Home (content coordinates)
+        readonly Dictionary<int, Font> fonts = new Dictionary<int, Font>();
         Image logo;
+        static readonly Random Rng = new Random();
 
         public HomeWindow(ShotStack owner, Settings settings)
         {
@@ -66,15 +62,16 @@ namespace Stackshot
             BackColor = Mac.Window;
             KeyPreview = true;
             ShowInTaskbar = true;
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.Opaque, true);
             logo = ShotStack.LoadResourceImage("logo.png");
-            mascot.Hue = settings.MascotColor;
+            mascot.Look = MascotLook.From(settings);
             s = ShotStack.ScaleFor(Screen.FromPoint(Control.MousePosition));
             Size = new Size(P(LW), P(LH));
             Center(Screen.FromPoint(Control.MousePosition));
             timer.Interval = 15;
             timer.Tick += Tick;
             owner.Captured += OnCaptured;
+            Updater.Changed += OnUpdaterChanged;
             Build();
         }
 
@@ -88,14 +85,12 @@ namespace Stackshot
             Location = new Point(wa.Left + (wa.Width - Width) / 2, wa.Top + Math.Max(0, (wa.Height - Height) / 2 - P(10)));
         }
 
-        // ------------------------------------------------------------ Mostrar y esconder
-
         public void Present(string pageId, bool withIntro)
         {
             bool wasHidden = !Visible || WindowState == FormWindowState.Minimized;
             if (!Visible)
             {
-                // Si la pantalla en la que estaba ya no está, al centro de la del ratón.
+                // If its monitor is gone, center it on the cursor's monitor.
                 bool onScreen = false;
                 foreach (Screen sc in Screen.AllScreens) if (sc.WorkingArea.IntersectsWith(Bounds)) onScreen = true;
                 if (!onScreen) Center(Screen.FromPoint(Control.MousePosition));
@@ -115,7 +110,7 @@ namespace Stackshot
             if (intro == null && wasHidden && settings.MascotOn)
             {
                 mascot.PopIn();
-                if (settings.MascotTalks) mascot.Greet(Greeting() + " \u00BFQu\u00E9 capturamos?");
+                if (settings.MascotTalks) mascot.Greet(MascotTalk.Hello(settings));
             }
             nextTip = Anim.Now + 25000;
             timer.Start();
@@ -144,14 +139,17 @@ namespace Stackshot
         {
             base.OnVisibleChanged(e);
             if (!Visible) { timer.Stop(); ReleaseLayers(); }
+            else if (WindowState != FormWindowState.Minimized && !timer.Enabled) { lastFrame = 0; timer.Start(); } // however it was shown
+            owner.HomeShown(Visible && WindowState != FormWindowState.Minimized);
         }
 
-        // Minimizada no se ve: sin temporizador (0 % de CPU) hasta que vuelva.
+        // Minimized: stop the timer (0% CPU) until restored.
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
             if (WindowState == FormWindowState.Minimized) timer.Stop();
             else if (Visible && !timer.Enabled) { lastFrame = 0; timer.Start(); Invalidate(); }
+            if (owner != null) owner.HomeShown(Visible && WindowState != FormWindowState.Minimized);
         }
 
         protected override void OnActivated(EventArgs e) { base.OnActivated(e); active = true; Invalidate(); }
@@ -162,11 +160,14 @@ namespace Stackshot
             if (disposing)
             {
                 owner.Captured -= OnCaptured;
+                Updater.Changed -= OnUpdaterChanged;
                 timer.Dispose();
                 ReleaseLayers();
                 if (intro != null) intro.Dispose();
                 foreach (Font f in fonts.Values) f.Dispose();
                 fonts.Clear();
+                foreach (Bitmap b in previews.Values) b.Dispose();
+                previews.Clear();
                 if (logo != null) logo.Dispose();
             }
             base.Dispose(disposing);
@@ -176,13 +177,12 @@ namespace Stackshot
         {
             if (side != null) { side.Dispose(); side = null; }
             if (content != null) { content.Dispose(); content = null; }
+            if (frame != null) { frame.Dispose(); frame = null; }
             sideDirty = contentDirty = true;
         }
 
-        // ------------------------------------------------------------ Marco de la ventana
-
-        // Sin barra de título de Windows (la ventana entera es nuestra), pero con la sombra, las esquinas y las
-        // animaciones de minimizar del sistema.
+        // No Windows title bar (the whole client area is ours), but keep the system shadow, corners and minimize
+        // animation.
         protected override void WndProc(ref Message m)
         {
             switch (m.Msg)
@@ -190,14 +190,14 @@ namespace Stackshot
                 case 0x0083: // WM_NCCALCSIZE
                     if (m.WParam != IntPtr.Zero) { m.Result = IntPtr.Zero; return; }
                     break;
-                case 0x0084: // WM_NCHITTEST: la franja de arriba arrastra la ventana
+                case 0x0084: // WM_NCHITTEST: the top strip drags the window
                 {
                     Point p = PointToClient(new Point((short)(m.LParam.ToInt64() & 0xFFFF), (short)((m.LParam.ToInt64() >> 16) & 0xFFFF)));
                     if (p.Y >= 0 && p.Y < P(Bar) && CaptionAt(p) < 0 && HitTest(p) == null && intro == null) { m.Result = (IntPtr)2; return; }
                     m.Result = (IntPtr)1;
                     return;
                 }
-                case 0x02E0: // WM_DPICHANGED: otra pantalla con otra escala
+                case 0x02E0: // WM_DPICHANGED
                 {
                     s = (m.WParam.ToInt64() & 0xFFFF) / 96f;
                     Native.RECT r = (Native.RECT)System.Runtime.InteropServices.Marshal.PtrToStructure(m.LParam, typeof(Native.RECT));
@@ -220,18 +220,15 @@ namespace Stackshot
             try
             {
                 int on = 1;
-                Native.DwmSetWindowAttribute(Handle, 20, ref on, 4);   // modo oscuro
+                Native.DwmSetWindowAttribute(Handle, 20, ref on, 4);   // DWMWA_USE_IMMERSIVE_DARK_MODE
                 int round = 2;
-                Native.DwmSetWindowAttribute(Handle, 33, ref round, 4); // esquinas redondeadas
+                Native.DwmSetWindowAttribute(Handle, 33, ref round, 4); // DWMWA_WINDOW_CORNER_PREFERENCE = round
                 int border = 58 | (58 << 8) | (62 << 16);
                 Native.DwmSetWindowAttribute(Handle, 34, ref border, 4);
             }
             catch { }
             Native.SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020); // SWP_FRAMECHANGED
         }
-
-
-        // ------------------------------------------------------------ Secciones
 
         void SetPage(string id, bool animate)
         {
@@ -244,7 +241,7 @@ namespace Stackshot
             if (id == "home" && settings.MascotOn && animate)
             {
                 mascot.PopIn();
-                if (settings.MascotTalks && mascot.Bubble == null && new Random().Next(3) == 0) mascot.Say(Tip(), 4200);
+                if (settings.MascotTalks && mascot.Bubble == null && Rng.Next(3) == 0) mascot.Say(Tip(), 4200);
             }
             Invalidate();
         }
@@ -284,8 +281,6 @@ namespace Stackshot
             PlaceNameBox();
         }
 
-        // ------------------------------------------------------------ Bucle de animación
-
         void Tick(object sender, EventArgs e)
         {
             if (!Visible || WindowState == FormWindowState.Minimized) return;
@@ -309,7 +304,7 @@ namespace Stackshot
                 if (intro.Done(now)) { intro.Dispose(); intro = null; introGreeted = false; sideDirty = true; }
             }
 
-            // Desplazamiento suave.
+            // Smooth scrolling.
             double before = scroll;
             scrollTarget = Math.Max(0, Math.Min(Math.Max(0, contentHeight - ViewH), scrollTarget));
             scroll += (scrollTarget - scroll) * (1 - Math.Exp(-dt / 70.0));
@@ -318,10 +313,10 @@ namespace Stackshot
 
             pageIn.Step(now);
             if (pageIn.Running) repaintAll = true;
-            foreach (Widget w in items) { w.Step(now); if (w.Running) { contentDirty = true; repaintAll = true; } }
+            foreach (Widget w in items) { w.Step(now); if (w.Running) DirtyContent(w.R); }
             foreach (Widget w in nav) { w.Step(now); if (w.Running) { sideDirty = true; repaintAll = true; } }
 
-            // La mascota mira al ratón aunque esté fuera de la ventana.
+            // The mascot tracks the mouse even outside the window.
             Point sm = Control.MousePosition;
             bool moved = sm != lastScreenMouse;
             lastScreenMouse = sm;
@@ -331,16 +326,16 @@ namespace Stackshot
             mascot.Step(now, cm, moved);
             if (settings.MascotOn && settings.MascotTalks && now > nextTip && intro == null)
             {
-                nextTip = now + 38000 + new Random().NextDouble() * 20000;
+                nextTip = now + 38000 + Rng.NextDouble() * 20000;
                 if (mascot.Bubble == null && !mascot.Sleeping) mascot.Say(Tip(), 5200);
             }
 
-            // Fotogramas según haga falta: 60 por segundo mientras algo se anima de verdad; 30 si solo se mueve el
-            // ratón (la mascota lo sigue con la mirada); si solo flota, unos 25; sin la mascota y sin nada, 10.
+            // Adaptive frame rate: 60 fps while animating, 30 while the mouse moves (the mascot follows it), ~25 idle
+            // with the mascot, 10 without it.
             if (moved) lastMove = now;
             bool lively = repaintAll || listening != null || (settings.MascotOn && mascot.Lively);
             bool looking = settings.MascotOn && now - lastMove < 600;
-            int interval = lively ? 15 : looking ? 33 : settings.MascotOn ? 40 : 100;
+            int interval = lively ? 15 : looking ? 31 : settings.MascotOn ? 47 : 100; // multiples of the 15.6 ms system tick
             if (!active && !lively && !looking) interval = settings.MascotOn ? 50 : 200;
             if (timer.Interval != interval) timer.Interval = interval;
 
@@ -350,8 +345,8 @@ namespace Stackshot
                 RectangleF r = RectangleF.Union(oldBounds, mascot.PaintBounds);
                 Invalidate(Rectangle.Round(RectangleF.Inflate(r, 2, 2)));
                 if (mascot.BubbleAlpha > 0 || bubbleText != null) Invalidate(BubbleRect(true));
+                if (!lastBubble.IsEmpty) { Invalidate(lastBubble); if (bubbleText == null) lastBubble = Rectangle.Empty; }
             }
-            if (listening != null) { contentDirty = true; Invalidate(); } // el campo de atajo late
         }
         bool introGreeted;
         double lastMove;
@@ -374,40 +369,49 @@ namespace Stackshot
 
         float ContentShift { get { return (float)((1 - pageIn.Value) * P(12)); } }
 
-        // ------------------------------------------------------------ Dibujo
-
         protected override void OnPaintBackground(PaintEventArgs e) { }
 
+        // Composes only the invalidated rectangle into our own back buffer and copies just that to the screen: a mascot
+        // frame costs a few hundred pixels instead of the whole window, and nothing unpainted is ever shown.
         protected override void OnPaint(PaintEventArgs e)
         {
-            Graphics g = e.Graphics;
+            Rectangle clip = Rectangle.Intersect(e.ClipRectangle, ClientRectangle);
+            if (clip.Width <= 0 || clip.Height <= 0) return;
             EnsureLayers();
-            IntPtr hdc = g.GetHdc();
-            try
+            if (frame == null || frame.Width != ClientSize.Width || frame.Height != ClientSize.Height)
             {
-                Native.BitBlt(hdc, 0, 0, side.Width, side.Height, side.Dc, 0, 0, Native.SRCCOPY);
-                int sy = (int)Math.Round(scroll), shift = (int)Math.Round(ContentShift);
-                if (shift > 0)
-                {
-                    // Mientras entra una sección, por arriba asoma el fondo.
-                    using (Dib bg = new Dib(ViewW, shift))
-                    {
-                        using (Graphics bgg = bg.Graphics()) bgg.Clear(Mac.Window);
-                        Native.BitBlt(hdc, P(Side), 0, ViewW, shift, bg.Dc, 0, 0, Native.SRCCOPY);
-                    }
-                }
-                Native.BitBlt(hdc, P(Side), shift, ViewW, ViewH - shift, content.Dc, 0, sy, Native.SRCCOPY);
+                if (frame != null) frame.Dispose();
+                frame = new Dib(Math.Max(1, ClientSize.Width), Math.Max(1, ClientSize.Height));
             }
-            finally { g.ReleaseHdc(hdc); }
+            int sy = (int)Math.Round(scroll), shift = (int)Math.Round(ContentShift);
+            Rectangle sr = Rectangle.Intersect(clip, new Rectangle(0, 0, side.Width, side.Height));
+            if (!sr.IsEmpty) Native.BitBlt(frame.Dc, sr.X, sr.Y, sr.Width, sr.Height, side.Dc, sr.X, sr.Y, Native.SRCCOPY);
+            Rectangle cr = Rectangle.Intersect(clip, new Rectangle(P(Side), shift, ViewW, ViewH - shift));
+            if (!cr.IsEmpty) Native.BitBlt(frame.Dc, cr.X, cr.Y, cr.Width, cr.Height, content.Dc, cr.X - P(Side), cr.Y - shift + sy, Native.SRCCOPY);
+            using (Graphics g = frame.DcGraphics())
+            {
+                g.SetClip(clip);
+                PaintOverlays(g, shift);
+            }
+            Native.GdiFlush();
+            IntPtr hdc = e.Graphics.GetHdc();
+            try { Native.BitBlt(hdc, clip.X, clip.Y, clip.Width, clip.Height, frame.Dc, clip.X, clip.Y, Native.SRCCOPY); }
+            finally { e.Graphics.ReleaseHdc(hdc); }
+        }
+
+        void PaintOverlays(Graphics g, int shift)
+        {
+            // While a section slides in, the background shows above it.
+            if (shift > 0) using (SolidBrush wb = new SolidBrush(Mac.Window)) g.FillRectangle(wb, P(Side), 0, ViewW, shift);
 
             Mac.Quality(g);
-            if (pageIn.Value < 1)
+            if (pageIn.Value < 1 && timer.Enabled) // a stalled transition must never hide the page
             {
                 using (SolidBrush b = new SolidBrush(Mac.Alpha(Mac.Window, 1 - pageIn.Value))) g.FillRectangle(b, P(Side), 0, ViewW, ViewH);
             }
             if (scroll > 1)
             {
-                // Al desplazar, el contenido se desvanece bajo la franja de arriba (como la barra de macOS).
+                // Content fades under the top strip when scrolled, like a macOS toolbar.
                 Rectangle fade = new Rectangle(P(Side), 0, ViewW, P(Bar));
                 double k = Math.Min(1, scroll / P(30));
                 using (LinearGradientBrush b = new LinearGradientBrush(new Rectangle(fade.X, fade.Y - 1, fade.Width, fade.Height + 2),
@@ -434,33 +438,70 @@ namespace Stackshot
             if (content == null || content.Height < ch || content.Width != ViewW) { if (content != null) content.Dispose(); content = new Dib(ViewW, ch); contentDirty = true; }
             if (sideDirty)
             {
-                using (Graphics g = side.Graphics()) { Mac.Quality(g); PaintSide(g); }
+                using (Graphics g = side.DcGraphics()) { Mac.Quality(g); PaintSide(g); }
                 sideDirty = false;
             }
             if (contentDirty)
             {
-                using (Graphics g = content.Graphics())
+                using (Graphics g = content.DcGraphics())
                 {
                     Mac.Quality(g);
                     g.Clear(Mac.Window);
-                    foreach (Widget w in items)
-                    {
-                        // Si una pieza falla, que no se lleve por delante el resto de la sección.
-                        GraphicsState st = g.Save();
-                        try { w.Paint(g, this); }
-                        catch (Exception ex) { ShotStack.Log("Dibujar " + w.GetType().Name + ": " + ex); }
-                        g.Restore(st);
-                    }
+                    foreach (Widget w in items) PaintWidget(g, w);
                 }
                 contentDirty = false;
+                dirtyRects.Clear();
             }
+            else if (dirtyRects.Count > 0)
+            {
+                // Only the parts that changed (a hovered tile, a toggle sliding): the rest of the page stays as is.
+                if (dirtyRects.Count > 8)
+                {
+                    Rectangle all = dirtyRects[0];
+                    foreach (Rectangle r in dirtyRects) all = Rectangle.Union(all, r);
+                    dirtyRects.Clear();
+                    dirtyRects.Add(all);
+                }
+                using (Graphics g = content.DcGraphics())
+                using (SolidBrush bg = new SolidBrush(Mac.Window))
+                {
+                    Mac.Quality(g);
+                    foreach (Rectangle r in dirtyRects)
+                    {
+                        g.SetClip(r);
+                        g.FillRectangle(bg, r);
+                        foreach (Widget w in items)
+                            if (Rectangle.Inflate(w.R, P(16), P(16)).IntersectsWith(r)) PaintWidget(g, w);
+                        g.ResetClip();
+                    }
+                }
+                dirtyRects.Clear();
+            }
+        }
+
+        void PaintWidget(Graphics g, Widget w)
+        {
+            // A failing widget must not break the rest of the section.
+            GraphicsState st = g.Save();
+            try { w.Paint(g, this); }
+            catch (Exception ex) { ShotStack.Log("Dibujar " + w.GetType().Name + ": " + ex); }
+            g.Restore(st);
+        }
+
+        readonly List<Rectangle> dirtyRects = new List<Rectangle>();
+
+        // Marks part of the section (content coordinates) for repainting, shadows included.
+        void DirtyContent(Rectangle r)
+        {
+            r.Inflate(P(14), P(14));
+            dirtyRects.Add(r);
+            Invalidate(new Rectangle(r.X + P(Side), r.Y - (int)Math.Round(scroll) + (int)Math.Round(ContentShift), r.Width, r.Height));
         }
 
         void PaintSide(Graphics g)
         {
             g.Clear(Mac.Sidebar);
             using (Pen p = new Pen(Color.FromArgb(44, 44, 48))) g.DrawLine(p, P(Side) - 1, 0, P(Side) - 1, P(LH));
-            // Marca.
             Rectangle lr = new Rectangle(P(20), P(24), P(30), P(30));
             if (intro == null || intro.T(Anim.Now) > Intro.Length - 200)
             {
@@ -471,7 +512,7 @@ namespace Stackshot
             foreach (Widget w in nav) w.Paint(g, this);
         }
 
-        // Botones de Windows 11 arriba a la derecha: minimizar y cerrar (a la bandeja). No hay maximizar: tamaño fijo.
+        // Windows 11 caption buttons: minimize and close (to tray). Fixed size, no maximize.
         Rectangle CaptionButton(int i) { return new Rectangle(ClientSize.Width - P(46) * (2 - i), 0, P(46), P(32)); }
         Rectangle CaptionRect { get { return Rectangle.Union(CaptionButton(0), CaptionButton(1)); } }
 
@@ -503,29 +544,70 @@ namespace Stackshot
             }
         }
 
-        // Con la mascota en grande, el bocadillo va a su derecha; en la barra lateral, encima de su tarjeta.
+        // The bubble sits above the mascot, never over the text next to it: above the head on Home and Mascota,
+        // above its card in the sidebar.
         bool MiniMode { get { return page != "home" && page != "mascot"; } }
 
         static readonly Bitmap measureBmp = new Bitmap(1, 1);
+        Rectangle lastBubble;          // area painted last time, so a shorter text never leaves leftovers behind
+        string measuredText;
+        int measuredW;
+        SizeF measuredSize;
+        int bubbleTail = 1;            // 1 points down at the mascot, -1 up, 0 none
 
         Rectangle BubbleRect(bool inflate)
         {
             string text = mascot.Bubble ?? bubbleText;
             if (text == null) return Rectangle.Empty;
             RectangleF b = mascot.Box;
-            int maxW = MiniMode ? P(Side - 24) : P(236);
-            SizeF ts;
-            using (Graphics mg = Graphics.FromImage(measureBmp))
+            int maxW = MiniMode ? P(Side - 24) : P(214);
+            // Measured once per text and width, not on every tick.
+            if (text != measuredText || maxW != measuredW)
             {
-                mg.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                ts = mg.MeasureString(text, F(13, 0), maxW - P(28));
+                using (Graphics mg = Graphics.FromImage(measureBmp))
+                {
+                    mg.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+                    measuredSize = mg.MeasureString(text, F(13, 0), maxW - P(28));
+                }
+                measuredText = text;
+                measuredW = maxW;
             }
+            SizeF ts = measuredSize;
             int w = (int)Math.Ceiling(ts.Width) + P(30), h = (int)Math.Ceiling(ts.Height) + P(20);
             Rectangle r;
+            bubbleTail = 1;
             if (MiniMode) r = new Rectangle(P(12), nav[nav.Count - 1].R.Y - h - P(12), w, h);
-            else r = new Rectangle((int)(b.Right + P(4)), (int)(b.Y + b.Height * 0.08f), w, h);
+            else
+            {
+                int left = (int)(b.X + b.Width / 2 - w / 2f), minX = P(Side) + P(14), maxX = P(Side) + P(40) + P(252) - w;
+                // Above the head, leaving room for a hat if it wears one.
+                int x = Math.Max(minX, Math.Min(maxX, left)), above = (int)(b.Y - h - P(10) - (mascot.Look.EffectiveHat(DateTime.Now) != 0 ? b.Height * 0.16f : 0)), below = (int)(b.Bottom - b.Height * 0.08f + P(10));
+                // Never above the card the mascot stands in by more than a little: the page title and subtitle stay readable,
+                // even if that means brushing the top of a hat.
+                int ceiling = CardTop(b) - P(30), plain = (int)(b.Y - h - P(10));
+                if (above < ceiling && ceiling <= plain) above = ceiling;
+                // Above the head when it fits; below the mascot (tail up) when its head is scrolled out of view; and when the
+                // mascot is out of view altogether, a plain note at the top of the page.
+                if (above >= P(8)) { r = new Rectangle(x, above, w, h); bubbleTail = 1; }
+                else if (b.Y + b.Height * 0.5f > P(8) && below + h < ClientSize.Height - P(8)) { r = new Rectangle(x, below, w, h); bubbleTail = -1; }
+                else { r = new Rectangle(P(Side) + (ClientSize.Width - P(Side) - w) / 2, P(14), w, h); bubbleTail = 0; }
+            }
             if (inflate) r.Inflate(P(14), P(14));
             return r;
+        }
+
+        // Top of the hero or stage card holding the mascot, in window coordinates (or 0 when there is none).
+        int CardTop(RectangleF box)
+        {
+            PointF c = new PointF(box.X + box.Width / 2, box.Y + box.Height / 2);
+            int dy = -(int)Math.Round(scroll) + (int)Math.Round(ContentShift);
+            foreach (Widget w in items)
+            {
+                if (!(w is Hero) && !(w is MascotStage)) continue;
+                Rectangle r = new Rectangle(w.R.X + P(Side), w.R.Y + dy, w.R.Width, w.R.Height);
+                if (r.Contains(Point.Round(c))) return r.Y;
+            }
+            return 0;
         }
 
         void PaintBubble(Graphics g)
@@ -535,11 +617,11 @@ namespace Stackshot
             double a = mascot.BubbleAlpha;
             if (a < 0.02) { if (mascot.Bubble == null) bubbleText = null; return; }
             Rectangle r = BubbleRect(false);
+            lastBubble = Rectangle.Inflate(r, P(16), P(16));
             float pop = (float)(0.92 + 0.08 * a);
             GraphicsState st = g.Save();
-            bool mini = MiniMode;
-            float tx = mascot.Box.X + mascot.Box.Width / 2;
-            float ox = mini ? tx : r.X, oy = mini ? r.Bottom : r.Y + r.Height / 2f;
+            float tx = Math.Max(r.X + P(18), Math.Min(r.Right - P(18), mascot.Box.X + mascot.Box.Width / 2));
+            float ox = tx, oy = bubbleTail < 0 ? r.Top : r.Bottom;
             g.TranslateTransform(ox, oy);
             g.ScaleTransform(pop, pop);
             g.TranslateTransform(-ox, -oy);
@@ -551,10 +633,12 @@ namespace Stackshot
                 using (GraphicsPath sp = Theme.Round(sh, P(14)))
                 using (SolidBrush b = new SolidBrush(Color.FromArgb((int)(70 * a), 0, 0, 0))) g.FillPath(b, sp);
                 using (SolidBrush b = new SolidBrush(fill)) g.FillPath(b, p);
-                PointF[] tail = mini
-                    ? new PointF[] { new PointF(tx - P(7), r.Bottom - P(1)), new PointF(tx + P(1), r.Bottom + P(7)), new PointF(tx + P(7), r.Bottom - P(1)) }
-                    : new PointF[] { new PointF(r.X + P(1), oy - P(7)), new PointF(r.X - P(7), oy + P(2)), new PointF(r.X + P(1), oy + P(6)) };
-                using (SolidBrush b = new SolidBrush(fill)) g.FillPolygon(b, tail);
+                if (bubbleTail != 0)
+                {
+                    float edge = bubbleTail > 0 ? r.Bottom - P(1) : r.Top + P(1), tip = bubbleTail > 0 ? r.Bottom + P(7) : r.Top - P(7);
+                    PointF[] tail = { new PointF(tx - P(7), edge), new PointF(tx + P(1), tip), new PointF(tx + P(7), edge) };
+                    using (SolidBrush b = new SolidBrush(fill)) g.FillPolygon(b, tail);
+                }
                 using (Pen pen = new Pen(Color.FromArgb((int)(40 * a), 255, 255, 255))) g.DrawPath(pen, p);
             }
             using (SolidBrush tb = new SolidBrush(Color.FromArgb((int)(255 * a), Mac.Text)))
@@ -565,8 +649,6 @@ namespace Stackshot
             }
             g.Restore(st);
         }
-
-        // ------------------------------------------------------------ Ratón y teclado
 
         Widget HitTest(Point p)
         {
@@ -594,6 +676,7 @@ namespace Stackshot
             Widget h = HitTest(e.Location);
             if (h != hot)
             {
+                TryOn(null);
                 if (hot != null) hot.SetHot(false);
                 hot = h;
                 if (hot != null) hot.SetHot(true);
@@ -607,6 +690,7 @@ namespace Stackshot
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
+            TryOn(null);
             if (hot != null) { hot.SetHot(false); hot = null; }
             if (captionHot >= 0) { captionHot = -1; captionDown = -1; Invalidate(CaptionRect); }
             if (mascotHot) { mascotHot = false; mascot.Hover(false); }
@@ -664,7 +748,7 @@ namespace Stackshot
             {
                 Keys key = keyData & Keys.KeyCode;
                 if (key == Keys.ControlKey || key == Keys.ShiftKey || key == Keys.Menu || key == Keys.LWin || key == Keys.RWin) return true;
-                if (key == Keys.PrintScreen) return true; // llega al soltarla (OnKeyUp)
+                if (key == Keys.PrintScreen) return true; // arrives on key up (OnKeyUp)
                 listening.Take(this, keyData);
                 return true;
             }
@@ -712,56 +796,117 @@ namespace Stackshot
             listening.Stop(this);
         }
 
-        // ------------------------------------------------------------ Cosas que dice la mascota
-
-        static string Greeting()
-        {
-            int h = DateTime.Now.Hour;
-            return h < 6 ? "\u00A1Buenas noches!" : h < 14 ? "\u00A1Buenos d\u00EDas!" : h < 21 ? "\u00A1Buenas tardes!" : "\u00A1Buenas noches!";
-        }
-
-        string[] PokeLines()
-        {
-            return new string[]
-            {
-                "\u00A1Eh, que me haces cosquillas!",
-                "\u00BFHacemos una captura?",
-                "Pulsa " + Hotkeys.Display(settings.HotRegion) + " y yo me encargo.",
-                "\u00A1Sonr\u00EDe! Bueno\u2026 yo ya lo hago.",
-                "Bip bup. Bip.",
-                "Me encanta cuando curvas las flechas.",
-                "Puedo quedarme aqu\u00ED todo el d\u00EDa."
-            };
-        }
-
-        string Tip()
-        {
-            string[] tips =
-            {
-                "Arrastra una miniatura a cualquier chat para pegarla.",
-                "En el editor, tira del punto azul de una flecha para curvarla.",
-                "Con la rueda del rat\u00F3n sobre la pila ves las capturas anteriores.",
-                "Al capturar, un clic en una ventana la saca enterita.",
-                "En el editor, Enter copia y cierra.",
-                Hotkeys.Display(settings.HotScroll) + " captura una p\u00E1gina entera desplaz\u00E1ndola.",
-                "El bot\u00F3n Fondo del editor deja tus capturas listas para presentar.",
-                "Si cierras esta ventana sigo en la bandeja, junto al reloj."
-            };
-            return tips[new Random().Next(tips.Length)];
-        }
+        static string Greeting() { return MascotTalk.Greeting(); }
+        string[] PokeLines() { return MascotTalk.Pokes(settings); }
+        string Tip() { return MascotTalk.Tip(settings); }
 
         void OnCaptured(string path)
         {
             if (!Visible || !settings.MascotOn) return;
-            string[] lines = { "\u00A1Buena captura!", "\u00A1Clic! Ha quedado genial.", "Esa me la guardo." };
-            mascot.Celebrate(settings.MascotTalks ? lines[new Random().Next(lines.Length)] : null);
+            int level = MascotParts.Level(settings.MascotLove);
+            bool up = level > MascotParts.Level(settings.MascotLove - 1);
+            mascot.Celebrate(settings.MascotTalks ? (up ? MascotTalk.LevelUp(settings, level) : MascotTalk.Celebrate(settings)) : null);
+            InvalidatePreviews();
         }
 
-        // ------------------------------------------------------------ Utilidades de dibujo
+        void OnUpdaterChanged()
+        {
+            if (page == "about") Rebuild();
+            else { sideDirty = true; contentDirty = true; Invalidate(); }
+        }
+
+        // ---- Mascot look: applying changes and cached picker previews.
+
+        readonly Dictionary<string, Bitmap> previews = new Dictionary<string, Bitmap>();
+        readonly Dictionary<string, Bitmap> shownInSlot = new Dictionary<string, Bitmap>();
+        readonly HashSet<string> rendering = new HashSet<string>();
+        MascotLook tryOn;
+
+        // Called after any look change: the live mascot, the desktop pet and every preview follow.
+        void LookChanged(MascotLook l, string reaction)
+        {
+            l.ApplyTo(settings);
+            tryOn = null;
+            mascot.Look = MascotLook.From(settings);
+            InvalidatePreviews();
+            owner.MascotChanged();
+            if (reaction != null && settings.MascotTalks) mascot.Celebrate(reaction);
+            else mascot.Celebrate(null);
+            Changed();
+        }
+
+        void InvalidatePreviews()
+        {
+            contentDirty = true;
+        }
+
+        // Shows a look on the big mascot without saving it (hovering a picker); null goes back to the saved one.
+        void TryOn(MascotLook l)
+        {
+            string key = l == null ? null : l.Key, cur = tryOn == null ? null : tryOn.Key;
+            if (key == cur) return;
+            tryOn = l;
+            RectangleF before = mascot.PaintBounds;
+            mascot.Look = l ?? MascotLook.From(settings);
+            if (l != null && settings.MascotOn) mascot.Hop(0.45);
+            Invalidate(Rectangle.Round(RectangleF.Union(before, mascot.PaintBounds)));
+        }
+
+        // A still render of the mascot wearing one variation. Missing ones are rendered on a worker thread (so
+        // changing the look never freezes the window); meanwhile the slot keeps showing what it showed before.
+        Bitmap Preview(MascotLook l, int px, string slot, Rectangle area)
+        {
+            string key = l.Key + "@" + px;
+            Bitmap b;
+            if (previews.TryGetValue(key, out b)) { shownInSlot[slot] = b; return b; }
+            if (rendering.Add(key))
+            {
+                MascotLook look = l.Clone();
+                System.Threading.ThreadPool.QueueUserWorkItem(delegate
+                {
+                    Bitmap bmp = new Bitmap(px, px, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                    try
+                    {
+                        using (Graphics g = Graphics.FromImage(bmp))
+                        {
+                            float d = px * 0.62f;
+                            Mascot.RenderStill(g, new RectangleF((px - d) / 2, px * 0.22f, d, d), look);
+                        }
+                    }
+                    catch (Exception ex) { ShotStack.Log("Vista previa: " + ex.Message); }
+                    try
+                    {
+                        BeginInvoke((Action)delegate
+                        {
+                            rendering.Remove(key);
+                            if (IsDisposed) { bmp.Dispose(); return; }
+                            TrimPreviews();
+                            previews[key] = bmp;
+                            DirtyContent(area);
+                        });
+                    }
+                    catch { bmp.Dispose(); }
+                });
+            }
+            return shownInSlot.TryGetValue(slot, out b) ? b : null;
+        }
+
+        // Keeps the cache bounded; bitmaps still on screen stay.
+        void TrimPreviews()
+        {
+            if (previews.Count < 600) return;
+            HashSet<Bitmap> keep = new HashSet<Bitmap>(shownInSlot.Values);
+            foreach (KeyValuePair<string, Bitmap> kv in new List<KeyValuePair<string, Bitmap>>(previews))
+            {
+                if (keep.Contains(kv.Value)) continue;
+                kv.Value.Dispose();
+                previews.Remove(kv.Key);
+            }
+        }
 
         Font F(float px, int weight)
         {
-            string key = px + ":" + weight;
+            int key = (int)Math.Round(px * 100) * 4 + weight;
             Font f;
             if (fonts.TryGetValue(key, out f)) return f;
             string fam = weight == 3 ? Theme.IconFont : weight == 2 ? Fonts.DisplaySemibold : weight == 1 ? "Segoe UI Semibold" : Mac.TextFont;
@@ -781,7 +926,7 @@ namespace Stackshot
             TextRenderer.DrawText(g, t, f, r, c, TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix | extra);
         }
 
-        // Teclas como teclas: "Ctrl", "Mayús", "Impr Pant" en piezas redondeadas. Devuelve el ancho usado.
+        // Draws a combo as keycaps. Returns the width used.
         int Keycaps(Graphics g, string combo, int right, int cy, bool big, Color fg, Color bg)
         {
             string[] keys = combo.Split(new string[] { " + " }, StringSplitOptions.None);
@@ -810,7 +955,7 @@ namespace Stackshot
             return total;
         }
 
-        // Cuadradito de color con un icono blanco, como en los Ajustes del iPhone.
+        // Colored tile with a white icon, like iOS Settings.
         void IconTile(Graphics g, Rectangle r, string icon, Color a, Color b)
         {
             using (GraphicsPath p = Theme.Round(r, r.Width * 0.26f))

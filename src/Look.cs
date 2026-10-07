@@ -1,4 +1,4 @@
-// Stackshot - Estilo de la ventana principal y del menú de la bandeja: colores al estilo macOS e iconos de línea.
+// Stackshot - Main window and tray menu style: macOS-like colors and line icons.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ using System.Drawing.Text;
 
 namespace Stackshot
 {
-    // Colores del modo oscuro de macOS (fondos neutros, un azul de sistema) y el degradado de la marca.
+    // macOS dark mode colors (neutral backgrounds, system blue) and the brand gradient.
     public static class Mac
     {
         public static readonly Color Window = Color.FromArgb(28, 28, 30);
@@ -31,27 +31,21 @@ namespace Stackshot
         public static readonly Color Pink = Color.FromArgb(255, 55, 95);
         public static readonly Color Teal = Color.FromArgb(100, 210, 255);
         public static readonly Color Indigo = Color.FromArgb(94, 92, 230);
-        // El degradado del logo: violeta, azul y turquesa.
+        // Logo gradient: violet, blue and cyan.
         public static readonly Color Brand1 = Color.FromArgb(139, 92, 246);
         public static readonly Color Brand2 = Color.FromArgb(79, 123, 255);
         public static readonly Color Brand3 = Color.FromArgb(20, 184, 230);
 
         static string text;
 
-        // Segoe UI Variable Text en Windows 11; Segoe UI en Windows 10.
+        // Segoe UI Variable Text on Windows 11; Segoe UI on Windows 10.
         public static string TextFont
         {
             get
             {
                 if (text != null) return text;
                 text = "Segoe UI";
-                using (InstalledFontCollection fc = new InstalledFontCollection())
-                {
-                    foreach (FontFamily f in fc.Families)
-                    {
-                        if (f.Name == "Segoe UI Variable Text") { text = f.Name; break; }
-                    }
-                }
+                if (Fonts.Has("Segoe UI Variable Text")) text = "Segoe UI Variable Text";
                 return text;
             }
         }
@@ -68,7 +62,7 @@ namespace Stackshot
             return Color.FromArgb(Math.Max(0, Math.Min(255, (int)Math.Round(255 * a))), c);
         }
 
-        // Pincel con el degradado de la marca en diagonal sobre r.
+        // Brand gradient brush, diagonal over r.
         public static LinearGradientBrush BrandBrush(RectangleF r)
         {
             LinearGradientBrush b = new LinearGradientBrush(new RectangleF(r.X - 1, r.Y - 1, r.Width + 2, r.Height + 2), Brand1, Brand3, 45f);
@@ -88,8 +82,8 @@ namespace Stackshot
         }
     }
 
-    // Iconos de línea dibujados a mano sobre una rejilla de 24 × 24 (al estilo de los símbolos de Apple). Se ven
-    // nítidos a cualquier escala y no dependen de qué fuentes de iconos tenga instaladas Windows.
+    // Hand-drawn line icons on a 24x24 grid (SF Symbols style). Crisp at any scale and independent of installed icon
+    // fonts.
     public static class Icons
     {
         public static Bitmap Render(string name, int px, Color c)
@@ -110,7 +104,7 @@ namespace Stackshot
             g.TranslateTransform(r.X, r.Y);
             float k = r.Width / 24f;
             g.ScaleTransform(k, k);
-            float w = Math.Max(1.55f, 1.25f / k + 0.9f); // trazo algo más fino cuanto más grande
+            float w = Math.Max(1.55f, 1.25f / k + 0.9f); // slightly thinner stroke at larger sizes
             using (Pen p = new Pen(c, w))
             using (SolidBrush b = new SolidBrush(c))
             {
@@ -175,6 +169,12 @@ namespace Stackshot
                         gp.CloseFigure();
                         g.DrawPath(p, gp);
                     }
+                    break;
+                case "camera":
+                    g.DrawEllipse(p, 5, 2.5f, 14, 14);
+                    g.DrawEllipse(p, 9.5f, 7, 5, 5);
+                    g.DrawLine(p, 12, 16.5f, 12, 20.5f);
+                    g.DrawLine(p, 7.5f, 21, 16.5f, 21);
                     break;
                 case "gif":
                     RoundRect(g, p, 2, 5, 22, 19, 3.2f);
@@ -312,10 +312,10 @@ namespace Stackshot
                     RoundRect(g, p, 8, 8, 20.5f, 20.5f, 2.6f);
                     break;
                 case "logo":
-                    // El del logo en pequeño: tres tarjetas en abanico.
-                    RoundRect(g, p, 5, 6, 19, 18, 2.4f);
-                    g.DrawLine(p, 7.5f, 3.6f, 17.5f, 3.6f);
-                    g.DrawLine(p, 6.5f, 20.6f, 17.5f, 20.6f);
+                    // Small logo: the two viewfinder corners around the lens.
+                    g.DrawLines(p, new PointF[] { new PointF(4, 11.5f), new PointF(4, 5), new PointF(10.5f, 5) });
+                    g.DrawLines(p, new PointF[] { new PointF(20, 12.5f), new PointF(20, 19), new PointF(13.5f, 19) });
+                    Dot(g, b, 12, 12, 2.4f);
                     break;
                 default:
                     g.DrawEllipse(p, 4, 4, 16, 16);
