@@ -1,4 +1,4 @@
-// Stackshot - Copiar la pantalla, saber qué ventanas hay y dibujar el cursor.
+// Stackshot - Screen copy, window enumeration and cursor drawing.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -16,11 +16,11 @@ namespace Stackshot
         public class Win
         {
             public IntPtr Handle;
-            public Rectangle Bounds;   // en píxeles reales de pantalla, sin la sombra
-            public string Name;        // nombre del programa, para el nombre del fichero
+            public Rectangle Bounds;   // physical pixels, without the invisible shadow
+            public string Name;        // process name, used for the file name
         }
 
-        // Lo que se ve en ese rectángulo de pantalla. Las ventanas de Stackshot no salen (se excluyen de las capturas).
+        // Stackshot windows are excluded from capture, so they never show up here.
         public static Bitmap Grab(Rectangle r)
         {
             Bitmap b = new Bitmap(Math.Max(1, r.Width), Math.Max(1, r.Height), PixelFormat.Format32bppArgb);
@@ -28,7 +28,7 @@ namespace Stackshot
             return b;
         }
 
-        // Rectángulo visible de una ventana: sin la sombra invisible que Windows 10/11 añade alrededor.
+        // Visible bounds, without the invisible resize border Windows 10/11 adds.
         public static Rectangle Bounds(IntPtr h)
         {
             Native.RECT r;
@@ -47,27 +47,28 @@ namespace Stackshot
             catch { return null; }
         }
 
-        // Ventanas visibles de delante a atrás (para resaltar la que hay bajo el ratón al capturar).
+        // Visible top-level windows, front to back (for hover highlighting in the picker).
         public static List<Win> Windows()
         {
             List<Win> list = new List<Win>();
-            uint me = (uint)Process.GetCurrentProcess().Id;
+            uint me;
+            using (Process self = Process.GetCurrentProcess()) me = (uint)self.Id;
             StringBuilder cls = new StringBuilder(64);
             Native.EnumWindows(delegate(IntPtr h, IntPtr l)
             {
                 if (!Native.IsWindowVisible(h) || Native.IsIconic(h)) return true;
                 int cloaked;
-                if (Native.DwmGetInt(h, 14, out cloaked, 4) == 0 && cloaked != 0) return true; // DWMWA_CLOAKED: otro escritorio, apps suspendidas
+                if (Native.DwmGetInt(h, 14, out cloaked, 4) == 0 && cloaked != 0) return true; // DWMWA_CLOAKED: other virtual desktops, suspended apps
                 uint pid;
                 Native.GetWindowPid(h, out pid);
                 if (pid == me) return true;
                 int ex = Native.GetWindowLong(h, -20); // GWL_EXSTYLE
-                if ((ex & 0x80) != 0 && (ex & 0x40000) == 0) return true; // WS_EX_TOOLWINDOW sin WS_EX_APPWINDOW
-                if ((ex & 0x20) != 0) return true; // WS_EX_TRANSPARENT: capas que no se pueden pinchar
+                if ((ex & 0x80) != 0 && (ex & 0x40000) == 0) return true; // WS_EX_TOOLWINDOW without WS_EX_APPWINDOW
+                if ((ex & 0x20) != 0) return true; // WS_EX_TRANSPARENT: click-through overlays
                 cls.Length = 0;
                 Native.GetClassName(h, cls, cls.Capacity);
                 string c = cls.ToString();
-                if (c == "Progman" || c == "WorkerW") return true; // el escritorio: para eso está la pantalla entera
+                if (c == "Progman" || c == "WorkerW") return true; // the desktop: full-screen capture covers it
                 Rectangle b = Bounds(h);
                 if (b.Width < 40 || b.Height < 30) return true;
                 Win w = new Win();
@@ -79,8 +80,7 @@ namespace Stackshot
             return list;
         }
 
-        // Las ventanas de Windows 11 tienen las esquinas redondeadas: al capturarlas se dejan transparentes,
-        // para que no asome lo que había detrás.
+        // Windows 11 windows have rounded corners: make the corners transparent so the background does not leak in.
         public static Bitmap RoundCorners(Bitmap src, float radius)
         {
             if (radius < 1) return src;
@@ -97,7 +97,7 @@ namespace Stackshot
             return b;
         }
 
-        // Dibuja el cursor del ratón en un contexto GDI cuyo origen está en (ox, oy) de la pantalla (para los vídeos).
+        // Draws the cursor onto an HDC whose origin is screen point (ox, oy). Used for recordings.
         public static void DrawCursor(IntPtr hdc, int ox, int oy)
         {
             Native.CURSORINFO ci = new Native.CURSORINFO();
@@ -115,7 +115,6 @@ namespace Stackshot
             Native.DrawIconEx(hdc, ci.ptScreenPos.X - ox - hx, ci.ptScreenPos.Y - oy - hy, ci.hCursor, 0, 0, 0, IntPtr.Zero, 3); // DI_NORMAL
         }
 
-        // Pantalla en la que está el ratón.
         public static Screen CurrentScreen()
         {
             return Screen.FromPoint(Control.MousePosition);

@@ -1,4 +1,4 @@
-// Stackshot - Sonido de obturador, generado al vuelo (sin ficheros de audio de terceros).
+// Stackshot - Shutter sound synthesized at runtime (no third-party audio).
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.IO;
@@ -8,9 +8,9 @@ namespace Stackshot
 {
     public static class Shutter
     {
-        static byte[] wav;
+        static SoundPlayer player;
 
-        // Dos chasquidos cortos y secos, como un obturador mecánico (unos 140 ms).
+        // Two short, dry clicks like a mechanical shutter (~140 ms).
         static byte[] Build()
         {
             const int rate = 44100;
@@ -22,7 +22,7 @@ namespace Stackshot
                 double t = i / (double)rate, v = 0;
                 v += Click(t, 0.000, 0.012, rnd) * 0.9;
                 v += Click(t, 0.055, 0.020, rnd) * 0.7;
-                v += Math.Sin(2 * Math.PI * 140 * t) * Math.Exp(-t * 60) * 0.25; // un golpe grave muy breve
+                v += Math.Sin(2 * Math.PI * 140 * t) * Math.Exp(-t * 60) * 0.25; // short low thump
                 pcm[i] = (short)Math.Max(-32767, Math.Min(32767, v * 20000));
             }
             using (MemoryStream ms = new MemoryStream())
@@ -49,9 +49,13 @@ namespace Stackshot
         {
             try
             {
-                if (wav == null) wav = Build();
-                SoundPlayer p = new SoundPlayer(new MemoryStream(wav));
-                p.Play();
+                // Built and loaded once: every later capture plays from memory without re-parsing the WAV.
+                if (player == null)
+                {
+                    player = new SoundPlayer(new MemoryStream(Build()));
+                    player.Load();
+                }
+                player.Play();
             }
             catch (Exception ex) { ShotStack.Log("Sonido: " + ex.Message); }
         }

@@ -1,4 +1,4 @@
-// Stackshot - Lienzo de 32 bits compartido entre GDI y GDI+.
+// Stackshot - 32-bit DIB shared by GDI and GDI+.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Drawing;
@@ -7,24 +7,26 @@ using System.Runtime.InteropServices;
 
 namespace Stackshot
 {
-    // GDI copia bloques enormes casi gratis (BitBlt) y GDI+ dibuja encima con antialias, los dos sobre los mismos
-    // bytes y sin copias de por medio. Es lo que hace que el selector de capturas vaya fluido con pantallas grandes.
+    // GDI blits large areas almost for free and GDI+ draws antialiased on the same bytes, with no copies in between.
     public sealed class Dib : IDisposable
     {
         public readonly int Width, Height;
         public readonly IntPtr Dc;
         public readonly IntPtr Bits;
-        public readonly Bitmap Bitmap;   // los mismos píxeles vistos desde GDI+ (el canal alfa no se usa)
+        public readonly Bitmap Bitmap;   // same pixels seen from GDI+ (alpha unused unless premultiplied)
         IntPtr hbm, old;
 
-        public Dib(int width, int height)
+        public Dib(int width, int height) : this(width, height, false) { }
+
+        // premultiplied: GDI+ draws real (premultiplied) alpha, as UpdateLayeredWindow expects.
+        public Dib(int width, int height, bool premultiplied)
         {
             Width = Math.Max(1, width);
             Height = Math.Max(1, height);
             Native.BITMAPINFOHEADER bi = new Native.BITMAPINFOHEADER();
             bi.biSize = Marshal.SizeOf(typeof(Native.BITMAPINFOHEADER));
             bi.biWidth = Width;
-            bi.biHeight = -Height; // de arriba abajo, como los Bitmap de GDI+
+            bi.biHeight = -Height; // top-down, like GDI+ bitmaps
             bi.biPlanes = 1;
             bi.biBitCount = 32;
             IntPtr bits;
@@ -33,17 +35,24 @@ namespace Stackshot
             Bits = bits;
             Dc = Native.CreateCompatibleDC(IntPtr.Zero);
             old = Native.SelectObject(Dc, hbm);
-            Bitmap = new Bitmap(Width, Height, Width * 4, PixelFormat.Format32bppRgb, bits);
+            Bitmap = new Bitmap(Width, Height, Width * 4, premultiplied ? PixelFormat.Format32bppPArgb : PixelFormat.Format32bppRgb, bits);
         }
 
-        // Antes de dibujar con GDI+ hay que vaciar lo que GDI tenga pendiente.
+        // Flush pending GDI work before drawing with GDI+.
         public Graphics Graphics()
         {
             Native.GdiFlush();
             return System.Drawing.Graphics.FromImage(Bitmap);
         }
 
-        // Lo que se ve ahora en ese rectángulo de pantalla.
+        // GDI+ on the DIB's DC. TextRenderer then draws straight into the DIB; on a Bitmap-based Graphics every text
+        // call copies the whole image out and back, which costs milliseconds per string on large canvases.
+        public Graphics DcGraphics()
+        {
+            Native.GdiFlush();
+            return System.Drawing.Graphics.FromHdc(Dc);
+        }
+
         public static Dib FromScreen(Rectangle r)
         {
             Dib d = new Dib(r.Width, r.Height);
@@ -54,7 +63,7 @@ namespace Stackshot
             return d;
         }
 
-        // Copia independiente para GDI+ (sigue viva aunque el lienzo se libere).
+        // Independent copy that outlives this DIB.
         public Bitmap ToBitmap()
         {
             Native.GdiFlush();
@@ -73,12 +82,11 @@ namespace Stackshot
             return b;
         }
 
-        // Oscurece todo el lienzo (alpha 0-255 de negro encima).
         public void Darken(byte alpha)
         {
             using (Dib black = new Dib(1, 1))
             {
-                // El píxel nace a cero: negro.
+                // A new DIB is zero-filled: one black pixel.
                 Native.AlphaBlend(Dc, 0, 0, Width, Height, black.Dc, 0, 0, 1, 1, alpha << 16);
             }
             Native.GdiFlush();

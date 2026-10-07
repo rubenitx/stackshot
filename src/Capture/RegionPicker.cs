@@ -1,28 +1,25 @@
-// Stackshot - Elegir qué capturar: la pantalla se congela y se arrastra un área o se pincha una ventana.
+// Stackshot - Region picker: freezes the screen and lets the user drag an area or click a window.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace Stackshot
 {
-    // Una sola ventana cubre todas las pantallas con la imagen congelada (oscurecida). Al pasar el ratón se ilumina
-    // la ventana que hay debajo (clic = esa ventana; sobre el escritorio, la pantalla entera); al arrastrar se elige
-    // un área. Lupa, cruceta y medidas siguen al ratón.
-    //
-    // Rendimiento: la imagen oscurecida y la clara (con las ayudas ya dibujadas) se preparan una vez. En cada
-    // movimiento solo se recomponen los trocitos que cambian (las dos líneas de la cruceta, la lupa, el borde
-    // del área) copiándolos con GDI, que es casi gratis, y GDI+ solo dibuja lo poco que va encima. Antes se
-    // repintaba la pantalla entera en cada movimiento, porque la cruceta la cruza de lado a lado.
+    // One window covers every monitor with the frozen, dimmed screenshot. Hovering highlights the window underneath
+    // (click = that window, or the whole monitor over the desktop); dragging selects an area.
+    // Performance: the dimmed and bright images (with hints) are prepared once. Each mouse move only recomposes the
+    // small rectangles that change (crosshair lines, magnifier, selection edges) with BitBlt; GDI+ only draws the
+    // overlay on top.
     public class RegionPicker : Form
     {
         public enum Mode { Image, Video, Gif, Scroll }
 
-        readonly Bitmap shot;          // copia para GDI+ (lupa y recorte final)
-        readonly Dib bright, dimmed;   // la pantalla tal cual y oscurecida, ambas con las ayudas
+        readonly Bitmap shot;          // GDI+ copy, for the magnifier and the final crop
+        readonly Dib bright, dimmed;   // plain and dimmed screen, both with hints
         readonly Rectangle vs;
         readonly List<Grabber.Win> wins;
         readonly List<Rectangle> dirty = new List<Rectangle>();
@@ -33,7 +30,7 @@ namespace Stackshot
         Rectangle lastDecor;
         Rectangle result = Rectangle.Empty;
         IntPtr resultWindow = IntPtr.Zero;
-        Rectangle curMon = Rectangle.Empty;   // pantalla del ratón, en coordenadas de la ventana
+        Rectangle curMon = Rectangle.Empty;   // monitor under the cursor, in client coordinates
         float curScale = 1f;
         Font labelFont;
         float labelFontScale;
@@ -66,13 +63,13 @@ namespace Stackshot
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= 0x80 | 0x8; // TOOLWINDOW (fuera de Alt+Tab) | TOPMOST
+                cp.ExStyle |= 0x80 | 0x8; // WS_EX_TOOLWINDOW | WS_EX_TOPMOST
                 return cp;
             }
         }
 
-        // Congela la pantalla y deja elegir. Devuelve el rectángulo elegido en coordenadas de pantalla (vacío si se
-        // cancela), la imagen congelada de toda la pantalla virtual y la ventana pinchada (si se pinchó una).
+        // Returns the chosen rectangle in screen coordinates (empty if cancelled), the frozen virtual screen and the
+        // clicked window, if any.
         public static Rectangle Pick(Mode mode, out Bitmap frozen, out Rectangle virtualScreen, out IntPtr window)
         {
             virtualScreen = SystemInformation.VirtualScreen;
@@ -91,8 +88,7 @@ namespace Stackshot
         int Pz(float v) { return (int)Math.Round(v * S); }
         Point ToScreen(Point p) { return new Point(p.X + vs.X, p.Y + vs.Y); }
 
-        // La pantalla del ratón solo se recalcula al cambiar de pantalla (preguntar a Windows en cada
-        // movimiento cuesta más que todo lo demás).
+        // Only re-query the monitor when the cursor leaves it; asking Windows on every move costs more than drawing.
         void TrackMonitor()
         {
             if (!curMon.IsEmpty && curMon.Contains(cur)) return;
@@ -122,13 +118,39 @@ namespace Stackshot
 
         protected override void OnPaintBackground(PaintEventArgs e) { }
 
-        // Lo que hay que repintar se apunta aquí (además de pedírselo a Windows), para recomponer solo esos trozos.
+        // Dirty rectangles are tracked here as well, so only those parts get recomposed.
         void Dirty(Rectangle r)
         {
             r.Intersect(ClientRectangle);
             if (r.Width <= 0 || r.Height <= 0) return;
             dirty.Add(r);
             Invalidate(r);
+        }
+
+        [DllImport("user32.dll")] static extern int GetUpdateRgn(IntPtr hwnd, IntPtr rgn, bool erase);
+        [DllImport("gdi32.dll")] static extern IntPtr CreateRectRgn(int l, int t, int r, int b);
+        [DllImport("gdi32.dll")] static extern int CombineRgn(IntPtr dst, IntPtr a, IntPtr b, int mode);
+        bool uncovered; // Windows asked to repaint something outside our own dirty list (another window passed over)
+
+        protected override void WndProc(ref Message msg)
+        {
+            if (msg.Msg == 0x000F && dirty.Count > 0) // WM_PAINT: compare the real update region with the dirty list
+            {
+                IntPtr update = CreateRectRgn(0, 0, 0, 0), ours = CreateRectRgn(0, 0, 0, 0), part = CreateRectRgn(0, 0, 0, 0);
+                try
+                {
+                    GetUpdateRgn(Handle, update, false);
+                    foreach (Rectangle r in dirty)
+                    {
+                        IntPtr one = CreateRectRgn(r.Left, r.Top, r.Right, r.Bottom);
+                        CombineRgn(ours, ours, one, 2); // RGN_OR
+                        Native.DeleteObject(one);
+                    }
+                    uncovered = CombineRgn(part, update, ours, 4) != 1; // RGN_DIFF; 1 = NULLREGION
+                }
+                finally { Native.DeleteObject(update); Native.DeleteObject(ours); Native.DeleteObject(part); }
+            }
+            base.WndProc(ref msg);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -139,10 +161,11 @@ namespace Stackshot
             {
                 Rectangle box = dirty[0];
                 foreach (Rectangle r in dirty) box = Rectangle.Union(box, r);
-                if (box.Contains(clip) && dirty.Count <= 16) parts.AddRange(dirty);
-                else parts.Add(clip); // Windows también pide algo (o son demasiados trozos): todo de una vez
+                if (!uncovered && box.Contains(clip) && dirty.Count <= 16) parts.AddRange(dirty);
+                else parts.Add(clip); // Windows asked for more, or too many parts: repaint the whole clip at once
             }
             else parts.Add(clip);
+            uncovered = false;
             dirty.Clear();
 
             IntPtr hdc = e.Graphics.GetHdc();
@@ -151,17 +174,15 @@ namespace Stackshot
                 foreach (Rectangle r in parts)
                 {
                     if (r.Width <= 0 || r.Height <= 0) continue;
-                    using (Dib buf = new Dib(r.Width, r.Height))
-                    {
-                        Compose(buf, r);
-                        Native.BitBlt(hdc, r.X, r.Y, r.Width, r.Height, buf.Dc, 0, 0, Native.SRCCOPY);
-                    }
+                    Dib buf = Scratch(r.Size);
+                    Compose(buf, r);
+                    Native.BitBlt(hdc, r.X, r.Y, r.Width, r.Height, buf.Dc, 0, 0, Native.SRCCOPY);
                 }
             }
             finally { e.Graphics.ReleaseHdc(hdc); }
         }
 
-        // Un trozo de pantalla: fondo oscurecido, lo resaltado en claro y encima el borde, la cruceta y la lupa.
+        // One part: dimmed background, highlighted area in bright, then border, crosshair and magnifier.
         void Compose(Dib buf, Rectangle r)
         {
             Native.BitBlt(buf.Dc, 0, 0, r.Width, r.Height, dimmed.Dc, r.X, r.Y, Native.SRCCOPY);
@@ -205,7 +226,7 @@ namespace Stackshot
             }
         }
 
-        // ¿El borde de r (con un margen) pasa por el trozo que se está pintando?
+        // Does r's border (with margin m) cross the clip?
         static bool Touches(Rectangle r, Rectangle clip, int m)
         {
             Rectangle outer = r;
@@ -216,7 +237,7 @@ namespace Stackshot
             return inner.Width <= 0 || inner.Height <= 0 || !inner.Contains(clip);
         }
 
-        // Ayuda arriba de cada pantalla: se dibuja una sola vez sobre las dos imágenes de fondo.
+        // Hint pill at the top of each monitor, painted once onto both background images.
         void PaintHints(Dib target, Mode mode)
         {
             string text = mode == Mode.Image ? "Arrastra para capturar un \u00E1rea  \u00B7  Clic: ventana o pantalla entera  \u00B7  Esc: cancelar"
@@ -259,7 +280,7 @@ namespace Stackshot
             }
         }
 
-        // Lupa: 15 × 15 píxeles alrededor del ratón, ampliados, con las medidas debajo.
+        // Magnifier: 15x15 pixels around the cursor, plus the size label below.
         Rectangle MagnifierRect(out Rectangle label)
         {
             int size = Pz(120), off = Pz(22), lh = Pz(26);
@@ -312,7 +333,7 @@ namespace Stackshot
             }
         }
 
-        // Todo lo que sigue al ratón (cruceta, lupa, medidas): se borra donde estaba y se pinta donde va.
+        // Bounds of everything that follows the cursor (crosshair, magnifier, label).
         Rectangle DecorBounds()
         {
             Rectangle label;
@@ -328,7 +349,7 @@ namespace Stackshot
             Dirty(lastDecor);
             Dirty(now);
             Rectangle m = curMon;
-            // Las líneas de la cruceta, de una en una (son muy finas): donde estaban y donde van.
+            // The crosshair lines are thin: invalidate old and new positions separately.
             if (crossY != cur.Y || crossMon != m) { Dirty(new Rectangle(crossMon.Left, crossY - 1, crossMon.Width, 3)); Dirty(new Rectangle(m.Left, cur.Y - 1, m.Width, 3)); }
             if (crossX != cur.X || crossMon != m) { Dirty(new Rectangle(crossX - 1, crossMon.Top, 3, crossMon.Height)); Dirty(new Rectangle(cur.X - 1, m.Top, 3, m.Height)); }
             crossX = cur.X;
@@ -340,7 +361,6 @@ namespace Stackshot
         int crossX = -10000, crossY = -10000;
         Rectangle crossMon;
 
-        // Al cambiar el resaltado solo hay que repintar los cuatro bordes y el interior que cambia de claro a oscuro.
         void InvalidateFrame(Rectangle r)
         {
             if (r.IsEmpty) return;
@@ -357,7 +377,7 @@ namespace Stackshot
             {
                 if (w.Bounds.Contains(sp)) { r = w.Bounds; h = w.Handle; break; }
             }
-            if (r.IsEmpty) { r = curMon; r.Offset(vs.X, vs.Y); } // sobre el escritorio: la pantalla entera
+            if (r.IsEmpty) { r = curMon; r.Offset(vs.X, vs.Y); } // over the desktop: whole monitor
             r.Intersect(vs);
             r.Offset(-vs.X, -vs.Y);
             if (r == hover) return;
@@ -372,7 +392,7 @@ namespace Stackshot
             return Rectangle.FromLTRB(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Max(a.X, b.X) + 1, Math.Max(a.Y, b.Y) + 1);
         }
 
-        // Del área anterior a la nueva solo cambian franjas: se repinta cada franja, no la unión entera.
+        // Only the bands between the old and new selection change: invalidate each band, not the union.
         void InvalidateSelection(Rectangle old, Rectangle now)
         {
             int m = Pz(4);
@@ -382,10 +402,10 @@ namespace Stackshot
             Rectangle keep = Rectangle.Intersect(old, now);
             keep.Inflate(-m, -m);
             if (keep.Width <= 0 || keep.Height <= 0) { Dirty(u); return; }
-            Dirty(Rectangle.FromLTRB(u.Left, u.Top, u.Right, keep.Top));          // arriba
-            Dirty(Rectangle.FromLTRB(u.Left, keep.Bottom, u.Right, u.Bottom));    // abajo
-            Dirty(Rectangle.FromLTRB(u.Left, keep.Top, keep.Left, keep.Bottom));  // izquierda
-            Dirty(Rectangle.FromLTRB(keep.Right, keep.Top, u.Right, keep.Bottom)); // derecha
+            Dirty(Rectangle.FromLTRB(u.Left, u.Top, u.Right, keep.Top));
+            Dirty(Rectangle.FromLTRB(u.Left, keep.Bottom, u.Right, u.Bottom));
+            Dirty(Rectangle.FromLTRB(u.Left, keep.Top, keep.Left, keep.Bottom));
+            Dirty(Rectangle.FromLTRB(keep.Right, keep.Top, u.Right, keep.Bottom));
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -397,7 +417,7 @@ namespace Stackshot
             if (down && !dragging && (Math.Abs(cur.X - start.X) > Pz(4) || Math.Abs(cur.Y - start.Y) > Pz(4)))
             {
                 dragging = true;
-                InvalidateFrame(hover); // la ventana resaltada se apaga: ahora manda el área
+                InvalidateFrame(hover); // the hovered window turns off once dragging starts
             }
             if (dragging)
             {
@@ -443,7 +463,7 @@ namespace Stackshot
             {
                 case Keys.Escape: Cancel(); break;
                 case Keys.Enter: Accept(dragging ? sel : hover, dragging ? IntPtr.Zero : hoverHandle); break;
-                // Las flechas mueven el ratón píxel a píxel, para afinar.
+                // Arrow keys nudge the cursor for pixel-precise selection.
                 case Keys.Left: Cursor.Position = new Point(Cursor.Position.X - step, Cursor.Position.Y); break;
                 case Keys.Right: Cursor.Position = new Point(Cursor.Position.X + step, Cursor.Position.Y); break;
                 case Keys.Up: Cursor.Position = new Point(Cursor.Position.X, Cursor.Position.Y - step); break;
@@ -485,7 +505,26 @@ namespace Stackshot
             base.OnFormClosed(e);
             bright.Dispose();
             dimmed.Dispose();
+            if (scratch != null) scratch.Dispose();
             if (labelFont != null) labelFont.Dispose();
+        }
+
+        // One composition buffer reused across paints (grown when needed): creating a DIB section for every dirty
+        // rectangle on every mouse move was a measurable part of the cost.
+        Dib scratch;
+
+        Dib Scratch(Size need)
+        {
+            if (scratch != null && scratch.Width >= need.Width && scratch.Height >= need.Height) return scratch;
+            int w = need.Width, h = need.Height;
+            if (scratch != null)
+            {
+                w = Math.Max(w, scratch.Width);
+                h = Math.Max(h, scratch.Height);
+                scratch.Dispose();
+            }
+            scratch = new Dib(w, h);
+            return scratch;
         }
     }
 }

@@ -1,4 +1,4 @@
-// Stackshot - Atajos de teclado globales (RegisterHotKey) y su texto legible.
+// Stackshot - Global hotkeys (RegisterHotKey) and their display text.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Windows.Forms;
 
 namespace Stackshot
 {
-    // Ventana invisible que recibe los atajos registrados y avisa con el nombre de la acción.
+    // Message-only window that receives registered hotkeys and raises the action name.
     public class Hotkeys : NativeWindow, IDisposable
     {
         const int WM_HOTKEY = 0x0312;
@@ -19,11 +19,11 @@ namespace Stackshot
         public Hotkeys()
         {
             CreateParams cp = new CreateParams();
-            cp.Parent = new IntPtr(-3); // HWND_MESSAGE: ventana solo de mensajes
+            cp.Parent = new IntPtr(-3); // HWND_MESSAGE
             CreateHandle(cp);
         }
 
-        // Registra todas las combinaciones de una acción ("PrintScreen, Ctrl+Shift+4"). Devuelve las que no se pudieron.
+        // Registers every combo of an action ("PrintScreen, Ctrl+Shift+4"). Returns the ones that failed.
         public List<string> Register(string action, string combos)
         {
             List<string> failed = new List<string>();
@@ -73,7 +73,7 @@ namespace Stackshot
             return list;
         }
 
-        // "Ctrl+Shift+PrintScreen" -> modificadores + tecla. Acepta también los nombres en español.
+        // "Ctrl+Shift+PrintScreen" -> modifiers + key. Spanish key names are accepted too.
         public static bool TryParse(string combo, out uint mods, out Keys key)
         {
             mods = 0;
@@ -105,7 +105,7 @@ namespace Stackshot
             return Keys.None;
         }
 
-        // Combinación para guardar en los ajustes (nombres en inglés, estables).
+        // Stable, English form stored in settings.
         public static string ToSetting(Keys keyData)
         {
             Keys key = keyData & Keys.KeyCode;
@@ -117,7 +117,7 @@ namespace Stackshot
             return s + key;
         }
 
-        // Combinación para enseñarla: "Ctrl + Mayús + Impr Pant".
+        // Localized display form, e.g. "Ctrl + Shift + Print Screen" in Spanish.
         public static string Display(string combos)
         {
             List<string> parts = Split(combos);
