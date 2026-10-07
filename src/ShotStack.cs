@@ -264,21 +264,81 @@ namespace Stackshot
         }
 
         // Guarda la captura en la carpeta temporal, la copia (si está activado) y apila su miniatura.
-        void SaveCapture(Bitmap shot, string name)
+        // Para que se sienta instantánea: el sonido va primero, la miniatura sale de la imagen en memoria y el
+        // PNG (lo más lento, cientos de ms en pantallas grandes) se escribe en otro hilo. Quien necesite el
+        // fichero antes de tiempo espera con WaitWritten.
+        public void SaveCapture(Bitmap shot, string name)
         {
-            using (shot)
+            if (settings.Sound) Shutter.Play();
+            Directory.CreateDirectory(folder);
+            string path = Unique(Path.Combine(folder, Clean(name) + " " + DateTime.Now.ToString("yyyy-MM-dd HH.mm.ss") + ".png"));
+            Size size = shot.Size;
+            Bitmap preview = Preview(shot, 600);
+            Bitmap forClipboard = settings.CopyToClipboard && !Test ? new Bitmap(shot) : null;
+            BeginWrite(path, shot);
+            if (!AddCard(path, preview, size))
             {
-                Directory.CreateDirectory(folder);
-                string path = Unique(Path.Combine(folder, Clean(name) + " " + DateTime.Now.ToString("yyyy-MM-dd HH.mm.ss") + ".png"));
-                shot.Save(path, ImageFormat.Png);
-                if (settings.Sound) Shutter.Play();
-                if (!AddCard(path)) return;
-                if (settings.CopyToClipboard && !Test)
+                if (forClipboard != null) forClipboard.Dispose();
+                return;
+            }
+            if (forClipboard != null)
+            {
+                try { CopyTracked(path, forClipboard, false, true); }
+                catch (Exception ex) { Log("Portapapeles: " + ex.Message); }
+            }
+            Log("Captura: " + Path.GetFileName(path) + " (" + size.Width + "x" + size.Height + ")");
+            if (Captured != null) Captured(path);
+        }
+
+        // Para la ventana principal (la mascota celebra cada captura).
+        public event Action<string> Captured;
+
+        // Ficheros que se están escribiendo en segundo plano.
+        static readonly HashSet<string> writing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Se escribe con otro nombre y se renombra al acabar: así nadie lee un PNG a medias y el vigilante de la
+        // carpeta no lo confunde con una edición.
+        static void BeginWrite(string path, Bitmap bmp)
+        {
+            lock (writing) writing.Add(path);
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate
+            {
+                string part = path + ".part";
+                try
                 {
-                    try { CopyTracked(path, new Bitmap(shot), false); }
-                    catch (Exception ex) { Log("Portapapeles: " + ex.Message); }
+                    bmp.Save(part, ImageFormat.Png);
+                    File.Move(part, path);
                 }
-                Log("Captura: " + Path.GetFileName(path) + " (" + shot.Width + "x" + shot.Height + ")");
+                catch (Exception ex)
+                {
+                    Log("Guardar " + path + ": " + ex.Message);
+                    try { if (File.Exists(part)) File.Delete(part); } catch { }
+                }
+                finally
+                {
+                    bmp.Dispose();
+                    lock (writing)
+                    {
+                        writing.Remove(path);
+                        System.Threading.Monitor.PulseAll(writing);
+                    }
+                }
+            });
+        }
+
+        // Espera (como mucho 10 s) a que el PNG de una captura recién hecha esté en el disco.
+        public static void WaitWritten(string path)
+        {
+            if (path == null) return;
+            DateTime until = DateTime.Now.AddSeconds(10);
+            lock (writing)
+            {
+                while (writing.Contains(path))
+                {
+                    int left = (int)(until - DateTime.Now).TotalMilliseconds;
+                    if (left <= 0) break;
+                    System.Threading.Monitor.Wait(writing, left);
+                }
             }
         }
 
@@ -307,13 +367,20 @@ namespace Stackshot
 
         public static string Unique(string path)
         {
-            if (!File.Exists(path)) return path;
+            if (!Taken(path)) return path;
             string dir = Path.GetDirectoryName(path), stem = Path.GetFileNameWithoutExtension(path), ext = Path.GetExtension(path);
             for (int n = 2; ; n++)
             {
                 string p = Path.Combine(dir, stem + " (" + n + ")" + ext);
-                if (!File.Exists(p)) return p;
+                if (!Taken(p)) return p;
             }
+        }
+
+        // Ocupado en el disco o reservado por una captura que aún se está escribiendo.
+        static bool Taken(string p)
+        {
+            if (File.Exists(p)) return true;
+            lock (writing) return writing.Contains(p);
         }
 
         public void Pin(string path)
@@ -343,6 +410,7 @@ namespace Stackshot
         // Copia la captura a la carpeta de guardadas (o actualiza la copia si ya estaba guardada).
         public string Keep(string path)
         {
+            WaitWritten(path);
             string keepFolder = settings.SaveFolder;
             Directory.CreateDirectory(keepFolder);
             string dest;
@@ -457,8 +525,14 @@ namespace Stackshot
 
         bool AddCard(string p)
         {
+            return AddCard(p, null, Size.Empty);
+        }
+
+        bool AddCard(string p, Bitmap preview, Size orig)
+        {
             Card c = new Card(this, p);
-            if (!c.Reload()) { c.Dispose(); Log("No se pudo leer " + p); return false; }
+            if (preview != null) c.UsePreview(preview, orig);
+            else if (!c.Reload()) { c.Dispose(); Log("No se pudo leer " + p); return false; }
             // La captura sale en la pantalla donde se ha hecho; si la pila estaba en otra, se viene con ella.
             anchorDevice = Screen.FromPoint(Control.MousePosition).DeviceName;
             followCandidate = null;
@@ -490,9 +564,10 @@ namespace Stackshot
         }
 
         // Copia vigilada: al pegarla en otra aplicación, su miniatura se da por usada y se quita.
-        public void CopyTracked(string path, Bitmap image, bool fromCapture)
+        // sameAsFile: la imagen es exactamente la del fichero (PNG): el PNG del portapapeles se lee de él, sin recodificar.
+        public void CopyTracked(string path, Bitmap image, bool fromCapture, bool sameAsFile)
         {
-            TrackedData td = new TrackedData(path, image, fromCapture, OnPasted);
+            TrackedData td = new TrackedData(path, image, fromCapture, sameAsFile && path.EndsWith(".png", StringComparison.OrdinalIgnoreCase), OnPasted);
             try { Clipboard.SetDataObject(td, false, 10, 100); }
             catch { td.Release(); throw; }
             TrackedData old = clip;
@@ -757,6 +832,7 @@ namespace Stackshot
 
         public static Bitmap LoadFull(string path)
         {
+            WaitWritten(path);
             byte[] data = File.ReadAllBytes(path);
             using (MemoryStream ms = new MemoryStream(data))
             using (Image img = Image.FromStream(ms))
@@ -768,18 +844,24 @@ namespace Stackshot
             using (Bitmap full = LoadFull(path))
             {
                 orig = full.Size;
-                double k = Math.Min(1.0, (double)maxDim / Math.Max(full.Width, full.Height));
-                int w = Math.Max(1, (int)Math.Round(full.Width * k));
-                int h = Math.Max(1, (int)Math.Round(full.Height * k));
-                Bitmap b = new Bitmap(w, h, PixelFormat.Format32bppPArgb);
-                using (Graphics g = Graphics.FromImage(b))
-                {
-                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                    g.DrawImage(full, 0, 0, w, h);
-                }
-                return b;
+                return Preview(full, maxDim);
             }
+        }
+
+        // Copia reducida (como mucho maxDim de lado) para las miniaturas.
+        public static Bitmap Preview(Bitmap full, int maxDim)
+        {
+            double k = Math.Min(1.0, (double)maxDim / Math.Max(full.Width, full.Height));
+            int w = Math.Max(1, (int)Math.Round(full.Width * k));
+            int h = Math.Max(1, (int)Math.Round(full.Height * k));
+            Bitmap b = new Bitmap(w, h, PixelFormat.Format32bppPArgb);
+            using (Graphics g = Graphics.FromImage(b))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.DrawImage(full, 0, 0, w, h);
+            }
+            return b;
         }
 
         // Imagen al portapapeles como bitmap y como PNG (lo que prefieren los chats web).

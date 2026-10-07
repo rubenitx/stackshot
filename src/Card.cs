@@ -275,6 +275,15 @@ namespace Stackshot
             return true;
         }
 
+        // Captura recién hecha: la vista previa llega ya preparada (el PNG todavía se está escribiendo).
+        public void UsePreview(Bitmap p, Size orig)
+        {
+            ReleaseImages();
+            preview = p;
+            origSize = orig;
+            Invalidate();
+        }
+
         Bitmap LoadPreview()
         {
             try
@@ -782,6 +791,7 @@ namespace Stackshot
         // Mientras se arrastra, la miniatura va pegada al cursor y la original se queda en penumbra.
         void StartDrag()
         {
+            ShotStack.WaitWritten(FilePath);
             if (!File.Exists(FilePath)) return;
             dragging = true;
             SetHot(-1);
@@ -831,7 +841,7 @@ namespace Stackshot
                 }
                 else
                 {
-                    owner.CopyTracked(FilePath, ShotStack.LoadFull(FilePath), false);
+                    owner.CopyTracked(FilePath, ShotStack.LoadFull(FilePath), false, true);
                 }
                 Flash("Copiado", Theme.Green);
             }
@@ -852,12 +862,14 @@ namespace Stackshot
 
         void OpenFile()
         {
+            ShotStack.WaitWritten(FilePath);
             try { Process.Start(FilePath); }
             catch (Exception ex) { ShotStack.Log("Abrir: " + ex.Message); }
         }
 
         void ShowInFolder()
         {
+            ShotStack.WaitWritten(FilePath);
             try { Process.Start("explorer.exe", "/select,\"" + (SavedPath ?? FilePath) + "\""); }
             catch (Exception ex) { ShotStack.Log("Carpeta: " + ex.Message); }
         }
