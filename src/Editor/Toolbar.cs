@@ -189,6 +189,7 @@ namespace Stackshot
                     if (!it.Enabled) bg = Theme.Button;
                     Fill(g, r, P(8), bg);
                     Color fg = it.Accent ? Theme.Dark : it.Enabled ? Theme.Fg : Theme.Muted;
+                    if (it.On && !it.Accent && it.Enabled) { Fill(g, r, P(8), isHot ? Theme.Border : Theme.ButtonHover); fg = Theme.Accent; } // activado (el fondo)
                     if (it.Label == null) { Glyph(g, it.Glyph, r, fg, P(16)); return; }
                     Glyph(g, it.Glyph, new Rectangle(r.X + P(12), r.Y, P(18), r.Height), fg, P(15));
                     using (Font f = LabelFont())
@@ -298,6 +299,7 @@ namespace Stackshot
     public class Hint : Control
     {
         public string LeftText = "", RightText = "";
+        public double Progress = -1;   // 0-1: barra de progreso arriba (exportando un vídeo); -1 = sin barra
         public float S = 1f;
 
         public Hint()
@@ -312,6 +314,12 @@ namespace Stackshot
             Graphics g = e.Graphics;
             g.Clear(BackColor);
             using (Pen p = new Pen(Theme.Border)) g.DrawLine(p, 0, 0, Width, 0);
+            if (Progress >= 0)
+            {
+                int ph = Math.Max(2, (int)Math.Round(3 * S));
+                using (LinearGradientBrush b = new LinearGradientBrush(new Rectangle(0, 0, Math.Max(1, Width), ph), Theme.Accent, Theme.Purple, 0f))
+                    g.FillRectangle(b, 0, 0, (float)(Width * Math.Min(1, Progress)), ph);
+            }
             int m = (int)Math.Round(12 * S);
             using (Font f = new Font("Segoe UI", 12 * S, GraphicsUnit.Pixel))
             {

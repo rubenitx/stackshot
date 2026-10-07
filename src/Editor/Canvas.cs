@@ -41,11 +41,20 @@ namespace Stackshot
         PointF dragFrom;
         float k = 1f;
         PointF off;
-        Bitmap view, backdrop;
+        Bitmap view, dots;
         Size viewFor;
         RectangleF viewCrop;
         TextBox box;
         PointF boxAt;
+        // Fondo de presentación: con BgOn, la captura se ve (y sale) sobre el fondo de Bg.
+        public Settings Bg;
+        public bool BgOn;
+        public bool Live;          // mientras se arrastra un deslizador del fondo: escalado rápido, luego el bueno
+        bool viewLive;
+        Rectangle frameScreen;
+        float radiusScreen;
+        Bitmap bgView, roundView;
+        string bgKey, roundKey;
 
         public Canvas(Bitmap img)
         {
@@ -65,7 +74,20 @@ namespace Stackshot
         public bool CanRedo { get { return redo.Count > 0; } }
         public Color ActiveColor { get { return selected != null ? selected.Color : Color; } }
         public int ActiveWeight { get { return selected != null ? selected.Weight : Weight; } }
-        public Size OutputSize { get { return new Size((int)Math.Round(Crop.Width), (int)Math.Round(Crop.Height)); } }
+        // Tamaño final: con fondo, el del lienzo entero.
+        public Size OutputSize
+        {
+            get
+            {
+                if (!BgOn || Bg == null) return OutputSizeRaw;
+                Size frame;
+                Rectangle inner;
+                Backdrop.Measure(OutputSizeRaw, Bg, false, out frame, out inner);
+                return frame;
+            }
+        }
+
+        Size OutputSizeRaw { get { return new Size(Math.Max(1, (int)Math.Round(Crop.Width)), Math.Max(1, (int)Math.Round(Crop.Height))); } }
 
         int Pu(float v) { return (int)Math.Round(v * Ui); }
         float StrokeFor(int w) { return baseStroke * Weights[w]; }
@@ -79,8 +101,44 @@ namespace Stackshot
         {
             float pad = 28 * Ui;
             float aw = Math.Max(1f, Width - 2 * pad), ah = Math.Max(1f, Height - 2 * pad);
+            if (BgOn && Bg != null)
+            {
+                // Lo que se encaja es el lienzo entero (fondo incluido); la captura queda en su sitio dentro.
+                Size cs = OutputSizeRaw, frame;
+                Rectangle inner;
+                Backdrop.Measure(cs, Bg, false, out frame, out inner);
+                k = Math.Min(ShotStack.MaxZoom(cs), Math.Min(aw / frame.Width, ah / frame.Height));
+                float fx = (float)Math.Round((Width - frame.Width * k) / 2f), fy = (float)Math.Round((Height - frame.Height * k) / 2f);
+                off = new PointF((float)Math.Round(fx + inner.X * k), (float)Math.Round(fy + inner.Y * k));
+                frameScreen = new Rectangle((int)fx, (int)fy, Math.Max(1, (int)Math.Round(frame.Width * k)), Math.Max(1, (int)Math.Round(frame.Height * k)));
+                radiusScreen = Backdrop.RadiusFor(cs, Bg) * k;
+                return;
+            }
             k = Math.Min(ShotStack.MaxZoom(new Size((int)Crop.Width, (int)Crop.Height)), Math.Min(aw / Crop.Width, ah / Crop.Height));
             off = new PointF((float)Math.Round((Width - Crop.Width * k) / 2f), (float)Math.Round((Height - Crop.Height * k) / 2f));
+        }
+
+        // El fondo con su sombra, a la escala de la pantalla: solo se rehace si cambia algo.
+        Bitmap BgView(Rectangle ir)
+        {
+            string key = Bg.BgPreset + "|" + Bg.BgPadding + "|" + Bg.BgRadius + "|" + Bg.BgShadow + "|" + Bg.BgRatio + "|" + frameScreen + "|" + ir;
+            if (bgView != null && key == bgKey) return bgView;
+            if (bgView != null) bgView.Dispose();
+            Rectangle inner = new Rectangle(ir.X - frameScreen.X, ir.Y - frameScreen.Y, ir.Width, ir.Height);
+            bgView = Backdrop.Background(frameScreen.Size, inner, Bg, (int)Math.Round(radiusScreen));
+            bgKey = key;
+            return bgView;
+        }
+
+        // La captura ya escalada con las esquinas redondeadas (transparentes y suavizadas).
+        Bitmap RoundView(Bitmap v)
+        {
+            string key = v.GetHashCode() + "|" + v.Size + "|" + Math.Round(radiusScreen, 1);
+            if (roundView != null && key == roundKey) return roundView;
+            if (roundView != null) roundView.Dispose();
+            roundView = Backdrop.Rounded(v, radiusScreen);
+            roundKey = key;
+            return roundView;
         }
 
         PointF ToImg(Point p, bool clamp)
@@ -105,38 +163,39 @@ namespace Stackshot
         Bitmap View()
         {
             Size want = new Size(Math.Max(1, (int)Math.Round(Crop.Width * k)), Math.Max(1, (int)Math.Round(Crop.Height * k)));
-            if (view != null && viewFor == want && viewCrop == Crop) return view;
+            if (view != null && viewFor == want && viewCrop == Crop && (viewLive == Live || Live)) return view;
             if (view != null) view.Dispose();
             view = new Bitmap(want.Width, want.Height, PixelFormat.Format32bppPArgb);
             using (Graphics g = Graphics.FromImage(view))
             using (ImageAttributes ia = new ImageAttributes())
             {
                 ia.SetWrapMode(WrapMode.TileFlipXY);
-                g.InterpolationMode = (k == 1f || k == 2f) ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBicubic;
+                g.InterpolationMode = (k == 1f || k == 2f) ? InterpolationMode.NearestNeighbor : Live ? InterpolationMode.Bilinear : InterpolationMode.HighQualityBicubic;
                 g.PixelOffsetMode = PixelOffsetMode.Half;
                 g.DrawImage(Img, new Rectangle(0, 0, want.Width, want.Height), Crop.X, Crop.Y, Crop.Width, Crop.Height, GraphicsUnit.Pixel, ia);
             }
             viewFor = want;
+            viewLive = Live;
             viewCrop = Crop;
             return view;
         }
 
         // Fondo de lienzo con una trama de puntos muy suave (se dibuja una vez por tamaño).
-        Bitmap Backdrop()
+        Bitmap Dots()
         {
-            if (backdrop != null && backdrop.Size == ClientSize) return backdrop;
-            if (backdrop != null) backdrop.Dispose();
-            backdrop = new Bitmap(Math.Max(1, ClientSize.Width), Math.Max(1, ClientSize.Height), PixelFormat.Format32bppPArgb);
-            using (Graphics g = Graphics.FromImage(backdrop))
+            if (dots != null && dots.Size == ClientSize) return dots;
+            if (dots != null) dots.Dispose();
+            dots = new Bitmap(Math.Max(1, ClientSize.Width), Math.Max(1, ClientSize.Height), PixelFormat.Format32bppPArgb);
+            using (Graphics g = Graphics.FromImage(dots))
             using (SolidBrush dot = new SolidBrush(Color.FromArgb(34, 36, 50)))
             {
                 g.Clear(BackColor);
                 int step = Math.Max(12, Pu(20)), d = Math.Max(2, Pu(2));
-                for (int yy = step / 2; yy < backdrop.Height; yy += step)
-                    for (int xx = step / 2; xx < backdrop.Width; xx += step)
+                for (int yy = step / 2; yy < dots.Height; yy += step)
+                    for (int xx = step / 2; xx < dots.Width; xx += step)
                         g.FillRectangle(dot, xx, yy, d, d);
             }
-            return backdrop;
+            return dots;
         }
 
         // ------------------------------------------------------------ Dibujo
@@ -145,23 +204,36 @@ namespace Stackshot
         {
             Graphics g = e.Graphics;
             Fit();
-            g.DrawImageUnscaled(Backdrop(), 0, 0);
+            g.DrawImageUnscaled(Dots(), 0, 0);
             Bitmap v = View();
             Rectangle ir = new Rectangle((int)off.X, (int)off.Y, v.Width, v.Height);
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            for (int i = 1; i <= 6; i++) // sombra suave bajo la captura
+            bool bg = BgOn && Bg != null;
+            if (bg)
             {
-                Rectangle sr = ir;
-                sr.Inflate(Pu(i * 1.6f), Pu(i * 1.6f));
-                sr.Offset(0, Pu(3));
-                using (GraphicsPath p = Theme.Round(sr, Pu(3 + i * 1.6f)))
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(16, 0, 0, 0))) g.FillPath(b, p);
+                g.DrawImageUnscaled(BgView(ir), frameScreen.X, frameScreen.Y);
+                g.DrawImageUnscaled(radiusScreen >= 0.5f ? RoundView(v) : v, ir.X, ir.Y);
             }
-            g.DrawImageUnscaled(v, ir.X, ir.Y);
-            using (Pen p = new Pen(Theme.Border)) g.DrawRectangle(p, ir.X - 1, ir.Y - 1, ir.Width + 1, ir.Height + 1);
+            else
+            {
+                for (int i = 1; i <= 6; i++) // sombra suave bajo la captura
+                {
+                    Rectangle sr = ir;
+                    sr.Inflate(Pu(i * 1.6f), Pu(i * 1.6f));
+                    sr.Offset(0, Pu(3));
+                    using (GraphicsPath p = Theme.Round(sr, Pu(3 + i * 1.6f)))
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(16, 0, 0, 0))) g.FillPath(b, p);
+                }
+                g.DrawImageUnscaled(v, ir.X, ir.Y);
+                using (Pen p = new Pen(Theme.Border)) g.DrawRectangle(p, ir.X - 1, ir.Y - 1, ir.Width + 1, ir.Height + 1);
+            }
 
             GraphicsState st = g.Save();
-            g.SetClip(ir);
+            if (bg && radiusScreen >= 0.5f)
+            {
+                using (GraphicsPath clip = Theme.Round(ir, radiusScreen)) g.SetClip(clip);
+            }
+            else g.SetClip(ir);
             g.TranslateTransform(off.X - Crop.X * k, off.Y - Crop.Y * k);
             g.ScaleTransform(k, k);
             foreach (Shape s in shapes)
@@ -796,25 +868,45 @@ namespace Stackshot
 
         // ------------------------------------------------------------ Resultado
 
+        // La imagen final: recortada, con las marcas y, si está puesto, sobre su fondo.
         public Bitmap Render()
         {
-            Size o = OutputSize;
-            Bitmap b = new Bitmap(Math.Max(1, o.Width), Math.Max(1, o.Height), PixelFormat.Format32bppArgb);
+            Size o = OutputSizeRaw;
+            Bitmap b = new Bitmap(o.Width, o.Height, PixelFormat.Format32bppArgb);
             using (Graphics g = Graphics.FromImage(b))
             {
                 g.DrawImage(Img, new Rectangle(0, 0, b.Width, b.Height), Crop.X, Crop.Y, Crop.Width, Crop.Height, GraphicsUnit.Pixel);
                 g.TranslateTransform(-Crop.X, -Crop.Y);
                 foreach (Shape s in shapes) Painter.Draw(g, s, Img);
             }
+            if (!BgOn || Bg == null) return b;
+            using (b) return Backdrop.Compose(b, Bg);
+        }
+
+        // Solo las marcas de ese trozo de la imagen, sobre transparente (para ponerlas encima de un vídeo).
+        public Bitmap RenderMarks(Rectangle area)
+        {
+            Bitmap b = new Bitmap(Math.Max(1, area.Width), Math.Max(1, area.Height), PixelFormat.Format32bppArgb);
+            using (Graphics g = Graphics.FromImage(b))
+            {
+                g.TranslateTransform(-area.X, -area.Y);
+                foreach (Shape s in shapes) Painter.Draw(g, s, Img);
+            }
             return b;
         }
+
+        public bool HasMarks { get { return shapes.Count > 0; } }
+
+        public Rectangle CropRect { get { return Rectangle.Round(Crop); } }
 
         public void Release()
         {
             foreach (Shape s in shapes) s.DropCache();
             if (cur != null) cur.DropCache();
             if (view != null) view.Dispose();
-            if (backdrop != null) backdrop.Dispose();
+            if (dots != null) dots.Dispose();
+            if (bgView != null) bgView.Dispose();
+            if (roundView != null) roundView.Dispose();
             Img.Dispose();
         }
     }

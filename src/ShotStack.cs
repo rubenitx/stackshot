@@ -597,10 +597,19 @@ namespace Stackshot
         {
             Editor ed;
             if (editors.TryGetValue(path, out ed) && !ed.IsDisposed) { ed.BringUp(); return; }
-            Bitmap img;
-            try { img = LoadFull(path); }
-            catch (Exception ex) { Log("Editor: no se pudo abrir " + path + ": " + ex.Message); return; }
-            ed = new Editor(this, path, img);
+            if (IsMediaFile(path))
+            {
+                // Vídeo o GIF: modo presentación (marcas y fondo sobre toda la grabación).
+                ed = Editor.ForVideo(this, path);
+                if (ed == null) return;
+            }
+            else
+            {
+                Bitmap img;
+                try { img = LoadFull(path); }
+                catch (Exception ex) { Log("Editor: no se pudo abrir " + path + ": " + ex.Message); return; }
+                ed = new Editor(this, path, img);
+            }
             editors[path] = ed;
             ed.FormClosed += delegate { editors.Remove(path); };
             ed.Show();

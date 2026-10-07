@@ -1,4 +1,4 @@
-// Stackshot - Ventana del editor rápido.
+// Stackshot - Ventana del editor rápido (capturas y, en modo presentación, vídeos y GIF).
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -8,9 +8,12 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using Microsoft.Win32;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
@@ -24,25 +27,39 @@ namespace Stackshot
         static readonly string[] ToolKeys = { "F", "R", "E", "T", "N", "H", "P", "C" };
         static readonly string[] ToolGlyphs = { null, "\uE739", "\uEA3A", "\uE8D2", null, "\uE7E6", "\uE8B3", "\uE7A8" };
         static readonly string[] WeightNames = { "Fino", "Medio", "Grueso" };
+        // Capturas que ya llevan el fondo aplicado: al volver a abrirlas no se les pone otro encima.
+        static readonly HashSet<string> withBackdrop = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         readonly ShotStack owner;
         readonly string path;
         readonly Canvas canvas;
         readonly Bar bar;
+        readonly BgPanel bgPanel;
         readonly Hint hint;
         readonly float s;
+        readonly Settings bgs;
         readonly Timer feedback = new Timer();
         readonly Dictionary<Tool, Bar.Item> toolItems = new Dictionary<Tool, Bar.Item>();
         readonly List<Bar.Item> colorItems = new List<Bar.Item>(), weightItems = new List<Bar.Item>();
-        readonly Bar.Item undoItem, redoItem, copyItem, saveItem;
+        readonly Bar.Item undoItem, redoItem, copyItem, saveItem, bgItem;
         bool dirty, closeWithoutAsking;
+        // Modo presentación: se edita el primer fotograma y FFmpeg aplica lo mismo a todo el vídeo.
+        readonly string ffmpeg;
+        readonly double duration;
+        Process export;
+        string exportOut;
 
-        public Editor(ShotStack owner, string path, Bitmap img)
+        public Editor(ShotStack owner, string path, Bitmap img) : this(owner, path, img, null, 0) { }
+
+        Editor(ShotStack owner, string path, Bitmap img, string ffmpeg, double duration)
         {
             this.owner = owner;
             this.path = path;
+            this.ffmpeg = ffmpeg;
+            this.duration = duration;
             Screen scr = Screen.FromPoint(Control.MousePosition);
             s = ShotStack.ScaleFor(scr);
+            bgs = owner != null ? owner.Settings : Settings.Load();
 
             AutoScaleMode = AutoScaleMode.None;
             BackColor = Theme.Dark;
@@ -54,6 +71,8 @@ namespace Stackshot
             canvas = new Canvas(img);
             canvas.Ui = s;
             canvas.Dock = DockStyle.Fill;
+            canvas.Bg = bgs;
+            canvas.BgOn = bgs.BgAuto && !withBackdrop.Contains(path);
             canvas.Changed += delegate { dirty = true; UpdateUi(); };
             canvas.StateChanged += delegate { UpdateUi(); };
 
@@ -64,6 +83,7 @@ namespace Stackshot
             for (int i = 0; i < ToolOrder.Length; i++)
             {
                 Tool t = ToolOrder[i];
+                if (IsVideo && t == Tool.Pixelate) continue; // pixelar necesitaría seguir el vídeo fotograma a fotograma
                 Bar.Item it = bar.Add(Bar.Kind.Tool);
                 it.Tool = t;
                 it.Glyph = ToolGlyphs[i];
@@ -94,25 +114,59 @@ namespace Stackshot
             bar.Add(Bar.Kind.Gap);
             undoItem = Button(null, "\uE7A7", "Deshacer  (Ctrl+Z)", delegate { canvas.Undo(); }, false);
             redoItem = Button(null, "\uE7A6", "Rehacer  (Ctrl+Y)", delegate { canvas.Redo(); }, false);
+            bar.Add(Bar.Kind.Gap);
+            bgItem = Button("Fondo", "\uE771", "Fondo de presentaci\u00F3n: degradado, margen, esquinas y sombra  (B)", ToggleBgPanel, false);
 
-            Button(null, "\uE718", "Fijar en pantalla: queda flotando encima de todo", PinOut, true);
-            Bar.Item drag = Button("Arrastrar", "\uE7C2", "Arr\u00E1strala al chat o a otra aplicaci\u00F3n", null, true);
-            drag.DragOut = true;
-            copyItem = Button("Copiar", "\uE8C8", "Copiar al portapapeles  (Ctrl+C)", CopyOut, true);
-            copyItem.Alt = "Copiado \u2713";
-            saveItem = Button("Guardar", "\uE74E", owner != null ? "Conservarla en tu carpeta de capturas  (Ctrl+S)" : "Guardar sobre la imagen  (Ctrl+S)", KeepCopy, true);
-            saveItem.Alt = "Guardada \u2713";
-            Bar.Item done = Button("Listo", "\uE73E", "Aplicar, copiar y cerrar  (Enter)", Done, true);
-            done.Accent = true;
-            bar.DragOut += StartDragOut;
+            if (IsVideo)
+            {
+                Bar.Item done = Button(IsGif ? "Exportar GIF" : "Exportar v\u00EDdeo", "\uE898",
+                                       "Crear la versi\u00F3n con las marcas y el fondo  (Enter)", Done, true);
+                done.Accent = true;
+            }
+            else
+            {
+                Button(null, "\uE718", "Fijar en pantalla: queda flotando encima de todo", PinOut, true);
+                Bar.Item drag = Button("Arrastrar", "\uE7C2", "Arr\u00E1strala al chat o a otra aplicaci\u00F3n", null, true);
+                drag.DragOut = true;
+                copyItem = Button("Copiar", "\uE8C8", "Copiar al portapapeles  (Ctrl+C)", CopyOut, true);
+                copyItem.Alt = "Copiado \u2713";
+                saveItem = Button("Guardar", "\uE74E", owner != null ? "Conservarla en tu carpeta de capturas  (Ctrl+S)" : "Guardar sobre la imagen  (Ctrl+S)", KeepCopy, true);
+                saveItem.Alt = "Guardada \u2713";
+                Bar.Item done = Button("Listo", "\uE73E", "Aplicar, copiar y cerrar  (Enter)", Done, true);
+                done.Accent = true;
+                bar.DragOut += StartDragOut;
+            }
+
+            bgPanel = new BgPanel();
+            bgPanel.S = s;
+            bgPanel.Bg = bgs;
+            bgPanel.On = canvas.BgOn;
+            bgPanel.Dock = DockStyle.Top;
+            bgPanel.Visible = false;
+            bgPanel.Changed += delegate
+            {
+                canvas.BgOn = bgPanel.On;
+                canvas.Live = bgPanel.Sliding;
+                dirty = true;
+                canvas.Invalidate();
+                UpdateUi();
+            };
+            bgPanel.Committed += delegate
+            {
+                canvas.Live = false; // al soltar, la vista vuelve a su calidad
+                canvas.Invalidate();
+                bgs.Save();          // la próxima vez, el mismo fondo
+            };
 
             hint = new Hint();
             hint.S = s;
             hint.Dock = DockStyle.Bottom;
             hint.Height = P(28);
 
+            // El orden importa para el acoplado: la barra arriba del todo y la franja del fondo justo debajo.
             Controls.Add(canvas);
             Controls.Add(hint);
+            Controls.Add(bgPanel);
             Controls.Add(bar);
 
             // Tamaño: la captura encajada en el 88 % de la pantalla, nunca más estrecha que la barra.
@@ -128,9 +182,18 @@ namespace Stackshot
             Location = new Point(wa.Left + Math.Max(0, (wa.Width - Width) / 2), wa.Top + Math.Max(0, (wa.Height - Height) / 2));
 
             feedback.Interval = 1300;
-            feedback.Tick += delegate { feedback.Stop(); copyItem.ShowAlt = false; saveItem.ShowAlt = false; bar.Invalidate(); };
+            feedback.Tick += delegate
+            {
+                feedback.Stop();
+                if (copyItem != null) copyItem.ShowAlt = false;
+                if (saveItem != null) saveItem.ShowAlt = false;
+                bar.Invalidate();
+            };
             UpdateUi();
         }
+
+        bool IsVideo { get { return ffmpeg != null; } }
+        bool IsGif { get { return IsVideo && Path.GetExtension(path).ToLowerInvariant() == ".gif"; } }
 
         int P(float v) { return (int)Math.Round(v * s); }
 
@@ -145,9 +208,42 @@ namespace Stackshot
             return it;
         }
 
-        void SetTool(Tool t) { canvas.SetTool(t); }
+        void SetTool(Tool t)
+        {
+            if (IsVideo && t == Tool.Pixelate) return;
+            canvas.SetTool(t);
+        }
         void SetColor(int i) { canvas.SetColor(Theme.Palette[i]); }
         void SetWeight(int i) { canvas.SetWeight(i); }
+
+        // La franja del fondo. Al abrirla sin fondo puesto, se pone el último que se usó (para verlo ya).
+        void ToggleBgPanel()
+        {
+            bool show = !bgPanel.Visible;
+            if (show)
+            {
+                bgPanel.Height = bgPanel.HeightFor(ClientSize.Width);
+                if (!canvas.BgOn)
+                {
+                    canvas.BgOn = true;
+                    bgPanel.On = true;
+                    dirty = true;
+                }
+            }
+            bgPanel.Visible = show;
+            canvas.Invalidate();
+            UpdateUi();
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if (bgPanel != null && bgPanel.Visible)
+            {
+                int h = bgPanel.HeightFor(ClientSize.Width);
+                if (h != bgPanel.Height) bgPanel.Height = h;
+            }
+        }
 
         // La barra refleja la herramienta, y el color y el grosor de la marca seleccionada (o de las siguientes).
         void UpdateUi()
@@ -158,12 +254,15 @@ namespace Stackshot
             for (int i = 0; i < weightItems.Count; i++) weightItems[i].On = i == w;
             undoItem.Enabled = canvas.CanUndo;
             redoItem.Enabled = canvas.CanRedo;
+            bgItem.On = canvas.BgOn || bgPanel.Visible;
             bar.Invalidate();
+            bgPanel.Invalidate();
+            if (export != null) return; // la franja de abajo enseña el progreso
             Size o = canvas.OutputSize;
             hint.LeftText = canvas.HintText;
-            hint.RightText = o.Width + " \u00D7 " + o.Height + " px  \u00B7  Enter copia y cierra";
+            hint.RightText = o.Width + " \u00D7 " + o.Height + " px  \u00B7  " + (IsVideo ? "Enter exporta" : "Enter copia y cierra");
             hint.Invalidate();
-            Text = "Editar \u00B7 " + Path.GetFileName(path) + (dirty ? "  \u2022" : "");
+            Text = (IsVideo ? "Presentar \u00B7 " : "Editar \u00B7 ") + Path.GetFileName(path) + (dirty ? "  \u2022" : "");
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -201,6 +300,11 @@ namespace Stackshot
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            if (export != null)
+            {
+                if (keyData == Keys.Escape) { CancelExport(); return true; }
+                return base.ProcessCmdKey(ref msg, keyData); // exportando: nada más que tocar
+            }
             if (canvas.Typing) return base.ProcessCmdKey(ref msg, keyData);
             int step = (keyData & Keys.Shift) != 0 ? 10 : 1;
             switch (keyData & ~Keys.Shift)
@@ -215,11 +319,12 @@ namespace Stackshot
                 case Keys.Control | Keys.Z: canvas.Undo(); return true;
                 case Keys.Control | Keys.Y:
                 case Keys.Control | Keys.Shift | Keys.Z: canvas.Redo(); return true;
-                case Keys.Control | Keys.C: CopyOut(); return true;
-                case Keys.Control | Keys.S: KeepCopy(); return true;
+                case Keys.Control | Keys.C: if (!IsVideo) CopyOut(); return true;
+                case Keys.Control | Keys.S: if (IsVideo) Done(); else KeepCopy(); return true;
                 case Keys.Enter: Done(); return true;
                 case Keys.Escape:
                     if (canvas.HasSelection) canvas.SelectShape(null);
+                    else if (bgPanel.Visible) ToggleBgPanel();
                     else Close();
                     return true;
                 case Keys.Delete:
@@ -232,6 +337,7 @@ namespace Stackshot
                 case Keys.H: SetTool(Tool.Highlight); return true;
                 case Keys.P: SetTool(Tool.Pixelate); return true;
                 case Keys.C: SetTool(Tool.Crop); return true;
+                case Keys.B: ToggleBgPanel(); return true;
                 case Keys.D1: case Keys.NumPad1: SetColor(0); return true;
                 case Keys.D2: case Keys.NumPad2: SetColor(1); return true;
                 case Keys.D3: case Keys.NumPad3: SetColor(2); return true;
@@ -252,7 +358,7 @@ namespace Stackshot
             return ImageFormat.Png;
         }
 
-        // Aplica las marcas (y el recorte) sobre la captura temporal. Si ya estaba guardada, actualiza también la copia.
+        // Aplica las marcas (y el recorte y el fondo) sobre la captura temporal. Si ya estaba guardada, actualiza también la copia.
         bool Apply()
         {
             canvas.CommitText();
@@ -264,6 +370,7 @@ namespace Stackshot
                     b.Save(ms, FormatFor(path));
                     File.WriteAllBytes(path, ms.ToArray());
                 }
+                if (canvas.BgOn) withBackdrop.Add(path);
                 dirty = false;
                 UpdateUi();
                 if (owner != null && owner.IsKept(path)) owner.Keep(path);
@@ -276,6 +383,9 @@ namespace Stackshot
                 return false;
             }
         }
+
+        // Hay algo que escribir: marcas sin aplicar o un fondo puesto que aún no está en el fichero.
+        bool Pending { get { return dirty || (canvas.BgOn && !withBackdrop.Contains(path)); } }
 
         void Feedback(Bar.Item it)
         {
@@ -291,7 +401,7 @@ namespace Stackshot
             canvas.CommitText();
             try
             {
-                if (owner != null) owner.CopyTracked(path, canvas.Render(), false);
+                if (owner != null) owner.CopyTracked(path, canvas.Render(), false, false);
                 else using (Bitmap b = canvas.Render()) ShotStack.CopyImage(b);
                 Feedback(copyItem);
             }
@@ -319,9 +429,11 @@ namespace Stackshot
         }
 
         // Enter: aplica las marcas (si hay), copia y cierra. Queda listo para pegar o arrastrar la miniatura.
+        // En un vídeo: lo exporta con las marcas y el fondo, y la versión nueva va a la pila.
         void Done()
         {
-            if (dirty && !Apply()) return;
+            if (IsVideo) { ExportVideo(); return; }
+            if (Pending && !Apply()) return;
             CopyOut();
             closeWithoutAsking = true;
             Close();
@@ -338,7 +450,7 @@ namespace Stackshot
         // Arrastrar desde el botón: la imagen marcada viaja con el cursor, centrada en él.
         void StartDragOut()
         {
-            if (dirty && !Apply()) return;
+            if (Pending && !Apply()) return;
             DragDropEffects r = DragDropEffects.None;
             try
             {
@@ -358,10 +470,267 @@ namespace Stackshot
             Close();
         }
 
+        // ------------------------------------------------------------ Vídeo y GIF (presentación)
+
+        // Abre el editor sobre una grabación: se marca su primer fotograma. Devuelve null si no hay FFmpeg o no se
+        // puede leer.
+        public static Editor ForVideo(ShotStack owner, string path)
+        {
+            Settings st = owner != null ? owner.Settings : Settings.Load();
+            string ff = Recorder.FindFfmpeg(st);
+            if (ff == null) ff = FfmpegSetup.Run(st);
+            if (ff == null) return null;
+            string frame = Path.Combine(Path.GetTempPath(), "stackshot-frame-" + Guid.NewGuid().ToString("N") + ".png");
+            try
+            {
+                string err;
+                int code = RunFfmpeg(ff, "-hide_banner -y -i " + Recorder.Quote(path) + " -frames:v 1 " + Recorder.Quote(frame), out err);
+                if (code != 0 || !File.Exists(frame))
+                {
+                    ShotStack.Log("Presentar: no se pudo leer " + path + ": " + Tail(err));
+                    MessageBox.Show("No se pudo abrir la grabaci\u00F3n.\n\n" + Tail(err), "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return null;
+                }
+                double dur = 0;
+                Match m = Regex.Match(err, @"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)");
+                if (m.Success)
+                    dur = int.Parse(m.Groups[1].Value) * 3600 + int.Parse(m.Groups[2].Value) * 60 + double.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture);
+                return new Editor(owner, path, ShotStack.LoadFull(frame), ff, dur);
+            }
+            catch (Exception ex)
+            {
+                ShotStack.Log("Presentar: " + ex.Message);
+                return null;
+            }
+            finally
+            {
+                try { if (File.Exists(frame)) File.Delete(frame); } catch { }
+            }
+        }
+
+        // La salida de error se lee aparte: así el límite de 30 s funciona aunque FFmpeg se quede colgado.
+        static int RunFfmpeg(string ff, string args, out string stderr)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            using (Process p = new Process())
+            {
+                p.StartInfo.FileName = ff;
+                p.StartInfo.Arguments = "-nostdin " + args;
+                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.CreateNoWindow = true;
+                p.StartInfo.RedirectStandardError = true;
+                p.ErrorDataReceived += delegate(object o, DataReceivedEventArgs e)
+                {
+                    if (e.Data == null) return;
+                    lock (sb) { if (sb.Length < 16000) sb.AppendLine(e.Data); }
+                };
+                p.Start();
+                p.BeginErrorReadLine();
+                bool exited = p.WaitForExit(30000);
+                if (!exited) { try { p.Kill(); } catch { } }
+                p.WaitForExit(2000); // que termine de llegar la salida
+                lock (sb) stderr = sb.ToString();
+                return exited ? p.ExitCode : -1;
+            }
+        }
+
+        static string Tail(string t)
+        {
+            t = (t ?? "").Trim();
+            return t.Length > 300 ? t.Substring(t.Length - 300) : t;
+        }
+
+        // FFmpeg pone debajo el vídeo (recortado y, con fondo, en su sitio dentro del lienzo) y encima una imagen
+        // con el fondo, las esquinas y las marcas. Va en segundo plano; la franja de abajo enseña el progreso.
+        void ExportVideo()
+        {
+            if (export != null) return;
+            canvas.CommitText();
+            Rectangle crop = canvas.CropRect;
+            crop.Intersect(new Rectangle(0, 0, canvas.Img.Width, canvas.Img.Height));
+            // Medidas pares: H.264 en yuv420p no admite impares.
+            crop = new Rectangle(crop.X & ~1, crop.Y & ~1, Math.Max(16, crop.Width & ~1), Math.Max(16, crop.Height & ~1));
+            bool bg = canvas.BgOn, marks = canvas.HasMarks;
+            bool cropped = crop != new Rectangle(0, 0, canvas.Img.Width & ~1, canvas.Img.Height & ~1);
+            if (!bg && !marks && !cropped) { closeWithoutAsking = true; Close(); return; }
+
+            string topPng = null;
+            Size frame = crop.Size;
+            Rectangle inner = new Rectangle(Point.Empty, crop.Size);
+            try
+            {
+                Bitmap top = null;
+                using (Bitmap m = marks ? canvas.RenderMarks(crop) : null)
+                {
+                    if (bg)
+                    {
+                        Backdrop.Measure(crop.Size, bgs, true, out frame, out inner);
+                        top = Backdrop.VideoTop(frame, inner, bgs, Backdrop.RadiusFor(crop.Size, bgs), m);
+                    }
+                    else if (m != null) top = new Bitmap(m);
+                }
+                if (top != null)
+                {
+                    topPng = Path.Combine(Path.GetTempPath(), "stackshot-top-" + Guid.NewGuid().ToString("N") + ".png");
+                    using (top) top.Save(topPng, ImageFormat.Png);
+                }
+            }
+            catch (Exception ex)
+            {
+                ShotStack.Log("Presentar: " + ex.Message);
+                MessageBox.Show(this, "No se pudo preparar el v\u00EDdeo: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string dir = owner != null ? Settings.TempDir : Path.GetDirectoryName(path);
+            string ext = IsGif ? ".gif" : ".mp4";
+            exportOut = ShotStack.Unique(Path.Combine(dir, Path.GetFileNameWithoutExtension(path) + " (presentaci\u00F3n)" + ext));
+
+            string f = "[0:v]crop=" + crop.Width + ":" + crop.Height + ":" + crop.X + ":" + crop.Y;
+            if (bg) f += ",pad=" + frame.Width + ":" + frame.Height + ":" + inner.X + ":" + inner.Y + ":black";
+            if (topPng != null) f += "[v];[v][1:v]overlay=0:0:format=auto";
+            string args = "-hide_banner -loglevel error -nostats -progress pipe:1 -y -i " + Recorder.Quote(path);
+            if (topPng != null) args += " -i " + Recorder.Quote(topPng);
+            if (IsGif)
+            {
+                // Como al grabar: paleta propia y difuminado suave; como mucho 960 px de ancho.
+                int gw = Math.Min(frame.Width, 960) & ~1;
+                f += ",scale=" + gw + ":-2:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=sierra2_4a:diff_mode=rectangle[o]";
+                args += " -filter_complex \"" + f + "\" -map \"[o]\" -loop 0 " + Recorder.Quote(exportOut);
+            }
+            else
+            {
+                f += ",format=yuv420p[o]";
+                args += " -filter_complex \"" + f + "\" -map \"[o]\" -an -c:v libx264 -preset veryfast -crf 18 -movflags +faststart " + Recorder.Quote(exportOut);
+            }
+
+            StringBuilder errors = new StringBuilder();
+            Process p = new Process();
+            p.StartInfo.FileName = ffmpeg;
+            p.StartInfo.Arguments = args;
+            p.StartInfo.UseShellExecute = false;
+            p.StartInfo.CreateNoWindow = true;
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.RedirectStandardError = true;
+            p.EnableRaisingEvents = true;
+            p.OutputDataReceived += delegate(object o, DataReceivedEventArgs e)
+            {
+                // -progress escribe "out_time=00:00:01.234567" varias veces por segundo.
+                if (e.Data == null || !e.Data.StartsWith("out_time=") || duration <= 0) return;
+                TimeSpan t;
+                if (!TimeSpan.TryParse(e.Data.Substring(9).Trim(), CultureInfo.InvariantCulture, out t)) return;
+                double fr = Math.Max(0, Math.Min(1, t.TotalSeconds / duration));
+                try { BeginInvoke((Action)delegate { ShowProgress(fr); }); } catch { }
+            };
+            p.ErrorDataReceived += delegate(object o, DataReceivedEventArgs e)
+            {
+                if (e.Data == null) return;
+                lock (errors) { if (errors.Length < 4000) errors.AppendLine(e.Data); }
+            };
+            p.Exited += delegate
+            {
+                int code = -1;
+                try { p.WaitForExit(); code = p.ExitCode; } catch { }
+                string err;
+                lock (errors) err = errors.ToString();
+                // La capa de encima ya no hace falta, aunque se haya cancelado o cerrado el editor.
+                if (topPng != null) { try { File.Delete(topPng); } catch { } }
+                try { BeginInvoke((Action)delegate { ExportDone(p, code, err, null); }); }
+                catch { try { p.Dispose(); } catch { } }
+            };
+            try
+            {
+                p.Start();
+                p.BeginOutputReadLine();
+                p.BeginErrorReadLine();
+            }
+            catch (Exception ex)
+            {
+                p.Dispose();
+                if (topPng != null) { try { File.Delete(topPng); } catch { } }
+                MessageBox.Show(this, "No se pudo iniciar FFmpeg: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            export = p;
+            canvas.Enabled = false;
+            bar.Enabled = false;
+            bgPanel.Enabled = false;
+            ShowProgress(0);
+            ShotStack.Log("Presentar: exportando " + Path.GetFileName(exportOut));
+        }
+
+        void ShowProgress(double fr)
+        {
+            if (export == null) return;
+            hint.Progress = duration > 0 ? fr : 0.5;
+            hint.LeftText = (IsGif ? "Creando el GIF\u2026 " : "Creando el v\u00EDdeo\u2026 ") + (duration > 0 ? (int)Math.Round(fr * 100) + " %" : "");
+            hint.RightText = "Esc cancela";
+            hint.Invalidate();
+        }
+
+        void ExportDone(Process p, int code, string err, string topPng)
+        {
+            if (topPng != null) { try { File.Delete(topPng); } catch { } }
+            if (export != p) { p.Dispose(); return; } // cancelada
+            export = null;
+            p.Dispose();
+            hint.Progress = -1;
+            canvas.Enabled = true;
+            bar.Enabled = true;
+            bgPanel.Enabled = true;
+            if (code != 0 || !File.Exists(exportOut))
+            {
+                ShotStack.Log("Presentar: FFmpeg " + code + ": " + Tail(err));
+                try { if (File.Exists(exportOut)) File.Delete(exportOut); } catch { }
+                UpdateUi();
+                MessageBox.Show(this, "No se pudo crear el v\u00EDdeo.\n\n" + Tail(err), "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            ShotStack.Log("Presentar: listo " + Path.GetFileName(exportOut));
+            if (owner != null) owner.AddRecording(exportOut);
+            else MessageBox.Show(this, "Listo: " + exportOut, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            closeWithoutAsking = true;
+            Close();
+        }
+
+        void CancelExport()
+        {
+            Process p = export;
+            if (p == null) return;
+            export = null;
+            try { if (!p.HasExited) p.Kill(); } catch { }
+            try { p.WaitForExit(3000); } catch { }
+            try { if (File.Exists(exportOut)) File.Delete(exportOut); } catch { }
+            hint.Progress = -1;
+            canvas.Enabled = true;
+            bar.Enabled = true;
+            bgPanel.Enabled = true;
+            UpdateUi();
+        }
+
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
+            if (export != null)
+            {
+                if (e.CloseReason == CloseReason.UserClosing &&
+                    MessageBox.Show(this, "\u00BFCancelar la exportaci\u00F3n?", "Stackshot", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+                CancelExport();
+                return;
+            }
             if (closeWithoutAsking || !dirty || e.CloseReason != CloseReason.UserClosing) return;
+            if (IsVideo)
+            {
+                DialogResult v = MessageBox.Show(this, "\u00BFExportar la grabaci\u00F3n con los cambios?", "Stackshot",
+                                                 MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                if (v == DialogResult.Cancel) e.Cancel = true;
+                else if (v == DialogResult.Yes) { e.Cancel = true; ExportVideo(); }
+                return;
+            }
             DialogResult r = MessageBox.Show(this, "\u00BFConservar las marcas en la captura?", "Stackshot",
                                              MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
             if (r == DialogResult.Cancel || (r == DialogResult.Yes && !Apply())) e.Cancel = true;

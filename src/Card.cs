@@ -330,7 +330,11 @@ namespace Stackshot
 
             List<Btn> tools = new List<Btn>();
             tools.Add(MakeBtn(GCopy, "Copiar", Copy));
-            if (IsMedia) tools.Add(MakeBtn(GPlay, "Abrir", OpenFile));
+            if (IsMedia)
+            {
+                tools.Add(MakeBtn(GPlay, "Abrir", OpenFile));
+                tools.Add(MakeBtn(GEdit, "Presentar", Edit)); // marcas y fondo sobre la grabación
+            }
             else tools.Add(MakeBtn(GEdit, "Editar", Edit));
             if (SavedPath == null) tools.Add(MakeBtn(GSave, "Guardar", Keep));
             else tools.Add(MakeBtn(GFolder, "Abrir carpeta", ShowInFolder));
