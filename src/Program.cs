@@ -109,10 +109,17 @@ namespace Stackshot
 
             if (!portable && !Installer.RunningInstalled)
             {
-                if (Installer.IsInstalled && s.FirstRunDone)
+                if (Installer.IsInstalled && (s.FirstRunDone || Installer.ManagedByMsi))
                 {
                     // Ya está instalado: si este es más nuevo, se actualiza; si no, se abre el instalado.
-                    if (Installer.MyVersion > Installer.InstalledVersion)
+                    // Si lo instaló el paquete MSI, se actualiza con el MSI (no se pisa lo que gestiona Windows Installer).
+                    if (Installer.MyVersion > Installer.InstalledVersion && Installer.ManagedByMsi)
+                    {
+                        MessageBox.Show("Este equipo tiene Stackshot " + Installer.InstalledVersion.ToString(3) + " instalado con el paquete MSI.\n\n" +
+                                        "Para pasar a la " + Installer.MyVersion.ToString(3) + ", instala Stackshot.msi de esa versi\u00F3n (o p\u00EDdeselo a inform\u00E1tica).",
+                                        "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else if (Installer.MyVersion > Installer.InstalledVersion)
                     {
                         if (MessageBox.Show("\u00BFActualizar Stackshot de la versi\u00F3n " + Installer.InstalledVersion.ToString(3) + " a la " +
                                             Installer.MyVersion.ToString(3) + "?", "Stackshot", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return 0;
@@ -130,10 +137,19 @@ namespace Stackshot
 
             if (!portable && !s.FirstRunDone)
             {
-                // Copiado a mano a la carpeta de instalación, sin pasar por la bienvenida.
-                bool startup;
-                if (!SetupWindow.Welcome(s, out startup)) return 0;
-                Installer.Register(startup);
+                if (Installer.ManagedByMsi)
+                {
+                    // Lo instaló el MSI: accesos y arranque ya están puestos; sin bienvenida, directo a la ventana.
+                    s.FirstRunDone = true;
+                    s.Save();
+                }
+                else
+                {
+                    // Copiado a mano a la carpeta de instalación, sin pasar por la bienvenida.
+                    bool startup;
+                    if (!SetupWindow.Welcome(s, out startup)) return 0;
+                    Installer.Register(startup);
+                }
             }
 
             System.Threading.Mutex mutex = new System.Threading.Mutex(false, Installer.MutexName);

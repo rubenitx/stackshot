@@ -32,6 +32,29 @@ namespace Stackshot
         }
 
         public static bool IsInstalled { get { return File.Exists(Settings.InstalledExe); } }
+
+        // Instalado con el paquete MSI (tools\Stackshot.wxs; lo suele desplegar informática): Windows Installer se
+        // encarga de los accesos, de la entrada en Aplicaciones, de actualizar y de desinstalar.
+        const string MsiKey = @"Software\Stackshot";
+
+        public static bool ManagedByMsi
+        {
+            get
+            {
+                Guid code;
+                return MsiValue("Installer") == "msi" && Guid.TryParse(MsiValue("ProductCode") ?? "", out code);
+            }
+        }
+
+        static string MsiValue(string name)
+        {
+            try
+            {
+                using (RegistryKey k = Registry.CurrentUser.OpenSubKey(MsiKey))
+                    return k == null ? null : k.GetValue(name) as string;
+            }
+            catch { return null; }
+        }
         public static bool StartupEnabled { get { return File.Exists(StartupLink); } }
         public static Version MyVersion { get { return Assembly.GetExecutingAssembly().GetName().Version; } }
 
@@ -67,6 +90,7 @@ namespace Stackshot
         // Accesos directos y entrada de desinstalación, apuntando a la copia instalada.
         public static void Register(bool startup)
         {
+            if (ManagedByMsi) return; // de eso se encarga el MSI
             string exe = Settings.InstalledExe;
             CreateShortcut(MenuLink, exe, "Stackshot: capturas de pantalla, v\u00EDdeo y GIF", "");
             SetStartup(startup);
@@ -95,7 +119,7 @@ namespace Stackshot
         // Al arrancar desde la carpeta de instalación: si alguien borró un acceso directo, se rehace.
         public static void Repair()
         {
-            if (!RunningInstalled) return;
+            if (!RunningInstalled || ManagedByMsi) return;
             try
             {
                 if (!File.Exists(MenuLink) || Registry.CurrentUser.OpenSubKey(UninstallKey) == null) Register(StartupEnabled);
@@ -162,6 +186,13 @@ namespace Stackshot
 
         public static void Uninstall(bool quiet)
         {
+            if (ManagedByMsi)
+            {
+                // Lo desinstala Windows Installer (cierra Stackshot, quita accesos, ficheros y datos).
+                try { Process.Start("msiexec.exe", "/x " + Guid.Parse(MsiValue("ProductCode")).ToString("B") + (quiet ? " /qn" : "")); }
+                catch (Exception ex) { ShotStack.Log("Desinstalar (MSI): " + ex.Message); }
+                return;
+            }
             Settings s = Settings.Load();
             if (!quiet && MessageBox.Show("\u00BFDesinstalar Stackshot?\n\nLas capturas que hayas guardado en " + s.SaveFolder + " no se borran.",
                                           "Stackshot", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
