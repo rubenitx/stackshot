@@ -32,7 +32,8 @@ jobs:
         run: |
           foreach ($f in 'Stackshot.exe', 'Stackshot.msi') {
             $h = (Get-FileHash "bin\$f" -Algorithm SHA256).Hash.ToLower()
-            "$h  $f" | Set-Content "bin\$f.sha256" -Encoding ascii
+            # Formato de sha256sum, con salto de línea Unix: `sha256sum -c` funciona también en Linux y macOS.
+            [IO.File]::WriteAllText("bin\$f.sha256", "$h  $f`n")
             Write-Host "$f SHA-256: $h"
           }
 
