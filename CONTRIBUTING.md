@@ -10,6 +10,14 @@ Solo Windows (10/11). Interfaz y comentarios en castellano.
 - `.\build.ps1` → `bin\Stackshot.exe` (usa el `csc.exe` de .NET Framework que trae Windows; no hace falta Visual Studio).
   Compila con `/warnaserror+`: cualquier aviso (variable sin usar, miembro que oculta otro de Form/Control…) rompe el build.
 - `.\build.ps1 -Run` lo abre sin instalar (`--portable`); `.\build.ps1 -Install` instala/actualiza en el usuario.
+- `.\tools\build-msi.ps1` → `bin\Stackshot.msi` (después de `build.ps1`), con `tools\Stackshot.wxs` y WiX Toolset 3.14.1,
+  que descarga una vez a `bin\wix` y comprueba con una SHA-256 fija. Instalación por usuario, sin administrador.
+  Si la instaló el MSI, `Installer.ManagedByMsi` (marca en `HKCU\Software\Stackshot`) hace que la app no cree sus accesos
+  ni su entrada en Aplicaciones, no se actualice copiándose a sí misma y desinstale con `msiexec /x`.
+  El `UpgradeCode` del `.wxs` no se cambia nunca. Para cerrarse al actualizar, la app atiende WM_CLOSE y WM_ENDSESSION
+  en `CloseListener`.
+- Probar el MSI en este equipo: `msiexec /i bin\Stackshot.msi /qn /l*v log.txt`, y para desinstalar `/x`. La
+  desinstalación borra `%LOCALAPPDATA%\Stackshot` (ajustes, FFmpeg, temporales): haz copia antes.
 - `tools\make-logo.ps1 [-Preview hoja.png]` dibuja logo e icono con `tools\Logo.cs` (GDI+; los navegadores en modo
   headless no funcionan en todos los equipos).
 - `tools\make-screenshots.ps1` regenera `docs\*.png` con `tools\Studio.cs`: monta un escritorio sintético en la pantalla
@@ -53,7 +61,9 @@ Solo Windows (10/11). Interfaz y comentarios en castellano.
 | Fichero | Qué hace |
 |---|---|
 | `src/Program.cs` | Arranque: bienvenida, instalación, actualización, parámetros, versión (`AssemblyVersion`) |
-| `src/Setup.cs` | `Installer` (copia, accesos directos, entrada de desinstalación, Impr Pant) y `SetupWindow` (bienvenida) |
+| `src/Setup.cs` | `Installer` (copia, accesos directos, entrada de desinstalación, Impr Pant, modo MSI) y `SetupWindow` (bienvenida) |
+| `src/CloseListener.cs` | Ventana invisible que cierra Stackshot ordenadamente cuando Windows lo pide (MSI, cierre de sesión) |
+| `tools/Stackshot.wxs`, `tools/build-msi.ps1` | Paquete MSI para despliegues en empresas |
 | `src/Settings.cs` | `settings.ini` |
 | `src/ShotStack.cs` | La pila: atajos, bandeja, capturar/guardar, miniaturas, desplazamiento, limpieza de temporales |
 | `src/Look.cs` | Paleta al estilo macOS (`Mac`) e iconos de línea dibujados a mano (`Icons`) |

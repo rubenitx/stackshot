@@ -20,16 +20,19 @@
 
 Every release is built by GitHub Actions from this repository ([build.yml](.github/workflows/build.yml)) and publishes:
 
-- `Stackshot.exe.sha256`, the checksum of the executable:
+- `Stackshot.exe.sha256` and `Stackshot.msi.sha256`, the checksums of the executable and of the MSI package:
   ```powershell
   (Get-FileHash .\Stackshot.exe -Algorithm SHA256).Hash
   ```
-- a signed **build provenance attestation** (Sigstore) that links the executable to the exact commit and workflow run that produced it:
+- a signed **build provenance attestation** (Sigstore) for both files, linking them to the exact commit and workflow run that produced them:
   ```powershell
   gh attestation verify .\Stackshot.exe --repo rubenitx/stackshot
+  gh attestation verify .\Stackshot.msi --repo rubenitx/stackshot
   ```
 
-The executable is not code-signed yet, so Windows SmartScreen shows a warning the first time it runs (**More info > Run anyway**).
+The MSI is built with WiX Toolset 3.14.1, downloaded during the build and checked against a SHA-256 hash stored in [tools/build-msi.ps1](tools/build-msi.ps1). Like the executable, it installs per user and does not require administrator rights.
+
+Neither file is code-signed yet, so Windows SmartScreen shows a warning the first time the executable runs (**More info > Run anyway**). On managed computers where SmartScreen blocks unsigned applications, the MSI can be deployed by the IT department instead.
 
 ## Reporting a vulnerability
 

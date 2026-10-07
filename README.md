@@ -61,10 +61,24 @@ Stackshot brings the CleanShot X workflow to Windows. It ships as a single execu
 
 Stackshot installs to `%LOCALAPPDATA%\Programs\Stackshot`, adds a Start menu entry and appears in **Settings > Apps** for uninstalling. It runs on Windows 10 and 11 with the .NET Framework 4.8 that ships with Windows. To update, run a newer `Stackshot.exe`.
 
-Because the executable is not code-signed yet, SmartScreen shows a warning the first time it runs (**More info > Run anyway**). Each release can be verified as described in [SECURITY.md](SECURITY.md).
+Because the executable is not code-signed yet, SmartScreen shows a warning the first time it runs (**More info > Run anyway**). On computers managed by an organization, SmartScreen may be configured to block it outright; in that case, ask your IT department to deploy the MSI package described below. Each release can be verified as described in [SECURITY.md](SECURITY.md).
+
+### Deploying in an organization
+
+Every release also includes **[Stackshot.msi](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.msi)**, a Windows Installer package for Intune, Configuration Manager or any other deployment tool. It installs per user, in the user's context, without administrator rights.
+
+| | |
+|---|---|
+| Install | `msiexec /i Stackshot.msi /qn` |
+| Uninstall | `msiexec /x Stackshot.msi /qn` (or from **Settings > Apps**) |
+| Options | `STARTWITHWINDOWS=0` to skip starting with Windows, `LAUNCHAPP=0` to skip opening it after installation |
+| Detection | Product code from the package, or `%LOCALAPPDATA%\Programs\Stackshot\Stackshot.exe` with version ≥ the deployed one |
+| Intune | Win32 app, install behaviour **User**, no restart required |
+
+When the MSI manages the installation, upgrades and removal go through Windows Installer: a newer `Stackshot.msi` replaces the previous version and keeps the user's settings. Stackshot is closed and reopened automatically, so no restart is needed. Uninstalling removes the application and its data, but not the screenshots the user saved. An existing installation made with `Stackshot.exe` is adopted without leaving duplicate entries.
 
 <details>
-<summary>Silent installation</summary>
+<summary>Silent installation with the executable</summary>
 
 ```powershell
 Stackshot.exe --install --startup --folder "D:\Screenshots"   # add --no-start to skip launching it

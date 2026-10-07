@@ -58,10 +58,24 @@ Stackshot lleva a Windows la forma de trabajar de CleanShot X. Es un único ejec
 
 Se instala en `%LOCALAPPDATA%\Programs\Stackshot`, añade un acceso al menú Inicio y aparece en **Configuración > Aplicaciones** para desinstalarlo. Funciona en Windows 10 y 11 con el .NET Framework 4.8 que ya trae Windows. Para actualizar, basta con abrir un `Stackshot.exe` más reciente.
 
-Como el ejecutable todavía no está firmado digitalmente, SmartScreen muestra un aviso la primera vez (**Más información > Ejecutar de todas formas**). Cada versión se puede verificar como se explica en [SECURITY.md](SECURITY.md).
+Como el ejecutable todavía no está firmado digitalmente, SmartScreen muestra un aviso la primera vez (**Más información > Ejecutar de todas formas**). En equipos gestionados por una empresa, SmartScreen puede estar configurado para bloquearlo sin opción de continuar; en ese caso, pide a informática que despliegue el paquete MSI que se describe a continuación. Cada versión se puede verificar como se explica en [SECURITY.md](SECURITY.md).
+
+### Despliegue en empresas
+
+Cada versión incluye también **[Stackshot.msi](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.msi)**, un paquete de Windows Installer para Intune, Configuration Manager o cualquier otra herramienta de despliegue. Se instala por usuario, en el contexto del usuario y sin permisos de administrador.
+
+| | |
+|---|---|
+| Instalar | `msiexec /i Stackshot.msi /qn` |
+| Desinstalar | `msiexec /x Stackshot.msi /qn` (o desde **Configuración > Aplicaciones**) |
+| Opciones | `STARTWITHWINDOWS=0` para que no arranque con Windows, `LAUNCHAPP=0` para que no se abra al terminar |
+| Detección | Código de producto del paquete, o `%LOCALAPPDATA%\Programs\Stackshot\Stackshot.exe` con versión ≥ la desplegada |
+| Intune | Aplicación Win32, comportamiento de instalación **Usuario**, sin reinicio |
+
+Cuando el MSI gestiona la instalación, las actualizaciones y la desinstalación pasan por Windows Installer: un `Stackshot.msi` más reciente sustituye a la versión anterior y conserva los ajustes del usuario. Stackshot se cierra y se vuelve a abrir solo, sin reiniciar. Al desinstalar se quitan la aplicación y sus datos, pero no las capturas que el usuario haya guardado. Si ya estaba instalado con `Stackshot.exe`, el MSI adopta esa instalación sin dejar entradas duplicadas.
 
 <details>
-<summary>Instalación silenciosa</summary>
+<summary>Instalación silenciosa con el ejecutable</summary>
 
 ```powershell
 Stackshot.exe --install --startup --folder "D:\Capturas"   # --no-start para no abrirlo al terminar
