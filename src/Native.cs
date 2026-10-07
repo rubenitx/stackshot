@@ -1,18 +1,7 @@
-// Stackshot - Llamadas a Windows (user32, dwmapi, shell32...) e interfaces COM.
+// Stackshot - Win32 interop (user32, dwmapi, shell32...) and COM interfaces.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using Microsoft.Win32;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
@@ -45,7 +34,7 @@ namespace Stackshot
         [StructLayout(LayoutKind.Sequential)]
         public struct SHDRAGIMAGE { public SIZE sizeDragImage; public POINT ptOffset; public IntPtr hbmpDragImage; public int crColorKey; }
 
-        // ---- Captura: ventanas, atajos globales, cursor y copia rápida de pantalla (GDI)
+        // Capture: windows, global hotkeys, cursor and fast GDI screen copy.
 
         [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
 
@@ -88,11 +77,32 @@ namespace Stackshot
         [DllImport("gdi32.dll")] public static extern IntPtr SelectObject(IntPtr hdc, IntPtr obj);
         [DllImport("gdi32.dll")] public static extern bool BitBlt(IntPtr dst, int x, int y, int w, int h, IntPtr src, int sx, int sy, int rop);
         [DllImport("gdi32.dll")] public static extern IntPtr CreateDIBSection(IntPtr hdc, ref BITMAPINFOHEADER bmi, uint usage, out IntPtr bits, IntPtr section, uint offset);
+        // Full paths, so a planted explorer.exe or cmd.exe next to a portable copy or in the current folder never runs.
+        public static readonly string Explorer = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+        public static string System32(string exe) { return System.IO.Path.Combine(Environment.SystemDirectory, exe); }
         public const int SRCCOPY = 0x00CC0020;
+        public const int CAPTUREBLT = 0x40000000; // includes layered windows (e.g. the camera bubble)
+        [StructLayout(LayoutKind.Sequential)] struct BLENDFUNCTION { public byte BlendOp, BlendFlags, SourceConstantAlpha, AlphaFormat; }
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool UpdateLayeredWindow(IntPtr hwnd, IntPtr hdcDst, ref POINT dst, ref SIZE size, IntPtr hdcSrc, ref POINT src, int key, ref BLENDFUNCTION blend, int flags);
+
+        // Shows a premultiplied-alpha DIB as the whole content of a layered window at (x, y).
+        public static void Present(IntPtr hwnd, IntPtr dc, int x, int y, int w, int h) { Present(hwnd, dc, x, y, w, h, 0, 0); }
+
+        // Same, using only the part of the DIB that starts at (sx, sy): the window becomes that size.
+        public static void Present(IntPtr hwnd, IntPtr dc, int x, int y, int w, int h, int sx, int sy)
+        {
+            POINT dst; dst.X = x; dst.Y = y;
+            POINT src; src.X = sx; src.Y = sy;
+            SIZE size; size.cx = w; size.cy = h;
+            BLENDFUNCTION bf = new BLENDFUNCTION();
+            bf.SourceConstantAlpha = 255;
+            bf.AlphaFormat = 1; // AC_SRC_ALPHA
+            UpdateLayeredWindow(hwnd, IntPtr.Zero, ref dst, ref size, dc, ref src, 0, ref bf, 2); // ULW_ALPHA
+        }
         [DllImport("gdi32.dll")] public static extern bool GdiFlush();
         [DllImport("msimg32.dll")] public static extern bool AlphaBlend(IntPtr dst, int x, int y, int w, int h, IntPtr src, int sx, int sy, int sw, int sh, int blend);
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")] public static extern void CopyMemory(IntPtr dst, IntPtr src, UIntPtr count);
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern bool DeleteFile(string path);
         [DllImport("kernel32.dll")] public static extern bool SetDefaultDllDirectories(uint flags);
 
         public static void ForceForeground(IntPtr hwnd)
@@ -122,7 +132,7 @@ namespace Stackshot
         [PreserveSig] int GetImage(Native.SIZE size, int flags, out IntPtr phbm);
     }
 
-    // Solo se declara el primer método: es el único que se usa.
+    // Only the first method is declared; it is the only one used.
     [ComImport, Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IShellItem
     {
@@ -130,7 +140,7 @@ namespace Stackshot
                                         [MarshalAs(UnmanagedType.LPStruct)] Guid riid, out IntPtr ppv);
     }
 
-    // CLSID_DragDropHelper: pone la miniatura junto al cursor mientras se arrastra.
+    // CLSID_DragDropHelper: shows the thumbnail next to the cursor while dragging.
     [ComImport, Guid("4657278A-411B-11D2-839A-00C04FD918D0")]
     public class DragDropHelper { }
 
@@ -142,6 +152,4 @@ namespace Stackshot
         [PreserveSig] int SetFlags(int dwFlags);
     }
 
-    // Imagen en el portapapeles que avisa la primera vez que otra aplicación la pide (= se ha pegado).
-    // El primer segundo no cuenta: el historial del portapapeles (Win+V) la lee nada más copiarla.
 }

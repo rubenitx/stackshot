@@ -1,18 +1,12 @@
-// Stackshot - Arrastrar ficheros a otras aplicaciones con la miniatura pegada al cursor.
+// Stackshot - Drag files to other apps with a thumbnail attached to the cursor.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
@@ -22,7 +16,7 @@ namespace Stackshot
         static readonly Guid BHID_DataObject = new Guid("B8C0BD9F-ED24-455c-83E6-D5390C4FE8C4");
         static readonly Guid IID_IDataObject = new Guid("0000010e-0000-0000-C000-000000000046");
 
-        // ghost: lo que acompaña al cursor (se libera aquí); grab: el punto de ghost que queda bajo el cursor.
+        // ghost: image attached to the cursor (disposed here); grab: point of ghost under the cursor.
         public static DragDropEffects Run(Control source, string path, Bitmap ghost, Point grab)
         {
             object shell = ShellData(path);
@@ -35,7 +29,7 @@ namespace Stackshot
             object data = shell;
             if (data == null)
             {
-                // Plan B: la lista de ficheros de siempre, sin miniatura.
+                // Fallback: plain file drop list, no thumbnail.
                 DataObject d = new DataObject();
                 StringCollection sc = new StringCollection();
                 sc.Add(path);
@@ -46,7 +40,7 @@ namespace Stackshot
             finally { if (shell != null) Marshal.ReleaseComObject(shell); }
         }
 
-        // El mismo objeto que usa el Explorador al arrastrar ese fichero: lo entiende cualquier aplicación.
+        // The same data object Explorer uses for this file, understood by every app.
         static object ShellData(string path)
         {
             IShellItem item = null;
@@ -72,21 +66,21 @@ namespace Stackshot
             try
             {
                 IDragSourceHelper2 h = (IDragSourceHelper2)helper;
-                h.SetFlags(1); // DSH_ALLOWDROPDESCRIPTIONTEXT: "Copiar en ..." debajo de la miniatura
+                h.SetFlags(1); // DSH_ALLOWDROPDESCRIPTIONTEXT
                 Native.SHDRAGIMAGE di;
                 di.sizeDragImage.cx = ghost.Width;
                 di.sizeDragImage.cy = ghost.Height;
                 di.ptOffset.X = grab.X;
                 di.ptOffset.Y = grab.Y;
-                di.hbmpDragImage = ghost.GetHbitmap(Color.FromArgb(0, 0, 0, 0)); // alfa premultiplicado
+                di.hbmpDragImage = ghost.GetHbitmap(Color.FromArgb(0, 0, 0, 0)); // premultiplied alpha
                 di.crColorKey = unchecked((int)0xFFFFFFFF);
-                // Si sale bien, el mapa de bits pasa a ser del sistema; si no, hay que liberarlo.
+                // On success the system owns the bitmap; otherwise free it.
                 if (h.InitializeFromBitmap(ref di, data) != 0) Native.DeleteObject(di.hbmpDragImage);
             }
             finally { Marshal.ReleaseComObject(helper); }
         }
 
-        // Miniatura con las esquinas redondeadas y un borde fino. grab se escala con ella.
+        // Thumbnail with rounded corners and a thin border. grab is scaled with it.
         public static Bitmap Ghost(Bitmap src, int maxDim, float radius, ref Point grab)
         {
             double k = Math.Min(1.0, (double)maxDim / Math.Max(src.Width, src.Height));

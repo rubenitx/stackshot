@@ -1,14 +1,13 @@
-// Stackshot - Ventana invisible que atiende las peticiones de cierre de Windows.
+// Stackshot - Hidden window that handles close requests from Windows.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Windows.Forms;
 
 namespace Stackshot
 {
-    // Stackshot vive en la bandeja, sin ventanas visibles. Windows Installer (al actualizar o desinstalar el MSI),
-    // el Administrador de reinicio y el cierre de sesión piden cerrar enviando WM_CLOSE o WM_ENDSESSION a las
-    // ventanas de primer nivel del programa: esta las recibe y cierra Stackshot ordenadamente (dejando el
-    // portapapeles en su sitio), sin que haga falta matarlo ni reiniciar el equipo.
+    // Stackshot has no visible top-level window. Windows Installer, the Restart Manager and sign-out send WM_CLOSE /
+    // WM_ENDSESSION to top-level windows; this one receives them and shuts down cleanly (keeping the clipboard), so no
+    // kill or reboot is needed.
     public sealed class CloseListener : NativeWindow, IDisposable
     {
         readonly Action quit;
@@ -20,8 +19,8 @@ namespace Stackshot
             CreateParams cp = new CreateParams();
             cp.Caption = "Stackshot";
             cp.ClassName = null;
-            cp.ExStyle = 0x80; // WS_EX_TOOLWINDOW: fuera de Alt+Tab y de la barra de tareas
-            cp.Style = 0;      // sin WS_VISIBLE: nunca se ve
+            cp.ExStyle = 0x80; // WS_EX_TOOLWINDOW: no Alt+Tab or taskbar entry
+            cp.Style = 0;      // not WS_VISIBLE
             CreateHandle(cp);
         }
 
@@ -32,7 +31,7 @@ namespace Stackshot
                 case 0x0010: // WM_CLOSE
                     Quit();
                     return;
-                case 0x0011: // WM_QUERYENDSESSION: se puede cerrar cuando quieran
+                case 0x0011: // WM_QUERYENDSESSION
                     m.Result = (IntPtr)1;
                     return;
                 case 0x0016: // WM_ENDSESSION

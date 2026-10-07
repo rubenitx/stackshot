@@ -1,19 +1,10 @@
-// Stackshot - Imagen en el portapapeles que avisa cuando se pega.
+// Stackshot - Clipboard image that reports when it is pasted.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Drawing.Text;
 using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
 {
@@ -27,15 +18,15 @@ namespace Stackshot
         readonly object pngLock = new object();
         bool used, pngReady, released;
 
-        // pngFromFile: la imagen es la del fichero (un PNG): sus bytes se leen tal cual, sin volver a codificar.
+        // pngFromFile: the image is the file's PNG, so its bytes are used as-is without re-encoding.
         public TrackedData(string path, Bitmap image, bool fromCapture, bool pngFromFile, Action<TrackedData> onUsed)
         {
             FilePath = path;
             this.image = image;
             this.onUsed = onUsed;
-            // El PNG (lento en capturas grandes) se prepara en otro hilo: leído del fichero (en cuanto esté escrito) o
-            // codificado desde una copia de verdad (Clone con el mismo formato puede compartir los píxeles, y GDI+ no
-            // admite usarlos desde dos hilos). Quien lo pida mientras tanto, espera.
+            // The PNG (slow for large captures) is prepared on a worker thread, either read from the file once written
+            // or encoded from a deep copy (a same-format Clone may share pixels and GDI+ objects aren't thread-safe).
+            // Readers block until it's ready.
             Bitmap copy = pngFromFile ? null : DeepCopy(image);
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
@@ -53,7 +44,7 @@ namespace Stackshot
                         }
                         catch (Exception ex) { ShotStack.Log("PNG del portapapeles (fichero): " + ex.Message); }
                     }
-                    // Si el fichero no se pudo leer, el PNG queda vacío y las aplicaciones usan el mapa de bits.
+                    // If the file couldn't be read, the PNG stays empty and apps fall back to the bitmap.
                     if (!done && copy != null) copy.Save(png, ImageFormat.Png);
                     png.Position = 0;
                 }
@@ -65,18 +56,16 @@ namespace Stackshot
                     {
                         pngReady = true;
                         System.Threading.Monitor.PulseAll(pngLock);
-                        if (released) png.Dispose(); // la soltaron mientras se preparaba
+                        if (released) png.Dispose(); // released while it was being prepared
                     }
                 }
             });
             SetData(DataFormats.Bitmap, true, image);
             SetData("PNG", false, png);
-            if (fromCapture)
-            {
-                // Ya está en el historial de Win+V: que esta copia no salga repetida.
-                SetData("CanIncludeInClipboardHistory", false, new MemoryStream(BitConverter.GetBytes(0)));
-                SetData("CanUploadToCloudClipboard", false, new MemoryStream(BitConverter.GetBytes(0)));
-            }
+            // Screenshots often contain private data: never sync them to other devices through the cloud clipboard.
+            SetData("CanUploadToCloudClipboard", false, new MemoryStream(BitConverter.GetBytes(0)));
+            // Already in the Win+V history: keep this copy out of it.
+            if (fromCapture) SetData("CanIncludeInClipboardHistory", false, new MemoryStream(BitConverter.GetBytes(0)));
         }
 
         public override object GetData(string format, bool autoConvert)
@@ -91,8 +80,8 @@ namespace Stackshot
             return o;
         }
 
-        // Copia independiente de los píxeles (memoria con memoria: unos pocos ms aunque la captura sea enorme).
-        static Bitmap DeepCopy(Bitmap src)
+        // Deep pixel copy (memory to memory, a few ms even for huge captures).
+        internal static Bitmap DeepCopy(Bitmap src)
         {
             PixelFormat f = src.PixelFormat;
             if (f != PixelFormat.Format32bppArgb && f != PixelFormat.Format32bppPArgb && f != PixelFormat.Format32bppRgb)
@@ -118,7 +107,7 @@ namespace Stackshot
             return dst;
         }
 
-        // Sin esperar al PNG: si aún se está preparando, lo suelta el hilo que lo prepara.
+        // Doesn't wait for the PNG: if it's still being prepared, the worker releases it.
         public void Release()
         {
             lock (pngLock)

@@ -1,4 +1,4 @@
-// Stackshot - Instalación por usuario (sin administrador), bienvenida y ajustes.
+// Stackshot - Per-user install (no admin), welcome window and setup.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -13,8 +13,8 @@ using Microsoft.Win32;
 
 namespace Stackshot
 {
-    // Se instala en %LOCALAPPDATA%\Programs\Stackshot, como cualquier programa por usuario: acceso en el menú Inicio,
-    // arranque con Windows opcional y entrada en Configuración > Aplicaciones para desinstalarlo.
+    // Installs to %LOCALAPPDATA%\Programs\Stackshot like any per-user app: Start menu shortcut, optional startup and an
+    // entry in Settings > Apps.
     public static class Installer
     {
         const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Stackshot";
@@ -33,8 +33,8 @@ namespace Stackshot
 
         public static bool IsInstalled { get { return File.Exists(Settings.InstalledExe); } }
 
-        // Instalado con el paquete MSI (tools\Stackshot.wxs; lo suele desplegar informática): Windows Installer se
-        // encarga de los accesos, de la entrada en Aplicaciones, de actualizar y de desinstalar.
+        // Installed by the MSI (tools\Stackshot.wxs, usually deployed by IT): Windows Installer owns shortcuts, the
+        // Apps entry, upgrades and uninstall.
         const string MsiKey = @"Software\Stackshot";
 
         public static bool ManagedByMsi
@@ -76,21 +76,33 @@ namespace Stackshot
                 Exception last = null;
                 for (int i = 0; i < 25; i++)
                 {
-                    try { File.Copy(ExePath, Settings.InstalledExe, true); last = null; break; }
+                    try { CopyContents(ExePath, Settings.InstalledExe); last = null; break; }
                     catch (Exception ex) { last = ex; System.Threading.Thread.Sleep(200); }
                 }
                 if (last != null) throw last;
-                // Quien lo ha descargado ya ha dado permiso al abrirlo: la copia instalada no vuelve a preguntar.
-                Native.DeleteFile(Settings.InstalledExe + ":Zone.Identifier");
             }
             Register(startup);
             ShotStack.Log("Instalado " + MyVersion + " en " + Settings.InstallDir);
         }
 
-        // Accesos directos y entrada de desinstalación, apuntando a la copia instalada.
+        // Writes a new file with the contents only, like any installer: alternate data streams are not carried over,
+        // so the installed copy needs no stream manipulation afterwards.
+        static void CopyContents(string from, string to)
+        {
+            string tmp = to + ".new";
+            File.WriteAllBytes(tmp, File.ReadAllBytes(from));
+            try
+            {
+                if (File.Exists(to)) File.Delete(to);
+                File.Move(tmp, to);
+            }
+            finally { if (File.Exists(tmp)) File.Delete(tmp); }
+        }
+
+        // Shortcuts and uninstall entry pointing to the installed copy.
         public static void Register(bool startup)
         {
-            if (ManagedByMsi) return; // de eso se encarga el MSI
+            if (ManagedByMsi) return; // the MSI handles this
             string exe = Settings.InstalledExe;
             CreateShortcut(MenuLink, exe, "Stackshot: capturas de pantalla, v\u00EDdeo y GIF", "");
             SetStartup(startup);
@@ -116,19 +128,19 @@ namespace Stackshot
             catch (Exception ex) { ShotStack.Log("Registro de desinstalaci\u00F3n: " + ex.Message); }
         }
 
-        // Al arrancar desde la carpeta de instalación: si alguien borró un acceso directo, se rehace.
+        // When running from the install folder, recreate missing shortcuts.
         public static void Repair()
         {
             if (!RunningInstalled || ManagedByMsi) return;
             try
             {
                 if (!File.Exists(MenuLink) || Registry.CurrentUser.OpenSubKey(UninstallKey) == null) Register(StartupEnabled);
-                else if (StartupEnabled) SetStartup(true); // los accesos de versiones anteriores no llevaban --background
+                else if (StartupEnabled) SetStartup(true); // older shortcuts lacked --background
             }
             catch (Exception ex) { ShotStack.Log("Reparar instalaci\u00F3n: " + ex.Message); }
         }
 
-        // El acceso de Inicio arranca en segundo plano (sin enseñar la ventana).
+        // The startup shortcut starts in the background (no window).
         public static void SetStartup(bool on)
         {
             try
@@ -158,14 +170,14 @@ namespace Stackshot
             finally { Marshal.ReleaseComObject(shell); }
         }
 
-        // Pide a la que esté en marcha que enseñe su ventana.
+        // Ask the running instance to show its window.
         public static void SignalShow()
         {
             try { System.Threading.EventWaitHandle.OpenExisting(ShowEvent).Set(); }
             catch { }
         }
 
-        // Pide a la que esté en marcha que se cierre (deja el portapapeles en su sitio) y espera a que lo haga.
+        // Ask the running instance to quit (keeping the clipboard) and wait for it.
         public static void QuitRunning()
         {
             try { System.Threading.EventWaitHandle.OpenExisting(QuitEvent).Set(); }
@@ -188,8 +200,8 @@ namespace Stackshot
         {
             if (ManagedByMsi)
             {
-                // Lo desinstala Windows Installer (cierra Stackshot, quita accesos, ficheros y datos).
-                try { Process.Start("msiexec.exe", "/x " + Guid.Parse(MsiValue("ProductCode")).ToString("B") + (quiet ? " /qn" : "")); }
+                // Windows Installer uninstalls it (closes Stackshot, removes shortcuts, files and data).
+                try { Process.Start(Native.System32("msiexec.exe"), "/x " + Guid.Parse(MsiValue("ProductCode")).ToString("B") + (quiet ? " /qn" : "")); }
                 catch (Exception ex) { ShotStack.Log("Desinstalar (MSI): " + ex.Message); }
                 return;
             }
@@ -201,12 +213,12 @@ namespace Stackshot
             try { if (File.Exists(MenuLink)) File.Delete(MenuLink); } catch { }
             try { Registry.CurrentUser.DeleteSubKeyTree(UninstallKey, false); } catch { }
             try { if (Directory.Exists(Settings.DataDir)) Directory.Delete(Settings.DataDir, true); } catch { }
-            // El propio .exe no puede borrarse mientras corre: lo borra una consola oculta un par de segundos después.
+            // A running .exe can't delete itself, so a hidden cmd removes the folder once this process exits.
             try
             {
-                // Lo reintenta cada segundo durante medio minuto, en cuanto este proceso termine.
+                // Retries every second for up to 30 s.
                 string dir = Settings.InstallDir.TrimEnd('\\');
-                ProcessStartInfo psi = new ProcessStartInfo("cmd.exe",
+                ProcessStartInfo psi = new ProcessStartInfo(Native.System32("cmd.exe"),
                     "/d /c for /l %i in (1,1,30) do (ping 127.0.0.1 -n 2 >nul & rmdir /s /q \"" + dir + "\" 2>nul & if not exist \"" + dir + "\" exit)");
                 psi.CreateNoWindow = true;
                 psi.UseShellExecute = false;
@@ -217,14 +229,14 @@ namespace Stackshot
             if (!quiet) MessageBox.Show("Stackshot se ha desinstalado. \u00A1Gracias por probarlo!", "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        // Windows 11 usa Impr Pant para abrir Recortes. Stackshot puede quedársela (solo en este usuario).
+        // Windows 11 maps Print Screen to Snipping Tool. Stackshot can take it over (current user only).
         public static bool SnippingOwnsPrintScreen
         {
             get
             {
                 object v = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Keyboard", "PrintScreenKeyForSnippingEnabled", null);
                 if (v is int) return (int)v != 0;
-                return Environment.OSVersion.Version.Build >= 22000; // en Windows 11 viene activado de serie
+                return Environment.OSVersion.Version.Build >= 22000; // on by default on Windows 11
             }
         }
 
@@ -235,8 +247,8 @@ namespace Stackshot
         }
     }
 
-    // Bienvenida (la primera vez que se abre el .exe descargado): lo básico para empezar e instalar. El resto de
-    // ajustes está en la ventana principal.
+    // Welcome window (first run of the downloaded .exe): the basics to get started. Everything else lives in the main
+    // window.
     public class SetupWindow : DarkForm
     {
         readonly Settings settings;
@@ -247,7 +259,7 @@ namespace Stackshot
 
         public bool StartWithWindows { get { return startup.Checked; } }
 
-        // Devuelve false si se cierra sin instalar.
+        // Returns false if closed without installing.
         public static bool Welcome(Settings s, out bool startWithWindows)
         {
             using (SetupWindow w = new SetupWindow(s))
@@ -268,44 +280,58 @@ namespace Stackshot
             t.Font = new Font(Fonts.DisplaySemibold, P(27), GraphicsUnit.Pixel);
             t.Height = P(40);
             AddLabel("Captura, marca y comparte en segundos.\nPulsa Impr Pant y listo.", 40, 186, 440, 14, Theme.Fg2, false, ContentAlignment.TopCenter);
-            int y = 252;
+            int y = 256;
 
-            startup = AddToggleRow(x, ref y, w, "Iniciar con Windows", "Stackshot se abre solo (en segundo plano) al encender el equipo.", true);
+            // Grouped card like macOS Settings: toggles and the folder, separated by hairlines.
+            int top = y;
+            startup = AddToggleRow(x, ref y, w, "Iniciar con Windows", "Se abre solo, en segundo plano, al encender el equipo.", true);
             printScreen = null;
             if (Installer.SnippingOwnsPrintScreen)
                 printScreen = AddToggleRow(x, ref y, w, "Usar la tecla Impr Pant", "Windows la usa para Recortes; Stackshot se la queda solo en tu usuario.", true);
             sound = AddToggleRow(x, ref y, w, "Sonido al capturar", "Un peque\u00F1o clic de c\u00E1mara.", s.Sound);
             copy = AddToggleRow(x, ref y, w, "Copiar cada captura", "Lista para pegar con Ctrl+V nada m\u00E1s hacerla.", s.CopyToClipboard);
-
-            y += 6;
-            AddLabel("Tus capturas guardadas", x, y, w - 116, 14, Theme.Fg, true, ContentAlignment.TopLeft);
-            folderLabel = AddLabel("", x, y + 22, w - 116, 12, Theme.Muted, false, ContentAlignment.TopLeft);
+            separators.Add(y - 9);
+            AddLabel("Carpeta de capturas", x, y, w - 116, 14, Theme.Fg, true, ContentAlignment.TopLeft);
+            folderLabel = AddLabel("", x, y + 21, w - 116, 12, Theme.Muted, false, ContentAlignment.TopLeft);
             folderLabel.AutoEllipsis = true;
             folderLabel.Height = P(20);
             ShowFolder();
-            Pill change = MakePill("Cambiar\u2026", false, x + w - 104, y + 4, 104, 34);
+            Pill change = MakePill("Cambiar\u2026", false, x + w - 96, y + 3, 96, 32);
+            change.Font = new Font("Segoe UI Semibold", P(13), GraphicsUnit.Pixel);
             change.Click += delegate { PickFolder(); };
-            y += 68;
+            y += 40;
+            cards.Add(new Rectangle(x - 16, top - 14, w + 32, y - top + 28));
+            y += 48;
 
-            // Lo básico, para empezar sin leer nada más.
-            string[,] keys = { { Hotkeys.Display(s.HotRegion), "Capturar un \u00E1rea (o clic en una ventana)" },
-                               { Hotkeys.Display(s.HotVideo), "Grabar v\u00EDdeo" },
-                               { "Clic en la miniatura", "Editar: flechas, recuadros, n\u00FAmeros, texto\u2026" } };
-            for (int i = 0; i < keys.GetLength(0); i++)
+            // The essentials as key caps, so there's nothing else to read.
+            top = y;
+            string[][] caps = { Hotkeys.Display(s.HotRegion).Split('+'), Hotkeys.Display(s.HotVideo).Split('+'), new string[] { "Clic" } };
+            string[] what = { "Capturar un \u00E1rea o una ventana", "Grabar la pantalla", "en la miniatura para editarla" };
+            for (int i = 0; i < caps.Length; i++)
             {
-                Label k = AddLabel(keys[i, 0], x, y, 170, 12, Theme.Accent, true, ContentAlignment.TopLeft);
-                k.Height = P(18);
-                Label d = AddLabel(keys[i, 1], x + 176, y, w - 176, 12, Theme.Fg2, false, ContentAlignment.TopLeft);
-                d.Height = P(18);
-                y += 26;
+                if (i > 0) separators.Add(y - 7);
+                keys.Add(new KeyValuePair<Point, string[]>(new Point(x, y), caps[i]));
+                AddLabel(what[i], x + 196, y + 3, w - 196, 13, Theme.Fg2, false, ContentAlignment.TopLeft).Height = P(20);
+                y += 34;
             }
+            cards.Add(new Rectangle(x - 16, top - 12, w + 32, y - top + 14));
+            y += 28;
 
-            Pill ok = MakePill("Instalar y empezar", true, 286, 598, 198, 42);
+            Pill ok = MakePill("Instalar y empezar", true, 286, y, 198, 42);
             ok.Click += delegate { Save(); };
-            Pill cancel = MakePill("Ahora no", false, 36, 598, 120, 42);
+            Pill cancel = MakePill("Ahora no", false, 36, y, 120, 42);
             cancel.Click += delegate { DialogResult = DialogResult.Cancel; Close(); };
             AcceptButton = null;
+            // Height follows the content (one more row when Windows owns Print Screen).
+            ClientSize = new Size(ClientSize.Width, P(y + 42 + 30));
+            Rectangle wa = Grabber.CurrentScreen().WorkingArea;
+            Location = new Point(wa.Left + (wa.Width - Width) / 2, wa.Top + Math.Max(0, (wa.Height - Height) / 2));
         }
+
+        readonly List<Rectangle> cards = new List<Rectangle>();
+        readonly List<int> separators = new List<int>();
+        readonly List<KeyValuePair<Point, string[]>> keys = new List<KeyValuePair<Point, string[]>>();
+        int toggleRows;
 
         Pill MakePill(string text, bool accent, int x, int y, int w, int h)
         {
@@ -313,11 +339,11 @@ namespace Stackshot
             p.Font = new Font("Segoe UI Semibold", P(14), GraphicsUnit.Pixel);
             p.Bounds = new Rectangle(P(x), P(y), P(w), P(h));
             Controls.Add(p);
-            p.BringToFront(); // por encima de cualquier etiqueta que pase por detrás
+            p.BringToFront(); // above any label behind it
             return p;
         }
 
-        // Fila con título, explicación y un interruptor a la derecha.
+        // Row with title, description and a toggle on the right.
         Toggle AddToggleRow(int x, ref int y, int w, string title, string desc, bool value)
         {
             AddLabel(title, x, y, w - 70, 14, Theme.Fg, true, ContentAlignment.TopLeft);
@@ -325,7 +351,8 @@ namespace Stackshot
             Toggle t = new Toggle(value);
             t.Bounds = new Rectangle(P(x + w - 46), P(y + 8), P(46), P(26));
             Controls.Add(t);
-            y += Math.Max(54, 21 + (int)Math.Round(d.Height / s) + 14);
+            if (toggleRows++ > 0) separators.Add(y - 9);
+            y += Math.Max(56, 21 + (int)Math.Round(d.Height / s) + 18);
             return t;
         }
 
@@ -364,7 +391,7 @@ namespace Stackshot
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            // Un halo suave detrás del logo.
+            // Soft halo behind the logo.
             Rectangle halo = new Rectangle(ClientSize.Width / 2 - P(150), P(-40), P(300), P(220));
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -374,6 +401,34 @@ namespace Stackshot
                     pb.CenterColor = Color.FromArgb(70, 110, 120, 255);
                     pb.SurroundColors = new Color[] { Color.FromArgb(0, Theme.Bg) };
                     g.FillEllipse(pb, halo);
+                }
+            }
+            foreach (Rectangle c in cards)
+            {
+                Rectangle r = new Rectangle(P(c.X), P(c.Y), P(c.Width), P(c.Height));
+                using (GraphicsPath p = Theme.Round(r, P(12)))
+                {
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(38, 38, 41))) g.FillPath(b, p);
+                    using (Pen pen = new Pen(Color.FromArgb(14, 255, 255, 255))) g.DrawPath(pen, p);
+                }
+            }
+            using (Pen hair = new Pen(Color.FromArgb(52, 52, 56), Math.Max(1f, s)))
+                foreach (int sy in separators) g.DrawLine(hair, P(36), P(sy), P(36 + 448), P(sy));
+            Font kf = Fonts.Get("Segoe UI Semibold", P(12));
+            foreach (KeyValuePair<Point, string[]> k in keys)
+            {
+                int kx = P(k.Key.X);
+                foreach (string raw in k.Value)
+                {
+                    string cap = raw.Trim();
+                    int kw = Math.Max(P(26), TextRenderer.MeasureText(cap, kf).Width + P(8));
+                    Rectangle kr = new Rectangle(kx, P(k.Key.Y), kw, P(24));
+                    using (GraphicsPath p = Theme.Round(new Rectangle(kr.X, kr.Y + P(2), kr.Width, kr.Height), P(6)))
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(24, 24, 26))) g.FillPath(b, p); // key edge
+                    using (GraphicsPath p = Theme.Round(kr, P(6)))
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(62, 62, 66))) g.FillPath(b, p);
+                    TextRenderer.DrawText(g, cap, kf, kr, Theme.Fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                    kx += kw + P(5);
                 }
             }
             int d = P(96);

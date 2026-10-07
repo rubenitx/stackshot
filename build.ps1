@@ -1,7 +1,7 @@
-﻿# Compila Stackshot con el compilador de C# que trae Windows (.NET Framework 4.8). No hace falta Visual Studio.
+﻿# Builds Stackshot with the C# compiler bundled with Windows (.NET Framework 4.8). No Visual Studio needed.
 #   .\build.ps1            -> bin\Stackshot.exe
-#   .\build.ps1 -Run       compila y lo abre sin instalar (--portable)
-#   .\build.ps1 -Install   compila e instala/actualiza en tu usuario (como haría la bienvenida)
+#   .\build.ps1 -Run       build and run without installing (--portable)
+#   .\build.ps1 -Install   build and install/update for the current user
 param([switch]$Run, [switch]$Install)
 $ErrorActionPreference = 'Stop'
 
@@ -22,11 +22,12 @@ $manifest = Join-Path $root 'src\app.manifest'
 $tmp = Join-Path $out ('Stackshot.' + [guid]::NewGuid().ToString('N') + '.tmp.exe')
 $cscArgs = @('/nologo', '/codepage:65001', '/target:winexe', '/optimize+', '/warnaserror+', '/platform:anycpu',
              "/out:$tmp", "/win32manifest:$manifest",
-             '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.IO.Compression.dll', '/r:System.IO.Compression.FileSystem.dll')
+             '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.IO.Compression.dll', '/r:System.IO.Compression.FileSystem.dll',
+             '/r:System.Web.Extensions.dll')
 if (Test-Path $icon) { $cscArgs += "/win32icon:$icon"; $cscArgs += "/resource:$icon,stackshot.ico" }
 if (Test-Path $logo) { $cscArgs += "/resource:$logo,logo.png" }
 
-# Se compila aparte y luego se sustituye: si falla, el .exe anterior sigue intacto.
+# Build to a temp file and swap it in, so a failed build leaves the previous .exe intact.
 $output = & $csc @cscArgs $sources 2>&1
 if ($LASTEXITCODE -ne 0) {
     $output | ForEach-Object { Write-Host $_ }
@@ -37,6 +38,6 @@ Move-Item -Force $tmp $exe
 $size = [math]::Round((Get-Item $exe).Length / 1KB)
 Write-Host "Compilado: $exe ($size KB)"
 
-# Solo se espera al instalador: -Wait esperaría también a la copia instalada, que se queda abierta.
+# Wait for the installer only: -Wait would also wait for the installed copy, which keeps running.
 if ($Install) { (Start-Process -FilePath $exe -ArgumentList '--install', '--startup' -PassThru).WaitForExit() }
 elseif ($Run) { Start-Process -FilePath $exe -ArgumentList '--portable' }

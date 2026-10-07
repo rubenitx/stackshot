@@ -1,4 +1,4 @@
-// Stackshot - Arranque: instalación, actualización, bienvenida y parámetros.
+// Stackshot - Entry point: install, update, welcome and command-line options.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Diagnostics;
@@ -11,20 +11,20 @@ using System.Windows.Forms;
 [assembly: AssemblyDescription("Capturas de pantalla, v\u00EDdeo y GIF para Windows, con miniaturas flotantes y editor r\u00E1pido")]
 [assembly: AssemblyCompany("rubenitx")]
 [assembly: AssemblyCopyright("Copyright \u00A9 2026 rubenitx \u00B7 MIT License")]
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyVersion("1.3.0.0")]
+[assembly: AssemblyFileVersion("1.3.0.0")]
 
 namespace Stackshot
 {
-    // Stackshot.exe                    la primera vez, bienvenida e instalación; después, arranca la pila
-    //            --install [--startup] [--folder <ruta>] [--no-start]   instala sin preguntar (despliegues)
-    //            --uninstall [--quiet] desinstala (lo usa Configuración > Aplicaciones)
-    //            --restart             pide a la que esté en marcha que se cierre y ocupa su sitio
-    //            --portable            funciona desde donde esté, sin instalarse
-    //            --edit <imagen>       (o arrastrar una imagen sobre el .exe) abre solo el editor
-    //            --test                no se oculta de las capturas, no toca el portapapeles ni los atajos
-    //            --background          arranca sin enseñar la ventana (el acceso de Inicio de Windows lo usa)
-    //            --home                con --test, abre la ventana igualmente
+    // Stackshot.exe            first run: welcome and install; afterwards, starts the stack
+    //   --install [--startup] [--folder <path>] [--no-start]   silent install (deployments)
+    //   --uninstall [--quiet]  uninstall (used by Settings > Apps)
+    //   --restart              ask the running instance to quit and take its place
+    //   --portable             run in place without installing
+    //   --edit <file>          editor only (same as dropping a file on the .exe)
+    //   --test                 not excluded from capture; leaves clipboard and hotkeys alone
+    //   --background           start without showing the window (startup shortcut)
+    //   --home                 with --test, show the window anyway
     public static class Program
     {
         public const string RepoUrl = "https://github.com/rubenitx/stackshot";
@@ -46,16 +46,16 @@ namespace Stackshot
 
         public static void Init()
         {
-            // A partir de aquí, las DLL de Windows solo se cargan de System32 (LOAD_LIBRARY_SEARCH_SYSTEM32): una DLL con el
-            // mismo nombre puesta junto al .exe (en Descargas) ya no se usa. Las que .NET carga antes de llegar aquí no
-            // dependen de nosotros; por eso, además, el .exe se instala en su propia carpeta.
+            // From here on, Windows DLLs load only from System32 (LOAD_LIBRARY_SEARCH_SYSTEM32), so a same-named DLL
+            // next to the .exe (e.g. in Downloads) is ignored. DLLs .NET loads earlier are out of our control, which is
+            // why the .exe is installed into its own folder.
             try { Native.SetDefaultDllDirectories(0x800); } catch { }
-            try { Native.SetProcessDpiAwarenessContext(new IntPtr(-4)); } catch { } // PER_MONITOR_AWARE_V2 (el manifiesto ya lo pide)
+            try { Native.SetProcessDpiAwarenessContext(new IntPtr(-4)); } catch { } // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 (also in the manifest)
             Directory.CreateDirectory(Settings.DataDir);
             ShotStack.LogPath = Settings.LogFile;
             Theme.Init();
             ShotStack.AppIcon = ShotStack.LoadAppIcon();
-            Application.EnableVisualStyles();
+            Application.EnableVisualStyles();            // One reusable back buffer for every double-buffered window (the default only caches tiny ones).            BufferedGraphicsManager.Current.MaximumBuffer = new System.Drawing.Size(1400, 1000);
             try { Application.SetCompatibleTextRenderingDefault(false); } catch { }
             try { Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException); } catch { }
             Application.ThreadException += delegate(object o, System.Threading.ThreadExceptionEventArgs e) { ShotStack.Log("Error: " + e.Exception); };
@@ -70,7 +70,7 @@ namespace Stackshot
 
             if (Has("--uninstall")) { Installer.Uninstall(Has("--quiet")); return 0; }
 
-            // Una imagen o un vídeo arrastrado sobre el .exe (o --edit): solo el editor.
+            // An image or video dropped on the .exe (or --edit): editor only.
             string edit = Value("--edit");
             if (edit == null && args.Length == 1 && File.Exists(args[0]) && ShotStack.IsEditable(args[0])) edit = args[0];
             if (edit != null)
@@ -93,7 +93,7 @@ namespace Stackshot
             }
 
             bool test = Has("--test"), portable = Has("--portable") || test;
-            Settings.ReadOnly = test; // las pruebas nunca tocan los ajustes de verdad
+            Settings.ReadOnly = test; // tests never write the real settings
             Settings s = Settings.Load();
 
             if (Has("--install"))
@@ -111,8 +111,8 @@ namespace Stackshot
             {
                 if (Installer.IsInstalled && (s.FirstRunDone || Installer.ManagedByMsi))
                 {
-                    // Ya está instalado: si este es más nuevo, se actualiza; si no, se abre el instalado.
-                    // Si lo instaló el paquete MSI, se actualiza con el MSI (no se pisa lo que gestiona Windows Installer).
+                    // Already installed: update if this build is newer, otherwise open the installed one.
+                    // MSI installs are updated through the MSI, never overwritten here.
                     if (Installer.MyVersion > Installer.InstalledVersion && Installer.ManagedByMsi)
                     {
                         MessageBox.Show("Este equipo tiene Stackshot " + Installer.InstalledVersion.ToString(3) + " instalado con el paquete MSI.\n\n" +
@@ -139,13 +139,13 @@ namespace Stackshot
             {
                 if (Installer.ManagedByMsi)
                 {
-                    // Lo instaló el MSI: accesos y arranque ya están puestos; sin bienvenida, directo a la ventana.
+                    // Installed by the MSI: shortcuts and startup are already set; skip the welcome.
                     s.FirstRunDone = true;
                     s.Save();
                 }
                 else
                 {
-                    // Copiado a mano a la carpeta de instalación, sin pasar por la bienvenida.
+                    // Copied into the install folder by hand, without the welcome.
                     bool startup;
                     if (!SetupWindow.Welcome(s, out startup)) return 0;
                     Installer.Register(startup);
@@ -160,7 +160,7 @@ namespace Stackshot
             {
                 if (!Has("--restart") && !test)
                 {
-                    // Ya hay una en marcha: que enseñe su ventana (salvo al arrancar con Windows).
+                    // Already running: ask it to show its window (unless starting with Windows).
                     if (!Has("--background")) Installer.SignalShow();
                     return 0;
                 }

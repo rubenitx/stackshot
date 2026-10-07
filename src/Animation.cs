@@ -1,35 +1,22 @@
-// Stackshot - Curvas, interpolaciones y el temporizador de animaciones.
+// Stackshot - Easing curves, tweens and the shared animation timer.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
 {
-    // ---------------------------------------------------------------- Animaciones
-
-    // Curvas de animación: t va de 0 a 1.
     public static class Ease
     {
         public static double Linear(double t) { return t; }
         public static double OutCubic(double t) { double u = 1 - t; return 1 - u * u * u; }
         public static double InCubic(double t) { return t * t * t; }
-        // Se pasa un poco y vuelve: para lo que aparece de golpe (avisos, el check de guardada).
+        // Overshoots slightly before settling.
         public static double OutBack(double t) { double u = t - 1; return 1 + 2.70158 * u * u * u + 1.70158 * u * u; }
     }
 
-    // Un valor que va de donde esté hasta otro en un tiempo dado (con retraso opcional) y avisa al llegar.
+    // Animates a value to a target over a duration (optional delay) and calls back when done.
     public class Tween
     {
         public double Value;
@@ -78,8 +65,8 @@ namespace Stackshot
         }
     }
 
-    // Un único temporizador para todas las ventanas flotantes. Solo corre mientras algo se mueve (en reposo,
-    // 0 % de CPU) y entonces pide al sistema el temporizador de 1 ms para que vaya fluido.
+    // One timer drives every floating window. It only runs while something moves (0% CPU when idle) and requests 1 ms
+    // timer resolution meanwhile.
     public static class Anim
     {
         static readonly Stopwatch clock = Stopwatch.StartNew();
@@ -126,7 +113,7 @@ namespace Stackshot
             }
         }
 
-        // Muelle amortiguado: k es la rigidez; z = 1 llega sin pasarse y por debajo de 1 rebota un poco.
+        // Damped spring: k is stiffness; z = 1 is critically damped, below 1 bounces.
         public static void Spring(ref double x, ref double v, double target, double k, double z, double dt)
         {
             double c = 2 * z * Math.Sqrt(k);
@@ -140,5 +127,4 @@ namespace Stackshot
         }
     }
 
-    // Arrastrar un fichero a otra aplicación igual que desde el Explorador, con la miniatura pegada al cursor.
 }
