@@ -1,4 +1,4 @@
-// Stackshot - Grabar vídeo (MP4) o GIF de un área de la pantalla con FFmpeg.
+// Stackshot - MP4/GIF screen recording through FFmpeg.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Diagnostics;
@@ -15,32 +15,23 @@ using System.Windows.Forms;
 
 namespace Stackshot
 {
-    // Stackshot copia la pantalla él mismo (píxeles reales, nítido con cualquier escala de Windows, con el cursor)
-    // y le pasa los fotogramas a FFmpeg, que solo comprime. Las ventanas de Stackshot no salen en el vídeo.
+    // Stackshot grabs the frames itself (physical pixels, any DPI, with cursor) and pipes raw BGRA to FFmpeg, which
+    // only encodes. Stackshot windows are excluded from capture.
     public static class Recorder
     {
         static Session current;
 
         public static bool Recording { get { return current != null; } }
 
+        // Only the user's explicit choice or the verified download: never whatever ffmpeg.exe happens to be on PATH
+        // (a user-writable PATH entry could shadow it).
         public static string FindFfmpeg(Settings s)
         {
             if (!string.IsNullOrEmpty(s.Ffmpeg) && File.Exists(s.Ffmpeg)) return s.Ffmpeg;
             string mine = Path.Combine(Settings.FfmpegDir, "ffmpeg.exe");
-            if (File.Exists(mine)) return mine;
-            foreach (string dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';'))
-            {
-                try
-                {
-                    string p = Path.Combine(dir.Trim(), "ffmpeg.exe");
-                    if (dir.Trim().Length > 0 && File.Exists(p)) return p;
-                }
-                catch { }
-            }
-            return null;
+            return File.Exists(mine) ? mine : null;
         }
 
-        // Empieza a grabar (eligiendo antes el área) o, si ya se está grabando, para.
         public static void Toggle(ShotStack owner, Settings s, bool gif)
         {
             if (current != null) { current.Stop(); return; }
@@ -53,7 +44,7 @@ namespace Stackshot
             Rectangle r = RegionPicker.Pick(gif ? RegionPicker.Mode.Gif : RegionPicker.Mode.Video, out frozen, out vsr, out win);
             frozen.Dispose();
             if (r.IsEmpty) return;
-            // H.264 pide medidas pares.
+            // H.264 needs even dimensions.
             r.Width = Math.Max(16, r.Width & ~1);
             r.Height = Math.Max(16, r.Height & ~1);
             current = new Session(owner, s, ffmpeg, r, gif);
@@ -70,16 +61,19 @@ namespace Stackshot
             if (current == s) current = null;
         }
 
+        // Inputs the user opens: only real video containers, never playlists or concat lists that could pull other files.
+        internal const string SafeInput = "-format_whitelist mov,mp4,m4a,3gp,3g2,mj2,matroska,webm,gif,avi ";
+
         internal static string Quote(string path) { return "\"" + path + "\""; }
     }
 
-    // Una grabación en marcha.
     class Session
     {
         readonly ShotStack owner;
         readonly string ffmpeg;
         readonly Rectangle area;
-        readonly bool gif;
+        readonly Settings settings;
+        readonly bool gif, max, high;
         readonly int fps, gifFps;
         readonly Stopwatch clock = new Stopwatch();
         readonly StringBuilder errors = new StringBuilder();
@@ -89,6 +83,8 @@ namespace Stackshot
         volatile bool stopping, cancelled;
         string error;
         RecordBar bar;
+        WebcamBubble webcam;
+        readonly int cameraShape;
         FrameEdge[] edges;
 
         public Session(ShotStack owner, Settings s, string ffmpeg, Rectangle area, bool gif)
@@ -97,8 +93,12 @@ namespace Stackshot
             this.ffmpeg = ffmpeg;
             this.area = area;
             this.gif = gif;
-            fps = gif ? Math.Max(10, s.GifFps * 2) : s.VideoFps;
+            max = !gif && s.VideoQuality == 1;
+            high = !gif && s.VideoQuality == 2;
+            fps = gif ? Math.Max(10, s.GifFps * 2) : max || high ? 60 : s.VideoFps;
             gifFps = s.GifFps;
+            cameraShape = gif ? 0 : s.Webcam;
+            settings = s;
         }
 
         public TimeSpan Elapsed { get { return clock.Elapsed; } }
@@ -109,9 +109,12 @@ namespace Stackshot
             Directory.CreateDirectory(Settings.TempDir);
             string stamp = DateTime.Now.ToString("yyyy-MM-dd HH.mm.ss");
             output = ShotStack.Unique(Path.Combine(Settings.TempDir, (gif ? "GIF " : "V\u00EDdeo ") + stamp + (gif ? ".gif" : ".mp4")));
-            // El GIF se graba primero como vídeo casi sin pérdidas (oculto: empieza por ~) y luego se convierte.
-            video = gif ? Path.Combine(Settings.TempDir, "~grabando " + stamp + ".mp4") : output;
+            // GIFs and maximum-quality videos are first recorded to a hidden "~" file and encoded afterwards: capturing
+            // losslessly with the fastest preset keeps up at 60 fps, and the slow, high-quality encode runs once at the end.
+            video = gif || max ? Path.Combine(Settings.TempDir, "~grabando " + stamp + ".mkv") : output;
             string enc = gif ? "-c:v libx264 -preset ultrafast -crf 10 -pix_fmt yuv444p "
+                       : max ? "-c:v libx264 -preset ultrafast -qp 0 -pix_fmt yuv444p "
+                       : high ? "-c:v libx264 -preset veryfast -crf 16 -pix_fmt yuv420p -movflags +faststart "
                              : "-c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -movflags +faststart ";
             string args = "-hide_banner -loglevel error -y -f rawvideo -pix_fmt bgra -video_size " + area.Width + "x" + area.Height +
                           " -framerate " + fps + " -i - " + enc + Recorder.Quote(video);
@@ -128,6 +131,11 @@ namespace Stackshot
             }
             edges = FrameEdge.Around(area);
             bar = new RecordBar(this, area);
+            if (cameraShape > 0)
+            {
+                webcam = new WebcamBubble(settings, ffmpeg, area);
+                webcam.Show();
+            }
             Native.timeBeginPeriod(1);
             clock.Start();
             worker = new Thread(Loop);
@@ -162,6 +170,7 @@ namespace Stackshot
             stopping = true;
             clock.Stop();
             if (bar != null) bar.Saving();
+            if (webcam != null) { webcam.Close(); webcam = null; }
         }
 
         public void Cancel()
@@ -170,15 +179,15 @@ namespace Stackshot
             Stop();
         }
 
-        // Hilo de grabación: copia el área a ritmo fijo, dibuja el cursor y se lo pasa a FFmpeg. Si algún fotograma
-        // llega tarde se repite el anterior, para que el vídeo dure lo mismo que la realidad.
+        // Capture thread: grabs at a fixed rate and pipes frames to FFmpeg. Late frames are duplicated so the video
+        // keeps real-time duration.
         void Loop()
         {
             IntPtr screen = Native.GetDC(IntPtr.Zero), mem = Native.CreateCompatibleDC(screen), bits, dib, old;
             Native.BITMAPINFOHEADER bi = new Native.BITMAPINFOHEADER();
             bi.biSize = Marshal.SizeOf(typeof(Native.BITMAPINFOHEADER));
             bi.biWidth = area.Width;
-            bi.biHeight = -area.Height; // de arriba abajo, como espera FFmpeg
+            bi.biHeight = -area.Height; // top-down, as FFmpeg expects
             bi.biPlanes = 1;
             bi.biBitCount = 32;
             dib = Native.CreateDIBSection(screen, ref bi, 0, out bits, IntPtr.Zero, 0);
@@ -186,6 +195,8 @@ namespace Stackshot
             byte[] buf = new byte[area.Width * area.Height * 4];
             Stream input = proc.StandardInput.BaseStream;
             double interval = 1000.0 / fps;
+            // CAPTUREBLT so the camera bubble (a layered window) is part of the video.
+            int rop = Native.SRCCOPY | (cameraShape > 0 ? Native.CAPTUREBLT : 0);
             long frame = 0;
             Stopwatch sw = Stopwatch.StartNew();
             try
@@ -198,7 +209,7 @@ namespace Stackshot
                         Thread.Sleep(Math.Max(1, (int)(due - now)));
                         continue;
                     }
-                    Native.BitBlt(mem, 0, 0, area.Width, area.Height, screen, area.X, area.Y, Native.SRCCOPY);
+                    Native.BitBlt(mem, 0, 0, area.Width, area.Height, screen, area.X, area.Y, rop);
                     Grabber.DrawCursor(mem, area.X, area.Y);
                     Marshal.Copy(bits, buf, 0, buf.Length);
                     int count = 1 + (int)Math.Floor((now - due) / interval);
@@ -225,7 +236,7 @@ namespace Stackshot
             Finish();
         }
 
-        // Sigue en el hilo de grabación: espera a que FFmpeg cierre el fichero y, si es un GIF, lo convierte.
+        // Still on the capture thread: wait for FFmpeg to finalize the file and convert to GIF if needed.
         void Finish()
         {
             if (cancelled)
@@ -240,8 +251,8 @@ namespace Stackshot
             if (error == null && !cancelled && proc.ExitCode != 0) error = "FFmpeg no pudo guardar el v\u00EDdeo. " + Tail();
             if (error == null && !cancelled && gif)
             {
-                owner.Ui(delegate { if (bar != null) bar.Converting(); });
-                // Paleta propia para cada GIF y difuminado suave: colores fieles y ficheros pequeños.
+                owner.Ui(delegate { if (bar != null) bar.Converting("Creando el GIF\u2026"); });
+                // Per-GIF palette with light dithering: accurate colors, small files.
                 int w = Math.Min(area.Width, 960) & ~1;
                 lock (errors) errors.Length = 0;
                 string args = "-hide_banner -loglevel error -y -i " + Recorder.Quote(video) + " -vf \"fps=" + gifFps + ",scale=" + w +
@@ -249,11 +260,31 @@ namespace Stackshot
                               Recorder.Quote(output);
                 try
                 {
-                    Process conv = StartFfmpeg(args, false);
-                    conv.WaitForExit();
-                    if (conv.ExitCode != 0) error = "No se pudo crear el GIF. " + Tail();
+                    using (Process conv = StartFfmpeg(args, false))
+                    {
+                        conv.WaitForExit();
+                        if (conv.ExitCode != 0) error = "No se pudo crear el GIF. " + Tail();
+                    }
                 }
                 catch (Exception ex) { error = "No se pudo crear el GIF: " + ex.Message; }
+                TryDelete(video);
+            }
+            if (error == null && !cancelled && max)
+            {
+                owner.Ui(delegate { if (bar != null) bar.Converting("Guardando en m\u00E1xima calidad\u2026"); });
+                lock (errors) errors.Length = 0;
+                // Lossless 4:4:4 capture -> very high quality 4:2:0 H.264 that every player and browser can open.
+                string args = "-hide_banner -loglevel error -y -i " + Recorder.Quote(video) +
+                              " -c:v libx264 -preset slow -crf 14 -pix_fmt yuv420p -movflags +faststart " + Recorder.Quote(output);
+                try
+                {
+                    using (Process conv = StartFfmpeg(args, false))
+                    {
+                        conv.WaitForExit();
+                        if (conv.ExitCode != 0) error = "No se pudo guardar el v\u00EDdeo. " + Tail();
+                    }
+                }
+                catch (Exception ex) { error = "No se pudo guardar el v\u00EDdeo: " + ex.Message; }
                 TryDelete(video);
             }
             if (cancelled || error != null)
@@ -261,6 +292,7 @@ namespace Stackshot
                 TryDelete(video);
                 TryDelete(output);
             }
+            try { proc.Dispose(); } catch { }
             owner.Ui(Done);
         }
 
@@ -268,6 +300,7 @@ namespace Stackshot
         {
             Native.timeEndPeriod(1);
             if (bar != null) bar.Close();
+            if (webcam != null) { webcam.Close(); webcam = null; }
             if (edges != null) foreach (FrameEdge e in edges) e.Close();
             Recorder.Ended(this);
             if (error != null)
@@ -294,12 +327,12 @@ namespace Stackshot
         }
     }
 
-    // Barrita flotante mientras se graba: punto rojo que late, tiempo, Detener y Cancelar. No sale en el vídeo.
+    // Floating bar while recording. Excluded from the capture.
     class RecordBar : FloatWindow
     {
         readonly Session session;
         readonly System.Windows.Forms.Timer tick = new System.Windows.Forms.Timer();
-        string state = "rec";     // rec | saving | gif
+        string state = "rec";     // rec | saving | convert
         int hot = -1;
         double pulse;
 
@@ -314,7 +347,7 @@ namespace Stackshot
             int x = area.X + (area.Width - sz.Width) / 2;
             int y = area.Bottom + P(12);
             if (y + sz.Height > wa.Bottom) y = area.Top - sz.Height - P(12);
-            if (y < wa.Top) y = area.Bottom - sz.Height - P(16); // ocupa toda la pantalla: dentro (no sale en el vídeo)
+            if (y < wa.Top) y = area.Bottom - sz.Height - P(16); // full-screen area: place it inside (it is excluded from the video anyway)
             x = Math.Max(wa.Left + P(8), Math.Min(wa.Right - sz.Width - P(8), x));
             SetSize(sz);
             JumpTo(x, y + P(8));
@@ -327,7 +360,8 @@ namespace Stackshot
         }
 
         public void Saving() { state = "saving"; hot = -1; Invalidate(); }
-        public void Converting() { state = "gif"; Invalidate(); }
+        public void Converting(string label) { state = "convert"; convertLabel = label; Invalidate(); }
+        string convertLabel;
 
         Rectangle StopRect() { return new Rectangle(ClientSize.Width - P(44) - P(96), P(7), P(96), ClientSize.Height - P(14)); }
         Rectangle CancelRect() { return new Rectangle(ClientSize.Width - P(40), P(8), P(30), ClientSize.Height - P(16)); }
@@ -346,27 +380,25 @@ namespace Stackshot
                 using (SolidBrush b = new SolidBrush(Color.FromArgb(255, 59, 48))) g.FillEllipse(b, P(14), cy - d / 2, d, d);
                 TimeSpan t = session.Elapsed;
                 string time = ((int)t.TotalMinutes) + ":" + t.Seconds.ToString("00");
-                using (Font f = new Font("Segoe UI Semibold", P(14), GraphicsUnit.Pixel))
-                    TextRenderer.DrawText(g, time, f, new Rectangle(P(34), 0, P(60), ClientSize.Height), Theme.Fg, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
+                TextRenderer.DrawText(g, time, Fonts.Get("Segoe UI Semibold", P(14)), new Rectangle(P(34), 0, P(60), ClientSize.Height), Theme.Fg,
+                                      TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
                 Rectangle sr = StopRect();
                 using (GraphicsPath p = Theme.Round(sr, sr.Height / 2f))
-                using (SolidBrush b = new SolidBrush(hot == 0 ? Theme.Purple : Theme.Accent)) g.FillPath(b, p);
-                using (Font f = new Font("Segoe UI Semibold", P(13), GraphicsUnit.Pixel))
-                {
-                    int sq = P(9);
-                    using (SolidBrush b = new SolidBrush(Theme.Dark)) g.FillRectangle(b, sr.X + P(14), cy - sq / 2, sq, sq);
-                    TextRenderer.DrawText(g, "Detener", f, new Rectangle(sr.X + P(28), sr.Y, sr.Width - P(30), sr.Height), Theme.Dark, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
-                }
+                using (SolidBrush b = new SolidBrush(hot == 0 ? Theme.AccentHover : Theme.Accent)) g.FillPath(b, p);
+                int sq = P(9);
+                using (SolidBrush b = new SolidBrush(Color.White)) g.FillRectangle(b, sr.X + P(14), cy - sq / 2, sq, sq);
+                TextRenderer.DrawText(g, "Detener", Fonts.Get("Segoe UI Semibold", P(13)), new Rectangle(sr.X + P(28), sr.Y, sr.Width - P(30), sr.Height),
+                                      Color.White, TextFormatFlags.VerticalCenter | TextFormatFlags.Left);
                 Rectangle cr = CancelRect();
                 if (hot == 1) using (SolidBrush b = new SolidBrush(Theme.ButtonHover)) g.FillEllipse(b, cr);
                 DrawGlyph(g, "\uE711", cr, hot == 1 ? Theme.Fg : Theme.Muted, P(11));
             }
             else
             {
-                string text = state == "gif" ? "Creando el GIF\u2026" : "Guardando\u2026";
+                string text = state == "convert" ? convertLabel : "Guardando\u2026";
                 int dots = (int)(pulse * 2) % 4;
-                using (Font f = new Font("Segoe UI Semibold", P(13), GraphicsUnit.Pixel))
-                    TextRenderer.DrawText(g, text, f, ClientRectangle, Theme.Fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                TextRenderer.DrawText(g, text, Fonts.Get("Segoe UI Semibold", P(13)), ClientRectangle, Theme.Fg,
+                                      TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
                 for (int i = 0; i < 3; i++)
                 {
                     int d = P(5);
@@ -404,7 +436,7 @@ namespace Stackshot
         }
     }
 
-    // Marco rojo alrededor de lo que se graba: cuatro tiras finas que no se pueden pinchar ni salen en el vídeo.
+    // Red frame around the recorded area: four click-through strips, excluded from the video.
     class FrameEdge : FloatWindow
     {
         FrameEdge(Rectangle r)
@@ -424,7 +456,7 @@ namespace Stackshot
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= 0x20; // WS_EX_TRANSPARENT: los clics pasan a lo que hay debajo
+                cp.ExStyle |= 0x20; // WS_EX_TRANSPARENT: clicks pass through
                 return cp;
             }
         }
@@ -442,11 +474,9 @@ namespace Stackshot
         }
     }
 
-    // La primera vez que se graba: ofrece descargar FFmpeg (libre y gratuito) y lo deja listo.
-    //
-    // Seguridad: siempre la misma versión, de una URL fija, y su SHA-256 va escrita aquí (coincide con la que publica
-    // GitHub para ese fichero). Si la suma no coincide, no se instala nada. Para cambiar de versión hay que cambiar las
-    // tres constantes a la vez.
+    // Downloads FFmpeg on first use.
+    // Security: pinned version from a fixed URL, verified against the SHA-256 below (it matches the digest GitHub
+    // publishes). Nothing is installed on mismatch. Update Version, Url and Sha256 together.
     public class FfmpegSetup : DarkForm
     {
         const string Version = "9.0.2";
@@ -461,7 +491,7 @@ namespace Stackshot
         string result, zipPath;
         bool installing;
 
-        // s: los ajustes de la copia en marcha (ahí se apunta la ruta si se elige un ffmpeg.exe propio).
+        // s: the running settings (a custom ffmpeg.exe path is stored there).
         public static string Run(Settings s)
         {
             using (FfmpegSetup f = new FfmpegSetup(s))
@@ -527,7 +557,7 @@ namespace Stackshot
                 zipPath = Path.Combine(Settings.FfmpegDir, Zip);
                 web = new WebClient();
                 web.Headers[HttpRequestHeader.UserAgent] = "Stackshot";
-                if (web.Proxy != null) web.Proxy.Credentials = CredentialCache.DefaultCredentials; // proxies de empresa
+                if (web.Proxy != null) web.Proxy.Credentials = CredentialCache.DefaultCredentials; // corporate proxies
                 web.DownloadProgressChanged += delegate(object o, DownloadProgressChangedEventArgs e)
                 {
                     if (e.TotalBytesToReceive > 0) bar.Value = e.BytesReceived / (double)e.TotalBytesToReceive;
@@ -537,7 +567,7 @@ namespace Stackshot
                 {
                     if (e.Cancelled || IsDisposed) { TryDelete(zipPath); return; }
                     if (e.Error != null) { TryDelete(zipPath); Fail("No se pudo descargar: " + e.Error.Message); return; }
-                    // Comprobar y descomprimir lleva unos segundos: mientras, no se puede cerrar.
+                    // Verifying and extracting takes a few seconds; closing is blocked meanwhile.
                     installing = true;
                     cancel.Enabled = false;
                     status.Text = "Comprobando la firma y preparando\u2026";
@@ -548,7 +578,7 @@ namespace Stackshot
             catch (Exception ex) { Fail(ex.Message); }
         }
 
-        // Comprueba la suma SHA-256 conocida y saca solo ffmpeg.exe (nada más del paquete toca el disco).
+        // Verifies the pinned SHA-256 and extracts only ffmpeg.exe.
         void Install()
         {
             string error = null, exe = Path.Combine(Settings.FfmpegDir, "ffmpeg.exe");
