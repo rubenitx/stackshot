@@ -45,7 +45,7 @@ namespace Stackshot
         {
             if (current != null) { current.Stop(); return; }
             string ffmpeg = FindFfmpeg(s);
-            if (ffmpeg == null) ffmpeg = FfmpegSetup.Run();
+            if (ffmpeg == null) ffmpeg = FfmpegSetup.Run(s);
             if (ffmpeg == null) return;
             Bitmap frozen;
             Rectangle vsr;
@@ -443,30 +443,40 @@ namespace Stackshot
     }
 
     // La primera vez que se graba: ofrece descargar FFmpeg (libre y gratuito) y lo deja listo.
+    //
+    // Seguridad: siempre la misma versión, de una URL fija, y su SHA-256 va escrita aquí (coincide con la que publica
+    // GitHub para ese fichero). Si la suma no coincide, no se instala nada. Para cambiar de versión hay que cambiar las
+    // tres constantes a la vez.
     public class FfmpegSetup : DarkForm
     {
-        const string Zip = "ffmpeg-master-latest-win64-gpl.zip";
-        const string Base = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/";
+        const string Version = "9.0.2";
+        const string Zip = "ffmpeg-9.0.2-essentials_build.zip";
+        const string Url = "https://github.com/GyanD/codexffmpeg/releases/download/9.0.2/ffmpeg-9.0.2-essentials_build.zip";
+        const string Sha256 = "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba";
+        readonly Settings settings;
         readonly Pill download, browse, cancel;
         readonly Progress bar;
         readonly Label status;
         WebClient web;
         string result, zipPath;
+        bool installing;
 
-        public static string Run()
+        // s: los ajustes de la copia en marcha (ahí se apunta la ruta si se elige un ffmpeg.exe propio).
+        public static string Run(Settings s)
         {
-            using (FfmpegSetup f = new FfmpegSetup())
+            using (FfmpegSetup f = new FfmpegSetup(s))
             {
                 f.ShowDialog();
                 return f.result;
             }
         }
 
-        FfmpegSetup() : base(460, 268)
+        FfmpegSetup(Settings s) : base(460, 268)
         {
+            settings = s;
             AddLabel("Grabar v\u00EDdeo y GIF", 28, 28, 400, 20, Theme.Fg, true, ContentAlignment.TopLeft);
-            AddLabel("Para grabar, Stackshot usa FFmpeg, un programa libre y gratuito. Se descarga una sola vez (unos 100 MB) " +
-                     "desde GitHub y se guarda solo para tu usuario.", 28, 64, 404, 13, Theme.Fg2, false, ContentAlignment.TopLeft);
+            AddLabel("Para grabar, Stackshot usa FFmpeg " + Version + ", un programa libre y gratuito. Se descarga una sola vez (unos 110 MB) " +
+                     "desde GitHub, se comprueba su firma y se guarda solo para tu usuario.", 28, 64, 404, 13, Theme.Fg2, false, ContentAlignment.TopLeft);
             bar = new Progress();
             bar.Bounds = new Rectangle(P(28), P(140), P(404), P(6));
             bar.Visible = false;
@@ -496,9 +506,8 @@ namespace Stackshot
                 d.Filter = "ffmpeg.exe|ffmpeg.exe";
                 d.Title = "\u00BFD\u00F3nde est\u00E1 ffmpeg.exe?";
                 if (d.ShowDialog(this) != DialogResult.OK) return;
-                Settings s = Settings.Load();
-                s.Ffmpeg = d.FileName;
-                s.Save();
+                settings.Ffmpeg = d.FileName;
+                settings.Save();
                 result = d.FileName;
                 Close();
             }
@@ -509,6 +518,7 @@ namespace Stackshot
             download.Enabled = false;
             browse.Enabled = false;
             bar.Visible = true;
+            status.ForeColor = Theme.Muted;
             status.Text = "Conectando\u2026";
             try
             {
@@ -525,75 +535,71 @@ namespace Stackshot
                 };
                 web.DownloadFileCompleted += delegate(object o, System.ComponentModel.AsyncCompletedEventArgs e)
                 {
-                    if (e.Cancelled) return;
-                    if (e.Error != null) { Fail("No se pudo descargar: " + e.Error.Message); return; }
-                    status.Text = "Comprobando y preparando\u2026";
+                    if (e.Cancelled || IsDisposed) { TryDelete(zipPath); return; }
+                    if (e.Error != null) { TryDelete(zipPath); Fail("No se pudo descargar: " + e.Error.Message); return; }
+                    // Comprobar y descomprimir lleva unos segundos: mientras, no se puede cerrar.
+                    installing = true;
+                    cancel.Enabled = false;
+                    status.Text = "Comprobando la firma y preparando\u2026";
                     ThreadPool.QueueUserWorkItem(delegate { Install(); });
                 };
-                web.DownloadFileAsync(new Uri(Base + Zip), zipPath);
+                web.DownloadFileAsync(new Uri(Url), zipPath);
             }
             catch (Exception ex) { Fail(ex.Message); }
         }
 
-        // Comprueba la suma SHA-256 publicada junto al ZIP y saca solo ffmpeg.exe.
+        // Comprueba la suma SHA-256 conocida y saca solo ffmpeg.exe (nada más del paquete toca el disco).
         void Install()
         {
             string error = null, exe = Path.Combine(Settings.FfmpegDir, "ffmpeg.exe");
             try
             {
-                string sums = null;
-                try
-                {
-                    using (WebClient w = new WebClient())
-                    {
-                        w.Headers[HttpRequestHeader.UserAgent] = "Stackshot";
-                        if (w.Proxy != null) w.Proxy.Credentials = CredentialCache.DefaultCredentials;
-                        sums = w.DownloadString(Base + "checksums.sha256");
-                    }
-                }
-                catch (Exception ex) { ShotStack.Log("FFmpeg: no se pudo leer checksums.sha256: " + ex.Message); }
-                if (sums != null)
-                {
-                    string expected = null;
-                    foreach (string line in sums.Split('\n'))
-                    {
-                        string l = line.Trim();
-                        if (l.EndsWith(Zip)) expected = l.Split(' ')[0].Trim().ToLowerInvariant();
-                    }
-                    if (expected != null)
-                    {
-                        string actual;
-                        using (FileStream fs = File.OpenRead(zipPath))
-                        using (SHA256 sha = SHA256.Create())
-                            actual = BitConverter.ToString(sha.ComputeHash(fs)).Replace("-", "").ToLowerInvariant();
-                        if (actual != expected) error = "La descarga no coincide con la suma publicada; se ha descartado por seguridad.";
-                    }
-                }
-                if (error == null)
+                string actual;
+                using (FileStream fs = File.OpenRead(zipPath))
+                using (SHA256 sha = SHA256.Create())
+                    actual = BitConverter.ToString(sha.ComputeHash(fs)).Replace("-", "").ToLowerInvariant();
+                if (actual != Sha256) error = "La descarga no coincide con la firma esperada; se ha descartado por seguridad.";
+                else
                 {
                     bool found = false;
+                    string tmp = exe + ".part";
                     using (ZipArchive z = ZipFile.OpenRead(zipPath))
                     {
                         foreach (ZipArchiveEntry entry in z.Entries)
                         {
                             if (!entry.FullName.EndsWith("/bin/ffmpeg.exe", StringComparison.OrdinalIgnoreCase)) continue;
-                            entry.ExtractToFile(exe, true);
+                            entry.ExtractToFile(tmp, true);
                             found = true;
                             break;
                         }
                     }
                     if (!found) error = "El paquete descargado no trae ffmpeg.exe.";
+                    else
+                    {
+                        if (File.Exists(exe)) File.Delete(exe);
+                        File.Move(tmp, exe);
+                    }
                 }
             }
             catch (Exception ex) { error = ex.Message; }
-            try { File.Delete(zipPath); } catch { }
-            BeginInvoke((Action)delegate
+            TryDelete(zipPath);
+            TryDelete(exe + ".part");
+            Action done = delegate
             {
+                installing = false;
+                cancel.Enabled = true;
                 if (error != null) { Fail(error); return; }
-                ShotStack.Log("FFmpeg listo en " + exe);
+                ShotStack.Log("FFmpeg " + Version + " listo en " + exe);
                 result = exe;
                 Close();
-            });
+            };
+            try { if (!IsDisposed && IsHandleCreated) BeginInvoke(done); }
+            catch (Exception ex) { ShotStack.Log("FFmpeg: " + ex.Message); }
+        }
+
+        static void TryDelete(string f)
+        {
+            try { if (f != null && File.Exists(f)) File.Delete(f); } catch { }
         }
 
         void Fail(string message)
@@ -608,6 +614,7 @@ namespace Stackshot
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            if (installing) { e.Cancel = true; return; }
             base.OnFormClosing(e);
             if (web != null && web.IsBusy) web.CancelAsync();
         }

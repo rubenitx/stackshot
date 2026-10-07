@@ -485,7 +485,8 @@ namespace Stackshot
             {
                 if (Find(f) != null || editors.ContainsKey(f)) continue;
                 string ext = Path.GetExtension(f).ToLowerInvariant();
-                if (Array.IndexOf(ImageExts, ext) < 0 && Array.IndexOf(MediaExts, ext) < 0) continue;
+                // También los ".png.part" que dejaría un cierre a mitad de escritura.
+                if (Array.IndexOf(ImageExts, ext) < 0 && Array.IndexOf(MediaExts, ext) < 0 && ext != ".part") continue;
                 try
                 {
                     if (File.GetLastWriteTime(f) > limit) continue;
@@ -507,6 +508,13 @@ namespace Stackshot
         public static bool IsMediaFile(string path)
         {
             return Array.IndexOf(MediaExts, Path.GetExtension(path).ToLowerInvariant()) >= 0;
+        }
+
+        // Lo que el editor sabe abrir: imágenes, vídeos y GIF.
+        public static bool IsEditable(string path)
+        {
+            string ext = Path.GetExtension(path).ToLowerInvariant();
+            return Array.IndexOf(ImageExts, ext) >= 0 || Array.IndexOf(MediaExts, ext) >= 0;
         }
 
         Card Find(string path)

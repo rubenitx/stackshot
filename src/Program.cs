@@ -46,6 +46,10 @@ namespace Stackshot
 
         public static void Init()
         {
+            // A partir de aquí, las DLL de Windows solo se cargan de System32 (LOAD_LIBRARY_SEARCH_SYSTEM32): una DLL con el
+            // mismo nombre puesta junto al .exe (en Descargas) ya no se usa. Las que .NET carga antes de llegar aquí no
+            // dependen de nosotros; por eso, además, el .exe se instala en su propia carpeta.
+            try { Native.SetDefaultDllDirectories(0x800); } catch { }
             try { Native.SetProcessDpiAwarenessContext(new IntPtr(-4)); } catch { } // PER_MONITOR_AWARE_V2 (el manifiesto ya lo pide)
             Directory.CreateDirectory(Settings.DataDir);
             ShotStack.LogPath = Settings.LogFile;
@@ -66,16 +70,31 @@ namespace Stackshot
 
             if (Has("--uninstall")) { Installer.Uninstall(Has("--quiet")); return 0; }
 
+            // Una imagen o un vídeo arrastrado sobre el .exe (o --edit): solo el editor.
             string edit = Value("--edit");
-            if (edit == null && args.Length == 1 && File.Exists(args[0])) edit = args[0];
+            if (edit == null && args.Length == 1 && File.Exists(args[0]) && ShotStack.IsEditable(args[0])) edit = args[0];
             if (edit != null)
             {
-                Application.Run(new Editor(null, Path.GetFullPath(edit), ShotStack.LoadFull(edit)));
+                try
+                {
+                    if (ShotStack.IsMediaFile(edit))
+                    {
+                        Editor v = Editor.ForVideo(null, Path.GetFullPath(edit));
+                        if (v != null) Application.Run(v);
+                    }
+                    else Application.Run(new Editor(null, Path.GetFullPath(edit), ShotStack.LoadFull(edit)));
+                }
+                catch (Exception ex)
+                {
+                    ShotStack.Log("Editar " + edit + ": " + ex);
+                    MessageBox.Show("No se pudo abrir " + Path.GetFileName(edit) + ":\n" + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
                 return 0;
             }
 
-            Settings s = Settings.Load();
             bool test = Has("--test"), portable = Has("--portable") || test;
+            Settings.ReadOnly = test; // las pruebas nunca tocan los ajustes de verdad
+            Settings s = Settings.Load();
 
             if (Has("--install"))
             {

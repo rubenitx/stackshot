@@ -173,7 +173,10 @@ namespace Stackshot
             // El propio .exe no puede borrarse mientras corre: lo borra una consola oculta un par de segundos después.
             try
             {
-                ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c ping 127.0.0.1 -n 3 > nul & rmdir /s /q \"" + Settings.InstallDir + "\"");
+                // Lo reintenta cada segundo durante medio minuto, en cuanto este proceso termine.
+                string dir = Settings.InstallDir.TrimEnd('\\');
+                ProcessStartInfo psi = new ProcessStartInfo("cmd.exe",
+                    "/d /c for /l %i in (1,1,30) do (ping 127.0.0.1 -n 2 >nul & rmdir /s /q \"" + dir + "\" 2>nul & if not exist \"" + dir + "\" exit)");
                 psi.CreateNoWindow = true;
                 psi.UseShellExecute = false;
                 psi.WindowStyle = ProcessWindowStyle.Hidden;

@@ -98,8 +98,12 @@ namespace Stackshot
             return s;
         }
 
+        // Con --test (y en las herramientas de pruebas) los ajustes se leen pero nunca se escriben.
+        public static bool ReadOnly;
+
         public void Save()
         {
+            if (ReadOnly) return;
             try
             {
                 Directory.CreateDirectory(DataDir);
