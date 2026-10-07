@@ -1,38 +1,38 @@
-# Seguridad
+# Security
 
-## Qué hace (y qué no) Stackshot con tu equipo
+## What Stackshot does on your computer
 
-- **Nada sale de tu equipo.** Sin cuentas, sin nube, sin telemetría, sin comprobaciones de versión.
-- **La única conexión** es la descarga de [FFmpeg](https://github.com/GyanD/codexffmpeg/releases/tag/9.0.2) la primera vez que grabas vídeo o GIF (y solo si aceptas). Siempre es la misma versión (9.0.2), de una dirección fija, y su **SHA-256 va escrita en el código**: si no coincide, no se instala nada. Del paquete solo se extrae `ffmpeg.exe`.
-- **Sin administrador.** Se instala en tu usuario (`%LOCALAPPDATA%\Programs\Stackshot`) y solo escribe en:
-  - `%LOCALAPPDATA%\Stackshot` (ajustes, capturas temporales, registro, FFmpeg);
-  - la carpeta de capturas guardadas que elijas;
-  - los accesos del menú Inicio y de Inicio de Windows (si lo activas);
-  - `HKCU\...\Uninstall\Stackshot` (para Configuración > Aplicaciones);
-  - `HKCU\Control Panel\Keyboard\PrintScreenKeyForSnippingEnabled`, solo si le pides que use Impr Pant.
-- **La limpieza automática** borra solo capturas temporales de más de una hora, y solo dentro de `%LOCALAPPDATA%\Stackshot\temp`.
-- **Las DLL de Windows se cargan desde System32** en cuanto arranca, aunque el `.exe` esté en una carpeta con otros ficheros (Descargas), y la copia instalada vive en su propia carpeta.
-- **Escribe con cuidado**: los ajustes se guardan de forma atómica y los atajos no aceptan una tecla normal sola (que dejaría de funcionar en todo Windows).
-- **El flujo de compilación** de GitHub tiene permisos de solo lectura salvo al publicar, y sus acciones están fijadas a commits concretos.
-- **Sus ventanas no salen en las capturas ni al compartir pantalla** (`WDA_EXCLUDEFROMCAPTURE`).
+- **Nothing leaves your computer.** There are no accounts, cloud services, telemetry or update checks.
+- **The only network access** is the download of [FFmpeg](https://github.com/GyanD/codexffmpeg/releases/tag/9.0.2) the first time you record a video or GIF, and only after you accept it. It is always the same version (9.0.2), from a fixed URL, and its **SHA-256 hash is stored in the source code**; if the download doesn't match, nothing is installed. Only `ffmpeg.exe` is extracted from the package.
+- **No administrator rights.** Stackshot installs per user (`%LOCALAPPDATA%\Programs\Stackshot`) and only writes to:
+  - `%LOCALAPPDATA%\Stackshot` (settings, temporary captures, log, FFmpeg);
+  - the folder you choose for saved screenshots;
+  - the Start menu shortcut and, if enabled, the Startup shortcut;
+  - `HKCU\...\Uninstall\Stackshot` (for Settings > Apps);
+  - `HKCU\Control Panel\Keyboard\PrintScreenKeyForSnippingEnabled`, only if you ask it to use <kbd>Print Screen</kbd>.
+- **Automatic cleanup** only deletes temporary captures older than one hour, and only inside `%LOCALAPPDATA%\Stackshot\temp`.
+- **System DLLs are loaded from System32** once the program starts, even when the executable sits in a folder with other files (such as Downloads). The installed copy lives in its own folder.
+- **Careful writes.** Settings are saved atomically, and a single key without modifiers cannot be assigned as a global shortcut.
+- **Stackshot's own windows are excluded** from screenshots and screen sharing (`WDA_EXCLUDEFROMCAPTURE`).
+- **The build workflow** runs with read-only permissions except when publishing a release, and every action is pinned to a specific commit.
 
-## Comprobar que el .exe es el bueno
+## Verifying a release
 
-Cada versión la compila GitHub Actions a partir de este código ([build.yml](.github/workflows/build.yml)) y publica:
+Every release is built by GitHub Actions from this repository ([build.yml](.github/workflows/build.yml)) and publishes:
 
-- `Stackshot.exe.sha256`, la suma del ejecutable:
+- `Stackshot.exe.sha256`, the checksum of the executable:
   ```powershell
   (Get-FileHash .\Stackshot.exe -Algorithm SHA256).Hash
   ```
-- una **atestación de procedencia** firmada (Sigstore) que demuestra de qué código y de qué ejecución sale:
+- a signed **build provenance attestation** (Sigstore) that links the executable to the exact commit and workflow run that produced it:
   ```powershell
   gh attestation verify .\Stackshot.exe --repo rubenitx/stackshot
   ```
 
-El `.exe` todavía no lleva firma de código, así que Windows SmartScreen avisa la primera vez («Más información > Ejecutar de todas formas»).
+The executable is not code-signed yet, so Windows SmartScreen shows a warning the first time it runs (**More info > Run anyway**).
 
-## Avisar de un problema
+## Reporting a vulnerability
 
-Si encuentras una vulnerabilidad, **no abras un issue público**: usa [Report a vulnerability](https://github.com/rubenitx/stackshot/security/advisories/new) (aviso privado de GitHub). Respuesta en unos días; se publicará la corrección y se te dará crédito si quieres.
+Please don't open a public issue. Use [Report a vulnerability](https://github.com/rubenitx/stackshot/security/advisories/new) to send a private report. You can expect an answer within a few days; the fix will be published and credited to you if you wish.
 
-Versión con soporte: la última publicada.
+Only the latest release is supported.

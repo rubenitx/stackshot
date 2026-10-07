@@ -1,21 +1,27 @@
-# Novedades
+# Changelog
+
+## 1.1.1
+
+- New tagline: "Captura, marca y comparte en segundos" in the launch animation, the welcome window and the About section.
+- English README as the main one, with the Spanish version in `README.es.md`.
 
 ## 1.1.0
 
-- **Ventana de Stackshot**, al estilo de macOS: se abre al lanzar Stackshot (también si ya estaba en marcha) con capturas a un clic, todos los atajos (se cambian haciendo clic y pulsando la combinación) y todos los ajustes, que se aplican al momento. Al cerrarla, Stackshot sigue en la bandeja. Al arrancar con Windows no se abre.
-- **Pixel, la mascota**: un robotito que sigue al ratón con la mirada, parpadea, salta y se aplasta si lo tocas, se marea si insistes, celebra cada captura, cuenta trucos y se duerme si le ignoras. Nombre y color a elegir.
-- **Animación de bienvenida** al abrir la ventana (se puede quitar en General).
-- **Menú de la bandeja** nuevo: oscuro, redondeado y con iconos.
-- **Captura con desplazamiento** (Ctrl + Alt + Impr Pant): cose una imagen larga mientras te desplazas, o sola con «Auto».
-- **Fondo de presentación** en el editor, como CleanShot X: trece fondos, margen, esquinas, sombra y proporción. También para vídeos y GIF con «Presentar».
-- **Más rápido**: el selector de área solo redibuja lo que cambia (antes, la pantalla entera en cada movimiento del ratón); la miniatura aparece al instante y el PNG, también el del portapapeles, se prepara en segundo plano.
+- **Main window.** Opens when Stackshot is launched (also if it is already running) and brings together one-click captures, every shortcut (click a field and press the new combination) and every setting, applied immediately. Closing it keeps Stackshot in the tray; it does not open when starting with Windows.
+- **Pixel, the mascot.** Follows the mouse with its eyes, blinks, jumps when clicked, gets dizzy if clicked too often, celebrates every capture, shows tips and falls asleep when ignored. Name and colour can be changed, or it can be hidden.
+- **Launch animation** when the window opens (can be turned off under General).
+- **Tray menu** redesigned with a dark theme, rounded corners and icons.
+- **Scrolling capture** (<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Print Screen</kbd>): stitches a long image while scrolling, manually or automatically.
+- **Presentation backdrop** in the editor: 13 backgrounds, padding, rounded corners, shadow and aspect ratio. Also available for videos and GIFs through "Presentar".
+- **Faster capture.** The area selector redraws only the regions that change, the thumbnail appears immediately and the PNG files are written in the background.
+- **Security.** FFmpeg is downloaded from a fixed version and checked against a SHA-256 hash stored in the source code; system DLLs are loaded from System32; settings are written atomically; single keys without modifiers can no longer be assigned as global shortcuts; releases include a build provenance attestation.
 
-## 1.0.0 — primera versión pública
+## 1.0.0
 
-- **Captura propia**, sin programas de terceros: área (con lupa, medidas y ajuste a ventanas), pantalla completa y ventana activa, con atajos configurables.
-- **Pila de miniaturas** flotante con animaciones: arrastrar a otras aplicaciones con la miniatura pegada al cursor, "pegar = usada", deslizar para descartar, rueda del ratón para moverse entre muchas (hasta 20) y seguir al ratón entre pantallas.
-- **Editor rápido**: flechas que se curvan, recuadros, elipses, números, texto, resaltar, pixelar y recortar; mover, estirar y borrar marcas; deshacer y rehacer.
-- **Vídeo MP4 y GIF** de un área, con el cursor (FFmpeg se descarga y verifica la primera vez).
-- **Fijar en pantalla**: la captura flota encima de todo, con zoom y transparencia.
-- **Instalación por usuario** sin administrador, con ventana de bienvenida, arranque con Windows opcional, entrada en Configuración > Aplicaciones e instalación silenciosa para sistemas.
-- Unos 40 MB de RAM y 0 % de CPU en reposo.
+- **Built-in capture** with no third-party tools: area (with magnifier, dimensions and window snapping), full screen and active window, with configurable shortcuts.
+- **Floating stack** of thumbnails with animations: drag to other applications, "pasted means used", swipe to dismiss, mouse wheel to browse up to 20 captures, follows the mouse across monitors.
+- **Quick editor**: curved arrows, rectangles, ellipses, numbers, text, highlighter, pixelation and cropping; marks can be moved, resized and deleted; undo and redo.
+- **MP4 video and GIF** of an area, including the cursor (FFmpeg is downloaded and verified the first time).
+- **Pin to screen**: the capture floats above every window, with zoom and opacity.
+- **Per-user installation** without administrator rights, with a welcome window, optional start with Windows, an entry in Settings > Apps and silent installation for IT departments.
+- About 40 MB of RAM and no CPU usage when idle.
