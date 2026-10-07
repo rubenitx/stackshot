@@ -1,7 +1,8 @@
 # Stackshot: guía para trabajar en el código
 
-Capturas de pantalla para Windows al estilo CleanShot X: captura propia, pila de miniaturas flotantes, editor rápido,
-vídeo/GIF con FFmpeg e instalación por usuario. Un único `.exe` (~390 KB) en C# 5 + WinForms sobre .NET Framework 4.8.
+Capturas de pantalla para Windows al estilo CleanShot X: captura propia (también con desplazamiento), pila de miniaturas
+flotantes, editor rápido con fondo de presentación, vídeo/GIF con FFmpeg, ventana principal con mascota e instalación por
+usuario. Un único `.exe` (~520 KB) en C# 5 + WinForms sobre .NET Framework 4.8.
 Solo Windows (10/11). Interfaz y comentarios en castellano.
 
 ## Compilar y probar
@@ -14,9 +15,14 @@ Solo Windows (10/11). Interfaz y comentarios en castellano.
 - `tools\make-screenshots.ps1` regenera `docs\*.png` con `tools\Studio.cs`: monta un escritorio sintético en la pantalla
   donde no está el ratón y fotografía cada parte. Las imágenes del README nunca deben mostrar contenido real.
 - Parámetros del exe: `--install [--startup] [--folder <ruta>] [--no-start]`, `--uninstall [--quiet]`, `--restart`,
-  `--portable`, `--test` (no se oculta de las capturas, no toca portapapeles ni atajos), `--edit <imagen>`.
+  `--portable`, `--background` (no abre la ventana; lo usa el acceso de Inicio de Windows), `--test` (no se oculta de las
+  capturas, no toca portapapeles, atajos ni temporales), `--home` (con `--test`, abre la ventana), `--edit <imagen|vídeo>`.
 - Datos: `%LOCALAPPDATA%\Stackshot` (`settings.ini`, `temp\`, `ffmpeg\`, `stackshot.log`).
-  Instalación: `%LOCALAPPDATA%\Programs\Stackshot`. Mutex `Local\Stackshot`, evento de cierre `Local\Stackshot.Quit`.
+  Instalación: `%LOCALAPPDATA%\Programs\Stackshot`. Mutex `Local\Stackshot`, eventos `Local\Stackshot.Quit` (cerrarse) y
+  `Local\Stackshot.Show` (abrir otra vez el .exe con uno en marcha: enseña su ventana).
+- Probar la ventana principal sin tocar la pantalla de trabajo: un programa aparte que compile `src\` con su propio
+  `Main`, en modo `--test`, con un fondo neutro `TopMost` en la pantalla sin ratón y la ventana también `TopMost` (si no,
+  la tapan las ventanas del usuario y salen en las fotos). Cambiar `ShotStack.LogPath` a una carpeta propia.
 
 ## Reglas del código
 
@@ -29,6 +35,17 @@ Solo Windows (10/11). Interfaz y comentarios en castellano.
 - Las ventanas flotantes (`FloatWindow`) no roban el foco, son por capas (opacidad animada), siempre encima y quedan fuera
   de las capturas (`WDA_EXCLUDEFROMCAPTURE`). Todo lo que se mueve pasa por `Anim` (un temporizador que solo corre mientras
   hay animaciones; en reposo, 0 % de CPU).
+- La ventana principal (`HomeWindow`) usa la paleta de macOS (`Mac`) e iconos de línea propios (`Icons`); el resto (pila,
+  editor) sigue con `Theme` (Tokyo Night). Se dibuja en dos lienzos `Dib` (barra lateral y contenido) que solo se rehacen
+  al cambiar algo; la mascota y lo animado van encima en cada fotograma. Sin ventana visible, no hay temporizador.
+- Nada pesado en el hilo de la interfaz: el PNG de cada captura se escribe en otro hilo (`BeginWrite`; quien necesite el
+  fichero llama a `ShotStack.WaitWritten`), el del portapapeles también (`TrackedData`) y el fondo de escritorio de
+  `Backdrop` se precarga al arrancar.
+- El selector de región (`RegionPicker`) compone cada trozo que cambia con `BitBlt` desde dos `Dib` preparados una vez
+  (claro y oscurecido, con las ayudas ya dibujadas). Repintar la pantalla entera en cada movimiento era lo que lo hacía lento.
+- FFmpeg se descarga de una versión fija (`FfmpegSetup`: `Version`, `Url`, `Sha256` en `Recorder.cs`); para subir de versión
+  hay que cambiar las tres a la vez (la SHA-256 se puede contrastar con el campo `digest` del API de GitHub).
+- `--test` y las herramientas de pruebas ponen `Settings.ReadOnly`: nunca escriben los ajustes de verdad.
 - Estilo: el de los ficheros existentes (comentarios breves en castellano que explican el porqué).
 
 ## Mapa
@@ -36,9 +53,16 @@ Solo Windows (10/11). Interfaz y comentarios en castellano.
 | Fichero | Qué hace |
 |---|---|
 | `src/Program.cs` | Arranque: bienvenida, instalación, actualización, parámetros, versión (`AssemblyVersion`) |
-| `src/Setup.cs` | `Installer` (copia, accesos directos, entrada de desinstalación, Impr Pant) y `SetupWindow` (bienvenida y ajustes) |
+| `src/Setup.cs` | `Installer` (copia, accesos directos, entrada de desinstalación, Impr Pant) y `SetupWindow` (bienvenida) |
 | `src/Settings.cs` | `settings.ini` |
 | `src/ShotStack.cs` | La pila: atajos, bandeja, capturar/guardar, miniaturas, desplazamiento, limpieza de temporales |
+| `src/Look.cs` | Paleta al estilo macOS (`Mac`) e iconos de línea dibujados a mano (`Icons`) |
+| `src/Home/HomeWindow.cs`, `HomePages.cs` | Ventana principal: marco propio con los botones de Windows 11 (minimizar y cerrar a la bandeja), secciones (Inicio, Atajos, General, Fondo y editor, Grabación, Mascota, Acerca de) y sus controles |
+| `src/Home/Mascot.cs`, `Intro.cs` | La mascota (dibujo, física y reacciones) y la animación de bienvenida |
+| `src/Home/TrayMenu.cs` | Menú de la bandeja con su propio renderizador |
+| `src/Capture/Dib.cs` | Lienzo compartido GDI/GDI+ (lo usan el selector y la ventana principal) |
+| `src/Capture/ScrollCapture.cs` | Captura con desplazamiento: sesión, cosido por hashes de filas, barrita y marco |
+| `src/Editor/Backdrop.cs`, `BgPanel.cs` | Fondo de presentación (fondos, composición, vídeo) y su franja en el editor |
 | `src/Card.cs`, `src/Chip.cs` | Miniatura y pastillas "N anteriores / N más recientes" |
 | `src/FloatWindow.cs`, `src/Animation.cs` | Base de ventanas flotantes, muelles e interpolaciones |
 | `src/Capture/*` | Atajos globales, copia de pantalla y ventanas, selección de región, fijar en pantalla, sonido, grabación (FFmpeg) |
