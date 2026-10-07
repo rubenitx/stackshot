@@ -1137,7 +1137,7 @@ namespace Stackshot
                 if (w.logo != null) g.DrawImage(w.logo, lr);
                 Txt(g, "Stackshot", w.F(30, 2), new Rectangle(R.X, lr.Bottom + w.P(16), R.Width, w.P(40)), Mac.Text, TextFormatFlags.HorizontalCenter | TextFormatFlags.SingleLine);
                 Txt(g, "Versi\u00F3n " + Installer.MyVersion.ToString(3) + "  \u00B7  Libre y gratuito (licencia MIT)", w.F(12.5f, 0), new Rectangle(R.X, lr.Bottom + w.P(60), R.Width, w.P(20)), Mac.Text2, TextFormatFlags.HorizontalCenter | TextFormatFlags.SingleLine);
-                Txt(g, "Capturas de pantalla preciosas para Windows: miniaturas flotantes, editor r\u00E1pido, v\u00EDdeo y GIF.", w.F(13, 0), new Rectangle(R.X + w.P(60), lr.Bottom + w.P(92), R.Width - w.P(120), w.P(40)), Mac.Text3, TextFormatFlags.HorizontalCenter | TextFormatFlags.WordBreak);
+                Txt(g, "Captura, marca y comparte en segundos. Miniaturas flotantes, editor r\u00E1pido, v\u00EDdeo y GIF.", w.F(13, 0), new Rectangle(R.X + w.P(60), lr.Bottom + w.P(92), R.Width - w.P(120), w.P(40)), Mac.Text3, TextFormatFlags.HorizontalCenter | TextFormatFlags.WordBreak);
             }
         }
     }

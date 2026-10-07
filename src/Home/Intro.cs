@@ -198,7 +198,7 @@ namespace Stackshot
                     }
                     double tag = Phase(t, 1320, 1600) * (1 - Phase(t, RevealAt - 80, RevealAt + 180));
                     using (SolidBrush tb = new SolidBrush(Color.FromArgb((int)(170 * tag), 200, 205, 225)))
-                        g.DrawString("Capturas de pantalla preciosas para Windows", f2, tb, new RectangleF(0, ny + 54 * s, client.Width, 30 * s), sf);
+                        g.DrawString("Captura, marca y comparte en segundos", f2, tb, new RectangleF(0, ny + 54 * s, client.Width, 30 * s), sf);
                 }
             }
         }

@@ -236,7 +236,7 @@ namespace Stackshot
             Label t = AddLabel("Bienvenido a Stackshot", 0, 140, 520, 26, Theme.Fg, true, ContentAlignment.TopCenter);
             t.Font = new Font(Fonts.DisplaySemibold, P(27), GraphicsUnit.Pixel);
             t.Height = P(40);
-            AddLabel("Capturas de pantalla preciosas para Windows.\nPulsa Impr Pant y listo.", 40, 186, 440, 14, Theme.Fg2, false, ContentAlignment.TopCenter);
+            AddLabel("Captura, marca y comparte en segundos.\nPulsa Impr Pant y listo.", 40, 186, 440, 14, Theme.Fg2, false, ContentAlignment.TopCenter);
             int y = 252;
 
             startup = AddToggleRow(x, ref y, w, "Iniciar con Windows", "Stackshot se abre solo (en segundo plano) al encender el equipo.", true);
