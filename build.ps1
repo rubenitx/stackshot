@@ -37,5 +37,6 @@ Move-Item -Force $tmp $exe
 $size = [math]::Round((Get-Item $exe).Length / 1KB)
 Write-Host "Compilado: $exe ($size KB)"
 
-if ($Install) { Start-Process -FilePath $exe -ArgumentList '--install', '--startup' -Wait }
+# Solo se espera al instalador: -Wait esperaría también a la copia instalada, que se queda abierta.
+if ($Install) { (Start-Process -FilePath $exe -ArgumentList '--install', '--startup' -PassThru).WaitForExit() }
 elseif ($Run) { Start-Process -FilePath $exe -ArgumentList '--portable' }
