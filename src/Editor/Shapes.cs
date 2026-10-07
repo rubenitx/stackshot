@@ -1,40 +1,29 @@
-// Stackshot - Marcas del editor y cómo se dibujan.
+// Stackshot - Editor annotations and how they are drawn.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using Microsoft.Win32;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
 {
-    // ---------------------------------------------------------------- Editor rápido
+    public enum Tool { Arrow, Rect, Ellipse, Text, Counter, Highlight, Pixelate, Crop, Redact }
 
-    public enum Tool { Arrow, Rect, Ellipse, Text, Counter, Highlight, Pixelate, Crop }
-
-    // Una marca, en coordenadas de la imagen original.
+    // An annotation, in original image coordinates.
     public class Shape
     {
         public Tool Kind;
         public Color Color;
-        public int Weight = 1;      // 0 fino, 1 medio, 2 grueso
-        public float Width;         // grosor del trazo
-        public float FontPx;        // texto y números
+        public int Weight = 1;      // 0 thin, 1 medium, 2 thick
+        public float Width;         // stroke width
+        public float FontPx;        // text and counters
         public PointF A, B;
-        public PointF C;            // flechas curvas: punto de control de la curva (de A a B)
+        public PointF C;            // curved arrows: quadratic control point (A to B)
         public bool Curved;
         public string Text;
         public int Number;
-        public Bitmap Cache;        // pixelado ya calculado: solo lo tiene la marca viva, nunca las copias del historial
+        public Bitmap Cache;        // pixelation cache: only the live shape owns it, never undo snapshots
         public RectangleF CacheBox;
 
         public RectangleF Box
@@ -48,7 +37,7 @@ namespace Stackshot
             }
         }
 
-        // Punto de la flecha a mitad de camino: de ahí se tira para curvarla.
+        // Point halfway along the arrow; dragging it bends the arrow.
         public PointF Mid
         {
             get
@@ -58,7 +47,7 @@ namespace Stackshot
             }
         }
 
-        // Curva la flecha para que pase por p. Si p queda casi en la recta, vuelve a ser recta.
+        // Bends the arrow to pass through p; snaps back to straight near the line.
         public void SetMid(PointF p, float snap)
         {
             PointF m = new PointF((A.X + B.X) / 2, (A.Y + B.Y) / 2);
@@ -75,7 +64,7 @@ namespace Stackshot
             C = new PointF(from.C.X + dx, from.C.Y + dy);
         }
 
-        // Puntos a lo largo de la flecha (curva de Bézier cuadrática).
+        // Points along the arrow (quadratic Bezier).
         public PointF[] Curve(int n)
         {
             PointF[] pts = new PointF[n + 1];
@@ -118,7 +107,7 @@ namespace Stackshot
             return sf;
         }
 
-        // La caja de un texto con su fondo, en coordenadas de la imagen.
+        // Text box with its background, in image coordinates.
         public static RectangleF TextBounds(Shape s)
         {
             using (Font f = new Font("Segoe UI Semibold", s.FontPx, GraphicsUnit.Pixel))
@@ -132,7 +121,7 @@ namespace Stackshot
 
         public static float CounterRadius(Shape s) { return s.FontPx * 0.8f; }
 
-        // Lo que ocupa una marca: para seleccionarla y dibujar su contorno.
+        // Shape extent, for hit testing and outlines.
         public static RectangleF Bounds(Shape s)
         {
             RectangleF b;
@@ -154,7 +143,7 @@ namespace Stackshot
             }
         }
 
-        // Flecha afilada, como las de CleanShot: cola fina, cuerpo que se ensancha y punta ancha.
+        // Tapered arrow like CleanShot's: thin tail, widening body, wide head.
         public static GraphicsPath ArrowPath(PointF a, PointF b, float w)
         {
             GraphicsPath p = new GraphicsPath();
@@ -178,8 +167,7 @@ namespace Stackshot
             return p;
         }
 
-        // La misma flecha afilada, pero siguiendo una curva: el cuerpo se ensancha a lo largo de ella y la punta
-        // mira hacia donde llega la curva.
+        // Same tapered arrow along a curve; the head points along the curve's end tangent.
         public static GraphicsPath ArrowPath(Shape s)
         {
             if (!s.Curved) return ArrowPath(s.A, s.B, s.Width);
@@ -221,7 +209,7 @@ namespace Stackshot
             return p;
         }
 
-        // Lleva p de la recta (a0, b0) a la recta (a1, b1): al estirar una flecha curva, la curva conserva su forma.
+        // Maps p from segment (a0, b0) to segment (a1, b1), so a curved arrow keeps its shape when stretched.
         public static PointF Similar(PointF p, PointF a0, PointF b0, PointF a1, PointF b1)
         {
             float dx0 = b0.X - a0.X, dy0 = b0.Y - a0.Y, dx1 = b1.X - a1.X, dy1 = b1.Y - a1.Y, den = dx0 * dx0 + dy0 * dy0;
@@ -274,6 +262,11 @@ namespace Stackshot
                     break;
                 case Tool.Highlight:
                     using (SolidBrush b = new SolidBrush(Color.FromArgb(95, s.Color))) g.FillRectangle(b, r);
+                    break;
+                case Tool.Redact:
+                    // Fully opaque, no antialiasing at the edges: nothing of what is underneath survives in the output.
+                    g.SmoothingMode = SmoothingMode.None;
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(22, 22, 26))) g.FillRectangle(b, Rectangle.Round(r));
                     break;
                 case Tool.Pixelate:
                     Rectangle ri = Rectangle.Round(r);
@@ -338,7 +331,8 @@ namespace Stackshot
         {
             r.Intersect(new Rectangle(0, 0, src.Width, src.Height));
             if (r.Width < 2 || r.Height < 2) return null;
-            int block = Math.Max(8, Math.Min(src.Width, src.Height) / 60);
+            // Large blocks: small-block mosaics of text can be reversed by matching rendered glyphs (Depix-style attacks).
+            int block = Math.Max(12, Math.Min(src.Width, src.Height) / 45);
             int sw = Math.Max(1, r.Width / block), sh = Math.Max(1, r.Height / block);
             using (Bitmap small = new Bitmap(sw, sh))
             {
@@ -359,6 +353,4 @@ namespace Stackshot
         }
     }
 
-    // Lienzo: la captura encajada en la ventana y las marcas encima. Una marca ya hecha se puede pinchar para
-    // moverla, tirar de sus puntos para cambiarla, borrarla con Supr o cambiarle el color y el grosor.
 }

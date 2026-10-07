@@ -1,4 +1,4 @@
-// Stackshot - Captura con desplazamiento: una página entera, cosida mientras se baja con la rueda.
+// Stackshot - Scrolling capture: stitches a long image while the content scrolls.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -13,9 +13,8 @@ using System.Windows.Forms;
 
 namespace Stackshot
 {
-    // Se elige el área y se baja con la rueda (o con "Auto"): cada poco se copia el área y se pega debajo lo que
-    // ha aparecido nuevo. La cabecera y el pie fijos de la página no se repiten. Esc cancela; Enter, "Listo" o el
-    // mismo atajo terminan y la captura entra en la pila como cualquier otra.
+    // The user scrolls (or presses Auto); the area is grabbed periodically and newly revealed rows are appended. Sticky
+    // headers and footers are not repeated. Esc cancels; Enter, Done or the hotkey finish.
     public static class ScrollCapture
     {
         static ScrollSession current;
@@ -46,9 +45,9 @@ namespace Stackshot
         }
     }
 
-    // Une fotogramas sucesivos de un área que baja. Cada fila se resume en un hash; el desplazamiento entre dos
-    // fotogramas es el que más filas únicas explica (votación) y se confirma comparando todo el solape.
-    // Lo que no se mueve arriba (cabecera) y abajo (pie) se queda fuera: solo se añade lo que aparece encima del pie.
+    // Stitches consecutive frames of a scrolling area. Each row is hashed; the shift is the offset most unique rows
+    // agree on (voting), confirmed by comparing the whole overlap. Static rows at the top (header) and bottom (footer)
+    // are excluded.
     public class Stitcher
     {
         public enum Result { First, Same, Added, Lost, Full }
@@ -72,8 +71,8 @@ namespace Stackshot
         public int Width { get { return w; } }
         public bool IsFull { get { return height >= maxRows; } }
 
-        // Añade un fotograma (píxeles de arriba abajo, w × h). Devuelve el búfer que ya no se usa (para reutilizarlo):
-        // px si no hacía falta guardarlo o el fotograma anterior si px pasa a ser el nuevo de referencia.
+        // Adds a frame (top-down pixels, w x h). Returns a buffer the caller can reuse: px if it was not kept, or the
+        // previous frame if px became the new reference.
         public int[] Add(int[] px, out Result result, out int added)
         {
             added = 0;
@@ -90,7 +89,7 @@ namespace Stackshot
                 return null;
             }
 
-            // Filas que siguen igual en el mismo sitio: arriba, la cabecera; abajo, el pie.
+            // Rows unchanged in place: header at the top, footer at the bottom.
             int top = 0;
             while (top < h && hs[top] == prevHash[top]) top++;
             if (top == h) { result = Result.Same; return px; }
@@ -98,9 +97,9 @@ namespace Stackshot
             while (bot < h - top && hs[h - 1 - bot] == prevHash[h - 1 - bot]) bot++;
 
             int d = BestShift(hs, flat, top, h - bot);
-            if (d == 0) { result = Result.Same; return px; }       // algo animado, pero no se ha desplazado
-            // No encaja: si solo ha cambiado una franja pequeña (un cursor que parpadea, un vídeo) no se ha desplazado;
-            // si no, se ha ido demasiado de golpe o hacia arriba.
+            if (d == 0) { result = Result.Same; return px; }       // something animates, but nothing scrolled
+            // No match: a small changed band (blinking caret, video) means no scroll; otherwise it jumped too far or
+            // went up.
             if (d < 0) { result = h - top - bot < h / 6 ? Result.Same : Result.Lost; return px; }
             if (IsFull) { result = Result.Full; return px; }
 
@@ -127,7 +126,7 @@ namespace Stackshot
         {
             int[] r = new int[w];
             Array.Copy(px, y * w, r, 0, w);
-            for (int x = 0; x < w; x++) r[x] |= unchecked((int)0xFF000000); // la copia de pantalla trae el alfa a 0
+            for (int x = 0; x < w; x++) r[x] |= unchecked((int)0xFF000000); // screen copies have alpha = 0
             return r;
         }
 
@@ -149,8 +148,8 @@ namespace Stackshot
             }
         }
 
-        // Cuánto ha bajado el contenido entre [from, to) del fotograma anterior y del nuevo: > 0 si ha bajado,
-        // 0 si no se ha movido y -1 si no se encuentra con seguridad.
+        // Downward shift between the previous and current frame within [from, to): > 0 scrolled, 0 static, -1 not found
+        // reliably.
         int BestShift(ulong[] hs, bool[] flat, int from, int to)
         {
             Dictionary<ulong, int> before = UniqueRows(prevHash, prevFlat, from, to);
@@ -173,7 +172,7 @@ namespace Stackshot
             if (best == 0) return 0;
             if (best < 0) return -1;
 
-            // Confirmación: en el solape, casi todas las filas con contenido tienen que coincidir.
+            // Confirmation: almost every non-flat row in the overlap must match.
             int considered = 0, matched = 0;
             for (int i = from; i < to - best; i++)
             {
@@ -185,7 +184,7 @@ namespace Stackshot
             return best;
         }
 
-        // Hash -> fila, solo para filas con contenido que no se repiten (las repetidas no dicen dónde se está).
+        // Hash -> row, for non-flat rows that occur once (repeated rows don't tell position).
         static Dictionary<ulong, int> UniqueRows(ulong[] hs, bool[] flat, int from, int to)
         {
             Dictionary<ulong, int> d = new Dictionary<ulong, int>();
@@ -210,7 +209,7 @@ namespace Stackshot
                     for (int y = 0; y < rows.Count; y++)
                     {
                         Marshal.Copy(rows[y], 0, new IntPtr(bd.Scan0.ToInt64() + (long)y * bd.Stride), w);
-                        rows[y] = null; // se suelta según se copia: menos memoria en el pico
+                        rows[y] = null; // release rows as they are copied to lower peak memory
                     }
                 }
                 finally { b.UnlockBits(bd); }
@@ -220,13 +219,12 @@ namespace Stackshot
         }
     }
 
-    // Una captura con desplazamiento en marcha.
     public class ScrollSession
     {
-        const int Interval = 120;         // ms entre copias del área
-        const int WheelEvery = 170;       // ms entre pasos de rueda en modo automático
-        const double AutoEndMs = 1600;    // en automático, sin nada nuevo durante este rato = final de la página
-        const long MaxPixels = 40000000;  // tope de tamaño (unos 160 MB en memoria)
+        const int Interval = 120;         // ms between grabs
+        const int WheelEvery = 170;       // ms between wheel steps in Auto mode
+        const double AutoEndMs = 1600;    // Auto mode: no growth for this long = end of page
+        const long MaxPixels = 40000000;  // size cap (~160 MB in memory)
 
         readonly ShotStack owner;
         readonly Rectangle area;
@@ -291,7 +289,7 @@ namespace Stackshot
             if (stopping) return;
             auto = !auto;
             if (!auto) return;
-            // El ratón va al centro del área: la rueda la recibe la ventana que hay debajo.
+            // Wheel input goes to the window under the cursor, so park it in the middle of the area.
             autoAt = new Point(area.X + area.Width / 2, area.Y + area.Height / 2);
             Cursor.Position = autoAt;
             Interlocked.Exchange(ref lastGrowth, clock.ElapsedMilliseconds);
@@ -299,7 +297,7 @@ namespace Stackshot
             if (bar != null) bar.Invalidate();
         }
 
-        // Hilo de la interfaz: teclas (sin quitárselas a nadie), rueda automática y la barrita.
+        // UI thread: polls keys without stealing them, drives Auto scrolling and the bar.
         void Tick(object sender, EventArgs e)
         {
             if (ended) return;
@@ -312,7 +310,7 @@ namespace Stackshot
             {
                 Point p = Cursor.Position;
                 double now = clock.ElapsedMilliseconds;
-                if (Math.Abs(p.X - autoAt.X) > 4 || Math.Abs(p.Y - autoAt.Y) > 4) { auto = false; bar.Invalidate(); } // el usuario toma el mando
+                if (Math.Abs(p.X - autoAt.X) > 4 || Math.Abs(p.Y - autoAt.Y) > 4) { auto = false; bar.Invalidate(); } // the user moved the mouse: stop Auto
                 else if (Full || now - Interlocked.Read(ref lastGrowth) > AutoEndMs) Finish();
                 else if (now >= nextWheel)
                 {
@@ -323,15 +321,15 @@ namespace Stackshot
             if (bar != null) bar.Poll();
         }
 
-        // Hilo de captura: copia el área a ritmo fijo y la cose. Al terminar compone la imagen aquí mismo.
+        // Capture thread: grabs and stitches at a fixed rate, then composes the result.
         void Loop()
         {
-            Thread.Sleep(180); // que termine de irse el selector de área
+            Thread.Sleep(180); // let the region picker disappear first
             IntPtr screen = Native.GetDC(IntPtr.Zero), mem = Native.CreateCompatibleDC(screen), bits, dib, old;
             Native.BITMAPINFOHEADER bi = new Native.BITMAPINFOHEADER();
             bi.biSize = Marshal.SizeOf(typeof(Native.BITMAPINFOHEADER));
             bi.biWidth = area.Width;
-            bi.biHeight = -area.Height; // de arriba abajo
+            bi.biHeight = -area.Height; // top-down
             bi.biPlanes = 1;
             bi.biBitCount = 32;
             dib = Native.CreateDIBSection(screen, ref bi, 0, out bits, IntPtr.Zero, 0);
@@ -386,7 +384,7 @@ namespace Stackshot
             owner.SaveCapture(result, "Desplazamiento");
         }
 
-        // ---- Rueda simulada (SendInput) y teclas leídas sin registrar atajos
+        // Synthetic wheel (SendInput) and key polling without registering hotkeys.
 
         [StructLayout(LayoutKind.Sequential)]
         struct MOUSEINPUT { public int dx, dy, mouseData, dwFlags, time; public IntPtr dwExtraInfo; }
@@ -407,7 +405,7 @@ namespace Stackshot
         }
     }
 
-    // Barrita junto al área: alto capturado, Auto, Listo y ✕. No sale en la captura.
+    // Floating bar next to the area. Excluded from the capture.
     class ScrollCaptureBar : FloatWindow
     {
         static readonly CultureInfo Es = CultureInfo.GetCultureInfo("es-ES");
@@ -428,7 +426,7 @@ namespace Stackshot
             int x = area.X + (area.Width - sz.Width) / 2;
             int y = area.Bottom + P(12);
             if (y + sz.Height > wa.Bottom) y = area.Top - sz.Height - P(12);
-            if (y < wa.Top) y = area.Bottom - sz.Height - P(16); // el área ocupa toda la pantalla: dentro (no sale en la captura)
+            if (y < wa.Top) y = area.Bottom - sz.Height - P(16); // full-screen area: place it inside (it is excluded from the capture anyway)
             x = Math.Max(wa.Left + P(8), Math.Min(wa.Right - sz.Width - P(8), x));
             SetSize(sz);
             JumpTo(x, y + P(8));
@@ -439,7 +437,7 @@ namespace Stackshot
 
         public void Saving() { saving = true; hot = -1; Invalidate(); }
 
-        // Solo repinta si cambia algo visible (la llama un temporizador cada 40 ms).
+        // Repaints only on visible changes (polled every 40 ms).
         public void Poll()
         {
             pulse += 0.04;
@@ -470,15 +468,13 @@ namespace Stackshot
             shownHeight = session.Height;
             shownState = State();
 
-            // Icono: dos hojas apiladas con una flecha hacia abajo, que respira mientras baja solo.
             Rectangle ic = new Rectangle(P(12), cy - P(13), P(26), P(26));
             double a = session.Auto ? 0.6 + 0.4 * Math.Cos(pulse * Math.PI * 2) : 1;
             using (GraphicsPath p = Theme.Round(ic, P(7)))
             using (SolidBrush b = new SolidBrush(Color.FromArgb((int)(255 * a), Theme.Accent))) g.FillPath(b, p);
-            DrawGlyph(g, "\uE74B", ic, Theme.Dark, P(13)); // flecha abajo
+            DrawGlyph(g, "\uE74B", ic, Color.White, P(13)); // down arrow
 
-            using (Font big = new Font("Segoe UI Semibold", P(14), GraphicsUnit.Pixel))
-            using (Font small = new Font("Segoe UI", P(11), GraphicsUnit.Pixel))
+            Font big = Fonts.Get("Segoe UI Semibold", P(14)), small = Fonts.Get("Segoe UI", P(11));
             {
                 int tx = P(48), tw = AutoRect().X - tx - P(6);
                 string h = shownHeight > 0 ? shownHeight.ToString("N0", Es) + " px" : "Preparando\u2026";
@@ -489,7 +485,7 @@ namespace Stackshot
             }
             if (saving) return;
 
-            using (Font f = new Font("Segoe UI Semibold", P(13), GraphicsUnit.Pixel))
+            Font f = Fonts.Get("Segoe UI Semibold", P(13));
             {
                 Rectangle ar = AutoRect();
                 Color abg = session.Auto ? Theme.ButtonHover : hot == 0 ? Theme.ButtonHover : Theme.Button;
@@ -501,8 +497,8 @@ namespace Stackshot
 
                 Rectangle dr = DoneRect();
                 using (GraphicsPath p = Theme.Round(dr, dr.Height / 2f))
-                using (SolidBrush b = new SolidBrush(hot == 1 ? Theme.Purple : Theme.Accent)) g.FillPath(b, p);
-                TextRenderer.DrawText(g, "Listo", f, dr, Theme.Dark, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+                using (SolidBrush b = new SolidBrush(hot == 1 ? Theme.AccentHover : Theme.Accent)) g.FillPath(b, p);
+                TextRenderer.DrawText(g, "Listo", f, dr, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
             }
             Rectangle cr = CancelRect();
             if (hot == 2) using (SolidBrush b = new SolidBrush(Theme.ButtonHover)) g.FillEllipse(b, cr);
@@ -532,7 +528,7 @@ namespace Stackshot
         }
     }
 
-    // Marco azul alrededor del área: cuatro tiras finas que dejan pasar el ratón y no salen en la captura.
+    // Blue frame around the area: four click-through strips, excluded from the capture.
     class ScrollEdge : FloatWindow
     {
         ScrollEdge(Rectangle r)
@@ -552,7 +548,7 @@ namespace Stackshot
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= 0x20; // WS_EX_TRANSPARENT: la rueda y los clics pasan a lo que hay debajo
+                cp.ExStyle |= 0x20; // WS_EX_TRANSPARENT: wheel and clicks pass through
                 return cp;
             }
         }

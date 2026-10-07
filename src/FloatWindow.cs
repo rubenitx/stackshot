@@ -1,30 +1,19 @@
-// Stackshot - Base de las ventanas flotantes (sin foco, siempre encima, fuera de las capturas).
+// Stackshot - Base class for floating windows (no focus, always on top, excluded from capture).
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
 {
-    // ---------------------------------------------------------------- Ventanas flotantes
-
-    // Base de las miniaturas y de las pastillas de la pila: no roban el foco, no salen en la barra de tareas,
-    // están siempre encima, quedan fuera de las capturas y se mueven y funden con animación.
+    // Base for stack thumbnails and pills: never activates, no taskbar entry, topmost, excluded from capture, animated
+    // position and opacity.
     public abstract class FloatWindow : Form
     {
         public static bool ExcludeFromCapture = true;
-        public double LastStep;    // último paso de animación (lo lleva Anim)
+        public double LastStep;    // last animation step time (owned by Anim)
         protected float s = 1f;
         protected double x, y, vx, vy, tx, ty;
         protected bool moving;
@@ -51,7 +40,7 @@ namespace Stackshot
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= 0x08000000 | 0x00080000 | 0x00000080 | 0x00000008; // NOACTIVATE | LAYERED | TOOLWINDOW | TOPMOST
+                cp.ExStyle |= 0x08000000 | 0x00080000 | 0x00000080 | 0x00000008; // WS_EX_NOACTIVATE | WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TOPMOST
                 return cp;
             }
         }
@@ -67,10 +56,10 @@ namespace Stackshot
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            Native.SetLayeredWindowAttributes(Handle, 0, shownAlpha, 2); // LWA_ALPHA: nace transparente y entra con fundido
+            Native.SetLayeredWindowAttributes(Handle, 0, shownAlpha, 2); // LWA_ALPHA: starts transparent and fades in
             try
             {
-                int round = Rounded ? 2 : 1; // DWMWCP_ROUND o DWMWCP_DONOTROUND
+                int round = Rounded ? 2 : 1; // DWMWCP_ROUND or DWMWCP_DONOTROUND
                 Native.DwmSetWindowAttribute(Handle, 33, ref round, 4);
             }
             catch { }
@@ -83,10 +72,10 @@ namespace Stackshot
 
         protected int P(float v) { return (int)Math.Round(v * s); }
 
-        // Esquinas redondeadas de Windows 11 (las tiras del marco de grabación no las quieren).
+        // Windows 11 rounded corners (the recording frame strips opt out).
         protected virtual bool Rounded { get { return true; } }
 
-        // Color del borde fino que dibuja Windows alrededor (se ilumina al pasar el ratón).
+        // Color of the thin DWM border (highlighted on hover).
         protected void SetBorder(Color c)
         {
             if (c == border) return;
@@ -101,7 +90,7 @@ namespace Stackshot
             try { Native.DwmSetWindowAttribute(Handle, 34, ref v, 4); } catch { }
         }
 
-        // La muestra sin activarla y por encima de todo.
+        // Show without activating, on top of everything.
         protected void ShowQuiet()
         {
             if (Visible) return;
@@ -159,13 +148,13 @@ namespace Stackshot
             if (IsHandleCreated) Native.SetLayeredWindowAttributes(Handle, 0, b, 2);
         }
 
-        // Mientras es true, la posición horizontal la lleva el ratón (deslizar para descartar).
+        // While true, the mouse drives the horizontal position (swipe to dismiss).
         protected virtual bool HoldX { get { return false; } }
         protected virtual void Settled() { }
-        // Animaciones propias de cada ventana; devuelve true si alguna sigue en marcha.
+        // Per-window animations; returns true while any is running.
         protected virtual bool StepExtra(double now) { return false; }
 
-        // Un paso de animación. Devuelve false cuando ya está todo quieto.
+        // One animation step. Returns false once everything is still.
         public bool Step(double now)
         {
             double dt = Math.Max(0, Math.Min(0.05, (now - LastStep) / 1000.0));
@@ -188,7 +177,7 @@ namespace Stackshot
                 if (settled) Settled();
             }
             alpha.Step(now);
-            if (IsDisposed) return false; // la animación de salida acaba cerrándola
+            if (IsDisposed) return false; // the exit animation ends by closing it
             bool more = StepExtra(now);
             if (IsDisposed) return false;
             ApplyAlpha();
@@ -211,9 +200,8 @@ namespace Stackshot
 
         protected static void DrawGlyph(Graphics g, string glyph, Rectangle r, Color c, int px)
         {
-            using (Font f = new Font(Theme.IconFont, Math.Max(1, px), GraphicsUnit.Pixel))
-                TextRenderer.DrawText(g, glyph, f, r, c, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
-                                                         TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, glyph, Fonts.Get(Theme.IconFont, Math.Max(1, px)), r, c, TextFormatFlags.HorizontalCenter |
+                                  TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
         }
     }
 

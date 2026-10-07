@@ -1,16 +1,14 @@
-// Stackshot - Fijar una captura en pantalla: una ventanita flotante, siempre encima.
+// Stackshot - Pin a capture on screen as an always-on-top window.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.IO;
 using System.Windows.Forms;
 
 namespace Stackshot
 {
-    // Arrastrar la mueve; la rueda la amplía o reduce; Ctrl + rueda cambia la transparencia;
-    // doble clic o Esc la cierra; clic derecho: copiar, guardar, tamaño real, cerrar.
+    // Drag moves it; wheel zooms; Ctrl+wheel changes opacity; double-click or Esc closes; right-click opens a menu.
     public class PinWindow : Form
     {
         readonly Bitmap img;
@@ -37,7 +35,7 @@ namespace Stackshot
             BackColor = Theme.Bg;
             if (ShotStack.AppIcon != null) Icon = ShotStack.AppIcon;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
-            // Cabe en el 70 % de la pantalla; si es más pequeña, a su tamaño.
+            // Fit within 70% of the screen, never upscale.
             Rectangle wa = scr.WorkingArea;
             zoom = Math.Min(1f, Math.Min(wa.Width * 0.7f / img.Width, wa.Height * 0.7f / img.Height));
             Size sz = Scaled();
@@ -53,8 +51,8 @@ namespace Stackshot
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ClassStyle |= 0x20000;  // CS_DROPSHADOW: sombra
-                cp.ExStyle |= 0x80;        // TOOLWINDOW: fuera de la barra de tareas y de Alt+Tab
+                cp.ClassStyle |= 0x20000;  // CS_DROPSHADOW
+                cp.ExStyle |= 0x80;        // WS_EX_TOOLWINDOW: no taskbar or Alt+Tab entry
                 return cp;
             }
         }
@@ -64,7 +62,7 @@ namespace Stackshot
             base.OnHandleCreated(e);
             try
             {
-                int round = 2; // esquinas redondeadas
+                int round = 2; // DWMWCP_ROUND
                 Native.DwmSetWindowAttribute(Handle, 33, ref round, 4);
                 int border = Theme.Border.R | (Theme.Border.G << 8) | (Theme.Border.B << 16);
                 Native.DwmSetWindowAttribute(Handle, 34, ref border, 4);
@@ -84,7 +82,7 @@ namespace Stackshot
             m.Items.Add("Guardar como\u2026", null, delegate { SaveAs(); });
             m.Items.Add("Tama\u00F1o real", null, delegate { SetZoom(1f, new Point(ClientSize.Width / 2, ClientSize.Height / 2)); });
             m.Items.Add(new ToolStripSeparator());
-            m.Items.Add("Cerrar", null, delegate { Close(); });
+            m.Items.Add("Cerrar", null, delegate { BeginInvoke((Action)Close); }); // after the menu finishes, since closing disposes it
             return m;
         }
 
@@ -102,7 +100,7 @@ namespace Stackshot
             }
         }
 
-        // Cambia el tamaño dejando quieto el punto que hay bajo el ratón.
+        // Zoom around the point under the cursor.
         void SetZoom(float z, Point anchor)
         {
             z = Math.Max(0.1f, Math.Min(4f, z));
@@ -127,12 +125,11 @@ namespace Stackshot
             g.PixelOffsetMode = PixelOffsetMode.HighQuality;
             g.DrawImage(img, ClientRectangle);
             if (!hover) return;
-            // La ✕ solo aparece con el ratón encima.
             Rectangle c = CloseRect();
             g.SmoothingMode = SmoothingMode.AntiAlias;
             using (SolidBrush b = new SolidBrush(hotClose ? Theme.Red : Color.FromArgb(220, Theme.Dark))) g.FillEllipse(b, c);
             using (Font f = new Font(Theme.IconFont, (float)Math.Round(10 * s), GraphicsUnit.Pixel))
-                TextRenderer.DrawText(g, "\uE711", f, c, hotClose ? Theme.Dark : Theme.Fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                TextRenderer.DrawText(g, "\uE711", f, c, hotClose ? Color.White : Theme.Fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -155,9 +152,9 @@ namespace Stackshot
             base.OnMouseDown(e);
             if (e.Button != MouseButtons.Left) return;
             if (CloseRect().Contains(e.Location)) { Close(); return; }
-            // Arrastre nativo de Windows: suave y con su "encaje" en los bordes.
+            // Native move: smooth and with edge snapping.
             Native.ReleaseCapture();
-            Native.SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero); // WM_NCLBUTTONDOWN en la barra de título
+            Native.SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero); // WM_NCLBUTTONDOWN on HTCAPTION
         }
 
         protected override void OnMouseDoubleClick(MouseEventArgs e)
@@ -184,6 +181,7 @@ namespace Stackshot
         {
             base.OnFormClosed(e);
             img.Dispose();
+            if (ContextMenuStrip != null) ContextMenuStrip.Dispose();
         }
     }
 }

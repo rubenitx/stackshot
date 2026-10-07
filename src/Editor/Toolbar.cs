@@ -1,19 +1,10 @@
-// Stackshot - Barra de herramientas y franja de ayuda del editor.
+// Stackshot - Editor toolbar and hint strip.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
 {
@@ -77,19 +68,16 @@ namespace Stackshot
                 case Kind.Gap: return P(17);
                 default:
                     if (it.Label == null) return P(36);
-                    using (Font f = LabelFont())
-                    {
-                        int tw = TextRenderer.MeasureText(it.Label, f).Width;
-                        if (it.Alt != null) tw = Math.Max(tw, TextRenderer.MeasureText(it.Alt, f).Width);
-                        return P(12) + P(18) + P(7) + tw + P(10);
-                    }
+                    Font f = LabelFont();
+                    int tw = TextRenderer.MeasureText(it.Label, f).Width;
+                    if (it.Alt != null) tw = Math.Max(tw, TextRenderer.MeasureText(it.Alt, f).Width);
+                    return P(12) + P(18) + P(7) + tw + P(10);
             }
         }
 
-        Font LabelFont() { return new Font("Segoe UI Semibold", P(13), GraphicsUnit.Pixel); }
+        Font LabelFont() { return Fonts.Get("Segoe UI Semibold", P(13)); }
 
-        // Coloca los botones: los normales desde la izquierda y los de acción pegados a la derecha.
-        // Devuelve el ancho mínimo para que quepa todo.
+        // Lays out tools from the left and actions from the right. Returns the minimum width that fits everything.
         public int LayoutItems()
         {
             int left = P(10), right = Math.Max(Width, 1) - P(10), used = P(20);
@@ -138,9 +126,8 @@ namespace Stackshot
 
         static void Glyph(Graphics g, string glyph, Rectangle r, Color c, int px)
         {
-            using (Font f = new Font(Theme.IconFont, Math.Max(1, px), GraphicsUnit.Pixel))
-                TextRenderer.DrawText(g, glyph, f, r, c, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
-                                                         TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, glyph, Fonts.Get(Theme.IconFont, Math.Max(1, px)), r, c, TextFormatFlags.HorizontalCenter |
+                                  TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
         }
 
         void PaintItem(Graphics g, Item it, bool isHot, bool down)
@@ -155,7 +142,7 @@ namespace Stackshot
                 {
                     if (it.On) Fill(g, r, P(8), Theme.Accent);
                     else if (isHot) Fill(g, r, P(8), down ? Theme.Border : Theme.ButtonHover);
-                    Color fg = it.On ? Theme.Dark : Theme.Fg;
+                    Color fg = it.On ? Color.White : Theme.Fg;
                     if (it.Glyph != null) Glyph(g, it.Glyph, r, fg, P(17));
                     else ToolIcon(g, it.Tool, r, fg, S);
                     return;
@@ -184,23 +171,22 @@ namespace Stackshot
                 }
                 default:
                 {
-                    Color bg = it.Accent ? (isHot ? Theme.Purple : Theme.Accent) : (isHot ? Theme.ButtonHover : Theme.Button);
-                    if (down) bg = it.Accent ? Theme.Fg2 : Theme.Border;
+                    Color bg = it.Accent ? (isHot ? Theme.AccentHover : Theme.Accent) : (isHot ? Theme.ButtonHover : Theme.Button);
+                    if (down) bg = it.Accent ? Theme.AccentDown : Theme.Border;
                     if (!it.Enabled) bg = Theme.Button;
                     Fill(g, r, P(8), bg);
-                    Color fg = it.Accent ? Theme.Dark : it.Enabled ? Theme.Fg : Theme.Muted;
-                    if (it.On && !it.Accent && it.Enabled) { Fill(g, r, P(8), isHot ? Theme.Border : Theme.ButtonHover); fg = Theme.Accent; } // activado (el fondo)
+                    Color fg = it.Accent ? Color.White : it.Enabled ? Theme.Fg : Theme.Muted;
+                    if (it.On && !it.Accent && it.Enabled) { Fill(g, r, P(8), isHot ? Theme.Border : Theme.ButtonHover); fg = Theme.Accent; } // toggled on (backdrop)
                     if (it.Label == null) { Glyph(g, it.Glyph, r, fg, P(16)); return; }
                     Glyph(g, it.Glyph, new Rectangle(r.X + P(12), r.Y, P(18), r.Height), fg, P(15));
-                    using (Font f = LabelFont())
-                        TextRenderer.DrawText(g, it.ShowAlt ? it.Alt : it.Label, f, new Rectangle(r.X + P(37), r.Y, r.Width - P(41), r.Height), fg,
-                                              TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+                    TextRenderer.DrawText(g, it.ShowAlt ? it.Alt : it.Label, LabelFont(), new Rectangle(r.X + P(37), r.Y, r.Width - P(41), r.Height), fg,
+                                          TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
                     return;
                 }
             }
         }
 
-        // Iconos que no están en la fuente de Windows: la flecha afilada y el número.
+        // Icons missing from the system icon font: tapered arrow and counter.
         static void ToolIcon(Graphics g, Tool t, Rectangle r, Color c, float s)
         {
             float cx = r.X + r.Width / 2f, cy = r.Y + r.Height / 2f;
@@ -210,11 +196,20 @@ namespace Stackshot
                 using (SolidBrush b = new SolidBrush(c)) g.FillPath(b, p);
                 return;
             }
+            if (t == Tool.Redact)
+            {
+                RectangleF block = new RectangleF(cx - 8 * s, cy - 6 * s, 16 * s, 12 * s);
+                using (GraphicsPath p = Theme.Round(block, 2.5f * s))
+                {
+                    using (SolidBrush b = new SolidBrush(c)) g.FillPath(b, p);
+                }
+                using (Pen p = new Pen(Color.FromArgb(150, Theme.Dark), 1.4f * s)) g.DrawLine(p, cx - 5 * s, cy + 2 * s, cx + 1 * s, cy - 3 * s);
+                return;
+            }
             float rad = 8.5f * s;
             using (Pen p = new Pen(c, 1.6f * s)) g.DrawEllipse(p, cx - rad, cy - rad, rad * 2, rad * 2);
-            using (Font f = new Font("Segoe UI Semibold", 11f * s, GraphicsUnit.Pixel))
-                TextRenderer.DrawText(g, "1", f, new Rectangle((int)(cx - rad), (int)(cy - rad), (int)(rad * 2), (int)(rad * 2)), c,
-                                      TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, "1", Fonts.Get("Segoe UI Semibold", 11f * s), new Rectangle((int)(cx - rad), (int)(cy - rad), (int)(rad * 2), (int)(rad * 2)), c,
+                                  TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
         }
 
         int HitTest(Point p)
@@ -295,11 +290,11 @@ namespace Stackshot
         }
     }
 
-    // Franja de abajo: qué se puede hacer ahora mismo (cambia con la herramienta y la selección) y el tamaño final.
+    // Bottom strip: context help for the current tool or selection, and the output size.
     public class Hint : Control
     {
         public string LeftText = "", RightText = "";
-        public double Progress = -1;   // 0-1: barra de progreso arriba (exportando un vídeo); -1 = sin barra
+        public double Progress = -1;   // 0-1: progress bar on top (video export); -1 = hidden
         public float S = 1f;
 
         public Hint()
@@ -321,7 +316,7 @@ namespace Stackshot
                     g.FillRectangle(b, 0, 0, (float)(Width * Math.Min(1, Progress)), ph);
             }
             int m = (int)Math.Round(12 * S);
-            using (Font f = new Font("Segoe UI", 12 * S, GraphicsUnit.Pixel))
+            Font f = Fonts.Get("Segoe UI", 12 * S);
             {
                 Size rs = TextRenderer.MeasureText(RightText, f);
                 Rectangle rr = new Rectangle(Width - rs.Width - m, 0, rs.Width, Height);
@@ -333,5 +328,4 @@ namespace Stackshot
         }
     }
 
-    // Ventana del editor: barra de herramientas arriba, lienzo en medio y ayuda abajo.
 }

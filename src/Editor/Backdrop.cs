@@ -1,7 +1,8 @@
-// Stackshot - Fondos de presentación (como CleanShot X): la captura sobre un degradado, con margen, esquinas
-// redondeadas y sombra. Sirve para imágenes (Compose) y para preparar las capas de un vídeo.
+// Stackshot - Presentation backdrops: the capture on a gradient with padding, rounded corners and shadow. Used for
+// images (Compose) and video overlays.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -11,10 +12,10 @@ using System.Text;
 
 namespace Stackshot
 {
-    // Escalas de los ajustes:
-    //   BgPadding 0-100 (por defecto 50): margen = BgPadding % de max(20 % del lado medio de la imagen, 80 px).
-    //   BgRadius  0-100 (por defecto 40): radio  = BgRadius % de max(5 % del lado medio de la imagen, 28 px).
-    // "Lado medio" = raíz de ancho × alto: así una captura pequeña y una grande quedan con las mismas proporciones.
+    // Setting scales:
+    // BgPadding 0-100 (default 50): padding = BgPadding% of max(20% of the mean side, 80 px).
+    // BgRadius 0-100 (default 40): radius = BgRadius% of max(5% of the mean side, 28 px).
+    // Mean side = sqrt(width x height), so small and large captures keep the same proportions.
     public static class Backdrop
     {
         class Preset
@@ -23,18 +24,19 @@ namespace Stackshot
             public Color[] Stops;
             public float Angle;
             public bool Wallpaper;
+            public string File;      // the user's own image (in CustomDir)
             public Preset(string name, float angle, params Color[] stops) { Name = name; Angle = angle; Stops = stops; }
         }
 
         static Color C(int rgb) { return Color.FromArgb(255, (rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255); }
 
-        static readonly Preset[] presets = Build();
+        static Preset[] presets = Build();
 
         static Preset[] Build()
         {
             Preset desk = new Preset("Tu escritorio", 45, C(0x4F7BFF), C(0x8B5CF6));
             desk.Wallpaper = true;
-            return new Preset[]
+            Preset[] builtIn =
             {
                 new Preset("Stackshot", 45, C(0x8B5CF6), C(0x4F7BFF), C(0x14B8E6)),
                 new Preset("Atardecer", 45, C(0xFF5F6D), C(0xFF9A5A), C(0xFFC371)),
@@ -50,6 +52,10 @@ namespace Stackshot
                 new Preset("Oscuro", 90, C(0x2A2A30), C(0x161619)),
                 desk
             };
+            List<Preset> all = new List<Preset>(builtIn);
+            int n = 1;
+            foreach (string f in CustomFiles()) { Preset p = new Preset("Tu imagen " + n++, 0, C(0x3A3D45), C(0x1F2126)); p.File = f; all.Add(p); }
+            return all.ToArray();
         }
 
         public static int Count { get { return presets.Length; } }
@@ -60,8 +66,6 @@ namespace Stackshot
         }
 
         static int Clamp(int i) { return Math.Max(0, Math.Min(presets.Length - 1, i)); }
-
-        // ------------------------------------------------------------ Medidas
 
         static double Unit(Size content) { return Math.Sqrt(Math.Max(1.0, (double)content.Width * content.Height)); }
 
@@ -76,7 +80,7 @@ namespace Stackshot
             return Math.Min(r, Math.Min(content.Width, content.Height) / 2);
         }
 
-        // Tamaño del lienzo y sitio de la imagen dentro. even: medidas pares (lo pide H.264).
+        // Canvas size and image placement. even: even dimensions (required by H.264).
         public static void Measure(Size content, Settings s, bool even, out Size frame, out Rectangle inner)
         {
             int pad = PaddingFor(content, s);
@@ -100,9 +104,127 @@ namespace Stackshot
             inner = new Rectangle(x, y, content.Width, content.Height);
         }
 
-        // ------------------------------------------------------------ Dibujo
+        // ---- The user's own backgrounds: copies in %LOCALAPPDATA%\Stackshot\Fondos, at most 3840 px on the long side.
+        public static readonly string CustomDir = Path.Combine(Settings.DataDir, "Fondos");
+        static readonly object customLock = new object();
+        static readonly Dictionary<string, Bitmap> thumbs = new Dictionary<string, Bitmap>();
+        static string fullFor;
+        static Bitmap full;
 
-        // La muestra de un fondo, para los selectores.
+        static string[] CustomFiles()
+        {
+            try
+            {
+                if (!Directory.Exists(CustomDir)) return new string[0];
+                List<string> files = new List<string>(Directory.GetFiles(CustomDir, "*.png"));
+                files.Sort(delegate(string a, string b) { return File.GetCreationTimeUtc(a).CompareTo(File.GetCreationTimeUtc(b)); });
+                return files.ToArray();
+            }
+            catch { return new string[0]; }
+        }
+
+        public const int MaxCustom = 6; // they share the editor's single row of swatches
+        public static int CustomCount { get { int n = 0; foreach (Preset p in presets) if (p.File != null) n++; return n; } }
+
+        public static bool IsCustom(int i) { return i >= 0 && i < presets.Length && presets[i].File != null; }
+
+        // Copies an image in as a new background and returns its index (or -1 if it is not a readable image).
+        public static int AddCustom(string source)
+        {
+            try
+            {
+                Directory.CreateDirectory(CustomDir);
+                string dest = Path.Combine(CustomDir, Guid.NewGuid().ToString("N") + ".png");
+                using (Bitmap src = ShotStack.LoadFull(source))
+                {
+                    double k = Math.Min(1.0, 3840.0 / Math.Max(src.Width, src.Height));
+                    int w = Math.Max(1, (int)Math.Round(src.Width * k)), h = Math.Max(1, (int)Math.Round(src.Height * k));
+                    using (Bitmap b = new Bitmap(w, h, PixelFormat.Format32bppArgb))
+                    {
+                        using (Graphics g = Graphics.FromImage(b))
+                        {
+                            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                            g.DrawImage(src, 0, 0, w, h);
+                        }
+                        b.Save(dest, ImageFormat.Png);
+                    }
+                }
+                presets = Build();
+                for (int i = 0; i < presets.Length; i++) if (presets[i].File == dest) return i;
+            }
+            catch (Exception ex) { ShotStack.Log("Fondo propio: " + ex.Message); }
+            return -1;
+        }
+
+        public static void RemoveCustom(int i)
+        {
+            if (!IsCustom(i)) return;
+            string f = presets[i].File;
+            lock (customLock)
+            {
+                Bitmap t;
+                if (thumbs.TryGetValue(f, out t)) { t.Dispose(); thumbs.Remove(f); }
+                if (fullFor == f && full != null) { full.Dispose(); full = null; fullFor = null; }
+            }
+            try { File.Delete(f); } catch (Exception ex) { ShotStack.Log("Fondo propio: " + ex.Message); }
+            presets = Build();
+        }
+
+        // Small copy for swatches; the full image (only the current one is kept) for the real render.
+        static Bitmap Custom(string f, bool small)
+        {
+            lock (customLock)
+            {
+                try
+                {
+                    Bitmap b;
+                    if (small && thumbs.TryGetValue(f, out b)) return b;
+                    if (!small && fullFor == f && full != null) return full;
+                    using (Bitmap src = ShotStack.LoadFull(f))
+                    {
+                        if (!small)
+                        {
+                            if (full != null) full.Dispose();
+                            full = new Bitmap(src);
+                            fullFor = f;
+                            return full;
+                        }
+                        int w = 160, h = Math.Max(1, (int)Math.Round(160.0 * src.Height / src.Width));
+                        b = new Bitmap(w, h, PixelFormat.Format32bppArgb);
+                        using (Graphics g = Graphics.FromImage(b))
+                        {
+                            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                            g.DrawImage(src, 0, 0, w, h);
+                        }
+                        thumbs[f] = b;
+                        return b;
+                    }
+                }
+                catch (Exception ex) { ShotStack.Log("Fondo propio: " + ex.Message); return null; }
+            }
+        }
+
+        // Scales an image to cover r, centered.
+        static void Cover(Graphics g, Rectangle r, Bitmap img)
+        {
+            float k = Math.Max(r.Width / (float)img.Width, r.Height / (float)img.Height);
+            float w = img.Width * k, h = img.Height * k;
+            InterpolationMode im = g.InterpolationMode;
+            PixelOffsetMode pm = g.PixelOffsetMode;
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            using (ImageAttributes ia = new ImageAttributes())
+            {
+                ia.SetWrapMode(WrapMode.TileFlipXY);
+                g.DrawImage(img, new Rectangle((int)(r.X + (r.Width - w) / 2), (int)(r.Y + (r.Height - h) / 2), (int)Math.Ceiling(w), (int)Math.Ceiling(h)),
+                            0, 0, img.Width, img.Height, GraphicsUnit.Pixel, ia);
+            }
+            g.InterpolationMode = im;
+            g.PixelOffsetMode = pm;
+        }
+
+        // Swatch for the pickers.
         public static void PaintSwatch(Graphics g, Rectangle r, int preset)
         {
             Paint(g, r, Clamp(preset), true);
@@ -112,12 +234,17 @@ namespace Stackshot
         {
             if (r.Width < 1 || r.Height < 1) return;
             Preset p = presets[preset];
+            if (p.File != null)
+            {
+                Bitmap img = Custom(p.File, small);
+                if (img != null) { Cover(g, r, img); return; }
+            }
             if (p.Wallpaper)
             {
                 Bitmap wp = Wallpaper();
                 if (wp != null)
                 {
-                    // Cubre todo el lienzo; como la imagen es diminuta, al ampliarla queda desenfocada.
+                    // Cover the whole canvas; the tiny image blurs when upscaled.
                     float k = Math.Max(r.Width / (float)wp.Width, r.Height / (float)wp.Height);
                     float w = wp.Width * k, h = wp.Height * k;
                     InterpolationMode im = g.InterpolationMode;
@@ -148,7 +275,7 @@ namespace Stackshot
                 g.FillRectangle(b, r);
             }
             if (small) return;
-            // Un brillo suave arriba a la izquierda, para que no parezca un degradado plano.
+            // Soft top-left glow so the gradient doesn't look flat.
             RectangleF glow = new RectangleF(r.X - r.Width * 0.25f, r.Y - r.Height * 0.45f, r.Width * 0.9f, r.Height * 0.9f);
             using (GraphicsPath gp = new GraphicsPath())
             {
@@ -162,7 +289,7 @@ namespace Stackshot
             }
         }
 
-        // Fondo y sombra, sin la imagen: para la vista previa del editor y para los vídeos.
+        // Background and shadow without the image (editor preview and videos).
         public static Bitmap Background(Size frame, Rectangle inner, Settings s, int radius)
         {
             Bitmap b = new Bitmap(Math.Max(1, frame.Width), Math.Max(1, frame.Height), PixelFormat.Format32bppPArgb);
@@ -175,7 +302,6 @@ namespace Stackshot
             return b;
         }
 
-        // La captura con su fondo, lista para copiar o guardar.
         public static Bitmap Compose(Bitmap content, Settings s)
         {
             Size frame;
@@ -189,8 +315,8 @@ namespace Stackshot
             return b;
         }
 
-        // Copia con las esquinas redondeadas y suavizadas: solo se tocan los píxeles de las cuatro esquinas, así que
-        // es casi tan rápido como copiar la imagen (rellenar un trazado con la imagen como textura es mucho más lento).
+        // Copy with antialiased rounded corners. Only the corner pixels are touched, which is far faster than filling a
+        // path with a texture brush.
         public static Bitmap Rounded(Bitmap src, float radius)
         {
             Bitmap b = new Bitmap(src.Width, src.Height, PixelFormat.Format32bppPArgb);
@@ -217,7 +343,7 @@ namespace Stackshot
                             float m = Coverage(x0 + i, y, b.Width, b.Height, radius);
                             if (m >= 1) continue;
                             int c = row[i];
-                            // Premultiplicado: los cuatro canales se escalan igual.
+                            // Premultiplied: scale all four channels.
                             row[i] = ((int)(((c >> 24) & 255) * m + 0.5f) << 24) | ((int)(((c >> 16) & 255) * m + 0.5f) << 16) |
                                      ((int)(((c >> 8) & 255) * m + 0.5f) << 8) | (int)((c & 255) * m + 0.5f);
                         }
@@ -229,7 +355,7 @@ namespace Stackshot
             return b;
         }
 
-        // Dos sombras como en macOS: una amplia y suave que separa la ventana del fondo y otra corta que la asienta.
+        // Two macOS-style shadows: a wide soft one and a tight one that grounds the window.
         static void Shadow(Graphics g, Rectangle inner, int radius)
         {
             double u = Unit(inner.Size);
@@ -238,10 +364,10 @@ namespace Stackshot
             Blurred(g, inner, radius, tight, tight * 0.5f, 0.30f);
         }
 
-        // Sombra difuminada de verdad: se dibuja a escala reducida, se desenfoca (tres cajas ≈ gaussiana) y se amplía.
+        // Real blurred shadow: drawn downscaled, box-blurred three times (~gaussian) and upscaled.
         static void Blurred(Graphics g, Rectangle inner, int radius, float blur, float offY, float alpha)
         {
-            float d = Math.Max(3f, blur / 3.5f);         // reducción: el desenfoque se hace en pequeño
+            float d = Math.Max(3f, blur / 3.5f);         // blur at reduced size
             int margin = (int)Math.Ceiling(blur * 2.2f);
             Rectangle area = Rectangle.Inflate(inner, margin, margin);
             int sw = Math.Max(4, (int)Math.Ceiling(area.Width / d)), sh = Math.Max(4, (int)Math.Ceiling(area.Height / d));
@@ -255,15 +381,15 @@ namespace Stackshot
                     using (SolidBrush br = new SolidBrush(Color.Black)) sg.FillPath(br, p);
                 }
                 BlurAlpha(small, Math.Max(1, (int)Math.Round(blur / d * 0.55f)), alpha);
-                // El borde de la miniatura es transparente (el margen lo cubre): basta un DrawImage normal, que es rápido.
+                // The bitmap edge is transparent (the margin covers it), so a plain DrawImage is enough.
                 InterpolationMode im = g.InterpolationMode;
-                g.InterpolationMode = InterpolationMode.HighQualityBilinear; // al ampliar es suave y, en GDI+, más rápido que el normal
+                g.InterpolationMode = InterpolationMode.HighQualityBilinear; // smooth and faster than the default when upscaling in GDI+
                 g.DrawImage(small, new Rectangle(area.X, (int)Math.Round(area.Y + offY), area.Width, area.Height));
                 g.InterpolationMode = im;
             }
         }
 
-        // Desenfoca el canal alfa con tres pasadas de caja (horizontal y vertical) y lo atenúa; el color queda negro.
+        // Three box-blur passes on the alpha channel, scaled by alpha; color stays black.
         static void BlurAlpha(Bitmap b, int r, float alpha)
         {
             int w = b.Width, h = b.Height;
@@ -303,11 +429,8 @@ namespace Stackshot
             }
         }
 
-        // ------------------------------------------------------------ Vídeo
-
-        // La capa de encima para un vídeo: el fondo con un hueco de esquinas redondeadas donde va el vídeo y las
-        // marcas dentro de ese hueco. FFmpeg pone el vídeo debajo y esta imagen encima. overlay: las marcas
-        // (tamaño del vídeo recortado, transparente) o null.
+        // Top layer for a video: background with a rounded hole for the video, plus the annotations inside it. FFmpeg
+        // puts the video below and this image on top. overlay: annotations sized to the cropped video, or null.
         public static Bitmap VideoTop(Size frame, Rectangle inner, Settings s, int radius, Bitmap overlay)
         {
             Bitmap bg = Background(frame, inner, s, radius);
@@ -358,7 +481,7 @@ namespace Stackshot
             return top;
         }
 
-        // Cuánto del píxel (x, y) cae dentro del rectángulo redondeado (0 fuera, 1 dentro, con borde suave).
+        // Coverage of pixel (x, y) inside the rounded rectangle (0 outside, 1 inside, antialiased edge).
         static float Coverage(int x, int y, int w, int h, float r)
         {
             if (r < 1) return 1;
@@ -370,8 +493,6 @@ namespace Stackshot
             return Math.Max(0, Math.Min(1, r - dist + 0.5f));
         }
 
-        // ------------------------------------------------------------ Fondo de escritorio
-
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         static extern bool SystemParametersInfo(int action, int param, StringBuilder value, int winIni);
 
@@ -381,14 +502,14 @@ namespace Stackshot
         static readonly object wallpaperLock = new object();
         static DateTime wallpaperChecked;
 
-        // Leer el fondo de escritorio la primera vez cuesta unos cientos de ms: se hace en otro hilo al arrancar,
-        // para que abrir el editor o los ajustes no se note.
+        // Loading the wallpaper takes a few hundred ms the first time, so it is prewarmed on a worker thread at
+        // startup.
         public static void Prewarm()
         {
             System.Threading.ThreadPool.QueueUserWorkItem(delegate { Wallpaper(); });
         }
 
-        // Para las imágenes del README (tools\Studio.cs): nunca el fondo de escritorio de quien las genera.
+        // For README images (tools\Studio.cs): never use the wallpaper of whoever generates them.
         public static bool NoWallpaper;
 
         static Bitmap Wallpaper()
@@ -397,12 +518,12 @@ namespace Stackshot
             lock (wallpaperLock) return LoadWallpaper();
         }
 
-        // El fondo de escritorio en miniatura (112 px): ampliado queda desenfocado, como un cristal esmerilado.
+        // Wallpaper downscaled to 112 px; upscaled it looks like frosted glass.
         static Bitmap LoadWallpaper()
         {
             try
             {
-                // Se pinta muchas veces seguidas (una por muestra): preguntar a Windows y al disco, como mucho cada 2 s.
+                // Painted once per swatch in a row: hit Windows and the disk at most every 2 s.
                 if (wallpaper != null && (DateTime.UtcNow - wallpaperChecked).TotalSeconds < 2) return wallpaper;
                 wallpaperChecked = DateTime.UtcNow;
                 StringBuilder sb = new StringBuilder(520);

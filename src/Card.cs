@@ -1,4 +1,4 @@
-// Stackshot - Miniatura de una captura en la pila.
+// Stackshot - A thumbnail in the floating stack.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -9,20 +9,13 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
 {
-    // ---------------------------------------------------------------- Miniaturas
-
-    // Una miniatura de la pila. Todo va animado: entra deslizándose desde el borde, las demás se recolocan con un
-    // muelle, se desvanece al quitarla y, si la pila cambia de pantalla, se funde aquí y aparece allí.
-    // Al pasar el ratón la imagen se sigue viendo entera: solo aparece una barrita abajo y la ✕ arriba,
-    // y se puede arrastrar desde cualquier punto (también desde un botón).
+    // A stack thumbnail. Everything animates: slides in from the edge, springs into place, fades out when removed and
+    // hops screens with the stack. Hovering shows a toolbar and a close button without hiding the image; it can be
+    // dragged from anywhere, buttons included.
     public class Card : FloatWindow
     {
         public enum Exit { Slide, Swipe, Drop }
@@ -38,10 +31,10 @@ namespace Stackshot
         class Btn { public Rectangle R; public string Glyph; public string Label; public Action Do; public bool Round; }
 
         public string FilePath;
-        public string SavedPath;   // copia en Imagenes\Capturas si el usuario la guardo
+        public string SavedPath;   // copy in the save folder, if the user kept it
         public readonly bool IsMedia;
-        public string Device;      // pantalla en la que está
-        public bool Leaving;       // ya no está en la pila: solo le queda la animación de salida
+        public string Device;      // monitor it is on
+        public bool Leaving;       // removed from the stack, only the exit animation is left
         readonly ShotStack owner;
         readonly List<Btn> btns = new List<Btn>();
         Bitmap preview, face, hoverBuf;
@@ -65,10 +58,10 @@ namespace Stackshot
             IsMedia = ShotStack.IsMediaFile(path);
         }
 
-        // Pulsada, deslizándose o arrastrándose: la pila no debe moverla de pantalla.
+        // Pressed, swiping or dragging: the stack must not move it to another monitor.
         public bool Busy { get { return pressed || swiping || dragging; } }
 
-        // Fuera de la vista porque hay más de las que caben.
+        // Hidden because there are more thumbnails than fit.
         public bool Parked { get { return parked; } }
 
         public Size WantedFor(float scale)
@@ -85,7 +78,7 @@ namespace Stackshot
             if (!swiping && !Leaving) fadeByPos = false;
         }
 
-        // Al deslizarla hacia el borde se va desvaneciendo: pasado el 30 % de su ancho, soltarla la descarta.
+        // Fades while swiped towards the edge; releasing past 30% of its width dismisses it.
         protected override double AlphaFactor()
         {
             double f = dim.Value;
@@ -97,11 +90,8 @@ namespace Stackshot
             return f;
         }
 
-        // ------------------------------------------------------------ Sitio en la pila
-
-        // La pila le da su sitio. Si es nueva, entra deslizándose desde el borde; si la pila se ha ido a otra
-        // pantalla, se desvanece aquí y aparece allí (de abajo arriba); si no cabe (hay muchas), se aparca:
-        // se va por arriba o por abajo mientras se desvanece y se oculta hasta que vuelva a tocarle.
+        // Called by the stack with its slot. New cards slide in; when the stack changes monitor they fade out here and
+        // in there; cards that don't fit are parked (slide away, fade out and hide until they fit again).
         public void Place(Rectangle r, string device, float scale, int order, bool visible)
         {
             home = r;
@@ -124,14 +114,14 @@ namespace Stackshot
                 parked = true;
                 migrating = false;
                 if (!Visible) return;
-                if (sameScreen) MoveTo(r.X, r.Y, 320, 0.9, 0); // se va hacia su lado mientras se desvanece
+                if (sameScreen) MoveTo(r.X, r.Y, 320, 0.9, 0); // drift towards its side while fading
                 alpha.Go(0, 170, 0, Ease.OutCubic, Park);
                 Anim.Wake(this);
                 return;
             }
             if (parked)
             {
-                // Vuelve a tocarle: aparece por el lado por el que se fue.
+                // Back in view: enter from the side it left.
                 parked = false;
                 bool fromAbove = y < r.Y;
                 Device = device;
@@ -163,7 +153,7 @@ namespace Stackshot
                 }
                 return;
             }
-            if (migrating) { nextScale = scale; return; } // Arrive ya usará el sitio nuevo
+            if (migrating) { nextScale = scale; return; } // Arrive will use the new slot
             if (scale != s || r.Size != Size) { s = scale; SetSize(r.Size); BuildButtons(); }
             MoveTo(r.X, r.Y, 320, 0.8, 0);
         }
@@ -177,7 +167,7 @@ namespace Stackshot
             MoveTo(home.X, home.Y, 260, 0.68, 0);
         }
 
-        // Ya invisible en la pantalla de antes: salta a la nueva y entra.
+        // Faded out on the old monitor: jump to the new one and slide in.
         void Arrive()
         {
             migrating = false;
@@ -188,7 +178,7 @@ namespace Stackshot
             SlideIn();
         }
 
-        // Aparcada del todo: se oculta y suelta las imágenes (vuelven a cargarse si vuelve a verse).
+        // Fully parked: hide and release images (reloaded when shown again).
         void Park()
         {
             if (!parked || Leaving) return;
@@ -197,7 +187,7 @@ namespace Stackshot
             ReleaseImages();
         }
 
-        // Sale de la pila con una animación y se cierra al acabar.
+        // Leaves the stack with an animation and closes when done.
         public void Dismiss(Exit how, double delay)
         {
             if (Leaving) return;
@@ -210,12 +200,12 @@ namespace Stackshot
             UpdateHover();
             switch (how)
             {
-                case Exit.Swipe: // sigue el gesto hacia el borde
+                case Exit.Swipe: // follow the swipe towards the edge
                     fadeByPos = true;
                     MoveTo(x - P(160), y, 140, 1, 0);
                     alpha.Go(0, 180, 0, Ease.OutCubic, Finish);
                     break;
-                case Exit.Drop: // ya está en otra aplicación: se desvanece donde está
+                case Exit.Drop: // dropped into another app: fade out in place
                     alpha.Go(0, 170, 0, Ease.OutCubic, Finish);
                     break;
                 default:
@@ -232,7 +222,7 @@ namespace Stackshot
             Close();
         }
 
-        // Se ha pegado: un "Pegada" visible un momento y luego se va.
+        // Pasted: show a brief label, then leave.
         public void Used(string text, Action then)
         {
             if (Leaving) return;
@@ -255,16 +245,14 @@ namespace Stackshot
             wait.Step(now);
             if (IsDisposed) return false;
             SetBorder(Mix(Theme.Border, Theme.Accent, ForceHover ? 1 : hoverT.Value));
-            // Sin ratón encima, el lienzo del velo no hace falta: se suelta.
+            // Free the hover layer when not hovered.
             if (!hoverT.Running && hoverT.Value <= 0 && hoverBuf != null && !ForceHover) { hoverBuf.Dispose(); hoverBuf = null; }
             if (repaint) Invalidate();
             return dim.Running || hoverT.Running || hotT.Running || pressT.Running || flashT.Running || badgeT.Running || wait.Running;
         }
 
-        // ------------------------------------------------------------ Contenido
-
-        // Comprueba que se puede leer y se queda con su tamaño real. La vista previa se suelta en cuanto se ha
-        // dibujado la miniatura, así que cada miniatura ocupa poco más que lo que se ve.
+        // Validates the file and records its real size. The preview is released once the thumbnail face is rendered, so
+        // each card holds little more than what is visible.
         public bool Reload()
         {
             Bitmap p = LoadPreview();
@@ -275,7 +263,7 @@ namespace Stackshot
             return true;
         }
 
-        // Captura recién hecha: la vista previa llega ya preparada (el PNG todavía se está escribiendo).
+        // Fresh capture: the preview comes from memory while the PNG is still being written.
         public void UsePreview(Bitmap p, Size orig)
         {
             ReleaseImages();
@@ -320,7 +308,7 @@ namespace Stackshot
             Invalidate();
         }
 
-        // Arriba a la izquierda, la ✕; abajo, una barrita con Copiar, Editar, Guardar y Fijar.
+        // Close button top-left; toolbar at the bottom with Copy, Edit, Save and Pin.
         void BuildButtons()
         {
             btns.Clear();
@@ -333,7 +321,7 @@ namespace Stackshot
             if (IsMedia)
             {
                 tools.Add(MakeBtn(GPlay, "Abrir", OpenFile));
-                tools.Add(MakeBtn(GEdit, "Presentar", Edit)); // marcas y fondo sobre la grabación
+                tools.Add(MakeBtn(GEdit, "Editar", Edit)); // trim, annotate, crop and backdrop
             }
             else tools.Add(MakeBtn(GEdit, "Editar", Edit));
             if (SavedPath == null) tools.Add(MakeBtn(GSave, "Guardar", Keep));
@@ -373,7 +361,7 @@ namespace Stackshot
             return -1;
         }
 
-        // Encaja la imagen sin ampliarla por encima de su tamaño real.
+        // Fit the image without upscaling beyond its real size.
         Rectangle ImageRect(Rectangle box)
         {
             double f = Math.Min((double)box.Width / origSize.Width, (double)box.Height / origSize.Height);
@@ -383,7 +371,7 @@ namespace Stackshot
             return new Rectangle(box.X + (box.Width - w) / 2, box.Y + (box.Height - h) / 2, w, h);
         }
 
-        // La vista previa ya escalada al tamaño de la miniatura: dibujar cada fotograma cuesta casi nada.
+        // Preview pre-scaled to the card size, so each frame is a cheap blit.
         Bitmap Face()
         {
             if (ClientSize.Width <= 0 || ClientSize.Height <= 0) return null;
@@ -397,7 +385,7 @@ namespace Stackshot
             using (ImageAttributes ia = new ImageAttributes())
             {
                 Quality(g);
-                ia.SetWrapMode(WrapMode.TileFlipXY); // sin bordes oscuros al reducir
+                ia.SetWrapMode(WrapMode.TileFlipXY); // avoids dark edges when downscaling
                 g.DrawImage(preview, new Rectangle(0, 0, ir.Width, ir.Height), 0, 0, preview.Width, preview.Height, GraphicsUnit.Pixel, ia);
             }
             faceRect = ir;
@@ -405,8 +393,6 @@ namespace Stackshot
             preview = null;
             return face;
         }
-
-        // ------------------------------------------------------------ Dibujo
 
         static void Blit(Graphics g, Image img, int left, int top, ImageAttributes ia)
         {
@@ -422,8 +408,8 @@ namespace Stackshot
             return Rectangle.Inflate(r, -dx, -dy);
         }
 
-        // Debajo, la miniatura sola; encima, la capa con los botones, que aparece con un fundido.
-        // Las dos capas son opacas, así que los iconos se dibujan igual de nítidos que siempre.
+        // Base layer is the plain thumbnail; the hover layer with buttons fades in on top. Both are opaque, so icons
+        // stay crisp.
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
@@ -463,8 +449,7 @@ namespace Stackshot
             if (f != null) Blit(g, f, faceRect.X, faceRect.Y, null);
             else
             {
-                using (Font fn = new Font("Segoe UI", P(12), GraphicsUnit.Pixel))
-                    TextRenderer.DrawText(g, Path.GetFileName(FilePath), fn, r, Theme.Fg, Centered | TextFormatFlags.EndEllipsis);
+                TextRenderer.DrawText(g, Path.GetFileName(FilePath), Fonts.Get("Segoe UI", P(12)), r, Theme.Fg, Centered | TextFormatFlags.EndEllipsis);
             }
         }
 
@@ -478,18 +463,16 @@ namespace Stackshot
                 using (SolidBrush b = new SolidBrush(Color.FromArgb(210, Theme.Dark))) g.FillEllipse(b, c);
                 DrawGlyph(g, GPlay, c, Theme.Fg, P(16));
                 string ext = Path.GetExtension(FilePath).TrimStart('.').ToUpperInvariant();
-                using (Font f = new Font("Segoe UI Semibold", P(11), GraphicsUnit.Pixel))
-                {
-                    Size ts = TextRenderer.MeasureText(ext, f);
-                    Rectangle lr = new Rectangle(P(8), r.Height - P(8) - P(20), ts.Width + P(12), P(20));
-                    using (GraphicsPath p = Theme.Round(lr, P(10)))
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(210, Theme.Dark))) g.FillPath(b, p);
-                    TextRenderer.DrawText(g, ext, f, lr, Theme.Fg, Centered);
-                }
+                Font f = Fonts.Get("Segoe UI Semibold", P(11));
+                Size ts = TextRenderer.MeasureText(ext, f);
+                Rectangle lr = new Rectangle(P(8), r.Height - P(8) - P(20), ts.Width + P(12), P(20));
+                using (GraphicsPath p = Theme.Round(lr, P(10)))
+                using (SolidBrush b = new SolidBrush(Color.FromArgb(210, Theme.Dark))) g.FillPath(b, p);
+                TextRenderer.DrawText(g, ext, f, lr, Theme.Fg, Centered);
             }
             if (SavedPath != null)
             {
-                // El check verde de guardada aparece con un pequeño salto.
+                // The saved badge pops in.
                 double pop = badgeT.Value;
                 int d = (int)Math.Round(P(22) * pop);
                 if (d > 2)
@@ -497,13 +480,12 @@ namespace Stackshot
                     int cx = r.Width - P(8) - P(11), cy = r.Height - P(8) - P(11);
                     Rectangle c = new Rectangle(cx - d / 2, cy - d / 2, d, d);
                     using (SolidBrush b = new SolidBrush(Theme.Green)) g.FillEllipse(b, c);
-                    DrawGlyph(g, GCheck, c, Theme.Dark, (int)Math.Round(P(11) * pop));
+                    DrawGlyph(g, GCheck, c, Color.White, (int)Math.Round(P(11) * pop));
                 }
             }
         }
 
-        // La imagen se queda a la vista: solo se oscurecen un poco los bordes de arriba y de abajo,
-        // donde van los botones, para que se lean sobre cualquier captura.
+        // Only the top and bottom edges darken, where the buttons are, so they stay readable on any capture.
         void PaintHover(Graphics g, Rectangle r, double h)
         {
             Quality(g);
@@ -517,7 +499,7 @@ namespace Stackshot
                    Color.FromArgb(130, 8, 8, 14), Color.FromArgb(0, 8, 8, 14), 90f))
                 g.FillRectangle(lg, 0, 0, r.Width, gt);
 
-            int lift = (int)Math.Round((1 - h) * P(8)); // la barra sube un poco al aparecer
+            int lift = (int)Math.Round((1 - h) * P(8)); // the bar rises slightly as it appears
             Rectangle br = bar;
             br.Offset(0, lift);
             using (GraphicsPath p = Theme.Round(br, br.Height / 2f))
@@ -542,11 +524,11 @@ namespace Stackshot
             double press = i == pressShown ? pressT.Value : 0;
             if (b.Round)
             {
-                // La ✕ crece un poco al aparecer y se pone roja al pasar por encima.
+                // The close button grows in and turns red on hover.
                 Rectangle r = Shrink(b.R, (1 - h) * 0.3 + press * 0.1);
                 using (SolidBrush br = new SolidBrush(Mix(Color.FromArgb(225, Theme.Dark), Theme.Red, hotA))) g.FillEllipse(br, r);
                 int px = (int)Math.Round(P(11) * r.Width / (double)Math.Max(1, b.R.Width));
-                DrawGlyph(g, b.Glyph, r, Mix(Theme.Fg, Theme.Dark, hotA), px);
+                DrawGlyph(g, b.Glyph, r, Mix(Theme.Fg, Color.White, hotA), px);
                 return;
             }
             Rectangle rr = b.R;
@@ -557,10 +539,10 @@ namespace Stackshot
                 using (GraphicsPath p = Theme.Round(rr, rr.Height / 2f))
                 using (SolidBrush br = new SolidBrush(Mix(Color.FromArgb(0, Theme.Accent), Theme.Accent, hotA))) g.FillPath(br, p);
             }
-            DrawGlyph(g, b.Glyph, rr, Mix(Theme.Fg, Theme.Dark, hotA), P(15));
+            DrawGlyph(g, b.Glyph, rr, Mix(Theme.Fg, Color.White, hotA), P(15));
         }
 
-        // Nombre del botón de la barra que está debajo del ratón, encima de la barra.
+        // Label of the hovered toolbar button, above the bar.
         void PaintLabel(Graphics g, double h)
         {
             int i = hot >= 0 ? hot : prevHot;
@@ -569,7 +551,7 @@ namespace Stackshot
             int ai = (int)Math.Round(255 * Math.Max(0, Math.Min(1, a)));
             if (ai < 4) return;
             Btn b = btns[i];
-            using (Font f = new Font("Segoe UI Semibold", P(12), GraphicsUnit.Pixel))
+            Font f = Fonts.Get("Segoe UI Semibold", P(12));
             using (StringFormat sf = new StringFormat())
             {
                 sf.Alignment = StringAlignment.Center;
@@ -588,7 +570,7 @@ namespace Stackshot
             }
         }
 
-        // "Copiado", "Guardada", "Pegada": salta con un pequeño rebote, se queda un momento y se desvanece.
+        // Status label (copied, saved, pasted): pops in, holds, then fades.
         void PaintFlash(Graphics g, Rectangle r)
         {
             if (flash == null) return;
@@ -614,13 +596,11 @@ namespace Stackshot
                 using (GraphicsPath p = Theme.Round(fr, hh / 2f))
                 using (SolidBrush b = new SolidBrush(Color.FromArgb(ai, flashColor))) g.FillPath(b, p);
                 g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-                using (SolidBrush t = new SolidBrush(Color.FromArgb(ai, Theme.Dark))) g.DrawString(flash, f, t, fr, sf);
+                using (SolidBrush t = new SolidBrush(Color.FromArgb(ai, Color.White))) g.DrawString(flash, f, t, fr, sf);
             }
         }
 
-        // ------------------------------------------------------------ Ratón
-
-        // Los botones aparecen con un instante de retraso, para que no parpadeen al pasar de largo.
+        // Buttons appear after a short delay so they don't flicker when the mouse passes by.
         void UpdateHover()
         {
             double want = hover && !swiping && !dragging && !Leaving ? 1 : 0;
@@ -676,13 +656,13 @@ namespace Stackshot
                 Size d = SystemInformation.DragSize;
                 if (Math.Abs(dx) > d.Width || Math.Abs(dy) > d.Height)
                 {
-                    // Da igual dónde se pulsara (también sobre un botón): si se mueve, es un gesto, no un clic.
+                    // Wherever it was pressed (even on a button), movement means a gesture, not a click.
                     gestureDecided = true;
                     pressBtn = -1;
                     if (pressT.Target > 0) pressT.Go(0, 120, 0, Ease.OutCubic, null);
-                    // Hacia el borde izquierdo: deslizar para descartar, como en CleanShot.
+                    // Left: swipe to dismiss, like CleanShot.
                     if (dx < 0 && Math.Abs(dx) >= Math.Abs(dy)) { StartSwipe(dx); return; }
-                    // Hacia cualquier otro lado: arrastrar el fichero a otra aplicación.
+                    // Any other direction: drag the file to another app.
                     pressed = false;
                     StartDrag();
                     return;
@@ -721,7 +701,7 @@ namespace Stackshot
         protected override void OnMouseCaptureChanged(EventArgs e)
         {
             base.OnMouseCaptureChanged(e);
-            // Si se pierde el ratón a medio deslizar (Alt+Tab, etc.), vuelve a su sitio.
+            // Mouse capture lost mid-swipe (Alt+Tab...): spring back.
             BeginInvoke((Action)delegate
             {
                 if (!swiping || IsDisposed) return;
@@ -750,7 +730,7 @@ namespace Stackshot
         void SwipeMove()
         {
             Point m = Control.MousePosition;
-            // Si el ratón se mete en otra pantalla (la de la izquierda), no quiere descartarla: quiere llevarla allí.
+            // If the cursor enters another monitor, the user wants to move it there, not dismiss it.
             if (Screen.FromPoint(new Point(m.X + P(30), m.Y)).DeviceName != Device)
             {
                 swiping = false;
@@ -760,7 +740,7 @@ namespace Stackshot
                 return;
             }
             int dx = m.X - swipeStartX;
-            // Hacia la derecha solo cede un poco, como una goma.
+            // Rubber-band resistance to the right.
             double nx = home.X + (dx < 0 ? dx : Math.Min(P(14), dx * 0.2));
             double now = Anim.Now, dt = now - swipeLastT;
             if (dt >= 4)
@@ -780,19 +760,19 @@ namespace Stackshot
             swiping = false;
             pressed = false;
             double gone = home.X - x;
-            if (Anim.Now - swipeLastT > 90) swipeV = 0; // se paró antes de soltar
-            // Descartada si pasa del 30 % o si se lanza con fuerza hacia el borde.
+            if (Anim.Now - swipeLastT > 90) swipeV = 0; // stopped before releasing
+            // Dismissed past 30% or when flung towards the edge.
             if (gone > Width * 0.3 || (swipeV < -700 && gone > P(12)))
             {
                 vx = Math.Min(swipeV, -500);
                 owner.Remove(this, Exit.Swipe);
                 return;
             }
-            MoveTo(home.X, home.Y, 420, 0.62, 0); // vuelve a su sitio con un pequeño rebote
+            MoveTo(home.X, home.Y, 420, 0.62, 0); // spring back with a small bounce
             UpdateHover();
         }
 
-        // Mientras se arrastra, la miniatura va pegada al cursor y la original se queda en penumbra.
+        // While dragging, the ghost follows the cursor and the card dims.
         void StartDrag()
         {
             ShotStack.WaitWritten(FilePath);
@@ -823,15 +803,13 @@ namespace Stackshot
             dragging = false;
             if (IsDisposed) return;
             if (closeAfterDrag) { Close(); return; }
-            // Soltada en otra aplicación: ya cumplió, fuera de la pila.
+            // Dropped into another app: done, remove it.
             if (result != DragDropEffects.None) { owner.Remove(this, Exit.Drop); return; }
             dim.Go(1, 220, 0, Ease.OutCubic, null);
             hover = ClientRectangle.Contains(PointToClient(Control.MousePosition));
             UpdateHover();
             Anim.Wake(this);
         }
-
-        // ------------------------------------------------------------ Acciones
 
         void Copy()
         {
@@ -874,7 +852,7 @@ namespace Stackshot
         void ShowInFolder()
         {
             ShotStack.WaitWritten(FilePath);
-            try { Process.Start("explorer.exe", "/select,\"" + (SavedPath ?? FilePath) + "\""); }
+            try { Process.Start(Native.Explorer, "/select,\"" + (SavedPath ?? FilePath) + "\""); }
             catch (Exception ex) { ShotStack.Log("Carpeta: " + ex.Message); }
         }
 
@@ -918,6 +896,4 @@ namespace Stackshot
         }
     }
 
-    // Pastilla encima o debajo de la pila cuando no caben todas: "3 anteriores" / "2 más recientes".
-    // Un clic pasa una página; la rueda del ratón (aquí o sobre cualquier miniatura) va de una en una.
 }

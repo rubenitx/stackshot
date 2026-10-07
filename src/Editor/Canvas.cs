@@ -1,19 +1,11 @@
-// Stackshot - Lienzo del editor: dibujar, seleccionar, mover, recortar y deshacer.
+// Stackshot - Editor canvas: draw, select, move, crop and undo.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
 {
@@ -24,7 +16,7 @@ namespace Stackshot
 
         public static readonly float[] Weights = { 0.6f, 1f, 1.6f };
 
-        public readonly Bitmap Img;
+        public Bitmap Img { get; private set; }
         public float Ui = 1f;
         public Tool Tool = Tool.Rect;
         public Color Color = Theme.Palette[0];
@@ -46,10 +38,10 @@ namespace Stackshot
         RectangleF viewCrop;
         TextBox box;
         PointF boxAt;
-        // Fondo de presentación: con BgOn, la captura se ve (y sale) sobre el fondo de Bg.
+        // Presentation backdrop: with BgOn, the capture is shown (and exported) on Bg's background.
         public Settings Bg;
         public bool BgOn;
-        public bool Live;          // mientras se arrastra un deslizador del fondo: escalado rápido, luego el bueno
+        public bool Live;          // while a backdrop slider is dragged: fast scaling, high quality afterwards
         bool viewLive;
         Rectangle frameScreen;
         float radiusScreen;
@@ -74,7 +66,7 @@ namespace Stackshot
         public bool CanRedo { get { return redo.Count > 0; } }
         public Color ActiveColor { get { return selected != null ? selected.Color : Color; } }
         public int ActiveWeight { get { return selected != null ? selected.Weight : Weight; } }
-        // Tamaño final: con fondo, el del lienzo entero.
+        // Output size: the whole frame when the backdrop is on.
         public Size OutputSize
         {
             get
@@ -95,15 +87,13 @@ namespace Stackshot
 
         void Fire(EventHandler h) { if (h != null) h(this, EventArgs.Empty); }
 
-        // ------------------------------------------------------------ Encaje y coordenadas
-
         void Fit()
         {
             float pad = 28 * Ui;
             float aw = Math.Max(1f, Width - 2 * pad), ah = Math.Max(1f, Height - 2 * pad);
             if (BgOn && Bg != null)
             {
-                // Lo que se encaja es el lienzo entero (fondo incluido); la captura queda en su sitio dentro.
+                // Fit the whole frame (backdrop included); the capture sits inside it.
                 Size cs = OutputSizeRaw, frame;
                 Rectangle inner;
                 Backdrop.Measure(cs, Bg, false, out frame, out inner);
@@ -118,7 +108,7 @@ namespace Stackshot
             off = new PointF((float)Math.Round((Width - Crop.Width * k) / 2f), (float)Math.Round((Height - Crop.Height * k) / 2f));
         }
 
-        // El fondo con su sombra, a la escala de la pantalla: solo se rehace si cambia algo.
+        // Background and shadow at screen scale, rebuilt only when something changes.
         Bitmap BgView(Rectangle ir)
         {
             string key = Bg.BgPreset + "|" + Bg.BgPadding + "|" + Bg.BgRadius + "|" + Bg.BgShadow + "|" + Bg.BgRatio + "|" + frameScreen + "|" + ir;
@@ -130,7 +120,7 @@ namespace Stackshot
             return bgView;
         }
 
-        // La captura ya escalada con las esquinas redondeadas (transparentes y suavizadas).
+        // Scaled capture with antialiased rounded corners.
         Bitmap RoundView(Bitmap v)
         {
             string key = v.GetHashCode() + "|" + v.Size + "|" + Math.Round(radiusScreen, 1);
@@ -159,7 +149,7 @@ namespace Stackshot
             return Rectangle.FromLTRB(a.X, a.Y, b.X, b.Y);
         }
 
-        // La imagen ya escalada se guarda para que dibujar sea instantáneo mientras se arrastra.
+        // Cached scaled image so painting while dragging is instant.
         Bitmap View()
         {
             Size want = new Size(Math.Max(1, (int)Math.Round(Crop.Width * k)), Math.Max(1, (int)Math.Round(Crop.Height * k)));
@@ -180,7 +170,7 @@ namespace Stackshot
             return view;
         }
 
-        // Fondo de lienzo con una trama de puntos muy suave (se dibuja una vez por tamaño).
+        // Subtle dot grid, rendered once per size.
         Bitmap Dots()
         {
             if (dots != null && dots.Size == ClientSize) return dots;
@@ -198,8 +188,6 @@ namespace Stackshot
             return dots;
         }
 
-        // ------------------------------------------------------------ Dibujo
-
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
@@ -216,7 +204,7 @@ namespace Stackshot
             }
             else
             {
-                for (int i = 1; i <= 6; i++) // sombra suave bajo la captura
+                for (int i = 1; i <= 6; i++) // soft shadow under the capture
                 {
                     Rectangle sr = ir;
                     sr.Inflate(Pu(i * 1.6f), Pu(i * 1.6f));
@@ -253,7 +241,7 @@ namespace Stackshot
             switch (s.Kind)
             {
                 case Tool.Arrow:
-                    return new PointF[] { s.A, s.B, s.Mid }; // el tercero, en medio, la curva
+                    return new PointF[] { s.A, s.B, s.Mid }; // the third handle (middle) bends the arrow
                 case Tool.Text:
                 case Tool.Counter:
                     return new PointF[0];
@@ -263,7 +251,7 @@ namespace Stackshot
             }
         }
 
-        // Contorno discontinuo: tenue al pasar por encima, azul y con puntos para tirar si está seleccionada.
+        // Dashed outline: faint on hover, blue with handles when selected.
         void Outline(Graphics g, Shape s, bool strong)
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -292,14 +280,14 @@ namespace Stackshot
             {
                 Point p = ToScreen(handles[i]);
                 Rectangle hr = new Rectangle(p.X - hs, p.Y - hs, hs * 2, hs * 2);
-                // El punto de curvar la flecha va relleno de azul, para distinguirlo de los extremos.
+                // The bend handle is filled blue to tell it apart from the endpoints.
                 bool bend = s.Kind == Tool.Arrow && i == 2;
                 using (SolidBrush b = new SolidBrush(bend ? Theme.Accent : Color.White)) g.FillEllipse(b, hr);
                 using (Pen pen = new Pen(bend ? Color.White : Theme.Accent, Math.Max(1.5f, 2f * Ui))) g.DrawEllipse(pen, hr);
             }
         }
 
-        // Al recortar: fuera del área se oscurece; dentro, guías de tercios y el tamaño resultante.
+        // Crop: dim outside, rule-of-thirds guides and resulting size inside.
         void CropOverlay(Graphics g, Rectangle ir, RectangleF crop)
         {
             Rectangle cr = ScreenRect(crop);
@@ -339,8 +327,6 @@ namespace Stackshot
             }
         }
 
-        // ------------------------------------------------------------ Encontrar marcas
-
         Shape ShapeAt(Point screen)
         {
             if (!ScreenRect(Crop).Contains(screen)) return null;
@@ -360,7 +346,7 @@ namespace Stackshot
             {
                 case Tool.Rect:
                 {
-                    // Solo el trazo: así se puede dibujar dentro de un recuadro sin cogerlo sin querer.
+                    // Stroke only, so the user can draw inside a rectangle without grabbing it.
                     b = s.Box;
                     float m = s.Width / 2 + tol;
                     RectangleF outer = RectangleF.Inflate(b, m, m), inner = RectangleF.Inflate(b, -m, -m);
@@ -428,8 +414,6 @@ namespace Stackshot
             if (h != hover) { hover = h; Invalidate(); }
             if (Cursor != c) Cursor = c;
         }
-
-        // ------------------------------------------------------------ Ratón
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
@@ -517,7 +501,7 @@ namespace Stackshot
                 case Drag.Resize:
                 {
                     if (!committed) { Commit(); committed = true; }
-                    // El punto del medio de una flecha la curva (cerca de la recta, vuelve a ser recta).
+                    // The middle handle bends the arrow (snaps back to straight near the line).
                     if (selected.Kind == Tool.Arrow && handle == 2) selected.SetMid(ToImg(e.Location, false), 8f * Ui / k);
                     else ResizeShape(selected, orig, handle, ToImg(e.Location, true), (ModifierKeys & Keys.Shift) != 0);
                     Invalidate();
@@ -558,11 +542,11 @@ namespace Stackshot
             Commit();
             shapes.Add(s);
             Fire(Changed);
-            // Una flecha recién hecha queda seleccionada: así se ve el punto del medio para curvarla.
+            // New arrows stay selected so the bend handle is visible.
             if (s.Kind == Tool.Arrow) SelectShape(s);
         }
 
-        // Recortar no destruye nada: se guarda el área y Ctrl+Z la devuelve.
+        // Non-destructive crop: only the area is stored and Ctrl+Z restores it.
         void ApplyCrop(RectangleF r)
         {
             r = RectangleF.Intersect(r, Crop);
@@ -591,7 +575,7 @@ namespace Stackshot
             Invalidate();
         }
 
-        // Mayúsculas: cuadrado o círculo perfecto, o flecha recta (múltiplos de 45 grados).
+        // Shift: perfect square/circle or 45-degree arrow.
         static PointF Constrain(PointF a, PointF b, Tool t)
         {
             float dx = b.X - a.X, dy = b.Y - a.Y;
@@ -611,7 +595,7 @@ namespace Stackshot
             {
                 if (h == 0) s.A = square ? Constrain(o.B, p, Tool.Arrow) : p;
                 else s.B = square ? Constrain(o.A, p, Tool.Arrow) : p;
-                if (o.Curved) s.C = Painter.Similar(o.C, o.A, o.B, s.A, s.B); // la curva se estira con ella
+                if (o.Curved) s.C = Painter.Similar(o.C, o.A, o.B, s.A, s.B); // keep the curve's shape while resizing
                 return;
             }
             RectangleF b = o.Box;
@@ -620,8 +604,6 @@ namespace Stackshot
             s.A = fixedPt;
             s.B = square ? Constrain(fixedPt, p, Tool.Rect) : p;
         }
-
-        // ------------------------------------------------------------ Historial
 
         Snapshot Take()
         {
@@ -632,7 +614,7 @@ namespace Stackshot
             return sn;
         }
 
-        // Foto de cómo estaba, antes de cambiar algo.
+        // Snapshot taken before every change.
         void Commit()
         {
             undo.Add(Take());
@@ -671,8 +653,6 @@ namespace Stackshot
             Restore(sn);
         }
 
-        // ------------------------------------------------------------ Órdenes desde el editor
-
         public void SelectShape(Shape s)
         {
             if (selected == s) return;
@@ -690,7 +670,7 @@ namespace Stackshot
             Fire(StateChanged);
         }
 
-        // Si hay una marca seleccionada, el color se le aplica a ella; si no, es el de las siguientes.
+        // Applies to the selected shape if any, otherwise to the next ones.
         public void SetColor(Color c)
         {
             Color = c;
@@ -762,13 +742,12 @@ namespace Stackshot
                     case Tool.Text: return "Haz clic donde quieras escribir";
                     case Tool.Counter: return "Cada clic pone el siguiente n\u00FAmero: 1, 2, 3\u2026";
                     case Tool.Highlight: return "Arrastra sobre lo que quieras resaltar";
-                    case Tool.Pixelate: return "Arrastra sobre lo que quieras tapar (correos, nombres, datos\u2026)";
+                    case Tool.Pixelate: return "Arrastra sobre lo que quieras difuminar \u00b7 para contrase\u00f1as o datos sensibles, mejor Tapar (X)";
+                    case Tool.Redact: return "Arrastra sobre lo que quieras tapar: un bloque s\u00f3lido que borra de verdad lo de debajo";
                     default: return "Arrastra el \u00E1rea que quieres conservar \u00B7 Ctrl+Z lo deshace";
                 }
             }
         }
-
-        // ------------------------------------------------------------ Texto
 
         void StartText(PointF at, Shape existing)
         {
@@ -866,9 +845,7 @@ namespace Stackshot
             Fire(StateChanged);
         }
 
-        // ------------------------------------------------------------ Resultado
-
-        // La imagen final: recortada, con las marcas y, si está puesto, sobre su fondo.
+        // Final image: cropped, annotated and on the backdrop if enabled.
         public Bitmap Render()
         {
             Size o = OutputSizeRaw;
@@ -883,7 +860,7 @@ namespace Stackshot
             using (b) return Backdrop.Compose(b, Bg);
         }
 
-        // Solo las marcas de ese trozo de la imagen, sobre transparente (para ponerlas encima de un vídeo).
+        // Only the annotations in that area, on transparent (to overlay on a video).
         public Bitmap RenderMarks(Rectangle area)
         {
             Bitmap b = new Bitmap(Math.Max(1, area.Width), Math.Max(1, area.Height), PixelFormat.Format32bppArgb);
@@ -909,8 +886,18 @@ namespace Stackshot
             if (roundView != null) roundView.Dispose();
             Img.Dispose();
         }
+
+        // Video editor: shows another frame of the same recording under the marks (same size, so nothing moves).
+        public void ReplaceImage(Bitmap img)
+        {
+            if (img.Width != Img.Width || img.Height != Img.Height) { img.Dispose(); return; }
+            Bitmap old = Img;
+            Img = img;
+            old.Dispose();
+            if (view != null) { view.Dispose(); view = null; }
+            if (roundView != null) { roundView.Dispose(); roundView = null; roundKey = null; }
+            Invalidate();
+        }
     }
 
-    // Barra de herramientas dibujada a mano: iconos, colores, grosores y acciones, con resaltado al pasar
-    // y la descripción de cada botón (con su tecla) al dejar el ratón encima.
 }

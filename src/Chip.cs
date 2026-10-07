@@ -1,26 +1,15 @@
-// Stackshot - Pastillas de desplazamiento cuando hay más capturas de las que caben.
+// Stackshot - Scroll pills shown when there are more captures than fit.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Microsoft.Win32;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
 {
     public class Chip : FloatWindow
     {
         readonly ShotStack owner;
-        readonly int dir;          // -1 = arriba (más recientes), +1 = abajo (anteriores)
+        readonly int dir;          // -1 = top (newer), +1 = bottom (older)
         string label = "";
         bool wanted, hover;
         readonly Tween hoverT = new Tween(0);
@@ -46,7 +35,7 @@ namespace Stackshot
             s = scale;
             if (text != label) { label = text; Invalidate(); }
             SetSize(r.Size);
-            // Si la pila se va a otra pantalla, la pastilla no cruza volando: desaparece y aparece allí.
+            // When the stack changes monitor, the pill fades out and reappears there instead of flying across.
             if (wanted && Visible && Math.Abs(r.X - x) > r.Width * 2)
             {
                 alpha.Set(0);
@@ -78,15 +67,13 @@ namespace Stackshot
             Graphics g = e.Graphics;
             g.Clear(Mix(Theme.Dark, Theme.ButtonHover, hoverT.Value));
             Rectangle r = ClientRectangle;
-            using (Font f = new Font("Segoe UI Semibold", P(12), GraphicsUnit.Pixel))
-            {
-                Size ts = TextRenderer.MeasureText(label, f);
-                int gw = P(16), total = gw + P(6) + ts.Width;
-                int left = (r.Width - total) / 2;
-                DrawGlyph(g, dir < 0 ? "\uE70E" : "\uE70D", new Rectangle(left, 0, gw, r.Height), Theme.Accent, P(11));
-                TextRenderer.DrawText(g, label, f, new Rectangle(left + gw + P(6), 0, ts.Width + P(2), r.Height), Theme.Fg,
-                                      TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
-            }
+            Font f = Fonts.Get("Segoe UI Semibold", P(12));
+            Size ts = TextRenderer.MeasureText(label, f);
+            int gw = P(16), total = gw + P(6) + ts.Width;
+            int left = (r.Width - total) / 2;
+            DrawGlyph(g, dir < 0 ? "\uE70E" : "\uE70D", new Rectangle(left, 0, gw, r.Height), Theme.Accent, P(11));
+            TextRenderer.DrawText(g, label, f, new Rectangle(left + gw + P(6), 0, ts.Width + P(2), r.Height), Theme.Fg,
+                                  TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
         }
 
         protected override void OnMouseEnter(EventArgs e)

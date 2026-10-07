@@ -1,38 +1,30 @@
-// Stackshot - Colores (Tokyo Night) y utilidades de dibujo.
+// Stackshot - Colors (Tokyo Night) and drawing helpers.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.Drawing.Text;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using Microsoft.Win32;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Stackshot
 {
     public static class Theme
     {
-        public static readonly Color Bg = Color.FromArgb(22, 22, 30);
-        public static readonly Color Bg2 = Color.FromArgb(15, 15, 20);
-        public static readonly Color Dark = Color.FromArgb(26, 27, 38);
-        public static readonly Color Button = Color.FromArgb(36, 40, 59);
-        public static readonly Color ButtonHover = Color.FromArgb(52, 59, 88);
-        public static readonly Color Border = Color.FromArgb(59, 66, 97);
-        public static readonly Color Fg = Color.FromArgb(192, 202, 245);
-        public static readonly Color Fg2 = Color.FromArgb(169, 177, 214);
-        public static readonly Color Muted = Color.FromArgb(115, 124, 165);
-        public static readonly Color Accent = Color.FromArgb(122, 162, 247);
-        public static readonly Color Purple = Color.FromArgb(187, 154, 247);
-        public static readonly Color Red = Color.FromArgb(247, 118, 142);
-        public static readonly Color Green = Color.FromArgb(158, 206, 106);
-        // Colores para marcar: fuertes, que se vean sobre cualquier captura.
+        public static readonly Color Bg = Color.FromArgb(28, 28, 30);
+        public static readonly Color Bg2 = Color.FromArgb(18, 18, 20);
+        public static readonly Color Dark = Color.FromArgb(34, 34, 37);
+        public static readonly Color Button = Color.FromArgb(48, 48, 52);
+        public static readonly Color ButtonHover = Color.FromArgb(62, 62, 67);
+        public static readonly Color Border = Color.FromArgb(58, 58, 62);
+        public static readonly Color Fg = Color.FromArgb(245, 245, 247);
+        public static readonly Color Fg2 = Color.FromArgb(210, 210, 215);
+        public static readonly Color Muted = Color.FromArgb(152, 152, 159);
+        public static readonly Color Accent = Color.FromArgb(10, 132, 255);
+        public static readonly Color AccentHover = Color.FromArgb(64, 156, 255);
+        public static readonly Color AccentDown = Color.FromArgb(0, 104, 214);
+        public static readonly Color Purple = Color.FromArgb(94, 92, 230);
+        public static readonly Color Red = Color.FromArgb(255, 69, 58);
+        public static readonly Color Green = Color.FromArgb(48, 209, 88);
+        // Annotation colors: saturated so they stand out on any capture.
         public static readonly Color[] Palette =
         {
             Color.FromArgb(255, 59, 48), Color.FromArgb(255, 204, 0), Color.FromArgb(52, 199, 89),
@@ -43,14 +35,7 @@ namespace Stackshot
 
         public static void Init()
         {
-            using (InstalledFontCollection fc = new InstalledFontCollection())
-            {
-                foreach (FontFamily f in fc.Families)
-                {
-                    if (f.Name == IconFont) return;
-                }
-            }
-            IconFont = "Segoe MDL2 Assets";
+            if (!Fonts.Has(IconFont)) IconFont = "Segoe MDL2 Assets";
         }
 
         public static GraphicsPath Round(RectangleF r, float radius)

@@ -1,4 +1,4 @@
-// Stackshot - Franja de "Fondo" del editor: muestras de fondos, margen, esquinas, sombra y proporción.
+// Stackshot - Backdrop strip in the editor: presets, padding, corners, shadow and aspect ratio.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -8,8 +8,7 @@ using System.Windows.Forms;
 
 namespace Stackshot
 {
-    // Se dibuja a mano, como la barra. Cada cambio avisa al momento (Changed, para la vista previa en vivo) y al
-    // soltar el ratón (Committed, para guardarlo en los ajustes).
+    // Owner-drawn. Changed fires on every change (live preview); Committed fires on mouse release (persist settings).
     public class BgPanel : Control
     {
         enum Kind { Swatch, Slider, Shadow, Ratio }
@@ -17,10 +16,10 @@ namespace Stackshot
         class Item
         {
             public Kind Kind;
-            public int Index;          // muestra: -1 = sin fondo; deslizador: 0 margen, 1 esquinas; proporción: 0-3
+            public int Index;          // swatch: -1 = none; slider: 0 padding, 1 radius; ratio: 0-3
             public string Label;
-            public Rectangle R;        // zona que responde al ratón
-            public Rectangle Track;    // deslizadores: la pista
+            public Rectangle R;        // hit area
+            public Rectangle Track;    // slider track
         }
 
         static readonly string[] Ratios = { "auto", "16:9", "4:3", "1:1" };
@@ -54,10 +53,10 @@ namespace Stackshot
 
         int P(float v) { return (int)Math.Round(v * S); }
 
-        Font Small() { return new Font("Segoe UI", P(11), GraphicsUnit.Pixel); }
-        Font Semibold() { return new Font("Segoe UI Semibold", P(12), GraphicsUnit.Pixel); }
+        Font Small() { return Fonts.Get("Segoe UI", P(11)); }
+        Font Semibold() { return Fonts.Get("Segoe UI Semibold", P(12)); }
 
-        // Alto que necesita para este ancho: una fila si cabe todo y, si no, dos (fondos arriba, ajustes abajo).
+        // Height needed for this width: one row if everything fits, otherwise two.
         public int HeightFor(int width)
         {
             Arrange(width);
@@ -120,8 +119,6 @@ namespace Stackshot
             Invalidate();
         }
 
-        // ------------------------------------------------------------ Dibujo
-
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
@@ -169,7 +166,7 @@ namespace Stackshot
                 {
                     int value = it.Index == 0 ? Bg.BgPadding : Bg.BgRadius;
                     Color fg = On ? Theme.Fg2 : Theme.Muted;
-                    using (Font f = Small())
+                    Font f = Small();
                     {
                         TextRenderer.DrawText(g, it.Label, f, new Point(it.R.X + P(4), it.R.Y + P(4)), fg, TextFormatFlags.NoPadding);
                         string v = value.ToString();
@@ -193,8 +190,7 @@ namespace Stackshot
                 }
                 case Kind.Shadow:
                 {
-                    using (Font f = Small())
-                        TextRenderer.DrawText(g, it.Label, f, new Point(it.R.X + P(4), it.R.Y + P(4)), On ? Theme.Fg2 : Theme.Muted, TextFormatFlags.NoPadding);
+                    TextRenderer.DrawText(g, it.Label, Small(), new Point(it.R.X + P(4), it.R.Y + P(4)), On ? Theme.Fg2 : Theme.Muted, TextFormatFlags.NoPadding);
                     RectangleF track = new RectangleF(it.R.X + P(4), it.R.Y + P(22), P(38), P(22));
                     bool v = Bg.BgShadow;
                     using (GraphicsPath p = Theme.Round(track, track.Height / 2f))
@@ -207,8 +203,7 @@ namespace Stackshot
                 {
                     if (it.Index == 0)
                     {
-                        using (Font f = Small())
-                            TextRenderer.DrawText(g, "Proporci\u00F3n", f, new Point(it.R.X + P(4), it.R.Y - P(20)), On ? Theme.Fg2 : Theme.Muted, TextFormatFlags.NoPadding);
+                        TextRenderer.DrawText(g, "Proporci\u00F3n", Small(), new Point(it.R.X + P(4), it.R.Y - P(20)), On ? Theme.Fg2 : Theme.Muted, TextFormatFlags.NoPadding);
                         Rectangle all = new Rectangle(it.R.X, it.R.Y, it.R.Width * Ratios.Length, it.R.Height);
                         using (GraphicsPath p = Theme.Round(all, P(8)))
                         using (SolidBrush b = new SolidBrush(Theme.Button)) g.FillPath(b, p);
@@ -220,15 +215,12 @@ namespace Stackshot
                         using (GraphicsPath p = Theme.Round(r, P(6)))
                         using (SolidBrush b = new SolidBrush(sel ? (On ? Theme.Accent : Theme.Border) : Theme.ButtonHover)) g.FillPath(b, p);
                     }
-                    using (Font f = Semibold())
-                        TextRenderer.DrawText(g, it.Label, f, it.R, sel && On ? Theme.Dark : Theme.Fg,
-                                              TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+                    TextRenderer.DrawText(g, it.Label, Semibold(), it.R, sel && On ? Color.White : Theme.Fg,
+                                          TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
                     return;
                 }
             }
         }
-
-        // ------------------------------------------------------------ Ratón
 
         int HitTest(Point p)
         {
@@ -269,7 +261,7 @@ namespace Stackshot
                     On = true;
                     Slide(e.X);
                     Invalidate();
-                    return; // Committed al soltar
+                    return; // Committed on mouse up
                 case Kind.Shadow:
                     Bg.BgShadow = !Bg.BgShadow;
                     On = true;

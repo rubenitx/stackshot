@@ -1,6 +1,7 @@
-// Stackshot - Controles de interfaz propios: ventana oscura sin marco, botones, interruptores y progreso.
+// Stackshot - Custom controls: borderless dark dialog, pill buttons, toggles and progress bar.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
@@ -12,44 +13,57 @@ namespace Stackshot
     {
         static string display, displaySemibold;
 
-        // La variante seminegrita para títulos (Windows recorta su nombre a 31 letras).
+        // Semibold variant for titles (Windows truncates its family name to 31 characters).
         public static string DisplaySemibold
         {
             get
             {
                 if (displaySemibold != null) return displaySemibold;
                 displaySemibold = "Segoe UI Semibold";
-                using (InstalledFontCollection fc = new InstalledFontCollection())
-                {
-                    foreach (FontFamily f in fc.Families)
-                    {
-                        if (f.Name.StartsWith("Segoe UI Variable Display Semib")) { displaySemibold = f.Name; break; }
-                    }
-                }
+                if (Has("Segoe UI Variable Display Semib")) displaySemibold = "Segoe UI Variable Display Semib";
                 return displaySemibold;
             }
         }
 
-        // Segoe UI Variable en Windows 11; Segoe UI en Windows 10.
+        // Segoe UI Variable on Windows 11; Segoe UI on Windows 10.
         public static string Display
         {
             get
             {
                 if (display != null) return display;
                 display = "Segoe UI";
-                using (InstalledFontCollection fc = new InstalledFontCollection())
-                {
-                    foreach (FontFamily f in fc.Families)
-                    {
-                        if (f.Name == "Segoe UI Variable Display") { display = f.Name; break; }
-                    }
-                }
+                if (Has("Segoe UI Variable Display")) display = "Segoe UI Variable Display";
                 return display;
+            }
+        }
+
+        // family -> size in hundredths of a pixel -> font (no string building on every draw call).
+        static readonly Dictionary<string, Dictionary<int, Font>> cache = new Dictionary<string, Dictionary<int, Font>>();
+
+        // Shared fonts for owner-drawn chrome repainted every animation frame. Never dispose the result: callers share
+        // it, and the set stays small (a few sizes per DPI scale).
+        // Checks one family directly instead of enumerating every installed font (slow at startup).
+        public static bool Has(string family)
+        {
+            try { using (FontFamily f = new FontFamily(family)) return true; }
+            catch (ArgumentException) { return false; }
+        }
+
+        public static Font Get(string family, float px)
+        {
+            int key = (int)Math.Round(px * 100);
+            lock (cache)
+            {
+                Dictionary<int, Font> sizes;
+                if (!cache.TryGetValue(family, out sizes)) cache[family] = sizes = new Dictionary<int, Font>();
+                Font f;
+                if (!sizes.TryGetValue(key, out f)) sizes[key] = f = new Font(family, Math.Max(1f, px), GraphicsUnit.Pixel);
+                return f;
             }
         }
     }
 
-    // Ventana de diálogo oscura, sin marco, con esquinas redondeadas y sombra. Se arrastra desde cualquier hueco.
+    // Borderless dark dialog with rounded corners and shadow. Draggable from any empty spot.
     public class DarkForm : Form
     {
         protected readonly float s;
@@ -66,7 +80,7 @@ namespace Stackshot
             ForeColor = Theme.Fg;
             Font = new Font("Segoe UI", P(13), GraphicsUnit.Pixel);
             KeyPreview = true;
-            MaximizeBox = false; // doble clic en un hueco no debe maximizarla
+            MaximizeBox = false; // double-clicking empty space must not maximize it
             MinimizeBox = false;
             Text = "Stackshot";
             if (ShotStack.AppIcon != null) Icon = ShotStack.AppIcon;
@@ -106,7 +120,7 @@ namespace Stackshot
         protected override void WndProc(ref Message m)
         {
             base.WndProc(ref m);
-            // Arrastrar la ventana desde cualquier hueco (menos la ✕).
+            // Drag the window from any empty spot (except the close button).
             if (m.Msg == 0x84 && m.Result == (IntPtr)1)
             {
                 Point p = PointToClient(new Point((short)(m.LParam.ToInt64() & 0xFFFF), (short)((m.LParam.ToInt64() >> 16) & 0xFFFF)));
@@ -152,7 +166,7 @@ namespace Stackshot
             if (e.KeyCode == Keys.Escape) { DialogResult = DialogResult.Cancel; Close(); }
         }
 
-        // Etiqueta de texto sin fondo.
+        // Transparent text label.
         protected Label AddLabel(string text, int x, int y, int w, float px, Color color, bool bold, ContentAlignment align)
         {
             Label l = new Label();
@@ -170,7 +184,7 @@ namespace Stackshot
         }
     }
 
-    // Botón redondeado. Accent = el principal (azul).
+    // Rounded button. Accent = primary (blue).
     public class Pill : Control
     {
         public bool Accent;
@@ -191,12 +205,12 @@ namespace Stackshot
         {
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            Color bg = Accent ? (down ? Theme.Fg2 : hot ? Theme.Purple : Theme.Accent) : (down ? Theme.Border : hot ? Theme.ButtonHover : Theme.Button);
+            Color bg = Accent ? (down ? Theme.AccentDown : hot ? Theme.AccentHover : Theme.Accent) : (down ? Theme.Border : hot ? Theme.ButtonHover : Theme.Button);
             if (!Enabled) bg = Theme.Button;
             RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
             using (GraphicsPath p = Theme.Round(r, Height / 2f))
             using (SolidBrush b = new SolidBrush(bg)) g.FillPath(b, p);
-            Color fg = Accent ? Theme.Dark : Enabled ? Theme.Fg : Theme.Muted;
+            Color fg = Accent ? Color.White : Enabled ? Theme.Fg : Theme.Muted;
             TextRenderer.DrawText(g, Text, Font, ClientRectangle, fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
         }
 
@@ -208,7 +222,7 @@ namespace Stackshot
         protected override void OnEnabledChanged(EventArgs e) { base.OnEnabledChanged(e); Invalidate(); }
     }
 
-    // Interruptor como los de iPhone, con la bola deslizándose.
+    // iOS-style toggle with a sliding knob.
     public class Toggle : Control
     {
         bool on;
@@ -276,7 +290,7 @@ namespace Stackshot
         }
     }
 
-    // Barra de progreso fina y redondeada.
+    // Thin rounded progress bar.
     public class Progress : Control
     {
         double value;
