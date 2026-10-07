@@ -20,6 +20,7 @@ namespace Stackshot
         const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Stackshot";
         public const string QuitEvent = "Local\\Stackshot.Quit";
         public const string MutexName = "Local\\Stackshot";
+        public const string ShowEvent = "Local\\Stackshot.Show";
 
         public static string StartupLink { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), "Stackshot.lnk"); } }
         public static string MenuLink { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "Stackshot.lnk"); } }
@@ -67,7 +68,7 @@ namespace Stackshot
         public static void Register(bool startup)
         {
             string exe = Settings.InstalledExe;
-            CreateShortcut(MenuLink, exe, "Stackshot: capturas de pantalla, v\u00EDdeo y GIF");
+            CreateShortcut(MenuLink, exe, "Stackshot: capturas de pantalla, v\u00EDdeo y GIF", "");
             SetStartup(startup);
             try
             {
@@ -98,21 +99,23 @@ namespace Stackshot
             try
             {
                 if (!File.Exists(MenuLink) || Registry.CurrentUser.OpenSubKey(UninstallKey) == null) Register(StartupEnabled);
+                else if (StartupEnabled) SetStartup(true); // los accesos de versiones anteriores no llevaban --background
             }
             catch (Exception ex) { ShotStack.Log("Reparar instalaci\u00F3n: " + ex.Message); }
         }
 
+        // El acceso de Inicio arranca en segundo plano (sin enseñar la ventana).
         public static void SetStartup(bool on)
         {
             try
             {
-                if (on) CreateShortcut(StartupLink, IsInstalled ? Settings.InstalledExe : ExePath, "Stackshot");
+                if (on) CreateShortcut(StartupLink, IsInstalled ? Settings.InstalledExe : ExePath, "Stackshot", "--background");
                 else if (File.Exists(StartupLink)) File.Delete(StartupLink);
             }
             catch (Exception ex) { ShotStack.Log("Arranque con Windows: " + ex.Message); }
         }
 
-        static void CreateShortcut(string lnk, string target, string description)
+        static void CreateShortcut(string lnk, string target, string description, string arguments)
         {
             Type t = Type.GetTypeFromProgID("WScript.Shell");
             object shell = Activator.CreateInstance(t);
@@ -121,6 +124,7 @@ namespace Stackshot
                 object link = t.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, shell, new object[] { lnk });
                 Type lt = link.GetType();
                 lt.InvokeMember("TargetPath", BindingFlags.SetProperty, null, link, new object[] { target });
+                lt.InvokeMember("Arguments", BindingFlags.SetProperty, null, link, new object[] { arguments });
                 lt.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, link, new object[] { Path.GetDirectoryName(target) });
                 lt.InvokeMember("IconLocation", BindingFlags.SetProperty, null, link, new object[] { target + ",0" });
                 lt.InvokeMember("Description", BindingFlags.SetProperty, null, link, new object[] { description });
@@ -128,6 +132,13 @@ namespace Stackshot
                 Marshal.ReleaseComObject(link);
             }
             finally { Marshal.ReleaseComObject(shell); }
+        }
+
+        // Pide a la que esté en marcha que enseñe su ventana.
+        public static void SignalShow()
+        {
+            try { System.Threading.EventWaitHandle.OpenExisting(ShowEvent).Set(); }
+            catch { }
         }
 
         // Pide a la que esté en marcha que se cierre (deja el portapapeles en su sitio) y espera a que lo haga.

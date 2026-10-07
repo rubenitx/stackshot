@@ -49,7 +49,7 @@ namespace Stackshot
         readonly Chip upChip, downChip;
         int scroll, wheelAcc, pageSize = 1;    // scroll: cuántas de las más recientes quedan ocultas por arriba
 
-        public ShotStack(Settings settings, bool justInstalled)
+        public ShotStack(Settings settings, bool justInstalled, bool showHome)
         {
             this.settings = settings;
             folder = Settings.TempDir;
@@ -101,23 +101,41 @@ namespace Stackshot
                         delegate { sync.BeginInvoke((Action)delegate { Log("Cierre pedido por otra copia"); ExitThread(); }); }, null, -1, true);
                 }
                 catch (Exception ex) { Log("Evento de salida: " + ex.Message); }
+                // Abrir Stackshot otra vez (menú Inicio, el .exe) con esta ya en marcha: se enseña la ventana.
+                try
+                {
+                    showEvent = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, Installer.ShowEvent);
+                    WaitShow();
+                }
+                catch (Exception ex) { Log("Evento de mostrar: " + ex.Message); }
             }
 
             SystemEvents.DisplaySettingsChanged += OnDisplayChanged;
             Log("Stackshot " + Installer.MyVersion.ToString(3) + " en marcha (" + Installer.ExePath + ")");
 
-            sweepTimer.Interval = 5 * 60 * 1000;
-            sweepTimer.Tick += delegate { Sweep(); };
-            sweepTimer.Start();
-            Sweep();
-
-            if (justInstalled)
+            // En modo prueba no se limpia nada: la carpeta temporal es la de la copia de verdad.
+            if (!Test)
             {
-                tray.BalloonTipTitle = "Stackshot est\u00E1 listo";
-                tray.BalloonTipText = "Pulsa " + Hotkeys.Display(settings.HotRegion) + " para capturar. Todo lo dem\u00E1s, en este icono.";
-                tray.BalloonTipIcon = ToolTipIcon.None;
-                tray.ShowBalloonTip(6000);
+                sweepTimer.Interval = 5 * 60 * 1000;
+                sweepTimer.Tick += delegate { Sweep(); };
+                sweepTimer.Start();
+                Sweep();
             }
+
+            Backdrop.Prewarm();
+            if (justInstalled || showHome) sync.BeginInvoke((Action)delegate { ShowHome("home", true); });
+        }
+
+        System.Threading.EventWaitHandle showEvent;
+
+        void WaitShow()
+        {
+            System.Threading.ThreadPool.RegisterWaitForSingleObject(showEvent, delegate
+            {
+                if (exiting) return;
+                sync.BeginInvoke((Action)delegate { ShowHome("home", true); });
+                WaitShow();
+            }, null, -1, true);
         }
 
         // ------------------------------------------------------------ Bandeja y atajos
@@ -200,20 +218,38 @@ namespace Stackshot
             finally { picking = false; }
         }
 
-        void ShowSettings()
+        // ------------------------------------------------------------ Ventana principal
+
+        public Settings Settings { get { return settings; } }
+
+        // Abre (o trae al frente) la ventana principal en esa sección. intro: con la animación de bienvenida.
+        public void ShowHome(string page, bool intro)
         {
-            hotkeys.Clear(); // mientras se eligen atajos, que no salten
-            try
+            if (home == null || home.IsDisposed)
             {
-                if (SetupWindow.Edit(settings)) ApplySettings();
+                home = new HomeWindow(this, settings);
+                home.FormClosed += delegate { home = null; };
             }
-            finally { RegisterHotkeys(true); }
+            home.Present(page, intro && settings.ShowIntro);
+        }
+        HomeWindow home;
+
+        // Mientras se elige un atajo en la ventana, que los globales no se coman las teclas.
+        public void SuspendHotkeys() { if (!Test) hotkeys.Clear(); }
+        public void ResumeHotkeys() { RegisterHotkeys(true); }
+
+        // Una acción pedida desde la ventana (que ya se ha escondido para no salir en la captura).
+        public void Run(string action)
+        {
+            Delay(220, delegate { OnHotkey(action == "video" && Recorder.Recording ? "video" : action); });
         }
 
-        void ApplySettings()
+        public void Quit() { ExitThread(); }
+
+        public void ApplySettings()
         {
             if (settings.FollowMouse && cards.Count > 0) follow.Start();
-            Log("Ajustes cambiados");
+            settings.Save();
         }
 
         // ------------------------------------------------------------ Capturar
@@ -621,7 +657,7 @@ namespace Stackshot
         }
 
         // Se van en cascada, de arriba abajo.
-        void CloseAll()
+        public void CloseAll()
         {
             int n = 0;
             for (int i = cards.Count - 1; i >= 0; i--) cards[i].Dismiss(Card.Exit.Slide, cards[i].Parked ? 0 : 35 * n++);
@@ -809,7 +845,7 @@ namespace Stackshot
             using (Graphics g = Graphics.FromHwnd(IntPtr.Zero)) return g.DpiX / 96f;
         }
 
-        void OpenFolder()
+        public void OpenFolder()
         {
             try
             {
@@ -824,6 +860,9 @@ namespace Stackshot
             // La copia vigilada vive en este proceso: dejarla fija en el portapapeles antes de salir.
             exiting = true;
             Recorder.Stop();
+            ScrollCapture.Stop();
+            if (home != null && !home.IsDisposed) home.Dispose();
+            if (showEvent != null) showEvent.Dispose();
             if (clip != null) { try { Native.OleFlushClipboard(); } catch { } }
             SystemEvents.DisplaySettingsChanged -= OnDisplayChanged;
             sweepTimer.Stop();

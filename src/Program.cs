@@ -23,6 +23,8 @@ namespace Stackshot
     //            --portable            funciona desde donde esté, sin instalarse
     //            --edit <imagen>       (o arrastrar una imagen sobre el .exe) abre solo el editor
     //            --test                no se oculta de las capturas, no toca el portapapeles ni los atajos
+    //            --background          arranca sin enseñar la ventana (el acceso de Inicio de Windows lo usa)
+    //            --home                con --test, abre la ventana igualmente
     public static class Program
     {
         public const string RepoUrl = "https://github.com/rubenitx/stackshot";
@@ -121,7 +123,12 @@ namespace Stackshot
             catch (System.Threading.AbandonedMutexException) { mine = true; }
             if (!mine)
             {
-                if (!Has("--restart") && !test) return 0; // ya hay una en marcha
+                if (!Has("--restart") && !test)
+                {
+                    // Ya hay una en marcha: que enseñe su ventana (salvo al arrancar con Windows).
+                    if (!Has("--background")) Installer.SignalShow();
+                    return 0;
+                }
                 if (!test)
                 {
                     Installer.QuitRunning();
@@ -136,7 +143,7 @@ namespace Stackshot
                 ShotStack.Test = test;
                 FloatWindow.ExcludeFromCapture = !test;
                 Card.ForceHover = false;
-                Application.Run(new ShotStack(s, Has("--welcome-done")));
+                Application.Run(new ShotStack(s, Has("--welcome-done"), (!Has("--background") && !test) || Has("--home")));
                 ShotStack.Log("Cerrada");
             }
             catch (Exception ex) { ShotStack.Log("ERROR " + ex); }
