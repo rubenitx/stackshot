@@ -187,6 +187,7 @@ namespace Stackshot
                     case "region": CaptureRegion(); break;
                     case "screen": CaptureScreen(); break;
                     case "window": CaptureWindow(); break;
+                    case "scroll": picking = !ScrollCapture.Active; ScrollCapture.Toggle(this, settings); break;
                     case "video": picking = !Recorder.Recording; Recorder.Toggle(this, settings, false); break;
                     case "gif": picking = !Recorder.Recording; Recorder.Toggle(this, settings, true); break;
                 }
