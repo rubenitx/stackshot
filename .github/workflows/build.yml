@@ -69,13 +69,13 @@ jobs:
           sha=$(cut -d' ' -f1 dist/Stackshot.exe.sha256)
           {
             echo
-            echo "### Descargar"
+            echo "### Download"
             echo
-            echo "**[Stackshot.exe](https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/Stackshot.exe)**: ábrelo y sigue la bienvenida (Windows 10/11, sin administrador)."
+            echo "**[Stackshot.exe](https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/Stackshot.exe)**. Run it and follow the welcome window (Windows 10/11, no administrator rights needed)."
             echo
             echo "SHA-256: \`$sha\`"
             echo
-            echo "Comprobar que viene de este repositorio: \`gh attestation verify Stackshot.exe --repo ${GITHUB_REPOSITORY}\`"
+            echo "Verify that it was built from this repository: \`gh attestation verify Stackshot.exe --repo ${GITHUB_REPOSITORY}\`"
           } >> notes.md
           cat notes.md
 
