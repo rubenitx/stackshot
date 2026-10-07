@@ -86,6 +86,7 @@ namespace Stackshot
                 if (show != null) show.Invoke(tray, null);
             };
             tray.Visible = true;
+            if (!Test) closeListener = new CloseListener(delegate { sync.BeginInvoke((Action)ExitThread); });
 
             hotkeys = new Hotkeys();
             hotkeys.Pressed += OnHotkey;
@@ -127,6 +128,7 @@ namespace Stackshot
         }
 
         System.Threading.EventWaitHandle showEvent;
+        CloseListener closeListener;
 
         void WaitShow()
         {
@@ -876,6 +878,7 @@ namespace Stackshot
             sweepTimer.Stop();
             follow.Stop();
             hotkeys.Dispose();
+            if (closeListener != null) closeListener.Dispose();
             if (quitEvent != null) quitEvent.Dispose();
             fsw.EnableRaisingEvents = false;
             fsw.Dispose();
