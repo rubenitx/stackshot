@@ -1,0 +1,43 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compilar
+        shell: powershell
+        run: .\build.ps1
+
+      - name: Suma SHA-256
+        shell: powershell
+        run: |
+          $h = (Get-FileHash bin\Stackshot.exe -Algorithm SHA256).Hash.ToLower()
+          "$h  Stackshot.exe" | Set-Content bin\Stackshot.exe.sha256 -Encoding ascii
+          Write-Host "SHA-256: $h"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Stackshot
+          path: |
+            bin/Stackshot.exe
+            bin/Stackshot.exe.sha256
+
+      - name: Publicar la versión
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bin/Stackshot.exe
+            bin/Stackshot.exe.sha256
+          generate_release_notes: true
