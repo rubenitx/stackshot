@@ -11,17 +11,21 @@ namespace Stackshot
 {
     // Una sola ventana cubre todas las pantallas con la imagen congelada (oscurecida). Al pasar el ratón se ilumina
     // la ventana que hay debajo (clic = esa ventana; sobre el escritorio, la pantalla entera); al arrastrar se elige
-    // un área. Lupa, cruceta y medidas siguen al ratón. Solo se repinta lo que cambia, así que va fluido aunque
-    // haya varias pantallas grandes.
+    // un área. Lupa, cruceta y medidas siguen al ratón.
+    //
+    // Rendimiento: la imagen oscurecida y la clara (con las ayudas ya dibujadas) se preparan una vez. En cada
+    // movimiento solo se recomponen los trocitos que cambian (las dos líneas de la cruceta, la lupa, el borde
+    // del área) copiándolos con GDI, que es casi gratis, y GDI+ solo dibuja lo poco que va encima. Antes se
+    // repintaba la pantalla entera en cada movimiento, porque la cruceta la cruza de lado a lado.
     public class RegionPicker : Form
     {
-        public enum Mode { Image, Video, Gif }
+        public enum Mode { Image, Video, Gif, Scroll }
 
-        readonly Bitmap shot;
+        readonly Bitmap shot;          // copia para GDI+ (lupa y recorte final)
+        readonly Dib bright, dimmed;   // la pantalla tal cual y oscurecida, ambas con las ayudas
         readonly Rectangle vs;
         readonly List<Grabber.Win> wins;
-        readonly Mode mode;
-        IntPtr memDC, hbm, oldBmp;
+        readonly List<Rectangle> dirty = new List<Rectangle>();
         Point cur = new Point(-10000, -10000), start;
         bool down, dragging;
         Rectangle sel, hover;
@@ -29,13 +33,23 @@ namespace Stackshot
         Rectangle lastDecor;
         Rectangle result = Rectangle.Empty;
         IntPtr resultWindow = IntPtr.Zero;
+        Rectangle curMon = Rectangle.Empty;   // pantalla del ratón, en coordenadas de la ventana
+        float curScale = 1f;
+        Font labelFont;
+        float labelFontScale;
 
-        RegionPicker(Bitmap shot, Rectangle vs, List<Grabber.Win> wins, Mode mode)
+        RegionPicker(Dib grab, Rectangle vs, List<Grabber.Win> wins, Mode mode)
         {
-            this.shot = shot;
             this.vs = vs;
             this.wins = wins;
-            this.mode = mode;
+            bright = grab;
+            shot = grab.ToBitmap();
+            dimmed = new Dib(grab.Width, grab.Height);
+            Native.BitBlt(dimmed.Dc, 0, 0, grab.Width, grab.Height, grab.Dc, 0, 0, Native.SRCCOPY);
+            dimmed.Darken(105);
+            PaintHints(bright, mode);
+            PaintHints(dimmed, mode);
+
             Text = "Stackshot";
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.Manual;
@@ -45,11 +59,6 @@ namespace Stackshot
             Bounds = vs;
             Cursor = Cursors.Cross;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.Opaque, true);
-            hbm = shot.GetHbitmap();
-            IntPtr screen = Native.GetDC(IntPtr.Zero);
-            memDC = Native.CreateCompatibleDC(screen);
-            Native.ReleaseDC(IntPtr.Zero, screen);
-            oldBmp = Native.SelectObject(memDC, hbm);
         }
 
         protected override CreateParams CreateParams
@@ -67,25 +76,37 @@ namespace Stackshot
         public static Rectangle Pick(Mode mode, out Bitmap frozen, out Rectangle virtualScreen, out IntPtr window)
         {
             virtualScreen = SystemInformation.VirtualScreen;
+            Dib grab = Dib.FromScreen(virtualScreen);
             List<Grabber.Win> wins = Grabber.Windows();
-            frozen = Grabber.Grab(virtualScreen);
-            using (RegionPicker p = new RegionPicker(frozen, virtualScreen, wins, mode))
+            using (RegionPicker p = new RegionPicker(grab, virtualScreen, wins, mode))
             {
                 p.ShowDialog();
+                frozen = p.shot;
                 window = p.resultWindow;
                 return p.result;
             }
         }
 
-        float S { get { return ShotStack.ScaleFor(Screen.FromPoint(ToScreen(cur))); } }
+        float S { get { return curScale; } }
         int Pz(float v) { return (int)Math.Round(v * S); }
         Point ToScreen(Point p) { return new Point(p.X + vs.X, p.Y + vs.Y); }
 
-        Rectangle CurrentMonitor()
+        // La pantalla del ratón solo se recalcula al cambiar de pantalla (preguntar a Windows en cada
+        // movimiento cuesta más que todo lo demás).
+        void TrackMonitor()
         {
-            Rectangle b = Screen.FromPoint(ToScreen(cur)).Bounds;
+            if (!curMon.IsEmpty && curMon.Contains(cur)) return;
+            Screen sc = Screen.FromPoint(ToScreen(cur));
+            Rectangle b = sc.Bounds;
             b.Offset(-vs.X, -vs.Y);
-            return b;
+            curMon = b;
+            curScale = ShotStack.ScaleFor(sc);
+            if (labelFont == null || labelFontScale != curScale)
+            {
+                if (labelFont != null) labelFont.Dispose();
+                labelFont = new Font("Segoe UI Semibold", 12 * curScale, GraphicsUnit.Pixel);
+                labelFontScale = curScale;
+            }
         }
 
         protected override void OnShown(EventArgs e)
@@ -94,103 +115,155 @@ namespace Stackshot
             Native.ForceForeground(Handle);
             Activate();
             cur = PointToClient(Control.MousePosition);
+            TrackMonitor();
             UpdateHover();
             Invalidate();
         }
 
         protected override void OnPaintBackground(PaintEventArgs e) { }
 
-        // Se pinta en un lienzo del tamaño de lo que cambia y se vuelca de una vez (sin parpadeos).
+        // Lo que hay que repintar se apunta aquí (además de pedírselo a Windows), para recomponer solo esos trozos.
+        void Dirty(Rectangle r)
+        {
+            r.Intersect(ClientRectangle);
+            if (r.Width <= 0 || r.Height <= 0) return;
+            dirty.Add(r);
+            Invalidate(r);
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
+            List<Rectangle> parts = new List<Rectangle>();
             Rectangle clip = Rectangle.Intersect(e.ClipRectangle, ClientRectangle);
-            if (clip.Width <= 0 || clip.Height <= 0) return;
-            using (Bitmap buf = new Bitmap(clip.Width, clip.Height, PixelFormat.Format32bppPArgb))
+            if (dirty.Count > 0)
             {
-                using (Graphics g = Graphics.FromImage(buf))
+                Rectangle box = dirty[0];
+                foreach (Rectangle r in dirty) box = Rectangle.Union(box, r);
+                if (box.Contains(clip) && dirty.Count <= 16) parts.AddRange(dirty);
+                else parts.Add(clip); // Windows también pide algo (o son demasiados trozos): todo de una vez
+            }
+            else parts.Add(clip);
+            dirty.Clear();
+
+            IntPtr hdc = e.Graphics.GetHdc();
+            try
+            {
+                foreach (Rectangle r in parts)
                 {
-                    IntPtr hdc = g.GetHdc();
-                    Native.BitBlt(hdc, 0, 0, clip.Width, clip.Height, memDC, clip.X, clip.Y, Native.SRCCOPY);
-                    g.ReleaseHdc(hdc);
-                    g.TranslateTransform(-clip.X, -clip.Y);
-                    PaintOverlay(g, clip);
+                    if (r.Width <= 0 || r.Height <= 0) continue;
+                    using (Dib buf = new Dib(r.Width, r.Height))
+                    {
+                        Compose(buf, r);
+                        Native.BitBlt(hdc, r.X, r.Y, r.Width, r.Height, buf.Dc, 0, 0, Native.SRCCOPY);
+                    }
                 }
-                e.Graphics.DrawImageUnscaled(buf, clip.X, clip.Y);
+            }
+            finally { e.Graphics.ReleaseHdc(hdc); }
+        }
+
+        // Un trozo de pantalla: fondo oscurecido, lo resaltado en claro y encima el borde, la cruceta y la lupa.
+        void Compose(Dib buf, Rectangle r)
+        {
+            Native.BitBlt(buf.Dc, 0, 0, r.Width, r.Height, dimmed.Dc, r.X, r.Y, Native.SRCCOPY);
+            Rectangle lit = Rectangle.Intersect(dragging ? sel : hover, r);
+            if (lit.Width > 0 && lit.Height > 0)
+                Native.BitBlt(buf.Dc, lit.X - r.X, lit.Y - r.Y, lit.Width, lit.Height, bright.Dc, lit.X, lit.Y, Native.SRCCOPY);
+            using (Graphics g = buf.Graphics())
+            {
+                g.TranslateTransform(-r.X, -r.Y);
+                g.SetClip(r);
+                PaintOverlay(g, r);
             }
         }
 
         void PaintOverlay(Graphics g, Rectangle clip)
         {
-            Rectangle bright = dragging ? sel : hover;
-            using (Region dim = new Region(clip))
-            {
-                if (!bright.IsEmpty) dim.Exclude(bright);
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(105, 0, 0, 0))) g.FillRegion(b, dim);
-            }
-            g.SmoothingMode = SmoothingMode.AntiAlias;
             if (dragging)
             {
                 Rectangle r = sel;
-                using (Pen outer = new Pen(Color.FromArgb(90, 0, 0, 0), 3f)) g.DrawRectangle(outer, r.X - 1, r.Y - 1, r.Width + 1, r.Height + 1);
-                using (Pen pen = new Pen(Color.White, 1.5f)) g.DrawRectangle(pen, r.X, r.Y, r.Width - 1, r.Height - 1);
+                if (Touches(r, clip, 3))
+                {
+                    using (Pen outer = new Pen(Color.FromArgb(90, 0, 0, 0), 3f)) g.DrawRectangle(outer, r.X - 1, r.Y - 1, r.Width + 1, r.Height + 1);
+                    using (Pen pen = new Pen(Color.White, 1.5f)) g.DrawRectangle(pen, r.X, r.Y, r.Width - 1, r.Height - 1);
+                }
             }
-            else if (!hover.IsEmpty)
+            else if (!hover.IsEmpty && Touches(hover, clip, Pz(4)))
             {
                 Rectangle r = hover;
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(28, Theme.Accent))) g.FillRectangle(b, r);
                 float w = Math.Max(2f, 3f * S);
                 using (Pen pen = new Pen(Theme.Accent, w)) g.DrawRectangle(pen, r.X + w / 2, r.Y + w / 2, r.Width - w, r.Height - w);
             }
-            PaintHints(g, clip);
-            if (!dragging) PaintCross(g);
-            PaintMagnifier(g);
+            if (!dragging) PaintCross(g, clip);
+            Rectangle label;
+            Rectangle mag = MagnifierRect(out label);
+            Rectangle decor = Rectangle.Union(mag, label);
+            decor.Inflate(Pz(6), Pz(8));
+            if (decor.IntersectsWith(clip))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                PaintMagnifier(g, mag, label);
+            }
         }
 
-        // Ayuda arriba de cada pantalla.
-        void PaintHints(Graphics g, Rectangle clip)
+        // ¿El borde de r (con un margen) pasa por el trozo que se está pintando?
+        static bool Touches(Rectangle r, Rectangle clip, int m)
+        {
+            Rectangle outer = r;
+            outer.Inflate(m, m);
+            if (!outer.IntersectsWith(clip)) return false;
+            Rectangle inner = r;
+            inner.Inflate(-m, -m);
+            return inner.Width <= 0 || inner.Height <= 0 || !inner.Contains(clip);
+        }
+
+        // Ayuda arriba de cada pantalla: se dibuja una sola vez sobre las dos imágenes de fondo.
+        void PaintHints(Dib target, Mode mode)
         {
             string text = mode == Mode.Image ? "Arrastra para capturar un \u00E1rea  \u00B7  Clic: ventana o pantalla entera  \u00B7  Esc: cancelar"
                         : mode == Mode.Video ? "Grabar v\u00EDdeo  \u00B7  Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Esc: cancelar"
-                        : "Grabar GIF  \u00B7  Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Esc: cancelar";
-            foreach (Screen sc in Screen.AllScreens)
+                        : mode == Mode.Gif ? "Grabar GIF  \u00B7  Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Esc: cancelar"
+                        : "Captura con desplazamiento  \u00B7  Arrastra el \u00E1rea que se va a desplazar  \u00B7  Esc: cancelar";
+            using (Graphics g = target.Graphics())
             {
-                Rectangle b = sc.Bounds;
-                b.Offset(-vs.X, -vs.Y);
-                float s = ShotStack.ScaleFor(sc);
-                using (Font f = new Font("Segoe UI Semibold", 13 * s, GraphicsUnit.Pixel))
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                foreach (Screen sc in Screen.AllScreens)
                 {
-                    Size ts = TextRenderer.MeasureText(text, f);
-                    Rectangle pill = new Rectangle(b.X + (b.Width - ts.Width) / 2 - (int)(16 * s), b.Y + (int)(18 * s), ts.Width + (int)(32 * s), ts.Height + (int)(14 * s));
-                    if (!pill.IntersectsWith(clip)) continue;
-                    using (GraphicsPath p = Theme.Round(pill, pill.Height / 2f))
-                    using (SolidBrush bg = new SolidBrush(Color.FromArgb(225, Theme.Dark)))
-                    using (Pen border = new Pen(Color.FromArgb(140, Theme.Border)))
+                    Rectangle b = sc.Bounds;
+                    b.Offset(-vs.X, -vs.Y);
+                    float s = ShotStack.ScaleFor(sc);
+                    using (Font f = new Font("Segoe UI Semibold", 13 * s, GraphicsUnit.Pixel))
                     {
-                        g.FillPath(bg, p);
-                        g.DrawPath(border, p);
+                        Size ts = TextRenderer.MeasureText(text, f);
+                        Rectangle pill = new Rectangle(b.X + (b.Width - ts.Width) / 2 - (int)(16 * s), b.Y + (int)(18 * s), ts.Width + (int)(32 * s), ts.Height + (int)(14 * s));
+                        using (GraphicsPath p = Theme.Round(pill, pill.Height / 2f))
+                        using (SolidBrush bg = new SolidBrush(Color.FromArgb(225, Theme.Dark)))
+                        using (Pen border = new Pen(Color.FromArgb(140, Theme.Border)))
+                        {
+                            g.FillPath(bg, p);
+                            g.DrawPath(border, p);
+                        }
+                        TextRenderer.DrawText(g, text, f, pill, Theme.Fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
                     }
-                    TextRenderer.DrawText(g, text, f, pill, Theme.Fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
                 }
             }
         }
 
-        void PaintCross(Graphics g)
+        void PaintCross(Graphics g, Rectangle clip)
         {
-            Rectangle m = CurrentMonitor();
+            Rectangle m = curMon;
             g.SmoothingMode = SmoothingMode.None;
             using (Pen pen = new Pen(Color.FromArgb(110, 255, 255, 255)))
             {
-                g.DrawLine(pen, m.Left, cur.Y, m.Right, cur.Y);
-                g.DrawLine(pen, cur.X, m.Top, cur.X, m.Bottom);
+                if (cur.Y >= clip.Top - 1 && cur.Y <= clip.Bottom) g.DrawLine(pen, m.Left, cur.Y, m.Right, cur.Y);
+                if (cur.X >= clip.Left - 1 && cur.X <= clip.Right) g.DrawLine(pen, cur.X, m.Top, cur.X, m.Bottom);
             }
-            g.SmoothingMode = SmoothingMode.AntiAlias;
         }
 
         // Lupa: 15 × 15 píxeles alrededor del ratón, ampliados, con las medidas debajo.
         Rectangle MagnifierRect(out Rectangle label)
         {
             int size = Pz(120), off = Pz(22), lh = Pz(26);
-            Rectangle m = CurrentMonitor();
+            Rectangle m = curMon;
             int x = cur.X + off, y = cur.Y + off;
             if (x + size > m.Right) x = cur.X - off - size;
             if (y + size + lh + Pz(6) > m.Bottom) y = cur.Y - off - size - lh - Pz(6);
@@ -198,10 +271,8 @@ namespace Stackshot
             return new Rectangle(x, y, size, size);
         }
 
-        void PaintMagnifier(Graphics g)
+        void PaintMagnifier(Graphics g, Rectangle r, Rectangle label)
         {
-            Rectangle label;
-            Rectangle r = MagnifierRect(out label);
             const int n = 15;
             Rectangle src = new Rectangle(cur.X - n / 2, cur.Y - n / 2, n, n);
             using (GraphicsPath p = Theme.Round(r, Pz(14)))
@@ -225,6 +296,7 @@ namespace Stackshot
                 using (Pen pen = new Pen(Color.FromArgb(200, 0, 0, 0), 2f)) g.DrawRectangle(pen, c.X - 1, c.Y - 1, c.Width + 2, c.Height + 2);
                 using (Pen pen = new Pen(Color.White, 1f)) g.DrawRectangle(pen, c.X, c.Y, c.Width, c.Height);
                 g.Clip = old;
+                old.Dispose();
                 using (Pen pen = new Pen(Color.FromArgb(230, 255, 255, 255), Math.Max(1.5f, 2f * S))) g.DrawPath(pen, p);
             }
             string text;
@@ -232,12 +304,11 @@ namespace Stackshot
             else if (!hover.IsEmpty) text = hover.Width + " \u00D7 " + hover.Height;
             else text = "";
             if (text.Length == 0) return;
-            using (Font f = new Font("Segoe UI Semibold", 12 * S, GraphicsUnit.Pixel))
             using (GraphicsPath p = Theme.Round(label, label.Height / 2f))
             using (SolidBrush b = new SolidBrush(Color.FromArgb(235, Theme.Dark)))
             {
                 g.FillPath(b, p);
-                TextRenderer.DrawText(g, text, f, label, Theme.Fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+                TextRenderer.DrawText(g, text, labelFont, label, Theme.Fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
             }
         }
 
@@ -254,14 +325,12 @@ namespace Stackshot
         void InvalidateDecor()
         {
             Rectangle now = DecorBounds();
-            Invalidate(lastDecor);
-            Invalidate(now);
-            Rectangle m = CurrentMonitor();
+            Dirty(lastDecor);
+            Dirty(now);
+            Rectangle m = curMon;
             // Las líneas de la cruceta, de una en una (son muy finas): donde estaban y donde van.
-            Invalidate(new Rectangle(crossMon.Left, crossY - 1, crossMon.Width, 3));
-            Invalidate(new Rectangle(crossX - 1, crossMon.Top, 3, crossMon.Height));
-            Invalidate(new Rectangle(m.Left, cur.Y - 1, m.Width, 3));
-            Invalidate(new Rectangle(cur.X - 1, m.Top, 3, m.Height));
+            if (crossY != cur.Y || crossMon != m) { Dirty(new Rectangle(crossMon.Left, crossY - 1, crossMon.Width, 3)); Dirty(new Rectangle(m.Left, cur.Y - 1, m.Width, 3)); }
+            if (crossX != cur.X || crossMon != m) { Dirty(new Rectangle(crossX - 1, crossMon.Top, 3, crossMon.Height)); Dirty(new Rectangle(cur.X - 1, m.Top, 3, m.Height)); }
             crossX = cur.X;
             crossY = cur.Y;
             crossMon = m;
@@ -271,11 +340,12 @@ namespace Stackshot
         int crossX = -10000, crossY = -10000;
         Rectangle crossMon;
 
+        // Al cambiar el resaltado solo hay que repintar los cuatro bordes y el interior que cambia de claro a oscuro.
         void InvalidateFrame(Rectangle r)
         {
             if (r.IsEmpty) return;
             r.Inflate(Pz(6), Pz(6));
-            Invalidate(r);
+            Dirty(r);
         }
 
         void UpdateHover()
@@ -287,7 +357,7 @@ namespace Stackshot
             {
                 if (w.Bounds.Contains(sp)) { r = w.Bounds; h = w.Handle; break; }
             }
-            if (r.IsEmpty) r = Screen.FromPoint(sp).Bounds; // sobre el escritorio: la pantalla entera
+            if (r.IsEmpty) { r = curMon; r.Offset(vs.X, vs.Y); } // sobre el escritorio: la pantalla entera
             r.Intersect(vs);
             r.Offset(-vs.X, -vs.Y);
             if (r == hover) return;
@@ -302,10 +372,28 @@ namespace Stackshot
             return Rectangle.FromLTRB(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Max(a.X, b.X) + 1, Math.Max(a.Y, b.Y) + 1);
         }
 
+        // Del área anterior a la nueva solo cambian franjas: se repinta cada franja, no la unión entera.
+        void InvalidateSelection(Rectangle old, Rectangle now)
+        {
+            int m = Pz(4);
+            if (old.IsEmpty) { Rectangle r = now; r.Inflate(m, m); Dirty(r); return; }
+            Rectangle u = Rectangle.Union(old, now);
+            u.Inflate(m, m);
+            Rectangle keep = Rectangle.Intersect(old, now);
+            keep.Inflate(-m, -m);
+            if (keep.Width <= 0 || keep.Height <= 0) { Dirty(u); return; }
+            Dirty(Rectangle.FromLTRB(u.Left, u.Top, u.Right, keep.Top));          // arriba
+            Dirty(Rectangle.FromLTRB(u.Left, keep.Bottom, u.Right, u.Bottom));    // abajo
+            Dirty(Rectangle.FromLTRB(u.Left, keep.Top, keep.Left, keep.Bottom));  // izquierda
+            Dirty(Rectangle.FromLTRB(keep.Right, keep.Top, u.Right, keep.Bottom)); // derecha
+        }
+
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
+            if (e.Location == cur) return;
             cur = e.Location;
+            TrackMonitor();
             if (down && !dragging && (Math.Abs(cur.X - start.X) > Pz(4) || Math.Abs(cur.Y - start.Y) > Pz(4)))
             {
                 dragging = true;
@@ -315,9 +403,7 @@ namespace Stackshot
             {
                 Rectangle old = sel;
                 sel = Normalize(start, cur);
-                Rectangle u = old.IsEmpty ? sel : Rectangle.Union(old, sel);
-                u.Inflate(Pz(4), Pz(4));
-                Invalidate(u);
+                InvalidateSelection(old, sel);
             }
             else if (!down) UpdateHover();
             InvalidateDecor();
@@ -397,13 +483,9 @@ namespace Stackshot
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             base.OnFormClosed(e);
-            if (memDC != IntPtr.Zero)
-            {
-                Native.SelectObject(memDC, oldBmp);
-                Native.DeleteDC(memDC);
-                memDC = IntPtr.Zero;
-            }
-            if (hbm != IntPtr.Zero) { Native.DeleteObject(hbm); hbm = IntPtr.Zero; }
+            bright.Dispose();
+            dimmed.Dispose();
+            if (labelFont != null) labelFont.Dispose();
         }
     }
 }

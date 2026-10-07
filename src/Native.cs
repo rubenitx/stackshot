@@ -89,7 +89,11 @@ namespace Stackshot
         [DllImport("gdi32.dll")] public static extern bool BitBlt(IntPtr dst, int x, int y, int w, int h, IntPtr src, int sx, int sy, int rop);
         [DllImport("gdi32.dll")] public static extern IntPtr CreateDIBSection(IntPtr hdc, ref BITMAPINFOHEADER bmi, uint usage, out IntPtr bits, IntPtr section, uint offset);
         public const int SRCCOPY = 0x00CC0020;
+        [DllImport("gdi32.dll")] public static extern bool GdiFlush();
+        [DllImport("msimg32.dll")] public static extern bool AlphaBlend(IntPtr dst, int x, int y, int w, int h, IntPtr src, int sx, int sy, int sw, int sh, int blend);
+        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")] public static extern void CopyMemory(IntPtr dst, IntPtr src, UIntPtr count);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern bool DeleteFile(string path);
+        [DllImport("kernel32.dll")] public static extern bool SetDefaultDllDirectories(uint flags);
 
         public static void ForceForeground(IntPtr hwnd)
         {
