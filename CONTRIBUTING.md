@@ -3,7 +3,7 @@
 Capturas de pantalla para Windows al estilo CleanShot X: captura propia (también con desplazamiento), pila de miniaturas
 flotantes, editor rápido con fondo de presentación, vídeo/GIF con FFmpeg, ventana principal con mascota e instalación por
 usuario. Un único `.exe` (~520 KB) en C# 5 + WinForms sobre .NET Framework 4.8.
-Solo Windows (10/11). Interfaz y comentarios en castellano.
+Solo Windows (10/11). Interfaz en castellano; comentarios del código en inglés.
 
 ## Compilar y probar
 
@@ -37,7 +37,6 @@ Solo Windows (10/11). Interfaz y comentarios en castellano.
 - **Solo C# 5**: nada de `$""`, `?.`, `nameof`, `=>` en miembros, `out var`, propiedades autoinicializadas.
 - **Literales en ASCII**: los acentos de las cadenas van como escapes Unicode. Algunas herramientas de edición los
   convierten en caracteres reales; después de editar, `perl tools/escape-literals.pl <fichero>` los vuelve a escapar.
-  En los comentarios sí se escriben los acentos.
 - El proceso es DPI por monitor (manifiesto PerMonitorV2): las medidas van en píxeles reales y se escalan con
   `ShotStack.ScaleFor(screen)` / `P()`.
 - Las ventanas flotantes (`FloatWindow`) no roban el foco, son por capas (opacidad animada), siempre encima y quedan fuera
@@ -54,7 +53,7 @@ Solo Windows (10/11). Interfaz y comentarios en castellano.
 - FFmpeg se descarga de una versión fija (`FfmpegSetup`: `Version`, `Url`, `Sha256` en `Recorder.cs`); para subir de versión
   hay que cambiar las tres a la vez (la SHA-256 se puede contrastar con el campo `digest` del API de GitHub).
 - `--test` y las herramientas de pruebas ponen `Settings.ReadOnly`: nunca escriben los ajustes de verdad.
-- Estilo: el de los ficheros existentes (comentarios breves en castellano que explican el porqué).
+- Comentarios: en inglés y los mínimos; solo el porqué de lo que no es evidente (nada de repetir lo que dice el código).
 
 ## Mapa
 
@@ -68,7 +67,12 @@ Solo Windows (10/11). Interfaz y comentarios en castellano.
 | `src/ShotStack.cs` | La pila: atajos, bandeja, capturar/guardar, miniaturas, desplazamiento, limpieza de temporales |
 | `src/Look.cs` | Paleta al estilo macOS (`Mac`) e iconos de línea dibujados a mano (`Icons`) |
 | `src/Home/HomeWindow.cs`, `HomePages.cs` | Ventana principal: marco propio con los botones de Windows 11 (minimizar y cerrar a la bandeja), secciones (Inicio, Atajos, General, Fondo y editor, Grabación, Mascota, Acerca de) y sus controles |
-| `src/Home/Mascot.cs`, `Intro.cs` | La mascota (dibujo, física y reacciones) y la animación de bienvenida |
+| `src/Home/Mascot.cs` | La mascota: estados de ánimo, física, ojos y boca, partículas; `RenderStill` para las vistas previas |
+| `src/Home/MascotParts.cs`, `MascotDraw.cs` | Catálogo (`MascotLook`: personaje, color, ojos, gorro, ropa, complementos; niveles de amistad y desbloqueos) y el dibujo de cada pieza. Los índices se guardan en `settings.ini`: lo nuevo, siempre al final |
+| `src/Home/MascotTalk.cs` | Lo que dice la mascota según su personalidad |
+| `src/Home/PetWindow.cs` | La mascota en el escritorio: ventana por capas con alfa por píxel (`UpdateLayeredWindow`), paseos, siesta, arrastrar y soltar; se esconde con apps a pantalla completa |
+| `src/Home/LogoArt.cs`, `Intro.cs` | El logo como dibujo paramétrico (lo usan la app y `tools\make-logo.ps1`) y la animación de inicio |
+| `src/Updater.cs` | Actualizaciones desde GitHub Releases: comprobación diaria, descarga, verificación (SHA-256 + firma RSA-PSS) e instalación |
 | `src/Home/TrayMenu.cs` | Menú de la bandeja con su propio renderizador |
 | `src/Capture/Dib.cs` | Lienzo compartido GDI/GDI+ (lo usan el selector y la ventana principal) |
 | `src/Capture/ScrollCapture.cs` | Captura con desplazamiento: sesión, cosido por hashes de filas, barrita y marco |
@@ -83,4 +87,10 @@ Solo Windows (10/11). Interfaz y comentarios en castellano.
 ## Publicar una versión
 
 Subir `AssemblyVersion`/`AssemblyFileVersion` en `src/Program.cs`, apuntar los cambios en `CHANGELOG.md`, crear la etiqueta
-`vX.Y.Z` y subirla: el workflow `.github/workflows/build.yml` compila y adjunta `Stackshot.exe` y su `.sha256` a la versión.
+`vX.Y.Z` y subirla: el workflow `.github/workflows/build.yml` compila y adjunta `Stackshot.exe`, `.msi`, sus `.sha256` y la
+firma `Stackshot.exe.sig` a la versión. Nunca se rehace una versión ya publicada: cada cambio es una versión nueva.
+
+Firma de actualizaciones: la app solo instala un `Stackshot.exe` firmado con la clave privada RSA cuyo par público está en
+`src/Updater.cs`. La privada vive fuera del repositorio (en el equipo del mantenedor y como secreto `UPDATE_SIGNING_KEY` del
+repositorio, en formato XML de .NET). Sin el secreto, la versión se publica igual pero la app no la instala (ofrece el enlace).
+Si se pierde la clave, hay que generar otra, cambiar la pública en `Updater.cs` y publicar esa versión a mano una vez.
