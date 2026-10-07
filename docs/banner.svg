@@ -1,0 +1,189 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 340" width="1280" height="340" role="img" aria-labelledby="t d">
+  <title id="t">Stackshot</title>
+  <desc id="d">Capturas de pantalla preciosas para Windows: el logo se monta, Pixel la mascota flota y parpadea y el lema va cambiando.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b0b16"/>
+      <stop offset="1" stop-color="#17123a"/>
+    </linearGradient>
+    <radialGradient id="glowP" r="0.5"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".55"/><stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glowB" r="0.5"><stop offset="0" stop-color="#4f7bff" stop-opacity=".45"/><stop offset="1" stop-color="#4f7bff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glowC" r="0.5"><stop offset="0" stop-color="#14b8e6" stop-opacity=".45"/><stop offset="1" stop-color="#14b8e6" stop-opacity="0"/></radialGradient>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b5cf6"/>
+      <stop offset=".5" stop-color="#4f7bff"/>
+      <stop offset="1" stop-color="#14b8e6"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c5cff"/>
+      <stop offset="1" stop-color="#1fa8f0"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e2e8ff"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx=".3" cy=".15" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#eef0ff"/>
+      <stop offset=".45" stop-color="#eef0ff"/>
+      <stop offset=".5" stop-color="#9fd4ff"/>
+      <stop offset=".55" stop-color="#eef0ff"/>
+      <stop offset="1" stop-color="#eef0ff"/>
+      <animate attributeName="x1" values="-1;1" dur="4s" begin="1.6s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="0;2" dur="4s" begin="1.6s" repeatCount="indefinite"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#966eff"/>
+      <stop offset="1" stop-color="#2896f5"/>
+    </linearGradient>
+    <radialGradient id="eye" r=".5"><stop offset="0" stop-color="#67e8f9" stop-opacity=".9"/><stop offset="1" stop-color="#67e8f9" stop-opacity="0"/></radialGradient>
+    <radialGradient id="shadow" r=".5"><stop offset="0" stop-color="#000" stop-opacity=".5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    <clipPath id="frame"><rect width="1280" height="340" rx="24"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#frame)">
+    <rect width="1280" height="340" fill="url(#bg)"/>
+    <!-- Auroras que se mueven despacio -->
+    <ellipse cx="240" cy="90" rx="380" ry="260" fill="url(#glowP)">
+      <animate attributeName="cx" values="240;320;240" dur="14s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="760" cy="300" rx="420" ry="260" fill="url(#glowB)">
+      <animate attributeName="cy" values="300;250;300" dur="11s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="1120" cy="80" rx="360" ry="240" fill="url(#glowC)">
+      <animate attributeName="cx" values="1120;1040;1120" dur="13s" repeatCount="indefinite"/>
+    </ellipse>
+
+    <!-- Destellos que flotan -->
+    <g fill="#fff">
+      <circle cx="420" cy="60" r="2"><animate attributeName="opacity" values="0;1;0" dur="3s" repeatCount="indefinite"/></circle>
+      <circle cx="610" cy="290" r="1.6"><animate attributeName="opacity" values="0;1;0" dur="4s" begin="1s" repeatCount="indefinite"/></circle>
+      <circle cx="905" cy="48" r="2.2"><animate attributeName="opacity" values="0;1;0" dur="3.5s" begin="2s" repeatCount="indefinite"/></circle>
+      <circle cx="1200" cy="292" r="1.8"><animate attributeName="opacity" values="0;1;0" dur="4.5s" begin=".5s" repeatCount="indefinite"/></circle>
+      <circle cx="72" cy="300" r="1.6"><animate attributeName="opacity" values="0;1;0" dur="3.2s" begin="1.6s" repeatCount="indefinite"/></circle>
+    </g>
+
+    <!-- El logo se monta: el cuadrado florece y las tarjetas llegan volando -->
+    <g transform="translate(160 170)">
+      <circle r="10" fill="#fff" opacity="0">
+        <animate attributeName="r" values="10;230" dur=".7s" begin="1.25s" fill="freeze"/>
+        <animate attributeName="opacity" values=".7;0" dur=".7s" begin="1.25s" fill="freeze"/>
+      </circle>
+      <g>
+        <animateTransform attributeName="transform" type="scale" values="0;1.12;1" keyTimes="0;.7;1" dur=".6s" begin=".6s" fill="freeze"/>
+        <rect x="-88" y="-88" width="176" height="176" rx="52" fill="url(#brand)"/>
+        <rect x="-88" y="-88" width="176" height="176" rx="52" fill="url(#gloss)"/>
+        <rect x="-87.5" y="-87.5" width="175" height="175" rx="51.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1.5"/>
+      </g>
+      <g opacity="0">
+        <animate attributeName="opacity" values="0;1" dur=".3s" begin=".1s" fill="freeze"/>
+        <animateTransform attributeName="transform" type="translate" values="-260 200;6 -14;0 -12" keyTimes="0;.75;1" dur=".8s" begin=".1s" fill="freeze"/>
+        <rect x="-52" y="-37" width="104" height="74" rx="12" fill="url(#card)" transform="rotate(-13)"/>
+      </g>
+      <g opacity="0">
+        <animate attributeName="opacity" values="0;1" dur=".3s" begin=".25s" fill="freeze"/>
+        <animateTransform attributeName="transform" type="translate" values="40 300;-2 0;-2 -3" keyTimes="0;.75;1" dur=".8s" begin=".25s" fill="freeze"/>
+        <rect x="-52" y="-37" width="104" height="74" rx="12" fill="url(#card)" transform="rotate(-6)"/>
+      </g>
+      <g opacity="0">
+        <animate attributeName="opacity" values="0;1" dur=".3s" begin=".4s" fill="freeze"/>
+        <animateTransform attributeName="transform" type="translate" values="300 220;0 14;3 10" keyTimes="0;.75;1" dur=".8s" begin=".4s" fill="freeze"/>
+        <rect x="-52" y="-37" width="104" height="74" rx="12" fill="url(#card)"/>
+        <!-- Visor -->
+        <g fill="none" stroke="url(#ink)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="40" stroke-dashoffset="40">
+          <animate attributeName="stroke-dashoffset" values="40;0" dur=".35s" begin="1s" fill="freeze"/>
+          <path d="M-31 -10 V-22 H-19"/>
+          <path d="M19 -22 H31 V-10"/>
+          <path d="M31 10 V22 H19"/>
+          <path d="M-19 22 H-31 V10"/>
+        </g>
+        <circle r="0" fill="url(#ink)">
+          <animate attributeName="r" values="0;8;6" keyTimes="0;.7;1" dur=".3s" begin="1.2s" fill="freeze"/>
+        </circle>
+      </g>
+    </g>
+
+    <!-- Nombre con un brillo que lo recorre y lema que va cambiando -->
+    <g font-family="Segoe UI Variable Display, Segoe UI, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif">
+      <text x="300" y="168" font-size="92" font-weight="700" fill="url(#shine)" opacity="0" letter-spacing="-1">Stackshot
+        <animate attributeName="opacity" values="0;1" dur=".5s" begin="1.3s" fill="freeze"/>
+      </text>
+      <g font-size="27" fill="#c8cff5" opacity="0">
+        <animate attributeName="opacity" values="0;1" dur=".5s" begin="1.6s" fill="freeze"/>
+        <text x="304" y="226" opacity="0">Capturas de pantalla preciosas para Windows.
+          <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.04;.3;.34;1" dur="12s" begin="1.6s" repeatCount="indefinite"/>
+        </text>
+        <text x="304" y="226" opacity="0">Captura. Marca. Arrastra al chat. Listo.
+          <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.33;.37;.63;.67;1" dur="12s" begin="1.6s" repeatCount="indefinite"/>
+        </text>
+        <text x="304" y="226" opacity="0">Vídeo, GIF, capturas largas y fondos bonitos.
+          <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.66;.7;.96;1" dur="12s" begin="1.6s" repeatCount="indefinite"/>
+        </text>
+      </g>
+      <!-- Teclas -->
+      <g opacity="0" font-size="17" font-weight="600" fill="#e8ecff">
+        <animate attributeName="opacity" values="0;1" dur=".5s" begin="1.9s" fill="freeze"/>
+        <rect x="304" y="252" width="104" height="38" rx="9" fill="#2a2a44" stroke="#ffffff" stroke-opacity=".18"/>
+        <text x="356" y="277" text-anchor="middle">Impr Pant</text>
+        <text x="424" y="277" fill="#8f96c4" font-weight="400">y listo · gratis · libre (MIT)</text>
+      </g>
+    </g>
+
+    <!-- Pixel, la mascota: flota, parpadea y mueve la antena -->
+    <g transform="translate(1115 165)">
+      <ellipse cx="0" cy="118" rx="70" ry="10" fill="url(#shadow)">
+        <animate attributeName="rx" values="70;58;70" dur="2.6s" repeatCount="indefinite"/>
+      </ellipse>
+      <g>
+        <animateTransform attributeName="transform" type="translate" values="0 6;0 -8;0 6" dur="2.6s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+        <!-- Antena -->
+        <g>
+          <animateTransform attributeName="transform" type="rotate" values="-8 0 -62;8 0 -62;-8 0 -62" dur="2.6s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+          <line x1="0" y1="-62" x2="0" y2="-92" stroke="#3a3f8f" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="0" cy="-96" r="18" fill="#b9a6ff" opacity=".35"><animate attributeName="r" values="14;20;14" dur="1.6s" repeatCount="indefinite"/></circle>
+          <circle cx="0" cy="-96" r="8" fill="#d8ccff"/>
+        </g>
+        <!-- Manos -->
+        <rect x="-102" y="34" width="20" height="24" rx="10" fill="url(#body)"/>
+        <g>
+          <animateTransform attributeName="transform" type="rotate" values="0 92 46;-28 92 46;10 92 46;-28 92 46;0 92 46;0 92 46" keyTimes="0;.08;.16;.24;.32;1" dur="5s" repeatCount="indefinite"/>
+          <rect x="82" y="34" width="20" height="24" rx="10" fill="url(#body)"/>
+        </g>
+        <!-- Orejeras -->
+        <rect x="-92" y="-18" width="14" height="40" rx="7" fill="#2b4fb0"/>
+        <rect x="78" y="-18" width="14" height="40" rx="7" fill="#2b4fb0"/>
+        <!-- Cabeza -->
+        <rect x="-82" y="-64" width="164" height="132" rx="56" fill="url(#body)"/>
+        <rect x="-82" y="-64" width="164" height="132" rx="56" fill="url(#gloss)"/>
+        <rect x="-81" y="-63" width="162" height="130" rx="55" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="2"/>
+        <!-- Visera -->
+        <rect x="-64" y="-42" width="128" height="80" rx="34" fill="#0e1020"/>
+        <!-- Ojos -->
+        <ellipse cx="-24" cy="-2" rx="22" ry="26" fill="url(#eye)"/>
+        <ellipse cx="24" cy="-2" rx="22" ry="26" fill="url(#eye)"/>
+        <g fill="#ecfeff">
+          <rect x="-31" y="-19" width="14" height="34" rx="7">
+            <animate attributeName="height" values="34;34;4;34;34" keyTimes="0;.9;.94;.98;1" dur="4s" repeatCount="indefinite"/>
+            <animate attributeName="y" values="-19;-19;-4;-19;-19" keyTimes="0;.9;.94;.98;1" dur="4s" repeatCount="indefinite"/>
+            <animate attributeName="x" values="-31;-27;-31;-35;-31" dur="7s" repeatCount="indefinite"/>
+          </rect>
+          <rect x="17" y="-19" width="14" height="34" rx="7">
+            <animate attributeName="height" values="34;34;4;34;34" keyTimes="0;.9;.94;.98;1" dur="4s" repeatCount="indefinite"/>
+            <animate attributeName="y" values="-19;-19;-4;-19;-19" keyTimes="0;.9;.94;.98;1" dur="4s" repeatCount="indefinite"/>
+            <animate attributeName="x" values="17;21;17;13;17" dur="7s" repeatCount="indefinite"/>
+          </rect>
+        </g>
+        <!-- Mofletes -->
+        <ellipse cx="-50" cy="34" rx="9" ry="5" fill="#ff7aa8" opacity=".55"/>
+        <ellipse cx="50" cy="34" rx="9" ry="5" fill="#ff7aa8" opacity=".55"/>
+      </g>
+      <!-- Bocadillo -->
+      <g opacity="0" font-family="Segoe UI, -apple-system, Helvetica Neue, Arial, sans-serif" font-size="16" fill="#f5f5f7">
+        <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.1;.14;.5;.54;1" dur="10s" begin="2s" repeatCount="indefinite"/>
+        <rect x="-246" y="-140" width="150" height="42" rx="14" fill="#3e3e44"/>
+        <path d="M-112 -100 l14 12 l-2 -14 z" fill="#3e3e44"/>
+        <text x="-171" y="-113" text-anchor="middle">¡Hola! Soy Pixel</text>
+      </g>
+    </g>
+  </g>
+</svg>
