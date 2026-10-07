@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0
+
+- **MSI package for organizations.** Every release now includes `Stackshot.msi` for Intune, Configuration Manager or `msiexec`. It installs per user without administrator rights, with `STARTWITHWINDOWS` and `LAUNCHAPP` options. Upgrades keep the user's settings and close and reopen Stackshot automatically, without a restart. Uninstalling removes the application and its data, and existing installations made with `Stackshot.exe` are adopted without duplicate entries.
+- **Graceful shutdown on request.** Stackshot now closes cleanly when Windows Installer, the Restart Manager or a sign-out asks it to, and keeps the clipboard contents.
+
 ## 1.1.1
 
 - New tagline: "Captura, marca y comparte en segundos" in the launch animation, the welcome window and the About section.
