@@ -124,34 +124,38 @@ namespace Stackshot
 
         ContextMenuStrip BuildMenu()
         {
-            ContextMenuStrip menu = new ContextMenuStrip();
-            menu.ShowImageMargin = false;
-            AddAction(menu, "region", "Capturar un \u00E1rea");
-            AddAction(menu, "screen", "Capturar la pantalla");
-            AddAction(menu, "window", "Capturar la ventana activa");
-            menu.Items.Add(new ToolStripSeparator());
-            AddAction(menu, "video", "Grabar v\u00EDdeo");
-            AddAction(menu, "gif", "Grabar GIF");
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Cerrar todas las miniaturas", null, delegate { CloseAll(); });
-            menu.Items.Add("Abrir capturas guardadas", null, delegate { OpenFolder(); });
-            menu.Items.Add("Ajustes\u2026", null, delegate { ShowSettings(); });
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Salir", null, delegate { ExitThread(); });
+            ContextMenuStrip menu = TrayMenu.Create();
+            menu.Items.Add(TrayMenu.Item("Abrir Stackshot", "app", delegate { ShowHome("home", false); }));
+            menu.Items.Add(TrayMenu.Separator());
+            AddAction(menu, "region", "Capturar un \u00E1rea", "area");
+            AddAction(menu, "screen", "Capturar la pantalla", "screen");
+            AddAction(menu, "window", "Capturar la ventana activa", "window");
+            AddAction(menu, "scroll", "Captura con desplazamiento", "scroll");
+            menu.Items.Add(TrayMenu.Separator());
+            AddAction(menu, "video", "Grabar v\u00EDdeo", "video");
+            AddAction(menu, "gif", "Grabar GIF", "gif");
+            menu.Items.Add(TrayMenu.Separator());
+            menu.Items.Add(TrayMenu.Item("Cerrar todas las miniaturas", "stack", delegate { CloseAll(); }));
+            menu.Items.Add(TrayMenu.Item("Abrir capturas guardadas", "folder", delegate { OpenFolder(); }));
+            menu.Items.Add(TrayMenu.Item("Ajustes\u2026", "gear", delegate { ShowHome("general", false); }));
+            menu.Items.Add(TrayMenu.Separator());
+            menu.Items.Add(TrayMenu.Item("Salir", "power", delegate { ExitThread(); }));
             menu.Opening += delegate
             {
                 bool rec = Recorder.Recording;
                 actionItems["video"].Text = rec ? "Detener la grabaci\u00F3n" : "Grabar v\u00EDdeo";
+                actionItems["video"].Tag = rec ? "stop" : "video";
                 actionItems["gif"].Visible = !rec;
+                actionItems["scroll"].Text = ScrollCapture.Active ? "Terminar la captura con desplazamiento" : "Captura con desplazamiento";
                 foreach (KeyValuePair<string, ToolStripMenuItem> kv in actionItems)
                     kv.Value.ShortcutKeyDisplayString = Hotkeys.Split(settings.HotkeysFor(kv.Key)).Count > 0 ? Hotkeys.Display(settings.HotkeysFor(kv.Key)) : "";
             };
             return menu;
         }
 
-        void AddAction(ContextMenuStrip menu, string action, string text)
+        void AddAction(ContextMenuStrip menu, string action, string text, string icon)
         {
-            ToolStripMenuItem item = new ToolStripMenuItem(text);
+            ToolStripMenuItem item = TrayMenu.Item(text, icon, null);
             // Se espera a que el menú se cierre del todo, para que no salga en la captura.
             item.Click += delegate { Delay(160, delegate { OnHotkey(action == "video" && Recorder.Recording ? "video" : action); }); };
             actionItems[action] = item;
