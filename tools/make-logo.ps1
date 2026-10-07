@@ -1,15 +1,15 @@
-﻿# Genera el logo y el icono de Stackshot con tools\Logo.cs (dibujo en código, sin programas de diseño).
-#   assets\logo-1024.png, logo-512.png   logo para la web y el README (con margen y sombra)
-#   assets\logo-256.png                  el que sale en la ventana de bienvenida
-#   assets\stackshot.ico                 icono del .exe, en todos los tamaños de Windows
-#   -Preview <png>                       además, una hoja con todos los tamaños sobre fondo claro y oscuro
+﻿# Renders the Stackshot logo and icon with tools\Logo.cs (drawn in code, no design tools).
+#   assets\logo-1024.png, logo-512.png   web/README logo (with margin and shadow)
+#   assets\logo-256.png                  welcome window logo
+#   assets\stackshot.ico                 .exe icon in every Windows size
+#   -Preview <png>                       also a sheet with every size on light and dark backgrounds
 param([string]$Preview)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $assets = Join-Path $root 'assets'
 New-Item -ItemType Directory -Force $assets | Out-Null
 Add-Type -AssemblyName System.Drawing
-Add-Type -Path (Join-Path $PSScriptRoot 'Logo.cs') -ReferencedAssemblies System.Drawing
+Add-Type -Path @((Join-Path $PSScriptRoot 'Logo.cs'), (Join-Path $root 'src\Home\LogoArt.cs')) -ReferencedAssemblies System.Drawing
 
 function Save([int]$size, [int]$style, [string]$name) {
     $b = [StackshotLogo]::Render($size, $style)
@@ -20,8 +20,7 @@ Save 1024 0 'logo-1024.png'
 Save 512 0 'logo-512.png'
 Save 256 1 'logo-256.png'
 
-# ICO: los tamaños pequeños con el dibujo simplificado (se lee mejor en la bandeja) y en BMP de 32 bits;
-# el de 256 en PNG, como hace Windows.
+# ICO: small sizes use the simplified drawing (reads better in the tray) as 32-bit BMP; 256 is PNG, as Windows does.
 $sizes = 16, 20, 24, 32, 40, 48, 64, 256
 $entries = foreach ($s in $sizes) {
     $bmp = [StackshotLogo]::Render($s, $(if ($s -le 32) { 2 } else { 1 }))
@@ -65,7 +64,7 @@ if ($Preview) {
         foreach ($s in 16, 20, 24, 32, 48, 64, 128) {
             $b = [StackshotLogo]::Render($s, $(if ($s -le 32) { 2 } else { 1 }))
             $g.DrawImage($b, $x, 340, $s, $s)
-            $g.DrawImage($b, $x, 500, $s * 2, $s * 2)   # ampliado al doble, para ver los píxeles
+            $g.DrawImage($b, $x, 500, $s * 2, $s * 2)   # 2x, to inspect the pixels
             $b.Dispose()
             $x += [Math]::Max($s, 24) + 14
         }

@@ -1,6 +1,5 @@
-﻿# Genera bin\Stackshot.msi a partir de bin\Stackshot.exe (compílalo antes con build.ps1) y tools\Stackshot.wxs.
-# Usa WiX Toolset 3.14.1 (libre, MS-RL), que funciona con el .NET Framework de Windows: se descarga una vez a
-# bin\wix, se comprueba su SHA-256 y no se instala nada.
+﻿# Builds bin\Stackshot.msi from bin\Stackshot.exe (run build.ps1 first) and tools\Stackshot.wxs.
+# Uses WiX Toolset 3.14.1 (MS-RL), downloaded once to bin\wix and verified against a pinned SHA-256; nothing is installed.
 #   .\tools\build-msi.ps1
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -24,7 +23,7 @@ if (-not (Test-Path (Join-Path $wix 'candle.exe'))) {
     Remove-Item $zip -Force
 }
 
-# Versión de 3 cifras (Windows Installer ignora la cuarta).
+# Three-part version (Windows Installer ignores the fourth).
 $v = [Version](Get-Item $exe).VersionInfo.FileVersion
 $version = "$($v.Major).$($v.Minor).$($v.Build)"
 $obj = Join-Path $bin 'Stackshot.wixobj'
@@ -34,10 +33,10 @@ $icon = Join-Path $root 'assets\stackshot.ico'
 & (Join-Path $wix 'candle.exe') -nologo -ext WixUtilExtension "-dVersion=$version" "-dExe=$exe" "-dIcon=$icon" `
     -out $obj (Join-Path $PSScriptRoot 'Stackshot.wxs')
 if ($LASTEXITCODE -ne 0) { throw 'candle: el paquete no compila.' }
-# Avisos de validación que no son problemas en este paquete:
-#   ICE91: los ficheros van al perfil del usuario; es justo lo que queremos (instalación por usuario).
-#   ICE61: se permite reinstalar la misma versión (AllowSameVersionUpgrades).
-#   ICE69: los accesos directos apuntan al .exe, que está en otro componente del mismo paquete (normal en accesos no anunciados).
+# Suppressed ICE warnings that are expected for this package:
+#   ICE91: files go to the user profile (per-user install by design).
+#   ICE61: same-version reinstall is allowed (AllowSameVersionUpgrades).
+#   ICE69: non-advertised shortcuts point to the .exe in another component.
 & (Join-Path $wix 'light.exe') -nologo -ext WixUtilExtension -spdb -sice:ICE91 -sice:ICE61 -sice:ICE69 -out $msi $obj
 if ($LASTEXITCODE -ne 0) { throw 'light: no se pudo generar el MSI.' }
 Remove-Item $obj -Force

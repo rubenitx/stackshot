@@ -1,5 +1,5 @@
-# Deja los literales de C# en ASCII: los caracteres no ASCII dentro de "..." y '...' pasan a escapes Unicode (barra invertida, u y 4 cifras); los comentarios no se tocan.
-# Uso: perl tools/escape-literals.pl src/Fichero.cs   (o para todos: for f in $(find src tools -name "*.cs"); do perl tools/escape-literals.pl $f; done)
+# Keeps C# literals ASCII: non-ASCII characters inside "..." and '...' become Unicode escapes (backslash, u, 4 hex digits); comments are untouched.
+# Usage: perl tools/escape-literals.pl src/File.cs   (all files: for f in $(find src tools -name "*.cs"); do perl tools/escape-literals.pl $f; done)
 use strict; use warnings;
 my $f = shift;
 my $bs = chr(92); my $nl = chr(10);

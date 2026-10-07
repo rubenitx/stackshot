@@ -1,6 +1,7 @@
-// Stackshot - Estudio: monta un escritorio de mentira en una pantalla y fotografía cada parte de Stackshot
-// para el README (docs\*.png). Así las imágenes nunca enseñan nada real y se pueden regenerar cuando cambie algo.
-// Lo compila y lanza tools\make-screenshots.ps1. MIT License - https://github.com/rubenitx/stackshot
+// Stackshot - Screenshot studio: builds a fake desktop on one monitor and photographs each part of Stackshot for the
+// README (docs\*.png), so images never show real content and can be regenerated. Built and run by
+// tools\make-screenshots.ps1.
+// MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -33,9 +34,9 @@ namespace Stackshot
             Program.Init();
             ShotStack.Test = true;
             FloatWindow.ExcludeFromCapture = false;
-            Backdrop.NoWallpaper = true; // la muestra "Tu escritorio" no debe mostrar el fondo de verdad
-            Settings.ReadOnly = true; // nunca escribir los ajustes de quien genera las capturas
-            // La pantalla en la que NO está el ratón, para no molestar.
+            Backdrop.NoWallpaper = true; // the "Your desktop" swatch must not show the real wallpaper
+            Settings.ReadOnly = true; // never write the settings of whoever generates the images
+            // The monitor without the mouse, to stay out of the way.
             target = Screen.PrimaryScreen;
             foreach (Screen s in Screen.AllScreens) if (!s.Bounds.Contains(Control.MousePosition)) { target = s; break; }
 
@@ -93,11 +94,9 @@ namespace Stackshot
 
         static KeyValuePair<int, Action> Step(int ms, Action a) { return new KeyValuePair<int, Action>(ms, a); }
 
-        // ------------------------------------------------------------ Escenas
-
         static void Cards()
         {
-            // Cuatro "capturas" recortadas del propio escritorio de mentira.
+            // Four "captures" cropped from the fake desktop.
             Rectangle[] parts = { new Rectangle(560, 210, 640, 360), new Rectangle(1240, 230, 420, 300), new Rectangle(520, 600, 760, 330), new Rectangle(330, 180, 420, 520) };
             foreach (Rectangle p in parts)
             {
@@ -125,7 +124,7 @@ namespace Stackshot
             stack.CloseAll();
         }
 
-        // La selección de región se dibuja fuera de pantalla (sin taparte las tuyas) sobre el escritorio de mentira.
+        // The region picker is rendered off-screen (without covering yours) over the fake desktop.
         static void Region()
         {
             Rectangle vs = target.Bounds;
@@ -140,7 +139,7 @@ namespace Stackshot
             typeof(RegionPicker).GetField("cur", NP).SetValue(p, cur);
             typeof(RegionPicker).GetMethod("TrackMonitor", NP).Invoke(p, null);
             typeof(RegionPicker).GetField("sel", NP).SetValue(p, Rectangle.FromLTRB(start.X, start.Y, cur.X + 1, cur.Y + 1));
-            // La misma composición que en pantalla, de una vez.
+            // The same composition as on screen, in one pass.
             using (Dib outD = new Dib(vs.Width, vs.Height))
             {
                 typeof(RegionPicker).GetMethod("Compose", NP).Invoke(p, new object[] { outD, new Rectangle(0, 0, vs.Width, vs.Height) });
@@ -209,7 +208,7 @@ namespace Stackshot
 
         static Form setup;
 
-        // La ventana principal, con la mascota saludando (sin la animación de entrada).
+        // Main window with the mascot waving (no launch animation).
         static HomeWindow home;
         static Settings settings;
         static void ShowHome()
@@ -230,8 +229,6 @@ namespace Stackshot
             setup.Show();
         }
 
-        // ------------------------------------------------------------ Fotos
-
         static void Grab(Rectangle r, string name)
         {
             r.Intersect(target.Bounds);
@@ -245,7 +242,7 @@ namespace Stackshot
             Grab(r, name);
         }
 
-        // Banner de la portada (1280 × 640, también vale como imagen para redes): logo, nombre, lema y la pila.
+        // Social preview banner (1280x640): logo, name, tagline and the stack.
         static void Hero()
         {
             using (Bitmap b = new Bitmap(1280, 640, PixelFormat.Format32bppArgb))
@@ -268,19 +265,19 @@ namespace Stackshot
                 using (Font f = new Font("Segoe UI Semibold", 19, GraphicsUnit.Pixel))
                 using (SolidBrush br = new SolidBrush(Color.FromArgb(150, 170, 190, 240)))
                     g.DrawString("Free  \u00B7  Open source (MIT)  \u00B7  Windows 10 and 11", f, br, 74, 514);
-                // A la derecha, el editor; delante, en su esquina, la pila de miniaturas (como se ve de verdad).
+                // Editor on the right; the stack in its corner in front (as it really looks).
                 string editorPath = Path.Combine(docs, "editor.png"), stackPath = Path.Combine(docs, "stack-hover.png");
                 if (File.Exists(editorPath))
                     using (Image ed = Image.FromFile(editorPath))
                     {
-                        Rectangle src = new Rectangle(40, 40, ed.Width - 80, ed.Height - 80); // sin el margen de fondo
+                        Rectangle src = new Rectangle(40, 40, ed.Width - 80, ed.Height - 80); // without the backdrop margin
                         float k = 620f / src.Width;
                         Framed(g, ed, src, new RectangleF(576, 84, src.Width * k, src.Height * k), 12);
                     }
                 if (File.Exists(stackPath))
                     using (Image st = Image.FromFile(stackPath))
                     {
-                        // Las tres miniaturas de arriba (la primera, con los botones a la vista).
+                        // The top three cards (the first one with its buttons visible).
                         Rectangle src = new Rectangle(16, 104, 240, 494);
                         float k = 0.78f;
                         RectangleF dst = new RectangleF(1280 - 34 - src.Width * k, 640 - 34 - src.Height * k, src.Width * k, src.Height * k);
@@ -292,7 +289,7 @@ namespace Stackshot
             }
         }
 
-        // Imagen con esquinas redondeadas, sombra y un filo de luz.
+        // Image with rounded corners, shadow and rim light.
         static void Framed(Graphics g, Image img, Rectangle src, RectangleF dst, float radius)
         {
             using (GraphicsPath p = Theme.Round(dst, radius))
@@ -323,8 +320,6 @@ namespace Stackshot
             }
         }
 
-        // ------------------------------------------------------------ El escritorio de mentira
-
         static Bitmap Desktop(Size size)
         {
             Bitmap b = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppArgb);
@@ -338,7 +333,7 @@ namespace Stackshot
                 Glow(g, new RectangleF(size.Width - 900, size.Height - 700, 1200, 900), Color.FromArgb(110, 34, 211, 238));
                 Glow(g, new RectangleF(size.Width / 2 - 400, -300, 900, 700), Color.FromArgb(70, 99, 102, 241));
 
-                // Una app de chat de mentira.
+                // A fake chat app.
                 Rectangle win = new Rectangle(320, 150, 1360, 800);
                 using (GraphicsPath sh = Theme.Round(new RectangleF(win.X, win.Y + 18, win.Width, win.Height), 14))
                 using (SolidBrush s = new SolidBrush(Color.FromArgb(90, 0, 0, 0))) g.FillPath(s, sh);
@@ -348,7 +343,7 @@ namespace Stackshot
                 using (GraphicsPath p = Theme.Round(new RectangleF(title.X, title.Y, title.Width, title.Height + 14), 14))
                 using (SolidBrush s = new SolidBrush(Color.FromArgb(22, 22, 30))) g.FillPath(s, p);
                 using (Font f = new Font("Segoe UI Semibold", 15, GraphicsUnit.Pixel)) g.DrawString("Equipo \u00B7 Soporte", f, new SolidBrush(Color.FromArgb(192, 202, 245)), win.X + 20, win.Y + 13);
-                // Barra lateral.
+                // Sidebar.
                 Rectangle side = new Rectangle(win.X, win.Y + 46, 260, win.Height - 46);
                 g.FillRectangle(new SolidBrush(Color.FromArgb(22, 22, 30)), side);
                 string[] names = { "Laura", "Marcos", "Ana", "Dise\u00F1o", "Backend", "Pruebas" };
@@ -361,11 +356,11 @@ namespace Stackshot
                     using (Font f = new Font("Segoe UI Semibold", 15, GraphicsUnit.Pixel)) g.DrawString(names[i], f, new SolidBrush(Color.FromArgb(192, 202, 245)), side.X + 70, y + 1);
                     g.FillRectangle(new SolidBrush(Color.FromArgb(60, 66, 97)), side.X + 70, y + 24, 110 - i * 9, 6);
                 }
-                // Mensajes.
+                // Messages.
                 int mx = side.Right + 40, my = win.Y + 80;
                 Bubble(g, mx, my, "Laura", "\u00BFPuedes mirar por qu\u00E9 falla el inicio de sesi\u00F3n?", false);
                 Bubble(g, mx + 330, my + 110, "T\u00FA", "Claro, te paso una captura con lo que veo", true);
-                // Un panel con una gráfica.
+                // A chart panel.
                 Rectangle chart = new Rectangle(mx, my + 230, 620, 300);
                 using (GraphicsPath p = Theme.Round(chart, 12)) g.FillPath(new SolidBrush(Color.FromArgb(36, 40, 59)), p);
                 using (Font f = new Font("Segoe UI Semibold", 15, GraphicsUnit.Pixel)) g.DrawString("Errores de inicio de sesi\u00F3n (\u00FAltimos 7 d\u00EDas)", f, new SolidBrush(Color.FromArgb(192, 202, 245)), chart.X + 20, chart.Y + 16);
@@ -377,14 +372,14 @@ namespace Stackshot
                     using (LinearGradientBrush br = new LinearGradientBrush(new PointF(0, bar.Top), new PointF(0, bar.Bottom), i == 4 ? Color.FromArgb(247, 118, 142) : Color.FromArgb(122, 162, 247), i == 4 ? Color.FromArgb(200, 80, 110) : Color.FromArgb(90, 120, 220)))
                         g.FillPath(br, p);
                 }
-                // Un bloque de código con el error.
+                // A code block with the error.
                 Rectangle code = new Rectangle(mx + 650, my + 230, 380, 300);
                 using (GraphicsPath p = Theme.Round(code, 12)) g.FillPath(new SolidBrush(Color.FromArgb(22, 22, 30)), p);
                 string[] lines = { "POST /api/login", "status: 500", "error: token expirado", "  at auth.verify()", "  at session.start()" };
                 Color[] lc = { Color.FromArgb(125, 207, 255), Color.FromArgb(247, 118, 142), Color.FromArgb(224, 175, 104), Color.FromArgb(86, 95, 137), Color.FromArgb(86, 95, 137) };
                 using (Font f = new Font("Consolas", 16, GraphicsUnit.Pixel))
                     for (int i = 0; i < lines.Length; i++) g.DrawString(lines[i], f, new SolidBrush(lc[i]), code.X + 22, code.Y + 24 + i * 30);
-                // Caja de escribir.
+                // Message box.
                 Rectangle input = new Rectangle(mx, win.Bottom - 74, win.Right - mx - 30, 48);
                 using (GraphicsPath p = Theme.Round(input, 24)) g.FillPath(new SolidBrush(Color.FromArgb(36, 40, 59)), p);
                 using (Font f = new Font("Segoe UI", 15, GraphicsUnit.Pixel)) g.DrawString("Escribe un mensaje\u2026", f, new SolidBrush(Color.FromArgb(86, 95, 137)), input.X + 22, input.Y + 14);

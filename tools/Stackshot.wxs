@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Stackshot - Paquete MSI (WiX Toolset 3.14). Lo genera tools\build-msi.ps1.
+  Stackshot - MSI package (WiX Toolset 3.14), built by tools\build-msi.ps1.
   MIT License - https://github.com/rubenitx/stackshot
 
-  Instalación por usuario, sin administrador (como el instalador del .exe), en %LOCALAPPDATA%\Programs\Stackshot:
-  sirve para desplegarlo con Intune, SCCM o a mano. Propiedades públicas:
-    STARTWITHWINDOWS=1|0   arrancar con Windows, en segundo plano (por defecto, 1)
-    LAUNCHAPP=1|0          abrir Stackshot al terminar (por defecto, 1)
-  Ejemplos:
+  Per-user install without admin rights into %LOCALAPPDATA%\Programs\Stackshot, for Intune, SCCM or manual use.
+  Public properties:
+    STARTWITHWINDOWS=1|0   start with Windows, in the background (default 1)
+    LAUNCHAPP=1|0          launch Stackshot when done (default 1)
+  Examples:
     msiexec /i Stackshot.msi /qn
     msiexec /i Stackshot.msi /qn STARTWITHWINDOWS=0 LAUNCHAPP=0
     msiexec /x Stackshot.msi /qn
 
-  El UpgradeCode no se cambia nunca: es lo que hace que cada versión nueva sustituya a la anterior.
+  Never change the UpgradeCode: it is what makes each version replace the previous one.
 -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
@@ -23,7 +23,7 @@
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser" InstallPrivileges="limited"
              Description="Stackshot $(var.Version)" Comments="Capture, annotate and share in seconds." Manufacturer="rubenitx" />
 
-    <!-- Cada versión sustituye a la anterior (y una más vieja no puede pisar a una más nueva). -->
+    <!-- Each version replaces the previous one; downgrades are blocked. -->
     <MajorUpgrade AllowSameVersionUpgrades="yes" Schedule="afterInstallInitialize"
                   DowngradeErrorMessage="A newer version of Stackshot is already installed." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
@@ -48,14 +48,14 @@
       <Directory Id="StartupFolder" />
     </Directory>
 
-    <!-- En una instalación por usuario, la clave de cada componente va en HKCU (así lo exige Windows Installer). -->
+    <!-- Per-user installs require each component's key path in HKCU. -->
     <DirectoryRef Id="INSTALLFOLDER">
       <Component Id="MainExe" Guid="E1DFC751-244F-4DBD-B736-308A512E22D8">
         <File Id="StackshotExe" Name="Stackshot.exe" Source="$(var.Exe)" KeyPath="no" Checksum="yes" />
-        <!-- La app lo lee para saber que la gestiona el MSI (no crea sus propios accesos y desinstala con msiexec). -->
+        <!-- Tells the app it is MSI-managed (no own shortcuts, uninstall through msiexec). -->
         <RegistryValue Root="HKCU" Key="Software\Stackshot" Name="Installer" Type="string" Value="msi" KeyPath="yes" />
         <RegistryValue Root="HKCU" Key="Software\Stackshot" Name="ProductCode" Type="string" Value="[ProductCode]" />
-        <!-- Quien lo tuviera instalado con el .exe: el MSI se queda con todo y no hay dos entradas en Aplicaciones. -->
+        <!-- Adopt an existing .exe install so there are no duplicate entries in Apps. -->
         <RemoveRegistryKey Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\Stackshot" Action="removeOnInstall" />
         <RemoveFolder Id="RemoveInstallFolder" On="uninstall" />
         <RemoveFolder Id="RemoveProgramsDir" Directory="ProgramsDir" On="uninstall" />
@@ -85,13 +85,13 @@
       <ComponentRef Id="StartupShortcut" />
     </Feature>
 
-    <!-- Antes de tocar ficheros, se le pide a Stackshot que se cierre (lo atiende su ventana invisible, CloseListener);
-         si no lo hace en unos segundos, se cierra a la fuerza. Así nunca hace falta reiniciar. -->
+    <!-- Ask Stackshot to close before touching files (handled by CloseListener); it is terminated after a timeout,
+         so no reboot is ever needed. -->
     <util:CloseApplication Id="CloseStackshot" Target="Stackshot.exe" CloseMessage="yes" EndSessionMessage="no"
                            RebootPrompt="no" TerminateProcess="0" Timeout="8" />
 
-    <!-- Al desinstalar de verdad (no al actualizar), se borran también sus datos: ajustes, capturas temporales,
-         registro y FFmpeg. Las capturas guardadas por el usuario están en otra carpeta y no se tocan. -->
+    <!-- On a real uninstall (not an upgrade), also remove app data: settings, temp captures, log and FFmpeg.
+         Captures the user saved live elsewhere and are not touched. -->
     <CustomAction Id="RemoveUserData" Directory="LocalAppDataFolder" Execute="deferred" Impersonate="yes" Return="ignore"
                   ExeCommand="&quot;[SystemFolder]cmd.exe&quot; /d /c rmdir /s /q &quot;[LocalAppDataFolder]Stackshot&quot;" />
     <CustomAction Id="LaunchStackshot" FileKey="StackshotExe" ExeCommand="" Return="asyncNoWait" Impersonate="yes" />

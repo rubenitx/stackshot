@@ -1,6 +1,6 @@
-﻿# Regenera las imágenes del README (docs\*.png) con tools\Studio.cs: monta un escritorio de mentira en la pantalla
-# donde no está el ratón y fotografía la pila, el editor, la selección, la grabación, la bienvenida y los ajustes.
-# Tarda unos 15 segundos; durante ese rato esa pantalla queda ocupada.
+﻿# Regenerates the README images (docs\*.png) with tools\Studio.cs: builds a fake desktop on the monitor without the
+# mouse and photographs the stack, editor, region picker, recording, welcome and settings.
+# Takes about 15 seconds, during which that monitor is busy.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
@@ -12,7 +12,7 @@ $icon = Join-Path $root 'assets\stackshot.ico'
 $logo = Join-Path $root 'assets\logo-256.png'
 $out = & $csc /nologo /codepage:65001 /target:winexe /optimize+ /main:Stackshot.Studio "/out:$exe" "/win32manifest:$(Join-Path $root 'src\app.manifest')" `
     "/resource:$icon,stackshot.ico" "/resource:$logo,logo.png" /r:System.Windows.Forms.dll /r:System.Drawing.dll `
-    /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll $sources 2>&1
+    /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll /r:System.Web.Extensions.dll $sources 2>&1
 if ($LASTEXITCODE -ne 0) { $out | ForEach-Object { Write-Host $_ }; throw 'El estudio no compila.' }
 $docs = Join-Path $root 'docs'
 $p = Start-Process -FilePath $exe -ArgumentList ('"' + $docs + '"') -PassThru
