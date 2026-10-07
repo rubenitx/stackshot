@@ -264,10 +264,10 @@ namespace Stackshot
                     g.DrawString("Stackshot", f, Brushes.White, 66, 268);
                 using (Font f = new Font(Fonts.Display, 30, GraphicsUnit.Pixel))
                 using (SolidBrush br = new SolidBrush(Color.FromArgb(200, 210, 220, 255)))
-                    g.DrawString("Capturas de pantalla preciosas\npara Windows.", f, br, 72, 392);
+                    g.DrawString("Capture, annotate and share\nin seconds.", f, br, 72, 392);
                 using (Font f = new Font("Segoe UI Semibold", 19, GraphicsUnit.Pixel))
                 using (SolidBrush br = new SolidBrush(Color.FromArgb(150, 170, 190, 240)))
-                    g.DrawString("Gratis  \u00B7  Libre (MIT)  \u00B7  Sin instalar nada m\u00E1s", f, br, 74, 514);
+                    g.DrawString("Free  \u00B7  Open source (MIT)  \u00B7  Windows 10 and 11", f, br, 74, 514);
                 // A la derecha, el editor; delante, en su esquina, la pila de miniaturas (como se ve de verdad).
                 string editorPath = Path.Combine(docs, "editor.png"), stackPath = Path.Combine(docs, "stack-hover.png");
                 if (File.Exists(editorPath))
