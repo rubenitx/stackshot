@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 340" width="1280" height="340" role="img" aria-labelledby="t d">
   <title id="t">Stackshot</title>
-  <desc id="d">Capturas de pantalla preciosas para Windows: el logo se monta, Pixel la mascota flota y parpadea y el lema va cambiando.</desc>
+  <desc id="d">Capture, annotate and share in seconds. The logo assembles itself, Pixel the mascot floats and blinks, and the tagline rotates.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0b0b16"/>
@@ -110,13 +110,13 @@
       </text>
       <g font-size="27" fill="#c8cff5" opacity="0">
         <animate attributeName="opacity" values="0;1" dur=".5s" begin="1.6s" fill="freeze"/>
-        <text x="304" y="226" opacity="0">Capturas de pantalla preciosas para Windows.
+        <text x="304" y="226" opacity="0">Capture, annotate and share in seconds.
           <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.04;.3;.34;1" dur="12s" begin="1.6s" repeatCount="indefinite"/>
         </text>
-        <text x="304" y="226" opacity="0">Captura. Marca. Arrastra al chat. Listo.
+        <text x="304" y="226" opacity="0">Drag it into any chat or app. Done.
           <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.33;.37;.63;.67;1" dur="12s" begin="1.6s" repeatCount="indefinite"/>
         </text>
-        <text x="304" y="226" opacity="0">Vídeo, GIF, capturas largas y fondos bonitos.
+        <text x="304" y="226" opacity="0">Video, GIF, scrolling capture and backdrops.
           <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.66;.7;.96;1" dur="12s" begin="1.6s" repeatCount="indefinite"/>
         </text>
       </g>
@@ -124,8 +124,8 @@
       <g opacity="0" font-size="17" font-weight="600" fill="#e8ecff">
         <animate attributeName="opacity" values="0;1" dur=".5s" begin="1.9s" fill="freeze"/>
         <rect x="304" y="252" width="104" height="38" rx="9" fill="#2a2a44" stroke="#ffffff" stroke-opacity=".18"/>
-        <text x="356" y="277" text-anchor="middle">Impr Pant</text>
-        <text x="424" y="277" fill="#8f96c4" font-weight="400">y listo · gratis · libre (MIT)</text>
+        <text x="356" y="277" text-anchor="middle">PrtSc</text>
+        <text x="424" y="277" fill="#8f96c4" font-weight="400">to capture · free and open source (MIT)</text>
       </g>
     </g>
 
@@ -182,7 +182,7 @@
         <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.1;.14;.5;.54;1" dur="10s" begin="2s" repeatCount="indefinite"/>
         <rect x="-246" y="-140" width="150" height="42" rx="14" fill="#3e3e44"/>
         <path d="M-112 -100 l14 12 l-2 -14 z" fill="#3e3e44"/>
-        <text x="-171" y="-113" text-anchor="middle">¡Hola! Soy Pixel</text>
+        <text x="-171" y="-113" text-anchor="middle">Hi, I’m Pixel</text>
       </g>
     </g>
   </g>

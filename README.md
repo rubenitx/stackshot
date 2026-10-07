@@ -1,249 +1,145 @@
 <div align="center">
 
-<img src="docs/banner.svg" alt="Stackshot: capturas de pantalla preciosas para Windows" width="100%">
+<img src="docs/banner.svg" alt="Stackshot. Capture, annotate and share in seconds." width="100%">
 
-<br>
+**Capture, annotate and share in seconds.**<br>
+A screenshot tool for Windows with floating thumbnails, a quick editor, scrolling capture, video and GIF.
 
-<a href="https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.exe"><img src="https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Descargar%20Stackshot-Windows%2010%20%7C%2011-4F7BFF?style=for-the-badge&labelColor=8B5CF6" alt="Descargar Stackshot para Windows"></a>
+[![Latest release](https://img.shields.io/github/v/release/rubenitx/stackshot?color=4F7BFF)](https://github.com/rubenitx/stackshot/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/rubenitx/stackshot/total?color=8B5CF6)](https://github.com/rubenitx/stackshot/releases)
+[![Build](https://github.com/rubenitx/stackshot/actions/workflows/build.yml/badge.svg)](https://github.com/rubenitx/stackshot/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-14B8E6)](LICENSE)
 
-[![Última versión](https://img.shields.io/github/v/release/rubenitx/stackshot?label=versi%C3%B3n&color=8B5CF6)](https://github.com/rubenitx/stackshot/releases/latest)
-[![Descargas](https://img.shields.io/github/downloads/rubenitx/stackshot/total?label=descargas&color=4F7BFF)](https://github.com/rubenitx/stackshot/releases)
-[![Compilación](https://github.com/rubenitx/stackshot/actions/workflows/build.yml/badge.svg)](https://github.com/rubenitx/stackshot/actions/workflows/build.yml)
-[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-14B8E6)](LICENSE)
-![Menos de 1 MB](https://img.shields.io/badge/peso-%3C%201%20MB-30D158)
-![Sin administrador](https://img.shields.io/badge/instalar-sin%20admin-FF9F0A)
-
-**[English](README.en.md)** · [Descargar](https://github.com/rubenitx/stackshot/releases/latest) · [Novedades](CHANGELOG.md) · [Seguridad](SECURITY.md)
+[Download](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.exe) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md) · [Español](README.es.md)
 
 </div>
 
 ---
 
-Pulsa <kbd>Impr Pant</kbd>, elige un área y tu captura se queda **flotando en una esquina**, lista para arrastrarla al chat, pegarla donde quieras o marcarla en un segundo. Lo que no guardas se borra solo: se acabó el escritorio lleno de `Captura (37).png`.
+Press <kbd>Print Screen</kbd>, select an area and the screenshot stays in the corner of the screen, ready to be dragged into a chat, pasted with <kbd>Ctrl</kbd>+<kbd>V</kbd> or annotated. Screenshots you don't keep are deleted automatically after an hour.
 
-Es la experiencia de **CleanShot X, por fin en Windows**: un único `.exe` de menos de 1 MB, gratis, libre y sin instalar nada más.
+Stackshot brings the CleanShot X workflow to Windows. It ships as a single executable of about 0.5 MB, installs per user without administrator rights and doesn't depend on any other program.
 
 <div align="center">
-<img src="docs/demo.gif" alt="Stackshot en acción: animación de bienvenida, Pixel la mascota y los ajustes" width="760">
+<img src="docs/demo.gif" alt="Stackshot main window, launch animation and settings" width="760">
 </div>
 
-## ⚡ En tres segundos
-
-| | | |
-|:---:|:---:|:---:|
-| **1.** Pulsa <kbd>Impr Pant</kbd> | **2.** Arrastra un área (o haz clic en una ventana) | **3.** Arrástrala al chat, o <kbd>Ctrl</kbd>+<kbd>V</kbd> |
-
-## ✨ Todo lo que hace
-
-| | |
-|---|---|
-| 🪟 **Pila flotante** de miniaturas, con animaciones suaves | 🖱️ **Arrastra y suelta** en Teams, Slack, Outlook, la IA… |
-| 🎯 **Selección al píxel**, con lupa y medidas | 📜 **Captura con desplazamiento** de páginas enteras |
-| ✏️ **Editor rápido**: flechas curvas, números, texto, pixelar… | 🎨 **Fondo de presentación**, como en CleanShot |
-| 🎬 **Vídeo MP4 y GIF**, con el cursor | 📌 **Fijar en pantalla** encima de todo |
-| 🤖 **Pixel**, una mascota que te acompaña | 🔒 **Nada sale de tu equipo**: sin nube ni telemetría |
-
-### 🪟 Una pila que no estorba
-
-<img src="docs/stack-hover.png" alt="Miniaturas flotantes con la barra de botones" width="420" align="right">
-
-- Cada captura aparece abajo a la izquierda con un pequeño rebote. Si haces varias, se apilan.
-- **Arrástrala** a cualquier aplicación: va pegada al cursor.
-- **Pégala** con <kbd>Ctrl</kbd>+<kbd>V</kbd>: la miniatura dice «Pegada» y se retira sola.
-- Al pasar el ratón: **copiar, editar, guardar y fijar**.
-- **Desliza** a la izquierda para descartarla.
-- ¿Muchas? Hasta 20: muévete entre ellas con la **rueda del ratón**.
-- Con **varias pantallas**, la pila sigue al ratón.
-- No sale en tus capturas ni cuando **compartes pantalla**.
-
-<br clear="right">
-
-### 🎯 Elegir qué capturar, al píxel
-
-<img src="docs/region.png" alt="Selección de un área con lupa y medidas" width="100%">
-
-La pantalla se congela al instante. Arrastra un área con lupa y medidas, o **haz clic en una ventana** para capturarla entera (con las esquinas redondeadas de Windows 11 y sin nada detrás). Las flechas del teclado mueven el cursor de píxel en píxel, y todo va fluido aunque tengas varias pantallas 4K: en cada movimiento solo se redibuja lo que cambia.
-
-### 📜 Capturas largas
-
-<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Impr Pant</kbd>: elige el área y desplázate con la rueda. Stackshot va **cosiendo una sola imagen larga**, sin repetir cabeceras ni pies fijos. O pulsa **Auto** y deja que baje solo hasta el final.
-
-### ✏️ Un editor que abre al instante
-
-<img src="docs/editor.png" alt="Editor con flecha curva, recuadro, números y texto" width="100%">
-
-| | |
-|---|---|
-| ➡️ **Flechas** afiladas que se **curvan** | ⬜ **Recuadros** y ⭕ **elipses** |
-| 1️⃣ **Números** para explicar pasos | 💬 **Texto** legible sobre cualquier cosa |
-| 🖍️ **Resaltar**, como un rotulador | 🫥 **Pixelar** correos, nombres o datos |
-| ✂️ **Recortar** sin perder nada | 🎨 5 colores y 3 grosores |
-
-Cualquier marca se puede **mover, estirar o borrar** después. <kbd>Enter</kbd> copia y cierra.
-
-### 🎨 Fondo de presentación
-
-<img src="docs/backdrop.png" alt="Editor con el fondo de presentación" width="100%">
-
-Con el botón **Fondo** (o la tecla <kbd>B</kbd>), tu captura queda sobre un degradado bonito, con **margen, esquinas redondeadas y sombra**: lista para una presentación, un tuit o la documentación. Tienes 13 fondos, incluido **tu propio escritorio desenfocado**, y proporción libre, 16:9, 4:3 o 1:1.
-
-También funciona con **vídeos y GIF**: el botón **Presentar** de su miniatura abre el mismo editor y aplica el fondo, las marcas y el recorte a toda la grabación.
-
-### 🎬 Vídeo y GIF
-
-<img src="docs/recording.png" alt="Grabando un área de la pantalla" width="420" align="right">
-
-<kbd>Mayús</kbd>+<kbd>Impr Pant</kbd> graba **vídeo MP4** y <kbd>Ctrl</kbd>+<kbd>Mayús</kbd>+<kbd>Impr Pant</kbd> un **GIF**. Graba solo el área que elijas, con el cursor, y se ve nítido aunque uses Windows al 125 % o al 150 %.
-
-La primera vez, Stackshot descarga [FFmpeg](https://ffmpeg.org) 9.0.2 (libre y gratuito) y comprueba que su SHA-256 coincide con la que lleva escrita. Para las capturas de imagen no hace falta.
-
-<br clear="right">
-
-### 🤖 Conoce a Pixel
-
-<img src="docs/pixel.gif" alt="Pixel, la mascota de Stackshot" width="200" align="left">
-
-Abre Stackshot desde el menú Inicio y aparece su ventana, con **Pixel**:
-
-- 👀 te sigue con la mirada, aunque el ratón esté fuera de la ventana;
-- 🦘 salta si lo tocas y 😵‍💫 se marea si insistes;
-- 🎉 celebra cada captura;
-- 💡 te cuenta trucos de vez en cuando;
-- 😴 se echa la siesta si le ignoras.
-
-Le puedes cambiar el **nombre** y el **color**, o esconderlo si prefieres trabajar sin compañía.
-
-<br clear="left">
-
-<img src="docs/app.png" alt="Ventana principal de Stackshot" width="100%">
-
-La ventana tiene capturas a un clic, todos los **atajos** (haz clic y pulsa la combinación) y todos los **ajustes**, que se aplican al momento. Al cerrarla, Stackshot sigue en la bandeja, junto al reloj; al arrancar con Windows se queda ahí, en silencio.
-
-## 📥 Instalar
-
-1. **[Descarga Stackshot.exe](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.exe)** y ábrelo.
-2. Elige si quieres que arranque con Windows y dónde guardar tus capturas.
-3. Pulsa **Instalar y empezar**. Ya está: pulsa <kbd>Impr Pant</kbd>.
-
-<img src="docs/welcome.png" alt="Bienvenida de Stackshot" width="340" align="right">
-
-- Se instala **solo para tu usuario**, sin permisos de administrador.
-- Aparece en el menú Inicio y en **Configuración > Aplicaciones** para desinstalarlo como cualquier otro programa.
-- Para actualizar, abre el `.exe` nuevo: Stackshot detecta la versión y te pregunta.
-- Funciona en **Windows 10 y 11** sin instalar nada más (.NET Framework 4.8 ya viene con Windows).
-
 > [!NOTE]
-> **«Windows protegió su PC».** Stackshot todavía no está firmado digitalmente, así que la primera vez avisa SmartScreen. Pulsa **Más información > Ejecutar de todas formas**. Puedes comprobar que el `.exe` sale de este código: lo explica [SECURITY.md](SECURITY.md).
+> The user interface is currently in Spanish. An English translation is planned and contributions are welcome.
 
-<br clear="right">
+## Features
+
+- **Floating stack.** Each screenshot appears as a thumbnail in the bottom-left corner. Drag it into any application, paste it, swipe it away, or scroll through up to 20 of them. It follows the mouse across monitors and is excluded from screen sharing.
+- **Precise selection.** The screen freezes instantly. Drag an area with a magnifier and live dimensions, or click a window to capture it, including the rounded corners of Windows 11.
+- **Scrolling capture.** Select an area and scroll, or let Stackshot scroll for you; the frames are stitched into a single image without repeating sticky headers or footers.
+- **Editor.** Arrows that can be curved, rectangles, ellipses, numbered steps, text, highlighter, pixelation and non-destructive cropping. Every mark can be moved, resized or deleted afterwards.
+- **Presentation backdrop.** Place a screenshot on a gradient or on your blurred wallpaper, with padding, rounded corners, shadow and a fixed aspect ratio. The same options apply to recordings.
+- **Video and GIF.** Record an area of the screen as MP4 or GIF, including the cursor.
+- **Pin to screen.** Keep a screenshot floating above every window, with zoom and opacity.
+- **Main window.** Every action, shortcut and setting in one place, with Pixel, a small animated mascot that can be renamed, recoloured or hidden. Closing the window keeps Stackshot running in the tray.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/stack-hover.png" alt="Floating thumbnails with their toolbar"></td>
+    <td width="50%"><img src="docs/region.png" alt="Area selection with magnifier and dimensions"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/editor.png" alt="Editor with a curved arrow, numbered steps and text"></td>
+    <td><img src="docs/backdrop.png" alt="Editor with the presentation backdrop enabled"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/app.png" alt="Main window"></td>
+    <td><img src="docs/settings.png" alt="General settings"></td>
+  </tr>
+</table>
+
+## Installation
+
+1. Download **[Stackshot.exe](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.exe)** and run it.
+2. Choose whether it starts with Windows and where saved screenshots go.
+3. Click **Instalar y empezar**, then press <kbd>Print Screen</kbd>.
+
+Stackshot installs to `%LOCALAPPDATA%\Programs\Stackshot`, adds a Start menu entry and appears in **Settings > Apps** for uninstalling. It runs on Windows 10 and 11 with the .NET Framework 4.8 that ships with Windows. To update, run a newer `Stackshot.exe`.
+
+Because the executable is not code-signed yet, SmartScreen shows a warning the first time it runs (**More info > Run anyway**). Each release can be verified as described in [SECURITY.md](SECURITY.md).
 
 <details>
-<summary><b>Instalación silenciosa (para departamentos de sistemas)</b></summary>
+<summary>Silent installation</summary>
 
 ```powershell
-Stackshot.exe --install --startup --folder "D:\Capturas"   # --no-start para no abrirlo al terminar
+Stackshot.exe --install --startup --folder "D:\Screenshots"   # add --no-start to skip launching it
 Stackshot.exe --uninstall --quiet
 ```
 </details>
 
-## ⌨️ Atajos
+## Keyboard shortcuts
 
-| Atajo | Qué hace |
+| Shortcut | Action |
 |---|---|
-| <kbd>Impr Pant</kbd> | Capturar un área (o haz clic en una ventana o en el escritorio) |
-| <kbd>Ctrl</kbd>+<kbd>Impr Pant</kbd> | Capturar la pantalla en la que está el ratón |
-| <kbd>Alt</kbd>+<kbd>Impr Pant</kbd> | Capturar la ventana activa |
-| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Impr Pant</kbd> | Captura con desplazamiento (otra vez para terminar) |
-| <kbd>Mayús</kbd>+<kbd>Impr Pant</kbd> | Grabar vídeo (otra vez para parar) |
-| <kbd>Ctrl</kbd>+<kbd>Mayús</kbd>+<kbd>Impr Pant</kbd> | Grabar GIF |
+| <kbd>Print Screen</kbd> | Capture an area, a window or the whole screen |
+| <kbd>Ctrl</kbd>+<kbd>Print Screen</kbd> | Capture the screen under the mouse |
+| <kbd>Alt</kbd>+<kbd>Print Screen</kbd> | Capture the active window |
+| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Print Screen</kbd> | Scrolling capture (press again to finish) |
+| <kbd>Shift</kbd>+<kbd>Print Screen</kbd> | Record video (press again to stop) |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Print Screen</kbd> | Record a GIF |
 
-Todos se cambian en la ventana de Stackshot, en la sección **Atajos**. Si Windows 11 tiene <kbd>Impr Pant</kbd> reservada para Recortes, Stackshot se ofrece a liberarla.
+All shortcuts can be changed in the **Atajos** section of the main window. If Windows 11 reserves <kbd>Print Screen</kbd> for the Snipping Tool, Stackshot offers to release it for the current user.
 
 <details>
-<summary><b>Atajos del editor</b></summary>
+<summary>Editor shortcuts</summary>
 
-| Tecla | Qué hace |
+| Key | Action |
 |---|---|
-| <kbd>F</kbd> <kbd>R</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>N</kbd> <kbd>H</kbd> <kbd>P</kbd> <kbd>C</kbd> | Flecha, recuadro, elipse, texto, números, resaltar, pixelar, recortar |
-| <kbd>B</kbd> | Fondo de presentación |
-| <kbd>1</kbd>…<kbd>5</kbd> · <kbd>−</kbd> <kbd>+</kbd> | Color · grosor |
-| <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> | Deshacer / rehacer |
-| <kbd>Ctrl</kbd>+<kbd>C</kbd> · <kbd>Ctrl</kbd>+<kbd>S</kbd> | Copiar · guardar |
-| <kbd>Enter</kbd> | Aplicar, copiar y cerrar |
-| <kbd>Supr</kbd> · flechas | Borrar · mover la marca seleccionada |
+| <kbd>F</kbd> <kbd>R</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>N</kbd> <kbd>H</kbd> <kbd>P</kbd> <kbd>C</kbd> | Arrow, rectangle, ellipse, text, numbers, highlight, pixelate, crop |
+| <kbd>B</kbd> | Presentation backdrop |
+| <kbd>1</kbd>–<kbd>5</kbd>, <kbd>−</kbd> <kbd>+</kbd> | Colour, stroke width |
+| <kbd>Ctrl</kbd>+<kbd>Z</kbd>, <kbd>Ctrl</kbd>+<kbd>Y</kbd> | Undo, redo |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd>, <kbd>Ctrl</kbd>+<kbd>S</kbd> | Copy, save |
+| <kbd>Enter</kbd> | Apply, copy and close |
+| <kbd>Delete</kbd>, arrow keys | Delete or move the selected mark |
 </details>
 
-## 🔒 Privado y seguro
+## Privacy and security
 
-- **Nada sale de tu equipo**: sin cuentas, sin nube y sin telemetría.
-- La única conexión es la descarga opcional de FFmpeg: siempre la misma versión, con su SHA-256 escrita en el código.
-- Las capturas que no guardas viven en `%LOCALAPPDATA%\Stackshot\temp` y se borran solas al cabo de una hora (nunca mientras sigan en pantalla).
-- Cada versión se compila en GitHub Actions a partir de este código, con su **suma SHA-256** y una **atestación de procedencia** firmada. Los detalles están en [SECURITY.md](SECURITY.md).
+- No accounts, cloud services or telemetry. Screenshots never leave the computer.
+- The only network access is a one-time download of FFmpeg 9.0.2 when recording for the first time. The package is checked against a SHA-256 hash stored in the source code and discarded if it doesn't match.
+- Temporary screenshots live in `%LOCALAPPDATA%\Stackshot\temp` and are removed after an hour, never while they are still on screen.
+- Releases are built by GitHub Actions from this repository and published with a SHA-256 checksum and a signed build provenance attestation.
 
-## 🪶 Ligero de verdad
+Details and the vulnerability reporting process are in [SECURITY.md](SECURITY.md).
+
+## Performance
 
 | | |
 |---|---|
-| En reposo | **~40 MB** de RAM y **0 %** de CPU |
-| Con la ventana abierta | ~0,6 % de CPU (la mascota baja el ritmo cuando solo flota) |
-| Selector de área | 0,1–1 ms por movimiento del ratón |
-| La miniatura | aparece al soltar el ratón; el PNG se escribe en segundo plano |
-| El programa | un solo `.exe` de **~0,5 MB** |
+| Idle | About 40 MB of RAM and no CPU usage |
+| Area selection | Under 1 ms per mouse movement; only the changed regions are redrawn |
+| After a capture | The thumbnail appears immediately; the PNG is written in the background |
+| Executable | About 0.5 MB, no runtime to install |
 
-## ❓ Preguntas
+## Building from source
 
-<details>
-<summary><b>¿Dónde se guardan las capturas?</b></summary>
-
-Solo las que guardas (💾 en la miniatura o <kbd>Ctrl</kbd>+<kbd>S</kbd> en el editor), en la carpeta que elegiste al instalar (por defecto `Imágenes\Stackshot`). Se puede cambiar en la sección **General**.
-</details>
-
-<details>
-<summary><b>Impr Pant no hace nada</b></summary>
-
-Otro programa la tiene ocupada (Recortes, ShareX, Lightshot, Greenshot…). Stackshot te avisa al arrancar: ciérralo o elige otro atajo en la sección **Atajos**.
-</details>
-
-<details>
-<summary><b>¿Cómo lo cierro del todo?</b></summary>
-
-Icono de la bandeja > **Salir**. Cerrar la ventana solo la esconde; eso se puede cambiar en **General**.
-</details>
-
-<details>
-<summary><b>¿Y en el Mac?</b></summary>
-
-Esto es solo para Windows. En macOS, CleanShot X es la referencia en la que se inspira Stackshot.
-</details>
-
-## 🛠️ Compilar desde el código
-
-No hace falta Visual Studio: basta el compilador de C# que trae Windows.
+Visual Studio is not required; the C# compiler included with Windows is enough.
 
 ```powershell
 git clone https://github.com/rubenitx/stackshot
 cd stackshot
-.\build.ps1          # bin\Stackshot.exe
-.\build.ps1 -Run     # compila y lo abre sin instalar
+.\build.ps1          # produces bin\Stackshot.exe
+.\build.ps1 -Run     # builds and runs it without installing
 ```
 
-| Carpeta | Qué hay |
+| Folder | Contents |
 |---|---|
-| `src/` | El programa (C# 5 + WinForms): pila, editor, captura, grabación, ventana principal e instalación |
-| `assets/` | Logo e icono (`tools\make-logo.ps1` los dibuja en código) |
-| `docs/` | Imágenes de este README (`tools\make-screenshots.ps1` las regenera sobre un escritorio de mentira) |
+| `src/` | The application (C# 5, WinForms): capture, thumbnails, editor, recording, main window and installer |
+| `assets/` | Logo and icon, drawn in code by `tools\make-logo.ps1` |
+| `docs/` | README images, regenerated on a synthetic desktop by `tools\make-screenshots.ps1` |
 
-## 🤝 Contribuir
+## Contributing
 
-Las ideas, los fallos y las mejoras son bienvenidos en [Issues](https://github.com/rubenitx/stackshot/issues). `build.ps1` compila en segundos y el código está comentado en castellano. Para vulnerabilidades, consulta [SECURITY.md](SECURITY.md).
+Bug reports and suggestions are welcome in [Issues](https://github.com/rubenitx/stackshot/issues). The code is commented in Spanish; build instructions, conventions and an overview of the source are in [CONTRIBUTING.md](CONTRIBUTING.md). Please report security issues privately as described in [SECURITY.md](SECURITY.md).
 
-## 📄 Licencia
+## License
 
-[MIT](LICENSE) © 2026 Rubén Martínez. Úsalo, cámbialo y compártelo.
+[MIT](LICENSE) © 2026 Rubén Martínez.
 
-FFmpeg no se incluye: se descarga aparte, con su propia licencia (GPL), y solo si grabas vídeo o GIF.
-
-<div align="center">
-<br>
-<sub>¿Te ahorra tiempo? Dale una ⭐ y Pixel lo celebrará. 🤖</sub>
-</div>
+FFmpeg is not bundled. It is downloaded separately, under its own license (GPL), only when recording video or GIF.
