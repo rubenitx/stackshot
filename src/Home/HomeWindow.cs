@@ -76,8 +76,23 @@ namespace Stackshot
         }
 
         int P(float v) { return (int)Math.Round(v * s); }
-        int ViewW { get { return P(LW) - P(Side); } }
-        int ViewH { get { return P(LH); } }
+        // The real client size (DPI rounding or a monitor change can make it differ from the design size), so the layers
+        // always cover the whole window.
+        int ViewW { get { return Math.Max(1, Real.Width - P(Side)); } }
+        int ViewH { get { return Real.Height; } }
+
+        // The real client size from Windows. WinForms keeps its own figure, worked out for a normal frame, and keeps going
+        // back to it; with no frame (WM_NCCALCSIZE) the real client is the whole window, so trusting WinForms left a black
+        // band at the bottom and right.
+        Size Real
+        {
+            get
+            {
+                Native.RECT rc;
+                if (IsHandleCreated && Native.GetClientRect(Handle, out rc) && rc.Right > 0 && rc.Bottom > 0) return new Size(rc.Right, rc.Bottom);
+                return new Size(P(LW), P(LH));
+            }
+        }
 
         void Center(Screen scr)
         {
@@ -149,6 +164,12 @@ namespace Stackshot
             base.OnResize(e);
             if (WindowState == FormWindowState.Minimized) timer.Stop();
             else if (Visible && !timer.Enabled) { lastFrame = 0; timer.Start(); Invalidate(); }
+            // A different client size (DPI change, another monitor): lay everything out again for the new size.
+            if (WindowState != FormWindowState.Minimized && side != null && (side.Height != ViewH || (content != null && content.Width != ViewW)))
+            {
+                Build();
+                Invalidate();
+            }
             if (owner != null) owner.HomeShown(Visible && WindowState != FormWindowState.Minimized);
         }
 
@@ -259,7 +280,7 @@ namespace Stackshot
                 y += P(38);
             }
             MiniMascot mm = new MiniMascot();
-            mm.R = new Rectangle(P(12), P(LH) - P(118), P(Side - 24), P(104));
+            mm.R = new Rectangle(P(12), ViewH - P(118), P(Side - 24), P(104));
             nav.Add(mm);
 
             items.Clear();
@@ -375,13 +396,14 @@ namespace Stackshot
         // frame costs a few hundred pixels instead of the whole window, and nothing unpainted is ever shown.
         protected override void OnPaint(PaintEventArgs e)
         {
-            Rectangle clip = Rectangle.Intersect(e.ClipRectangle, ClientRectangle);
+            Size real = Real;
+            Rectangle clip = Rectangle.Intersect(e.ClipRectangle, new Rectangle(Point.Empty, real));
             if (clip.Width <= 0 || clip.Height <= 0) return;
             EnsureLayers();
-            if (frame == null || frame.Width != ClientSize.Width || frame.Height != ClientSize.Height)
+            if (frame == null || frame.Width != real.Width || frame.Height != real.Height)
             {
                 if (frame != null) frame.Dispose();
-                frame = new Dib(Math.Max(1, ClientSize.Width), Math.Max(1, ClientSize.Height));
+                frame = new Dib(real.Width, real.Height);
             }
             int sy = (int)Math.Round(scroll), shift = (int)Math.Round(ContentShift);
             Rectangle sr = Rectangle.Intersect(clip, new Rectangle(0, 0, side.Width, side.Height));
@@ -428,12 +450,13 @@ namespace Stackshot
                 old.Dispose();
                 PaintBubble(g);
             }
-            if (intro != null) intro.Paint(g, ClientRectangle, Anim.Now, s);
+            if (intro != null) intro.Paint(g, new Rectangle(Point.Empty, Real), Anim.Now, s);
         }
 
         void EnsureLayers()
         {
-            if (side == null) { side = new Dib(P(Side), P(LH)); sideDirty = true; }
+            if (side != null && side.Height != ViewH) { side.Dispose(); side = null; }
+            if (side == null) { side = new Dib(P(Side), ViewH); sideDirty = true; }
             int ch = Math.Max(ViewH, contentHeight);
             if (content == null || content.Height < ch || content.Width != ViewW) { if (content != null) content.Dispose(); content = new Dib(ViewW, ch); contentDirty = true; }
             if (sideDirty)
@@ -501,7 +524,7 @@ namespace Stackshot
         void PaintSide(Graphics g)
         {
             g.Clear(Mac.Sidebar);
-            using (Pen p = new Pen(Color.FromArgb(44, 44, 48))) g.DrawLine(p, P(Side) - 1, 0, P(Side) - 1, P(LH));
+            using (Pen p = new Pen(Color.FromArgb(44, 44, 48))) g.DrawLine(p, P(Side) - 1, 0, P(Side) - 1, ViewH);
             Rectangle lr = new Rectangle(P(20), P(24), P(30), P(30));
             if (intro == null || intro.T(Anim.Now) > Intro.Length - 200)
             {
@@ -513,7 +536,7 @@ namespace Stackshot
         }
 
         // Windows 11 caption buttons: minimize and close (to tray). Fixed size, no maximize.
-        Rectangle CaptionButton(int i) { return new Rectangle(ClientSize.Width - P(46) * (2 - i), 0, P(46), P(32)); }
+        Rectangle CaptionButton(int i) { return new Rectangle(Real.Width - P(46) * (2 - i), 0, P(46), P(32)); }
         Rectangle CaptionRect { get { return Rectangle.Union(CaptionButton(0), CaptionButton(1)); } }
 
         int CaptionAt(Point p)
@@ -589,8 +612,8 @@ namespace Stackshot
                 // Above the head when it fits; below the mascot (tail up) when its head is scrolled out of view; and when the
                 // mascot is out of view altogether, a plain note at the top of the page.
                 if (above >= P(8)) { r = new Rectangle(x, above, w, h); bubbleTail = 1; }
-                else if (b.Y + b.Height * 0.5f > P(8) && below + h < ClientSize.Height - P(8)) { r = new Rectangle(x, below, w, h); bubbleTail = -1; }
-                else { r = new Rectangle(P(Side) + (ClientSize.Width - P(Side) - w) / 2, P(14), w, h); bubbleTail = 0; }
+                else if (b.Y + b.Height * 0.5f > P(8) && below + h < Real.Height - P(8)) { r = new Rectangle(x, below, w, h); bubbleTail = -1; }
+                else { r = new Rectangle(P(Side) + (Real.Width - P(Side) - w) / 2, P(14), w, h); bubbleTail = 0; }
             }
             if (inflate) r.Inflate(P(14), P(14));
             return r;
