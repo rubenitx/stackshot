@@ -916,6 +916,13 @@ namespace Stackshot
                 }
                 w.settings.SetHotkeys(action, value);
                 w.settings.Save();
+                // Choosing Print Screen means wanting it: take it back from the Snipping Tool right away.
+                if (string.Equals(combo, "PrintScreen", StringComparison.OrdinalIgnoreCase) && Installer.SnippingOwnsPrintScreen)
+                {
+                    Installer.FreePrintScreen();
+                    w.owner.Notify("Impr Pant ya es de Stackshot",
+                                   "Windows la ten\u00EDa reservada para Recortes; ya est\u00E1 liberada en tu usuario. Si a\u00FAn se abre Recortes, cierra sesi\u00F3n y vuelve a entrar.");
+                }
                 Stop(w);
                 w.sideDirty = true;
             }

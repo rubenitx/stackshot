@@ -240,11 +240,23 @@ namespace Stackshot
             }
         }
 
+        // Windows 11 gives Print Screen to the Snipping Tool by default; this hands it back (current user only) and tells
+        // the shell the keyboard setting changed, so it applies right away where Windows supports it.
         public static void FreePrintScreen()
         {
             try { Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Keyboard", "PrintScreenKeyForSnippingEnabled", 0, RegistryValueKind.DWord); }
-            catch (Exception ex) { ShotStack.Log("Impr Pant: " + ex.Message); }
+            catch (Exception ex) { ShotStack.Log("Impr Pant: " + ex.Message); return; }
+            try
+            {
+                UIntPtr result;
+                SendMessageTimeout((IntPtr)0xFFFF, 0x001A, UIntPtr.Zero, "Keyboard", 0x0002, 1000, out result); // WM_SETTINGCHANGE, SMTO_ABORTIFHUNG
+            }
+            catch { }
+            ShotStack.Log("Impr Pant liberada de Recortes");
         }
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern IntPtr SendMessageTimeout(IntPtr hwnd, int msg, UIntPtr wParam, string lParam, int flags, int timeout, out UIntPtr result);
     }
 
     // Welcome window (first run of the downloaded .exe): the basics to get started. Everything else lives in the main

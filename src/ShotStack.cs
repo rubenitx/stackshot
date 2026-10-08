@@ -248,9 +248,19 @@ namespace Stackshot
             if (!report) return;
             updateBalloon = false;
             tray.BalloonTipTitle = "Algunos atajos est\u00E1n ocupados";
-            tray.BalloonTipText = string.Join(", ", failed.ToArray()) + " los usa otro programa (\u00BFRecortes, ShareX, Lightshot\u2026?). " +
+            tray.BalloonTipText = string.Join(", ", failed.ToArray()) + " los usa otro programa (\u00BFOneDrive, ShareX, Lightshot, Greenshot\u2026?). " +
                                   "Ci\u00E9rralo o elige otros atajos en Ajustes.";
             tray.BalloonTipIcon = ToolTipIcon.Warning;
+            tray.ShowBalloonTip(8000);
+        }
+
+        // A short notice from the tray icon.
+        public void Notify(string title, string text)
+        {
+            updateBalloon = false;
+            tray.BalloonTipTitle = title;
+            tray.BalloonTipText = text;
+            tray.BalloonTipIcon = ToolTipIcon.Info;
             tray.ShowBalloonTip(8000);
         }
 
