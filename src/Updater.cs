@@ -176,7 +176,12 @@ namespace Stackshot
 
         public static bool CanInstall
         {
-            get { return Available != null && !Installer.ManagedByMsi && Installer.RunningInstalled; }
+            // Only releases that carry their signature can be installed from here; unsigned ones open the download page.
+            get
+            {
+                return Available != null && Available.ExeUrl != null && Available.SigUrl != null && Available.Sha256 != null &&
+                       !Installer.ManagedByMsi && Installer.RunningInstalled;
+            }
         }
 
         // Downloads, verifies and hands over to the new version (it closes this one and installs itself).
