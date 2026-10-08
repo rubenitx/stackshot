@@ -37,7 +37,7 @@ namespace Stackshot
         readonly Timer feedback = new Timer();
         readonly Dictionary<Tool, Bar.Item> toolItems = new Dictionary<Tool, Bar.Item>();
         readonly List<Bar.Item> colorItems = new List<Bar.Item>(), weightItems = new List<Bar.Item>();
-        readonly Bar.Item undoItem, redoItem, copyItem, saveItem, bgItem;
+        readonly Bar.Item undoItem, redoItem, copyItem, saveItem, bgItem, pdfItem;
         bool dirty, closeWithoutAsking;
         // Presentation mode: the first frame is annotated and FFmpeg applies the result to the whole video.
         readonly string ffmpeg;
@@ -123,6 +123,8 @@ namespace Stackshot
             else
             {
                 Button(null, "\uE718", "Fijar en pantalla: queda flotando encima de todo", PinOut, true);
+                pdfItem = Button("PDF", "\uE8A5", "Guardar como PDF: las capturas largas se reparten en p\u00E1ginas sin perder nitidez  (Ctrl+P)", SavePdf, true);
+                pdfItem.Alt = "PDF \u2713";
                 Bar.Item drag = Button("Arrastrar", "\uE7C2", "Arr\u00E1strala al chat o a otra aplicaci\u00F3n", null, true);
                 drag.DragOut = true;
                 copyItem = Button("Copiar", "\uE8C8", "Copiar al portapapeles  (Ctrl+C)", CopyOut, true);
@@ -189,8 +191,10 @@ namespace Stackshot
             int chrome = P(52) + P(28) + (timeline != null ? timeline.Height : 0);
             float maxW = wa.Width * 0.88f - 2 * pad, maxH = wa.Height * 0.88f - chrome - 2 * pad;
             float kk = Math.Min(ShotStack.MaxZoom(img.Size), Math.Min(maxW / img.Width, maxH / img.Height));
-            ClientSize = new Size(Math.Min(wa.Width, Math.Max(minW, (int)(img.Width * kk + 2 * pad))),
-                                  chrome + Math.Max(P(260), (int)(img.Height * kk + 2 * pad)));
+            // Tall captures (scrolling ones) get a window as wide as they read best and as tall as the screen allows.
+            float kw = img.Height > img.Width * 2.2f ? Math.Min(1f, maxW / img.Width) : kk;
+            ClientSize = new Size(Math.Min(wa.Width, Math.Max(minW, (int)(img.Width * kw + 2 * pad))),
+                                  chrome + Math.Max(P(260), kw != kk ? (int)maxH : (int)(img.Height * kk + 2 * pad)));
             MinimumSize = new Size(Math.Min(wa.Width, Width - ClientSize.Width + minW), P(380));
             Location = new Point(wa.Left + Math.Max(0, (wa.Width - Width) / 2), wa.Top + Math.Max(0, (wa.Height - Height) / 2));
 
@@ -200,6 +204,7 @@ namespace Stackshot
                 feedback.Stop();
                 if (copyItem != null) copyItem.ShowAlt = false;
                 if (saveItem != null) saveItem.ShowAlt = false;
+                if (pdfItem != null) pdfItem.ShowAlt = false;
                 bar.Invalidate();
             };
             UpdateUi();
@@ -273,7 +278,8 @@ namespace Stackshot
             if (export != null) return; // the hint strip shows export progress
             Size o = canvas.OutputSize;
             hint.LeftText = canvas.HintText;
-            hint.RightText = o.Width + " \u00D7 " + o.Height + " px  \u00B7  " + (IsVideo ? "Enter exporta" : "Enter copia y cierra");
+            hint.RightText = (canvas.Zoomed ? canvas.ZoomPercent + " %  \u00B7  Ctrl+0 ajusta  \u00B7  " : "Ctrl+rueda: zoom  \u00B7  ") +
+                             o.Width + " \u00D7 " + o.Height + " px  \u00B7  " + (IsVideo ? "Enter exporta" : "Enter copia y cierra");
             hint.Invalidate();
             Text = (IsVideo ? "Editar v\u00EDdeo \u00B7 " : "Editar \u00B7 ") + Path.GetFileName(path) + (dirty ? "  \u2022" : "");
             if (timeline != null) timeline.Invalidate();
@@ -335,6 +341,15 @@ namespace Stackshot
                 case Keys.Control | Keys.Shift | Keys.Z: canvas.Redo(); return true;
                 case Keys.Control | Keys.C: if (!IsVideo) CopyOut(); return true;
                 case Keys.Control | Keys.S: if (IsVideo) Done(); else KeepCopy(); return true;
+                case Keys.Control | Keys.P: if (!IsVideo) SavePdf(); return true;
+                case Keys.Control | Keys.D0:
+                case Keys.Control | Keys.NumPad0: canvas.ZoomFit(); return true;
+                case Keys.Control | Keys.D1:
+                case Keys.Control | Keys.NumPad1: canvas.ZoomActual(); return true;
+                case Keys.Control | Keys.Oemplus:
+                case Keys.Control | Keys.Add: canvas.ZoomBy(1.25f); return true;
+                case Keys.Control | Keys.OemMinus:
+                case Keys.Control | Keys.Subtract: canvas.ZoomBy(0.8f); return true;
                 case Keys.Enter: Done(); return true;
                 case Keys.Escape:
                     if (canvas.HasSelection) canvas.SelectShape(null);
@@ -402,10 +417,39 @@ namespace Stackshot
         // Something to write: unapplied annotations or a backdrop not yet in the file.
         bool Pending { get { return dirty || (canvas.BgOn && !withBackdrop.Contains(path)); } }
 
+        // PDF of the result (marks and backdrop included); long captures become several A4-width pages.
+        void SavePdf()
+        {
+            canvas.CommitText();
+            using (SaveFileDialog d = new SaveFileDialog())
+            {
+                d.Title = "Guardar como PDF";
+                d.Filter = "PDF|*.pdf";
+                d.FileName = Path.GetFileNameWithoutExtension(path) + ".pdf";
+                string dir = owner != null ? owner.Settings.SaveFolder : Path.GetDirectoryName(path);
+                try { Directory.CreateDirectory(dir); d.InitialDirectory = dir; } catch { }
+                if (d.ShowDialog(this) != DialogResult.OK) return;
+                try
+                {
+                    Cursor = Cursors.WaitCursor;
+                    using (Bitmap b = canvas.Render()) Pdf.Save(b, d.FileName);
+                }
+                catch (Exception ex)
+                {
+                    ShotStack.Log("PDF: " + ex.Message);
+                    MessageBox.Show(this, "No se pudo guardar el PDF: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                finally { Cursor = Cursors.Default; }
+                Feedback(pdfItem);
+            }
+        }
+
         void Feedback(Bar.Item it)
         {
             copyItem.ShowAlt = it == copyItem;
             saveItem.ShowAlt = it == saveItem;
+            if (pdfItem != null) pdfItem.ShowAlt = it == pdfItem;
             bar.Invalidate();
             feedback.Stop();
             feedback.Start();

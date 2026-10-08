@@ -87,26 +87,85 @@ namespace Stackshot
 
         void Fire(EventHandler h) { if (h != null) h(this, EventArgs.Empty); }
 
+        // Zoom on top of "fit to window" (1 = fit) and how far the view is panned from the centre, in screen pixels.
+        float zoom = 1f;
+        PointF pan;
+        bool zoomReady;
+        // The scaled view is cached as one bitmap up to DirectPixels; beyond that only the visible part is drawn. With the
+        // backdrop on, the whole frame is cached, so zoom stops at MaxFramePixels.
+        const double DirectPixels = 6e6, MaxFramePixels = 12e6;
+
         void Fit()
         {
             float pad = 28 * Ui;
             float aw = Math.Max(1f, Width - 2 * pad), ah = Math.Max(1f, Height - 2 * pad);
-            if (BgOn && Bg != null)
+            bool bg = BgOn && Bg != null;
+            Size cs = OutputSizeRaw, frame = cs;
+            Rectangle inner = new Rectangle(Point.Empty, cs);
+            if (bg) Backdrop.Measure(cs, Bg, false, out frame, out inner); // the whole frame fits; the capture sits inside it
+            float fit = Math.Min(ShotStack.MaxZoom(cs), Math.Min(aw / frame.Width, ah / frame.Height));
+            if (!zoomReady && Width > 1 && Height > 1)
             {
-                // Fit the whole frame (backdrop included); the capture sits inside it.
-                Size cs = OutputSizeRaw, frame;
-                Rectangle inner;
-                Backdrop.Measure(cs, Bg, false, out frame, out inner);
-                k = Math.Min(ShotStack.MaxZoom(cs), Math.Min(aw / frame.Width, ah / frame.Height));
-                float fx = (float)Math.Round((Width - frame.Width * k) / 2f), fy = (float)Math.Round((Height - frame.Height * k) / 2f);
-                off = new PointF((float)Math.Round(fx + inner.X * k), (float)Math.Round(fy + inner.Y * k));
-                frameScreen = new Rectangle((int)fx, (int)fy, Math.Max(1, (int)Math.Round(frame.Width * k)), Math.Max(1, (int)Math.Round(frame.Height * k)));
-                radiusScreen = Backdrop.RadiusFor(cs, Bg) * k;
-                return;
+                // Tall captures (scrolling ones) open fitted to the width and scrolled to the top, so they can be read.
+                zoomReady = true;
+                float byWidth = Math.Min(1f, aw / frame.Width);
+                if (frame.Height > frame.Width * 2.2f && byWidth > fit * 1.3f) { zoom = byWidth / fit; pan = new PointF(0, float.MaxValue); BeginInvoke((Action)delegate { Fire(StateChanged); }); }
             }
-            k = Math.Min(ShotStack.MaxZoom(new Size((int)Crop.Width, (int)Crop.Height)), Math.Min(aw / Crop.Width, ah / Crop.Height));
-            off = new PointF((float)Math.Round((Width - Crop.Width * k) / 2f), (float)Math.Round((Height - Crop.Height * k) / 2f));
+            k = fit * zoom;
+            if (bg && (double)frame.Width * k * frame.Height * k > MaxFramePixels) { k = (float)Math.Sqrt(MaxFramePixels / ((double)frame.Width * frame.Height)); zoom = k / fit; }
+            float cw = frame.Width * k, ch = frame.Height * k;
+            float mx = Math.Max(0, (cw - Width) / 2 + pad), my = Math.Max(0, (ch - Height) / 2 + pad);
+            pan = new PointF(Math.Max(-mx, Math.Min(mx, pan.X)), Math.Max(-my, Math.Min(my, pan.Y)));
+            float fx = (float)Math.Round((Width - cw) / 2f + pan.X), fy = (float)Math.Round((Height - ch) / 2f + pan.Y);
+            off = new PointF((float)Math.Round(fx + inner.X * k), (float)Math.Round(fy + inner.Y * k));
+            if (bg)
+            {
+                frameScreen = new Rectangle((int)fx, (int)fy, Math.Max(1, (int)Math.Round(cw)), Math.Max(1, (int)Math.Round(ch)));
+                radiusScreen = Backdrop.RadiusFor(cs, Bg) * k;
+            }
         }
+
+        public int ZoomPercent { get { Fit(); return (int)Math.Round(k * 100); } }
+        public bool Zoomed { get { return Math.Abs(zoom - 1f) > 0.01f; } }
+
+        // Zooms by a factor keeping the image point under p (screen) where it is.
+        public void ZoomAt(Point p, float factor)
+        {
+            Fit();
+            PointF ip = ToImg(p, false);
+            zoom = Math.Max(0.25f, Math.Min(16f, zoom * factor));
+            Fit();
+            Point now = ToScreen(ip);
+            pan = new PointF(pan.X + p.X - now.X, pan.Y + p.Y - now.Y);
+            ZoomChanged();
+        }
+
+        public void ZoomBy(float factor) { ZoomAt(new Point(Width / 2, Height / 2), factor); }
+        public void ZoomFit() { zoom = 1f; pan = PointF.Empty; ZoomChanged(); }
+        public void ZoomActual() { Fit(); ZoomBy(1f / k); }
+
+        void ZoomChanged()
+        {
+            Fit();
+            Invalidate();
+            Fire(StateChanged);
+        }
+
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            base.OnMouseWheel(e);
+            if (box != null) return;
+            if ((ModifierKeys & Keys.Control) != 0) { ZoomAt(e.Location, (float)Math.Pow(1.15, e.Delta / 120.0)); return; }
+            float step = e.Delta / 120f * 90 * Ui;
+            if ((ModifierKeys & Keys.Shift) != 0) pan.X += step; else pan.Y += step;
+            Fit();
+            Invalidate();
+        }
+
+        // The middle button drags the view around.
+        bool panning;
+        Point panFrom;
+        PointF panStart;
 
         // Background and shadow at screen scale, rebuilt only when something changes.
         Bitmap BgView(Rectangle ir)
@@ -170,6 +229,25 @@ namespace Stackshot
             return view;
         }
 
+        // Very large zooms: draw only the part of the capture that is on screen, straight from the original.
+        void DrawVisible(Graphics g, Rectangle ir)
+        {
+            Rectangle vis = Rectangle.Intersect(ir, ClientRectangle);
+            if (vis.Width <= 0 || vis.Height <= 0) return;
+            float sx = Crop.X + (vis.X - off.X) / k, sy = Crop.Y + (vis.Y - off.Y) / k;
+            InterpolationMode im = g.InterpolationMode;
+            PixelOffsetMode pm = g.PixelOffsetMode;
+            g.InterpolationMode = k >= 2f ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBilinear;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+            using (ImageAttributes ia = new ImageAttributes())
+            {
+                ia.SetWrapMode(WrapMode.TileFlipXY);
+                g.DrawImage(Img, vis, sx, sy, vis.Width / k, vis.Height / k, GraphicsUnit.Pixel, ia);
+            }
+            g.InterpolationMode = im;
+            g.PixelOffsetMode = pm;
+        }
+
         // Subtle dot grid, rendered once per size.
         Bitmap Dots()
         {
@@ -193,10 +271,12 @@ namespace Stackshot
             Graphics g = e.Graphics;
             Fit();
             g.DrawImageUnscaled(Dots(), 0, 0);
-            Bitmap v = View();
-            Rectangle ir = new Rectangle((int)off.X, (int)off.Y, v.Width, v.Height);
-            g.SmoothingMode = SmoothingMode.AntiAlias;
             bool bg = BgOn && Bg != null;
+            int vw = Math.Max(1, (int)Math.Round(Crop.Width * k)), vh = Math.Max(1, (int)Math.Round(Crop.Height * k));
+            bool direct = !bg && (double)vw * vh > DirectPixels;
+            Bitmap v = direct ? null : View();
+            Rectangle ir = new Rectangle((int)off.X, (int)off.Y, vw, vh);
+            g.SmoothingMode = SmoothingMode.AntiAlias;
             if (bg)
             {
                 g.DrawImageUnscaled(BgView(ir), frameScreen.X, frameScreen.Y);
@@ -212,7 +292,8 @@ namespace Stackshot
                     using (GraphicsPath p = Theme.Round(sr, Pu(3 + i * 1.6f)))
                     using (SolidBrush b = new SolidBrush(Color.FromArgb(16, 0, 0, 0))) g.FillPath(b, p);
                 }
-                g.DrawImageUnscaled(v, ir.X, ir.Y);
+                if (v != null) g.DrawImageUnscaled(v, ir.X, ir.Y);
+                else DrawVisible(g, ir);
                 using (Pen p = new Pen(Theme.Border)) g.DrawRectangle(p, ir.X - 1, ir.Y - 1, ir.Width + 1, ir.Height + 1);
             }
 
@@ -418,6 +499,7 @@ namespace Stackshot
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            if (e.Button == MouseButtons.Middle) { panning = true; panFrom = e.Location; panStart = pan; Cursor = Cursors.SizeAll; return; }
             if (skipNextDown) { skipNextDown = false; return; }
             if (box != null) { CommitText(); return; }
             Focus();
@@ -474,6 +556,7 @@ namespace Stackshot
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
+            if (panning) { pan = new PointF(panStart.X + e.X - panFrom.X, panStart.Y + e.Y - panFrom.Y); Fit(); Invalidate(); return; }
             switch (drag)
             {
                 case Drag.Draw:
@@ -514,6 +597,7 @@ namespace Stackshot
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
+            if (panning && e.Button == MouseButtons.Middle) { panning = false; Cursor = Cursors.Default; return; }
             Drag d = drag;
             drag = Drag.None;
             if (d == Drag.Draw && cur != null) FinishDraw();
