@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.3.1
 
+- **Zoom in the editor.** Ctrl + mouse wheel zooms around the pointer, the wheel scrolls, the middle button drags, and Ctrl+0 / Ctrl+1 / Ctrl++ / Ctrl+- fit, show at 100% and zoom. Tall scrolling captures open fitted to the width and scrolled to the top, so they can be read right away.
+- **Save as PDF.** A new PDF button (Ctrl+P) in the editor saves the result with its marks and backdrop; long captures are split into A4-width pages, cutting between lines of text, and stay lossless so they can be zoomed.
+- **Print Screen just works.** Assigning Print Screen to a shortcut now takes it back from the Windows 11 Snipping Tool automatically (current user only) and applies the change right away where Windows allows it.
+- **No more black band.** The main window always paints its real size, which could differ from the design size after a DPI or monitor change and left a black strip at the bottom and right.
+- **New logo in the README banner.**
 - **Clearer updates.** A new version without an update signature now offers its download page ("Ver la versión") instead of an install that can only fail.
 - **Local release signing.** `tools/sign-release.ps1` signs a published release on the maintainer's computer and uploads only the signature, so the private key never goes to GitHub.
 
