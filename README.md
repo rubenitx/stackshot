@@ -29,63 +29,71 @@ Stackshot brings the CleanShot X workflow to Windows. It ships as a single execu
 
 ## Features
 
+### Capture
+
+<img src="docs/feature-capture.png" alt="Area selection with a magnifier and live dimensions, next to the floating stack of thumbnails" width="100%">
+
 - **Floating stack.** Each screenshot appears as a thumbnail in the bottom-left corner. Drag it into any application, paste it, swipe it away, or scroll through up to 20 of them. It follows the mouse across monitors and is excluded from screen sharing.
 - **Precise selection.** The screen freezes instantly. Drag an area with a magnifier and live dimensions, or click a window to capture it, including the rounded corners of Windows 11.
 - **Scrolling capture.** Select an area and scroll, or let Stackshot scroll for you; the frames are stitched into a single image without repeating sticky headers or footers.
+- **Pin to screen.** Keep a screenshot floating above every window, with zoom and opacity.
+
+### Edit
+
+<img src="docs/feature-editor.png" alt="Editor with a curved arrow, numbered steps and a label, on a gradient presentation backdrop" width="100%">
+
 - **Editor.** Arrows that can be curved, rectangles, ellipses, numbered steps, text, highlighter, pixelation, solid redaction and non-destructive cropping. Every mark can be moved, resized or deleted afterwards.
 - **Presentation backdrop.** Place a screenshot on a gradient, on your blurred wallpaper or on an image of your own, with padding, rounded corners, shadow and a fixed aspect ratio. The same options apply to recordings.
-- **Video and GIF.** Record an area of the screen as MP4 or GIF, including the cursor, in standard, high or maximum quality and, optionally, with your webcam in a round or square bubble. Then trim the start and end, change the speed (1.5× or 2×), the size or the format, and export.
-- **Pin to screen.** Keep a screenshot floating above every window, with zoom and opacity.
-- **Main window.** Every action, shortcut and setting in one place, with quick profiles (Performance, Balanced, Complete). Closing the window keeps Stackshot running in the tray; double-click the tray icon to bring it back.
-- **A mascot of your own.** Twelve species, 23 colors, eye styles, dozens of hats, outfits and accessories, 38 character costumes (see below), three personalities and friendship levels that unlock extras. Optionally it lives on the desktop: it walks above the taskbar, hops onto the window in front of you and rides along when you move it, naps when you are away, waves goodbye and walks off when you send it home, and is never captured.
-- **In-app updates.** One click, verified with a SHA-256 checksum and a signature before anything runs.
 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/stack-hover.png" alt="Floating thumbnails with their toolbar"></td>
-    <td width="50%"><img src="docs/region.png" alt="Area selection with magnifier and dimensions"></td>
-  </tr>
-  <tr>
-    <td><img src="docs/editor.png" alt="Editor with a curved arrow, numbered steps and text"></td>
-    <td><img src="docs/backdrop.png" alt="Editor with the presentation backdrop enabled"></td>
-  </tr>
-  <tr>
-    <td><img src="docs/app.png" alt="Main window"></td>
-    <td><img src="docs/settings.png" alt="General settings"></td>
-  </tr>
-</table>
+### Record
 
-## See it in action
+<img src="docs/feature-recording.png" alt="An area of the screen being recorded, with the timer and the Stop button" width="100%">
 
-A tour of the main window: settings, backdrops, recording options and the mascot page, where a click on a character dresses the mascot up.
+Record an area of the screen as MP4 or GIF, including the cursor, in standard, high or maximum quality and, optionally, with your webcam in a round or square bubble. Then trim the start and end, change the speed (1.5× or 2×), the size or the format, and export.
+
+### Main window
+
+Every action, shortcut and setting in one place, with quick profiles (Performance, Balanced, Complete). Closing the window keeps Stackshot running in the tray; double-click the tray icon to bring it back.
 
 <div align="center">
-<img src="docs/demo.gif" alt="Tour of the main window, ending with the mascot dressed as a character" width="760">
+<img src="docs/demo.gif" alt="Tour of the main window: settings, backdrops, recording options and the mascot page" width="760">
 </div>
 
-## Characters
+### A mascot of your own
 
-The **Personajes** (Characters) section of the mascot page dresses it up as fan tributes to characters from anime, series, comics and games, plus a few originals: 38 in total. One click and it becomes Goku, Spider-Man or Kratos; hovering a costume shows where it comes from.
+Twelve species, 23 colors, eye styles, dozens of hats, outfits and accessories, three personalities and friendship levels that unlock extras. Optionally it lives on the desktop: it walks above the taskbar, hops onto the window in front of you and rides along when you move it, naps when you are away, waves goodbye and walks off when you send it home, and is never captured.
+
+The **Personajes** (Characters) section dresses it up as fan tributes to characters from anime, series, comics and games, plus a few originals: 38 in total. One click and it becomes Goku, Spider-Man or Kratos; hovering a costume shows where it comes from.
 
 <div align="center">
 <img src="docs/mascot.gif" alt="The mascot trying on styles and character costumes" width="640">
-<br><br>
-<img src="docs/characters.png" alt="All 38 character costumes with their names and origins" width="760">
 </div>
 
+<details>
+<summary>All 38 character costumes</summary>
+<br>
+<div align="center">
+<img src="docs/characters.png" alt="All 38 character costumes with their names and origins" width="760">
+</div>
+</details>
+
 ## Installation
+
+<img src="docs/welcome.png" align="right" width="260" alt="Welcome window with the startup options and the Instalar y empezar button">
 
 1. Download **[Stackshot.exe](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.exe)** and run it.
 2. Choose whether it starts with Windows and where saved screenshots go.
 3. Click **Instalar y empezar** (Install and start), then press <kbd>Print Screen</kbd>.
 
-Stackshot installs to `%LOCALAPPDATA%\Programs\Stackshot`, adds a Start menu entry and appears in **Settings > Apps** for uninstalling. It runs on Windows 10 and 11 with the .NET Framework 4.8 that ships with Windows. To update, run a newer `Stackshot.exe`.
+Stackshot installs to `%LOCALAPPDATA%\Programs\Stackshot`, adds a Start menu entry and appears in **Settings > Apps** for uninstalling. It runs on Windows 10 and 11 with the .NET Framework 4.8 that ships with Windows. To update, use the in-app update or run a newer `Stackshot.exe`.
 
 Because the executable is not code-signed yet, SmartScreen shows a warning the first time it runs (**More info > Run anyway**). On computers managed by an organization, SmartScreen may be configured to block it outright; in that case, ask your IT department to deploy the MSI package described below. Each release can be verified as described in [SECURITY.md](SECURITY.md).
 
-### Deploying in an organization
+<details>
+<summary><b>Deploying in an organization</b> (MSI for Intune, Configuration Manager and similar tools)</summary>
+<br>
 
-Every release also includes **[Stackshot.msi](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.msi)**, a Windows Installer package for Intune, Configuration Manager or any other deployment tool. It installs per user, in the user's context, without administrator rights.
+Every release also includes **[Stackshot.msi](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.msi)**, a Windows Installer package that installs per user, in the user's context, without administrator rights.
 
 | | |
 |---|---|
@@ -96,9 +104,10 @@ Every release also includes **[Stackshot.msi](https://github.com/rubenitx/stacks
 | Intune | Win32 app, install behaviour **User**, no restart required |
 
 When the MSI manages the installation, upgrades and removal go through Windows Installer: a newer `Stackshot.msi` replaces the previous version and keeps the user's settings. Stackshot is closed and reopened automatically, so no restart is needed. Uninstalling removes the application and its data, but not the screenshots the user saved. An existing installation made with `Stackshot.exe` is adopted without leaving duplicate entries.
+</details>
 
 <details>
-<summary>Silent installation with the executable</summary>
+<summary><b>Silent installation with the executable</b></summary>
 
 ```powershell
 Stackshot.exe --install --startup --folder "D:\Screenshots"   # add --no-start to skip launching it
@@ -137,7 +146,7 @@ All shortcuts can be changed in the **Atajos** (Shortcuts) section of the main w
 
 - No accounts, cloud services or telemetry. Screenshots never leave the computer.
 - Network access is limited to two things: a one-time download of FFmpeg 9.0.2 when recording for the first time (checked against a SHA-256 hash stored in the source code), and a daily update check against the GitHub Releases API, which sends nothing about you and can be turned off in General.
-- Updates installed from the app must match the SHA-256 GitHub reports and carry a valid signature made with the maintainer's key, which is never stored in the repository; otherwise they are discarded. Unsigned releases are only offered as a download.
+- Updates install from the app in one click, but only if they match the SHA-256 GitHub reports and carry a valid signature made with the maintainer's key, which is never stored in the repository; otherwise they are discarded. Unsigned releases are only offered as a download.
 - Screenshots copied by Stackshot are never synced to other devices through the cloud clipboard.
 - Temporary screenshots live in `%LOCALAPPDATA%\Stackshot\temp` and are removed after an hour, never while they are still on screen.
 - Releases are built by GitHub Actions from this repository and published with a SHA-256 checksum and a signed build provenance attestation.
@@ -168,7 +177,7 @@ cd stackshot
 |---|---|
 | `src/` | The application (C# 5, WinForms): capture, thumbnails, editor, recording, main window and installer |
 | `assets/` | Logo and icon, drawn in code by `tools\make-logo.ps1` |
-| `docs/` | README images: screenshots regenerated on a synthetic desktop by `tools\make-screenshots.ps1`, and the mascot animation and character sheet by `tools\make-reel.ps1` |
+| `docs/` | README images: screenshots regenerated on a synthetic desktop by `tools\make-screenshots.ps1` and framed into the feature images by `tools\make-feature-cards.py`, and the mascot animation and character sheet by `tools\make-reel.ps1` |
 
 ## Contributing
 

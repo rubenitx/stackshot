@@ -26,63 +26,71 @@ Stackshot lleva a Windows la forma de trabajar de CleanShot X. Es un único ejec
 
 ## Funciones
 
+### Capturar
+
+<img src="docs/feature-capture.png" alt="Selección de un área con lupa y medidas, junto a la pila de miniaturas flotantes" width="100%">
+
 - **Pila flotante.** Cada captura aparece como miniatura abajo a la izquierda. Se puede arrastrar a cualquier aplicación, pegar, descartar deslizándola o recorrer con la rueda del ratón (hasta 20). Sigue al ratón entre pantallas y no aparece al compartir pantalla.
 - **Selección precisa.** La pantalla se congela al instante. Se arrastra un área con lupa y medidas, o se hace clic en una ventana para capturarla entera, con las esquinas redondeadas de Windows 11.
 - **Captura con desplazamiento.** Se selecciona un área y se desplaza el contenido, a mano o de forma automática; los fotogramas se unen en una sola imagen sin repetir cabeceras ni pies fijos.
+- **Fijar en pantalla.** Mantiene una captura por encima de todas las ventanas, con zoom y transparencia.
+
+### Marcar
+
+<img src="docs/feature-editor.png" alt="Editor con una flecha curva, números y una etiqueta, sobre un fondo de presentación degradado" width="100%">
+
 - **Editor.** Flechas que se pueden curvar, recuadros, elipses, números, texto, resaltado, pixelado, bloque para tapar datos y recorte no destructivo. Cualquier marca se puede mover, cambiar de tamaño o borrar después.
 - **Fondo de presentación.** La captura se coloca sobre un degradado, sobre el fondo de escritorio desenfocado o sobre una imagen tuya, con margen, esquinas redondeadas, sombra y proporción fija. Las mismas opciones sirven para las grabaciones.
-- **Vídeo y GIF.** Graba un área de la pantalla en MP4 o GIF, con el cursor, en calidad estándar, alta o máxima y, si quieres, con tu cámara en una burbuja redonda o cuadrada. Después recorta el principio y el final, cambia la velocidad (1,5× o 2×), el tamaño o el formato y exporta.
-- **Fijar en pantalla.** Mantiene una captura por encima de todas las ventanas, con zoom y transparencia.
-- **Ventana principal.** Todas las acciones, atajos y ajustes en un sitio, con perfiles rápidos (Rendimiento, Equilibrado, Completo). Al cerrar la ventana, Stackshot sigue en la bandeja; doble clic en su icono la vuelve a abrir.
-- **Una mascota a tu gusto.** Doce especies, 23 colores, estilos de ojos, decenas de gorros, ropa y complementos, 38 disfraces de personajes (más abajo), tres personalidades y niveles de amistad que desbloquean extras. Si quieres, vive en el escritorio: pasea sobre la barra de tareas, salta a la ventana que tienes delante y viaja con ella si la mueves, se echa la siesta cuando no estás, se despide y se va andando cuando la mandas a casa, y nunca sale en las capturas.
-- **Actualizaciones desde la app.** Con un clic, y verificadas con su suma SHA-256 y una firma antes de ejecutar nada.
 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/stack-hover.png" alt="Miniaturas flotantes con su barra de botones"></td>
-    <td width="50%"><img src="docs/region.png" alt="Selección de un área con lupa y medidas"></td>
-  </tr>
-  <tr>
-    <td><img src="docs/editor.png" alt="Editor con flecha curva, números y texto"></td>
-    <td><img src="docs/backdrop.png" alt="Editor con el fondo de presentación"></td>
-  </tr>
-  <tr>
-    <td><img src="docs/app.png" alt="Ventana principal"></td>
-    <td><img src="docs/settings.png" alt="Ajustes generales"></td>
-  </tr>
-</table>
+### Grabar
 
-## Míralo en acción
+<img src="docs/feature-recording.png" alt="Un área de la pantalla grabándose, con el contador y el botón Detener" width="100%">
 
-Un recorrido por la ventana principal: ajustes, fondos, opciones de grabación y la página de la mascota, donde un clic en un personaje la disfraza.
+Graba un área de la pantalla en MP4 o GIF, con el cursor, en calidad estándar, alta o máxima y, si quieres, con tu cámara en una burbuja redonda o cuadrada. Después recorta el principio y el final, cambia la velocidad (1,5× o 2×), el tamaño o el formato y exporta.
+
+### Ventana principal
+
+Todas las acciones, atajos y ajustes en un sitio, con perfiles rápidos (Rendimiento, Equilibrado, Completo). Al cerrar la ventana, Stackshot sigue en la bandeja; doble clic en su icono la vuelve a abrir.
 
 <div align="center">
-<img src="docs/demo.gif" alt="Recorrido por la ventana principal que termina con la mascota disfrazada" width="760">
+<img src="docs/demo.gif" alt="Recorrido por la ventana principal: ajustes, fondos, opciones de grabación y la página de la mascota" width="760">
 </div>
 
-## Personajes
+### Una mascota a tu gusto
 
-La sección «Personajes» de la página Mascota la disfraza con homenajes fan a personajes de anime, series, cómics y videojuegos, y algunos originales: 38 en total. Un clic y se convierte en Goku, Spider-Man o Kratos; al pasar el ratón por un disfraz se ve de dónde sale.
+Doce especies, 23 colores, estilos de ojos, decenas de gorros, ropa y complementos, tres personalidades y niveles de amistad que desbloquean extras. Si quieres, vive en el escritorio: pasea sobre la barra de tareas, salta a la ventana que tienes delante y viaja con ella si la mueves, se echa la siesta cuando no estás, se despide y se va andando cuando la mandas a casa, y nunca sale en las capturas.
+
+La sección «Personajes» la disfraza con homenajes fan a personajes de anime, series, cómics y videojuegos, y algunos originales: 38 en total. Un clic y se convierte en Goku, Spider-Man o Kratos; al pasar el ratón por un disfraz se ve de dónde sale.
 
 <div align="center">
 <img src="docs/mascot.gif" alt="La mascota probándose estilos y disfraces de personajes" width="640">
-<br><br>
-<img src="docs/characters.png" alt="Los 38 disfraces de personajes con su nombre y procedencia" width="760">
 </div>
 
+<details>
+<summary>Los 38 disfraces de personajes</summary>
+<br>
+<div align="center">
+<img src="docs/characters.png" alt="Los 38 disfraces de personajes con su nombre y procedencia" width="760">
+</div>
+</details>
+
 ## Instalación
+
+<img src="docs/welcome.png" align="right" width="260" alt="Ventana de bienvenida con las opciones de arranque y el botón Instalar y empezar">
 
 1. Descarga **[Stackshot.exe](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.exe)** y ábrelo.
 2. Elige si debe arrancar con Windows y dónde guardar las capturas.
 3. Pulsa **Instalar y empezar** y después <kbd>Impr Pant</kbd>.
 
-Se instala en `%LOCALAPPDATA%\Programs\Stackshot`, añade un acceso al menú Inicio y aparece en **Configuración > Aplicaciones** para desinstalarlo. Funciona en Windows 10 y 11 con el .NET Framework 4.8 que ya trae Windows. Para actualizar, basta con abrir un `Stackshot.exe` más reciente.
+Se instala en `%LOCALAPPDATA%\Programs\Stackshot`, añade un acceso al menú Inicio y aparece en **Configuración > Aplicaciones** para desinstalarlo. Funciona en Windows 10 y 11 con el .NET Framework 4.8 que ya trae Windows. Para actualizar, usa la actualización desde la app o abre un `Stackshot.exe` más reciente.
 
 Como el ejecutable todavía no está firmado digitalmente, SmartScreen muestra un aviso la primera vez (**Más información > Ejecutar de todas formas**). En equipos gestionados por una empresa, SmartScreen puede estar configurado para bloquearlo sin opción de continuar; en ese caso, pide a informática que despliegue el paquete MSI que se describe a continuación. Cada versión se puede verificar como se explica en [SECURITY.md](SECURITY.md).
 
-### Despliegue en empresas
+<details>
+<summary><b>Despliegue en empresas</b> (MSI para Intune, Configuration Manager y herramientas similares)</summary>
+<br>
 
-Cada versión incluye también **[Stackshot.msi](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.msi)**, un paquete de Windows Installer para Intune, Configuration Manager o cualquier otra herramienta de despliegue. Se instala por usuario, en el contexto del usuario y sin permisos de administrador.
+Cada versión incluye también **[Stackshot.msi](https://github.com/rubenitx/stackshot/releases/latest/download/Stackshot.msi)**, un paquete de Windows Installer que se instala por usuario, en el contexto del usuario y sin permisos de administrador.
 
 | | |
 |---|---|
@@ -93,9 +101,10 @@ Cada versión incluye también **[Stackshot.msi](https://github.com/rubenitx/sta
 | Intune | Aplicación Win32, comportamiento de instalación **Usuario**, sin reinicio |
 
 Cuando el MSI gestiona la instalación, las actualizaciones y la desinstalación pasan por Windows Installer: un `Stackshot.msi` más reciente sustituye a la versión anterior y conserva los ajustes del usuario. Stackshot se cierra y se vuelve a abrir solo, sin reiniciar. Al desinstalar se quitan la aplicación y sus datos, pero no las capturas que el usuario haya guardado. Si ya estaba instalado con `Stackshot.exe`, el MSI adopta esa instalación sin dejar entradas duplicadas.
+</details>
 
 <details>
-<summary>Instalación silenciosa con el ejecutable</summary>
+<summary><b>Instalación silenciosa con el ejecutable</b></summary>
 
 ```powershell
 Stackshot.exe --install --startup --folder "D:\Capturas"   # --no-start para no abrirlo al terminar
@@ -134,7 +143,7 @@ Todos se pueden cambiar en la sección **Atajos** de la ventana principal. Si Wi
 
 - Sin cuentas, sin servicios en la nube y sin telemetría. Las capturas no salen del equipo.
 - Solo hay dos conexiones: la descarga, una sola vez, de FFmpeg 9.0.2 al grabar por primera vez (comprobada con una suma SHA-256 guardada en el código) y una consulta diaria a GitHub para saber si hay versión nueva, que no envía nada tuyo y se puede desactivar en General.
-- Las actualizaciones instaladas desde la app tienen que coincidir con la SHA-256 que publica GitHub y llevar una firma válida hecha con la clave del mantenedor, que nunca se guarda en el repositorio; si no, se descartan. Las versiones sin firma solo se ofrecen como descarga.
+- Las actualizaciones se instalan desde la app con un clic, pero solo si coinciden con la SHA-256 que publica GitHub y llevan una firma válida hecha con la clave del mantenedor, que nunca se guarda en el repositorio; si no, se descartan. Las versiones sin firma solo se ofrecen como descarga.
 - Las capturas que copia Stackshot nunca se sincronizan con otros equipos a través del portapapeles en la nube.
 - Las capturas temporales se guardan en `%LOCALAPPDATA%\Stackshot\temp` y se borran al cabo de una hora, nunca mientras sigan en pantalla.
 - Cada versión la compila GitHub Actions a partir de este repositorio y se publica con su suma SHA-256 y una atestación de procedencia firmada.
@@ -165,7 +174,7 @@ cd stackshot
 |---|---|
 | `src/` | La aplicación (C# 5, WinForms): captura, miniaturas, editor, grabación, ventana principal e instalación |
 | `assets/` | Logo e icono, dibujados en código por `tools\make-logo.ps1` |
-| `docs/` | Imágenes del README: capturas regeneradas sobre un escritorio sintético por `tools\make-screenshots.ps1`, y la animación de la mascota y la lámina de personajes por `tools\make-reel.ps1` |
+| `docs/` | Imágenes del README: capturas regeneradas sobre un escritorio sintético por `tools\make-screenshots.ps1` y enmarcadas en las imágenes de funciones por `tools\make-feature-cards.py`, y la animación de la mascota y la lámina de personajes por `tools\make-reel.ps1` |
 
 ## Contribuir
 
