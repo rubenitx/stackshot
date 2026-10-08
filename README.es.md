@@ -134,7 +134,7 @@ Todos se pueden cambiar en la sección **Atajos** de la ventana principal. Si Wi
 
 - Sin cuentas, sin servicios en la nube y sin telemetría. Las capturas no salen del equipo.
 - Solo hay dos conexiones: la descarga, una sola vez, de FFmpeg 9.0.2 al grabar por primera vez (comprobada con una suma SHA-256 guardada en el código) y una consulta diaria a GitHub para saber si hay versión nueva, que no envía nada tuyo y se puede desactivar en General.
-- Las actualizaciones instaladas desde la app tienen que coincidir con la SHA-256 que publica GitHub y llevar una firma válida del flujo de publicación; si no, se descartan.
+- Las actualizaciones instaladas desde la app tienen que coincidir con la SHA-256 que publica GitHub y llevar una firma válida hecha con la clave del mantenedor, que nunca se guarda en el repositorio; si no, se descartan. Las versiones sin firma solo se ofrecen como descarga.
 - Las capturas que copia Stackshot nunca se sincronizan con otros equipos a través del portapapeles en la nube.
 - Las capturas temporales se guardan en `%LOCALAPPDATA%\Stackshot\temp` y se borran al cabo de una hora, nunca mientras sigan en pantalla.
 - Cada versión la compila GitHub Actions a partir de este repositorio y se publica con su suma SHA-256 y una atestación de procedencia firmada.

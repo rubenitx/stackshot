@@ -137,7 +137,7 @@ All shortcuts can be changed in the **Atajos** (Shortcuts) section of the main w
 
 - No accounts, cloud services or telemetry. Screenshots never leave the computer.
 - Network access is limited to two things: a one-time download of FFmpeg 9.0.2 when recording for the first time (checked against a SHA-256 hash stored in the source code), and a daily update check against the GitHub Releases API, which sends nothing about you and can be turned off in General.
-- Updates installed from the app must match the SHA-256 GitHub reports and carry a valid signature from the release workflow; otherwise they are discarded.
+- Updates installed from the app must match the SHA-256 GitHub reports and carry a valid signature made with the maintainer's key, which is never stored in the repository; otherwise they are discarded. Unsigned releases are only offered as a download.
 - Screenshots copied by Stackshot are never synced to other devices through the cloud clipboard.
 - Temporary screenshots live in `%LOCALAPPDATA%\Stackshot\temp` and are removed after an hour, never while they are still on screen.
 - Releases are built by GitHub Actions from this repository and published with a SHA-256 checksum and a signed build provenance attestation.

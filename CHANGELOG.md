@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Clearer updates.** A new version without an update signature now offers its download page ("Ver la versión") instead of an install that can only fail.
+- **Local release signing.** `tools/sign-release.ps1` signs a published release on the maintainer's computer and uploads only the signature, so the private key never goes to GitHub.
+
 ## 1.3.0
 
 - **A mascot you can make your own.** Twelve species (robot, cat, bunny, ghost, slime, dragon, dog, chibi, penguin, panda, fox and frog), 23 colors, 5 eye styles, 43 hats and hairstyles, 36 outfits and 19 face accessories, all previewed live on the mascot. One-click styles (Halloween, Chulo, Cute, Vampiro, Dragoncito) and a random "Sorpréndeme". Seasonal costumes for Halloween and Christmas.

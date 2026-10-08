@@ -1,96 +1,122 @@
-# Stackshot: guía para trabajar en el código
+# Contributing to Stackshot
 
-Capturas de pantalla para Windows al estilo CleanShot X: captura propia (también con desplazamiento), pila de miniaturas
-flotantes, editor rápido con fondo de presentación, vídeo/GIF con FFmpeg, ventana principal con mascota e instalación por
-usuario. Un único `.exe` (~520 KB) en C# 5 + WinForms sobre .NET Framework 4.8.
-Solo Windows (10/11). Interfaz en castellano; comentarios del código en inglés.
+A screenshot tool for Windows in the spirit of CleanShot X: its own capture (scrolling capture too), a stack of floating
+thumbnails, a quick editor with a presentation backdrop, video and GIF through FFmpeg, a main window with a customizable
+mascot, and a per-user installation. A single `.exe` (about 0.7 MB) written in C# 5 + WinForms on .NET Framework 4.8.
+Windows 10 and 11 only. The user interface is in Spanish; code comments are in English.
 
-## Compilar y probar
+## Build and test
 
-- `.\build.ps1` → `bin\Stackshot.exe` (usa el `csc.exe` de .NET Framework que trae Windows; no hace falta Visual Studio).
-  Compila con `/warnaserror+`: cualquier aviso (variable sin usar, miembro que oculta otro de Form/Control…) rompe el build.
-- `.\build.ps1 -Run` lo abre sin instalar (`--portable`); `.\build.ps1 -Install` instala/actualiza en el usuario.
-- `.\tools\build-msi.ps1` → `bin\Stackshot.msi` (después de `build.ps1`), con `tools\Stackshot.wxs` y WiX Toolset 3.14.1,
-  que descarga una vez a `bin\wix` y comprueba con una SHA-256 fija. Instalación por usuario, sin administrador.
-  Si la instaló el MSI, `Installer.ManagedByMsi` (marca en `HKCU\Software\Stackshot`) hace que la app no cree sus accesos
-  ni su entrada en Aplicaciones, no se actualice copiándose a sí misma y desinstale con `msiexec /x`.
-  El `UpgradeCode` del `.wxs` no se cambia nunca. Para cerrarse al actualizar, la app atiende WM_CLOSE y WM_ENDSESSION
-  en `CloseListener`.
-- Probar el MSI en este equipo: `msiexec /i bin\Stackshot.msi /qn /l*v log.txt`, y para desinstalar `/x`. La
-  desinstalación borra `%LOCALAPPDATA%\Stackshot` (ajustes, FFmpeg, temporales): haz copia antes.
-- `tools\make-logo.ps1 [-Preview hoja.png]` dibuja logo e icono con `tools\Logo.cs` (GDI+; los navegadores en modo
-  headless no funcionan en todos los equipos).
-- `tools\make-screenshots.ps1` regenera `docs\*.png` con `tools\Studio.cs`: monta un escritorio sintético en la pantalla
-  donde no está el ratón y fotografía cada parte. Las imágenes del README nunca deben mostrar contenido real.
-- Parámetros del exe: `--install [--startup] [--folder <ruta>] [--no-start]`, `--uninstall [--quiet]`, `--restart`,
-  `--portable`, `--background` (no abre la ventana; lo usa el acceso de Inicio de Windows), `--test` (no se oculta de las
-  capturas, no toca portapapeles, atajos ni temporales), `--home` (con `--test`, abre la ventana), `--edit <imagen|vídeo>`.
-- Datos: `%LOCALAPPDATA%\Stackshot` (`settings.ini`, `temp\`, `ffmpeg\`, `stackshot.log`).
-  Instalación: `%LOCALAPPDATA%\Programs\Stackshot`. Mutex `Local\Stackshot`, eventos `Local\Stackshot.Quit` (cerrarse) y
-  `Local\Stackshot.Show` (abrir otra vez el .exe con uno en marcha: enseña su ventana).
-- Probar la ventana principal sin tocar la pantalla de trabajo: un programa aparte que compile `src\` con su propio
-  `Main`, en modo `--test`, con un fondo neutro `TopMost` en la pantalla sin ratón y la ventana también `TopMost` (si no,
-  la tapan las ventanas del usuario y salen en las fotos). Cambiar `ShotStack.LogPath` a una carpeta propia.
+- `.\build.ps1` produces `bin\Stackshot.exe` with the `csc.exe` of the .NET Framework that ships with Windows (no Visual
+  Studio needed). It compiles with `/warnaserror+`: any warning (an unused variable, a member hiding one of Form or
+  Control...) breaks the build.
+- `.\build.ps1 -Run` runs it without installing (`--portable`); `.\build.ps1 -Install` installs or updates it for the
+  current user.
+- `.\tools\build-msi.ps1` produces `bin\Stackshot.msi` (after `build.ps1`) from `tools\Stackshot.wxs` with WiX Toolset
+  3.14.1, downloaded once to `bin\wix` and checked against a fixed SHA-256. It installs per user, without administrator
+  rights. When the MSI installed it, `Installer.ManagedByMsi` (a flag in `HKCU\Software\Stackshot`) makes the app skip its
+  own shortcuts and Apps entry, never update by copying itself, and uninstall through `msiexec /x`. The `UpgradeCode` in
+  the `.wxs` never changes. To close cleanly during an upgrade, the app handles WM_CLOSE and WM_ENDSESSION in
+  `CloseListener`.
+- To try the MSI locally: `msiexec /i bin\Stackshot.msi /qn /l*v log.txt`, and `/x` to remove it. Uninstalling deletes
+  `%LOCALAPPDATA%\Stackshot` (settings, FFmpeg, temporary files), so back it up first.
+- `tools\make-logo.ps1 [-Preview sheet.png]` draws the logo and icon with `src\Home\LogoArt.cs` (GDI+; headless browsers
+  don't work on every machine).
+- README media, which must never show real content:
+  - `tools\make-screenshots.ps1` regenerates the `docs\*.png` screenshots with `tools\Studio.cs`, on a synthetic desktop
+    built on the monitor without the mouse.
+  - `tools\make-reel.ps1` renders `docs\promo.gif`, `docs\demo.gif` (a tour of the real main window, photographed
+    offscreen with `PrintWindow`), `docs\mascot.gif` and `docs\characters.png` with `tools\Reel.cs`, `tools\Promo.cs`
+    and the GIF encoder in `tools\GifWriter.cs`. Everything runs offscreen with read-only settings.
+- Executable options: `--install [--startup] [--folder <path>] [--no-start]`, `--uninstall [--quiet]`, `--restart`,
+  `--portable`, `--background` (doesn't open the window; used by the Startup shortcut), `--test` (not hidden from captures,
+  leaves the clipboard, hotkeys and temporary files alone), `--home` (with `--test`, opens the window),
+  `--edit <image|video>`.
+- Data: `%LOCALAPPDATA%\Stackshot` (`settings.ini`, `temp\`, `ffmpeg\`, `Fondos\` for custom backgrounds,
+  `stackshot.log`). Installation: `%LOCALAPPDATA%\Programs\Stackshot`. Mutex `Local\Stackshot`; events
+  `Local\Stackshot.Quit` (close) and `Local\Stackshot.Show` (running the .exe again shows the existing window).
+- To test windows without touching the working screen, compile `src\` with a separate `Main` in `--test` mode, set
+  `Settings.ReadOnly`, and render offscreen (`Mascot.RenderStill`, `PrintWindow` on a window placed off the desktop).
 
-## Reglas del código
+## Code rules
 
-- **Solo C# 5**: nada de `$""`, `?.`, `nameof`, `=>` en miembros, `out var`, propiedades autoinicializadas.
-- **Literales en ASCII**: los acentos de las cadenas van como escapes Unicode. Algunas herramientas de edición los
-  convierten en caracteres reales; después de editar, `perl tools/escape-literals.pl <fichero>` los vuelve a escapar.
-- El proceso es DPI por monitor (manifiesto PerMonitorV2): las medidas van en píxeles reales y se escalan con
+- **C# 5 only**: no `$""`, `?.`, `nameof`, expression-bodied members, `out var` or auto-property initializers.
+- **ASCII literals**: accented characters in strings are Unicode escapes. Some editing tools turn them into real
+  characters; after editing, `perl tools/escape-literals.pl <file>` escapes them again.
+- The process is per-monitor DPI aware (PerMonitorV2 manifest): sizes are in physical pixels and scaled with
   `ShotStack.ScaleFor(screen)` / `P()`.
-- Las ventanas flotantes (`FloatWindow`) no roban el foco, son por capas (opacidad animada), siempre encima y quedan fuera
-  de las capturas (`WDA_EXCLUDEFROMCAPTURE`). Todo lo que se mueve pasa por `Anim` (un temporizador que solo corre mientras
-  hay animaciones; en reposo, 0 % de CPU).
-- La ventana principal (`HomeWindow`) usa la paleta de macOS (`Mac`) e iconos de línea propios (`Icons`); el resto (pila,
-  editor) sigue con `Theme` (Tokyo Night). Se dibuja en dos lienzos `Dib` (barra lateral y contenido) que solo se rehacen
-  al cambiar algo; la mascota y lo animado van encima en cada fotograma. Sin ventana visible, no hay temporizador.
-- Nada pesado en el hilo de la interfaz: el PNG de cada captura se escribe en otro hilo (`BeginWrite`; quien necesite el
-  fichero llama a `ShotStack.WaitWritten`), el del portapapeles también (`TrackedData`) y el fondo de escritorio de
-  `Backdrop` se precarga al arrancar.
-- El selector de región (`RegionPicker`) compone cada trozo que cambia con `BitBlt` desde dos `Dib` preparados una vez
-  (claro y oscurecido, con las ayudas ya dibujadas). Repintar la pantalla entera en cada movimiento era lo que lo hacía lento.
-- FFmpeg se descarga de una versión fija (`FfmpegSetup`: `Version`, `Url`, `Sha256` en `Recorder.cs`); para subir de versión
-  hay que cambiar las tres a la vez (la SHA-256 se puede contrastar con el campo `digest` del API de GitHub).
-- `--test` y las herramientas de pruebas ponen `Settings.ReadOnly`: nunca escriben los ajustes de verdad.
-- Comentarios: en inglés y los mínimos; solo el porqué de lo que no es evidente (nada de repetir lo que dice el código).
+- Floating windows (`FloatWindow`) never take focus, are layered (animated opacity), stay on top and are excluded from
+  captures (`WDA_EXCLUDEFROMCAPTURE`). Everything that moves goes through `Anim`, a timer that only runs while something
+  animates (0% CPU at rest).
+- The whole app uses the macOS-style palettes (`Mac` in the main window, `Theme` elsewhere) and hand-drawn line icons
+  (`Icons`). The main window (`HomeWindow`) draws into two `Dib` layers (sidebar and content) that are only rebuilt when
+  something changes, and composes each repaint in its own back buffer, copying to the screen only the invalidated
+  rectangle. With no window visible there is no timer.
+- The desktop mascot (`PetWindow`) is a per-pixel-alpha layered window; without a bubble or the menu only the mascot's own
+  box is sent to `UpdateLayeredWindow`, and its frame rate drops when idle, asleep or when the user is away.
+- Nothing heavy on the UI thread: each capture's PNG is written on another thread (`BeginWrite`; anyone who needs the
+  file calls `ShotStack.WaitWritten`), so is the clipboard copy (`TrackedData`), and the wallpaper used by `Backdrop` is
+  preloaded at startup. Mascot previews in the main window render on the thread pool.
+- The region picker (`RegionPicker`) composes each changed part with `BitBlt` from two `Dib`s prepared once (bright and
+  dimmed, with the hints already drawn), and recomposes everything Windows asks for when another window passes over it.
+- FFmpeg is downloaded from a fixed version (`FfmpegSetup`: `Version`, `Url`, `Sha256` in `Recorder.cs`); upgrading means
+  changing all three together (the SHA-256 can be checked against the `digest` field of the GitHub API). Videos opened in
+  the editor are read with a format whitelist (`Recorder.SafeInput`).
+- `--test` and the test tools set `Settings.ReadOnly`: they never write the real settings.
+- Comments: in English and minimal; only the why of what isn't obvious.
+- Mascot catalogs (`MascotParts`) are stored by index in `settings.ini`: new items always go at the end.
 
-## Mapa
+## Map
 
-| Fichero | Qué hace |
+| File | What it does |
 |---|---|
-| `src/Program.cs` | Arranque: bienvenida, instalación, actualización, parámetros, versión (`AssemblyVersion`) |
-| `src/Setup.cs` | `Installer` (copia, accesos directos, entrada de desinstalación, Impr Pant, modo MSI) y `SetupWindow` (bienvenida) |
-| `src/CloseListener.cs` | Ventana invisible que cierra Stackshot ordenadamente cuando Windows lo pide (MSI, cierre de sesión) |
-| `tools/Stackshot.wxs`, `tools/build-msi.ps1` | Paquete MSI para despliegues en empresas |
+| `src/Program.cs` | Startup: welcome window, installation, updates, command-line options, version (`AssemblyVersion`) |
+| `src/Setup.cs` | `Installer` (copy, shortcuts, uninstall entry, Print Screen, MSI mode) and `SetupWindow` (welcome) |
+| `src/CloseListener.cs` | Hidden window that closes Stackshot cleanly when Windows asks (MSI, sign-out) |
+| `tools/Stackshot.wxs`, `tools/build-msi.ps1` | MSI package for organizations |
 | `src/Settings.cs` | `settings.ini` |
-| `src/ShotStack.cs` | La pila: atajos, bandeja, capturar/guardar, miniaturas, desplazamiento, limpieza de temporales |
-| `src/Look.cs` | Paleta al estilo macOS (`Mac`) e iconos de línea dibujados a mano (`Icons`) |
-| `src/Home/HomeWindow.cs`, `HomePages.cs` | Ventana principal: marco propio con los botones de Windows 11 (minimizar y cerrar a la bandeja), secciones (Inicio, Atajos, General, Fondo y editor, Grabación, Mascota, Acerca de) y sus controles |
-| `src/Home/Mascot.cs` | La mascota: estados de ánimo, física, ojos y boca, partículas; `RenderStill` para las vistas previas |
-| `src/Home/MascotParts.cs`, `MascotDraw.cs` | Catálogo (`MascotLook`: personaje, color, ojos, gorro, ropa, complementos; niveles de amistad y desbloqueos) y el dibujo de cada pieza. Los índices se guardan en `settings.ini`: lo nuevo, siempre al final |
-| `src/Home/MascotTalk.cs` | Lo que dice la mascota según su personalidad |
-| `src/Home/PetWindow.cs` | La mascota en el escritorio: ventana por capas con alfa por píxel (`UpdateLayeredWindow`), paseos, siesta, arrastrar y soltar; se esconde con apps a pantalla completa |
-| `src/Home/LogoArt.cs`, `Intro.cs` | El logo como dibujo paramétrico (lo usan la app y `tools\make-logo.ps1`) y la animación de inicio |
-| `src/Updater.cs` | Actualizaciones desde GitHub Releases: comprobación diaria, descarga, verificación (SHA-256 + firma RSA-PSS) e instalación |
-| `src/Home/TrayMenu.cs` | Menú de la bandeja con su propio renderizador |
-| `src/Capture/Dib.cs` | Lienzo compartido GDI/GDI+ (lo usan el selector y la ventana principal) |
-| `src/Capture/ScrollCapture.cs` | Captura con desplazamiento: sesión, cosido por hashes de filas, barrita y marco |
-| `src/Editor/Backdrop.cs`, `BgPanel.cs` | Fondo de presentación (fondos, composición, vídeo) y su franja en el editor |
-| `src/Card.cs`, `src/Chip.cs` | Miniatura y pastillas "N anteriores / N más recientes" |
-| `src/FloatWindow.cs`, `src/Animation.cs` | Base de ventanas flotantes, muelles e interpolaciones |
-| `src/Capture/*` | Atajos globales, copia de pantalla y ventanas, selección de región, fijar en pantalla, sonido, grabación (FFmpeg) |
-| `src/Editor/*` | Editor: marcas (`Shapes`), lienzo con selección/historial (`Canvas`), barra (`Toolbar`), ventana (`Editor`) |
-| `src/Ui.cs` | Controles propios: `DarkForm`, `Pill`, `Toggle`, `HotkeyBox`, `Progress` |
-| `src/TrackedData.cs`, `src/FileDrag.cs` | Portapapeles que avisa al pegar; arrastrar con miniatura junto al cursor |
+| `src/ShotStack.cs` | The stack: hotkeys, tray, capture and save, thumbnails, scrolling, temporary file cleanup |
+| `src/Look.cs` | macOS-style palette (`Mac`) and hand-drawn line icons (`Icons`) |
+| `src/Home/HomeWindow.cs`, `HomePages.cs` | Main window: custom frame with Windows 11 buttons (minimize, close to tray), sections (Home, Shortcuts, General, Backdrop and editor, Recording, Mascot, About), profiles and their controls |
+| `src/Home/Mascot.cs` | The mascot: moods, physics, eyes and mouth, particles, tricks; `RenderStill` for previews |
+| `src/Home/MascotParts.cs`, `MascotDraw.cs` | Catalog (`MascotLook`: species, color, eyes, hat, outfit, face accessory; friendship levels and unlocks) and the drawing of the original pieces |
+| `src/Home/MascotAnime.cs`, `MascotMore.cs`, `MascotExtra.cs`, `MascotCast.cs`, `MascotHeroes.cs` | Character tributes (`AnimeNames`, `AnimeInspiration`), extra species (dog, chibi, penguin, panda, fox, frog), hair styles, helmets, outfits and face paint |
+| `src/Home/MascotTalk.cs` | What the mascot says, by personality |
+| `src/Home/PetWindow.cs` | The desktop mascot: walks, naps, hops onto windows, drag and drop, comic menu, going home, remembered spot; hides for full-screen apps on its monitor |
+| `src/Home/LogoArt.cs`, `Intro.cs` | The logo as a parametric drawing (used by the app and `tools\make-logo.ps1`) and the launch animation |
+| `src/Updater.cs` | Updates from GitHub Releases: daily check, download, verification (SHA-256 + RSA-PSS signature, version match) and install |
+| `src/Home/TrayMenu.cs` | Tray menu with its own renderer |
+| `src/Capture/Dib.cs` | Shared GDI/GDI+ canvas |
+| `src/Capture/ScrollCapture.cs` | Scrolling capture: session, stitching by row hashes, bar and frame |
+| `src/Capture/Recorder.cs`, `Webcam.cs` | Screen recording through FFmpeg (quality levels, GIF) and the camera bubble |
+| `src/Editor/Backdrop.cs`, `BgPanel.cs` | Presentation backdrop (gradients, wallpaper, custom images, video) and its strip in the editor |
+| `src/Editor/Timeline.cs` | Video trimming and export options (speed, size, format) |
+| `src/Card.cs`, `src/Chip.cs` | Thumbnail and "N older / N newer" pills |
+| `src/FloatWindow.cs`, `src/Animation.cs` | Base for floating windows, springs and tweens |
+| `src/Capture/*` | Global hotkeys, screen and window capture, region selection, pin to screen, shutter sound |
+| `src/Editor/*` | Editor: marks (`Shapes`), canvas with selection and history (`Canvas`), toolbar (`Toolbar`), window (`Editor`) |
+| `src/Ui.cs` | Custom controls (`DarkForm`, `Pill`, `Toggle`, `HotkeyBox`, `Progress`) and the font cache (`Fonts`) |
+| `src/TrackedData.cs`, `src/FileDrag.cs` | Clipboard that notices pastes; dragging with a thumbnail next to the cursor |
 
-## Publicar una versión
+## Releasing a version
 
-Subir `AssemblyVersion`/`AssemblyFileVersion` en `src/Program.cs`, apuntar los cambios en `CHANGELOG.md`, crear la etiqueta
-`vX.Y.Z` y subirla: el workflow `.github/workflows/build.yml` compila y adjunta `Stackshot.exe`, `.msi`, sus `.sha256` y la
-firma `Stackshot.exe.sig` a la versión. Nunca se rehace una versión ya publicada: cada cambio es una versión nueva.
+Bump `AssemblyVersion` / `AssemblyFileVersion` in `src/Program.cs`, record the changes in `CHANGELOG.md`, then create and
+push the tag `vX.Y.Z`. The workflow `.github/workflows/build.yml` builds and attaches `Stackshot.exe`, `Stackshot.msi`,
+their `.sha256` files and a build provenance attestation to the release. A published version is never rebuilt: every
+change is a new version. Installed copies (1.3.0 and later) check GitHub once a day and show the new version in the tray,
+on the home page and under About.
 
-Firma de actualizaciones: la app solo instala un `Stackshot.exe` firmado con la clave privada RSA cuyo par público está en
-`src/Updater.cs`. La privada vive fuera del repositorio (en el equipo del mantenedor y como secreto `UPDATE_SIGNING_KEY` del
-repositorio, en formato XML de .NET). Sin el secreto, la versión se publica igual pero la app no la instala (ofrece el enlace).
-Si se pierde la clave, hay que generar otra, cambiar la pública en `Updater.cs` y publicar esa versión a mano una vez.
+### Update signatures
+
+The app only installs a `Stackshot.exe` signed with the RSA private key whose public half is in `src/Updater.cs`, and
+only if its file version matches the release. The private key never goes into the repository. There are two ways to
+sign a release:
+
+- **Locally (no secret on GitHub):** after the release is published, run `.\tools\sign-release.ps1 vX.Y.Z`. It downloads
+  `Stackshot.exe` from the release, checks it against the published SHA-256, signs it with the key in
+  `%USERPROFILE%\.stackshot-keys\update-signing-key.xml`, verifies the signature and uploads only `Stackshot.exe.sig`.
+- **In CI:** store the key (.NET XML format) as the repository secret `UPDATE_SIGNING_KEY` and the workflow signs during
+  the build.
+
+Without a signature the release is published as usual and the app offers its download page instead of installing it.
+If the key is lost, generate a new one, replace the public key in `Updater.cs` and publish that version manually once.

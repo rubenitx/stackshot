@@ -6,7 +6,7 @@
 - **Network access is limited to two things:**
   - the download of [FFmpeg](https://github.com/GyanD/codexffmpeg/releases/tag/9.0.2) the first time you record a video or GIF, and only after you accept it. It is always the same version (9.0.2), from a fixed URL, and its **SHA-256 hash is stored in the source code**; if the download doesn't match, nothing is installed. Only `ffmpeg.exe` is extracted from the package. Stackshot never runs an `ffmpeg.exe` found on `PATH`;
   - a **daily update check** against `api.github.com` (latest release of this repository). It sends nothing but a standard request and can be turned off in General.
-- **Updates are verified before they run.** An update installed from the app is only accepted from this repository's release downloads, its SHA-256 must match the digest GitHub reports for the asset, and its **RSA-PSS signature** must verify against the public key in [src/Updater.cs](src/Updater.cs). The private key exists only as a secret of the release workflow. Anything missing or wrong is discarded. Installations managed with the MSI are never updated by the app; they only show a notice.
+- **Updates are verified before they run.** An update installed from the app is only accepted from this repository's release downloads, its SHA-256 must match the digest GitHub reports for the asset, and its **RSA-PSS signature** must verify against the public key in [src/Updater.cs](src/Updater.cs). The private key never leaves the maintainer's computer: releases are signed locally with `tools/sign-release.ps1`, which uploads only the signature, and the version inside the executable must match the release. Unsigned releases are only offered as a download. Anything missing or wrong is discarded. Installations managed with the MSI are never updated by the app; they only show a notice.
 - **No administrator rights.** Stackshot installs per user (`%LOCALAPPDATA%\Programs\Stackshot`) and only writes to:
   - `%LOCALAPPDATA%\Stackshot` (settings, temporary captures, log, FFmpeg);
   - the folder you choose for saved screenshots;
@@ -24,7 +24,7 @@
 
 Every release is built by GitHub Actions from this repository ([build.yml](.github/workflows/build.yml)) and publishes:
 
-- `Stackshot.exe.sig`, the update signature checked by the app (RSA-PSS over the executable, SHA-256);
+- `Stackshot.exe.sig`, the update signature checked by the app (RSA-PSS over the executable, SHA-256), added by the maintainer after the build;
 - `Stackshot.exe.sha256` and `Stackshot.msi.sha256`, the checksums of the executable and of the MSI package:
   ```powershell
   (Get-FileHash .\Stackshot.exe -Algorithm SHA256).Hash
