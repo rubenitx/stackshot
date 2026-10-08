@@ -12,7 +12,8 @@ if ($Tag -notmatch '^v\d+\.\d+\.\d+$') { throw "Tag must look like v1.2.3: $Tag"
 if (-not (Test-Path -LiteralPath $KeyPath)) { throw "Signing key not found: $KeyPath" }
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
-$work = Join-Path ([IO.Path]::GetTempPath()) ('stackshot-sign-' + [Guid]::NewGuid().ToString('N'))
+# A long path under the profile: WSL can't open 8.3 short names like the ones %TEMP% often uses.
+$work = Join-Path $env:USERPROFILE ('.stackshot-sign-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $work | Out-Null
 try {
     $base = "https://github.com/rubenitx/stackshot/releases/download/$Tag"
@@ -41,7 +42,12 @@ try {
     if ($NoUpload) { Copy-Item -LiteralPath $sig -Destination (Get-Location); Write-Host 'Saved Stackshot.exe.sig here (not uploaded).'; return }
     # The GitHub CLI lives in WSL on the maintainer's machine; use it directly if it is installed on Windows.
     if (Get-Command gh -ErrorAction SilentlyContinue) { gh release upload $Tag $sig --clobber -R rubenitx/stackshot }
-    else { wsl.exe -e gh release upload $Tag ((wsl.exe -e wslpath -a ($sig -replace '\\', '/')).Trim()) --clobber -R rubenitx/stackshot }
+    else
+    {
+        # A login shell, so the gh installed in the user's WSL profile is on PATH.
+        $wslSig = '/mnt/' + $sig.Substring(0, 1).ToLowerInvariant() + ($sig.Substring(2) -replace '\\', '/')
+        wsl.exe -e bash -lc ("gh release upload " + $Tag + " '" + $wslSig + "' --clobber -R rubenitx/stackshot")
+    }
     if ($LASTEXITCODE -ne 0) { throw 'Upload failed.' }
     Write-Host "Uploaded Stackshot.exe.sig to $Tag."
 }
