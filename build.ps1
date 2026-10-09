@@ -23,7 +23,10 @@ $tmp = Join-Path $out ('Stackshot.' + [guid]::NewGuid().ToString('N') + '.tmp.ex
 $cscArgs = @('/nologo', '/codepage:65001', '/target:winexe', '/optimize+', '/warnaserror+', '/platform:anycpu',
              "/out:$tmp", "/win32manifest:$manifest",
              '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.IO.Compression.dll', '/r:System.IO.Compression.FileSystem.dll',
-             '/r:System.Web.Extensions.dll')
+             '/r:System.Web.Extensions.dll', '/r:System.Xaml.dll')
+# WPF (also bundled with Windows) draws the interface.
+$wpf = Join-Path (Split-Path $csc) 'WPF'
+foreach ($dll in 'PresentationFramework.dll', 'PresentationCore.dll', 'WindowsBase.dll', 'WindowsFormsIntegration.dll') { $cscArgs += '/r:' + (Join-Path $wpf $dll) }
 if (Test-Path $icon) { $cscArgs += "/win32icon:$icon"; $cscArgs += "/resource:$icon,stackshot.ico" }
 if (Test-Path $logo) { $cscArgs += "/resource:$logo,logo.png" }
 

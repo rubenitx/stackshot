@@ -1,5 +1,5 @@
 // Stackshot - README videos: docs\promo.gif (a short promotional piece) and docs\demo.gif (a tour of the real main
-// window). Everything is rendered offscreen with read-only settings; the main window is photographed with PrintWindow.
+// window). Everything is rendered offscreen with read-only settings; the main window is drawn from its WPF tree.
 // Built and run by tools\make-reel.ps1.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
@@ -56,16 +56,20 @@ namespace Stackshot
             st.MascotLove = 42;
             ShotStack stack = new ShotStack(st, false, false);
             HomeWindow w = new HomeWindow(stack, st);
-            w.StartPosition = FormStartPosition.Manual;
-            w.Location = new Point(-6000, 0);
+            w.Left = -6000;
+            w.Top = 0;
+            w.ShowActivated = false;
             w.Show();
             Type ht = typeof(HomeWindow);
+            System.Windows.Controls.ScrollViewer scroller = (System.Windows.Controls.ScrollViewer)ht.GetField("scroller", NP).GetValue(w);
             Bitmap hero = null;
-            int gw = 760, gh = (int)Math.Round(760.0 * w.Height / w.Width) & ~1;
-            using (Bitmap shot = new Bitmap(w.Width, w.Height))
+            int ww = (int)w.Width, wh = (int)w.Height;
+            int gw = 760, gh = (int)Math.Round(760.0 * wh / ww) & ~1;
             using (Bitmap frame = new Bitmap(gw, gh))
             using (GifWriter gif = new GifWriter(path, gw, gh, 0))
             {
+                Bitmap shot = null;
+                double scrollGoal = 0;
                 Action<double> film = delegate(double ms)
                 {
                     double end = Anim.Now + ms;
@@ -73,12 +77,11 @@ namespace Stackshot
                     {
                         double t0 = Anim.Now;
                         Application.DoEvents();
-                        using (Graphics g = Graphics.FromImage(shot))
-                        {
-                            IntPtr hdc = g.GetHdc();
-                            PrintWindow(w.Handle, hdc, 2);
-                            g.ReleaseHdc(hdc);
-                        }
+                        double off = scroller.VerticalOffset;
+                        if (Math.Abs(off - scrollGoal) > 0.5) scroller.ScrollToVerticalOffset(off + (scrollGoal - off) * 0.25);
+                        w.UpdateLayout();
+                        if (shot != null) shot.Dispose();
+                        shot = Snap(w, ww, wh);
                         using (Graphics g = Graphics.FromImage(frame))
                         {
                             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
@@ -89,8 +92,7 @@ namespace Stackshot
                         Pace(t0, 70);
                     }
                 };
-                Action<string> page = delegate(string id) { ht.GetMethod("SetPage", NP).Invoke(w, new object[] { id, true }); };
-                Action<double> scrollTo = delegate(double y) { ht.GetField("scrollTarget", NP).SetValue(w, y); };
+                Action<string> page = delegate(string id) { ht.GetMethod("SetPage", NP).Invoke(w, new object[] { id, true }); scrollGoal = 0; };
                 Action<int> dress = delegate(int i)
                 {
                     MascotLook l = MascotLook.From(st);
@@ -102,19 +104,35 @@ namespace Stackshot
                 page("editor"); film(1500);
                 page("record"); film(1500);
                 page("mascot"); film(1600);
-                int contentH = (int)ht.GetField("contentHeight", NP).GetValue(w);
-                scrollTo(Math.Min(contentH - 600, 760)); film(1300);
+                scrollGoal = Math.Min(scroller.ScrollableHeight, 760); film(1300);
                 dress(6); film(900);
                 dress(29); film(900);
-                scrollTo(0); film(1500);
+                scrollGoal = 0; film(1500);
                 dress(33); film(1400);
                 page("home"); film(2400);
                 hero = new Bitmap(shot);
+                shot.Dispose();
             }
-            w.Close();
+            w.Shutdown();
             stack.Quit();
             return hero;
         }
+
+        // The window's content over a Mica-like backdrop (offscreen windows have no real Mica to photograph).
+        static Bitmap Snap(System.Windows.Window w, int ww, int wh)
+        {
+            System.Windows.FrameworkElement root = (System.Windows.FrameworkElement)w.Content;
+            System.Windows.Media.DrawingVisual dv = new System.Windows.Media.DrawingVisual();
+            using (System.Windows.Media.DrawingContext dc = dv.RenderOpen())
+            {
+                dc.DrawRectangle(Ds.Brush(Ds.Dark ? Ds.Rgb(32, 32, 34) : Ds.Rgb(238, 238, 242)), null, new System.Windows.Rect(0, 0, ww, wh));
+                dc.DrawRectangle(new System.Windows.Media.VisualBrush(root), null, new System.Windows.Rect(0, 0, ww, wh));
+            }
+            System.Windows.Media.Imaging.RenderTargetBitmap rtb = new System.Windows.Media.Imaging.RenderTargetBitmap(ww, wh, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+            rtb.Render(dv);
+            return Ink.ToGdi(rtb);
+        }
+
 
         // ---- Promo: five short scenes, about 17 seconds.
         public static void Run(string path, Bitmap appShot)

@@ -71,7 +71,7 @@ namespace Stackshot
             steps.Add(Step(t, delegate { GrabWindow(setup, "welcome.png", 40); setup.Close(); })); t += 400;
             steps.Add(Step(t, ShowHome)); t += 2200;
             steps.Add(Step(t, delegate { GrabWindow(home, "app.png", 40); typeof(HomeWindow).GetMethod("SetPage", NP).Invoke(home, new object[] { "general", true }); })); t += 1000;
-            steps.Add(Step(t, delegate { GrabWindow(home, "settings.png", 40); home.Dispose(); })); t += 400;
+            steps.Add(Step(t, delegate { GrabWindow(home, "settings.png", 40); home.Shutdown(); })); t += 400;
             steps.Add(Step(t, Hero)); t += 300;
             steps.Add(Step(t, delegate { stack.ExitThread(); backdrop.Close(); Application.ExitThread(); }));
 
@@ -206,7 +206,7 @@ namespace Stackshot
             return s;
         }
 
-        static Form setup;
+        static System.Windows.Window setup;
 
         // Main window with the mascot waving (no launch animation).
         static HomeWindow home;
@@ -214,18 +214,20 @@ namespace Stackshot
         static void ShowHome()
         {
             home = new HomeWindow(stack, settings);
-            home.TopMost = true;
+            home.Topmost = true;
             Rectangle wa = target.WorkingArea;
-            home.Location = new Point(wa.Left + (wa.Width - home.Width) / 2, wa.Top + (wa.Height - home.Height) / 2);
+            double k = ShotStack.ScaleFor(target);
+            home.Left = (wa.Left + (wa.Width - home.Width * k) / 2) / k;
+            home.Top = (wa.Top + (wa.Height - home.Height * k) / 2) / k;
             home.Present("home", false);
         }
 
         static void ShowSetup(bool welcome)
         {
             ConstructorInfo ci = typeof(SetupWindow).GetConstructors(NP)[0];
-            setup = (Form)ci.Invoke(new object[] { new Settings() });
-            setup.TopMost = true;
-            setup.Location = new Point(target.WorkingArea.Left + (target.WorkingArea.Width - setup.Width) / 2, target.WorkingArea.Top + (target.WorkingArea.Height - setup.Height) / 2);
+            setup = (System.Windows.Window)ci.Invoke(new object[] { new Settings() });
+            setup.Topmost = true;
+            setup.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen;
             setup.Show();
         }
 
@@ -233,6 +235,14 @@ namespace Stackshot
         {
             r.Intersect(target.Bounds);
             using (Bitmap b = Grabber.Grab(r)) b.Save(Path.Combine(docs, name), ImageFormat.Png);
+        }
+
+        static void GrabWindow(System.Windows.Window w, string name, int margin)
+        {
+            double k = ShotStack.ScaleFor(target);
+            Rectangle r = new Rectangle((int)(w.Left * k), (int)(w.Top * k), (int)(w.ActualWidth * k), (int)(w.ActualHeight * k));
+            r.Inflate(margin, margin);
+            Grab(r, name);
         }
 
         static void GrabWindow(Form w, string name, int margin)

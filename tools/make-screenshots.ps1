@@ -4,6 +4,7 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
+$wpf = Join-Path (Split-Path $csc) 'WPF'
 $work = Join-Path $env:TEMP 'stackshot-studio'
 New-Item -ItemType Directory -Force $work | Out-Null
 $exe = Join-Path $work 'studio.exe'
@@ -12,7 +13,8 @@ $icon = Join-Path $root 'assets\stackshot.ico'
 $logo = Join-Path $root 'assets\logo-256.png'
 $out = & $csc /nologo /codepage:65001 /target:winexe /optimize+ /main:Stackshot.Studio "/out:$exe" "/win32manifest:$(Join-Path $root 'src\app.manifest')" `
     "/resource:$icon,stackshot.ico" "/resource:$logo,logo.png" /r:System.Windows.Forms.dll /r:System.Drawing.dll `
-    /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll /r:System.Web.Extensions.dll $sources 2>&1
+    /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll /r:System.Web.Extensions.dll /r:System.Xaml.dll `
+    "/r:$wpf\PresentationFramework.dll" "/r:$wpf\PresentationCore.dll" "/r:$wpf\WindowsBase.dll" "/r:$wpf\WindowsFormsIntegration.dll" $sources 2>&1
 if ($LASTEXITCODE -ne 0) { $out | ForEach-Object { Write-Host $_ }; throw 'El estudio no compila.' }
 $docs = Join-Path $root 'docs'
 $p = Start-Process -FilePath $exe -ArgumentList ('"' + $docs + '"') -PassThru

@@ -48,10 +48,17 @@ Windows 10 and 11 only. The user interface is in Spanish; code comments are in E
 - Floating windows (`FloatWindow`) never take focus, are layered (animated opacity), stay on top and are excluded from
   captures (`WDA_EXCLUDEFROMCAPTURE`). Everything that moves goes through `Anim`, a timer that only runs while something
   animates (0% CPU at rest).
-- The whole app uses the macOS-style palettes (`Mac` in the main window, `Theme` elsewhere) and hand-drawn line icons
-  (`Icons`). The main window (`HomeWindow`) draws into two `Dib` layers (sidebar and content) that are only rebuilt when
-  something changes, and composes each repaint in its own back buffer, copying to the screen only the invalidated
-  rectangle. With no window visible there is no timer.
+- One design system (`src/Design`): the light/dark palette, radii and type in `Ds` (follows Windows or
+  `Settings.Appearance`; `Ds.Changed` fires on a switch and every surface repaints), line icons in `Glyph` (24x24 path
+  data in `Glyphs.cs`; `Ink.GlyphBitmap` for GDI+ surfaces), and WPF controls (`MacSwitch`, `MacSegmented`,
+  `MacButton`, `IconTile`, `Keycaps`). Never hard-code colors: GDI+ code uses `Theme.*`, which reads the same palette.
+- WPF is used in code only (no XAML compiler; small templates via `XamlReader.Parse`) and lives inside the WinForms
+  message loop. Windows (`Sheet`: main window, welcome, FFmpeg) draw on the GPU over Mica; floating surfaces
+  (`FloatWindow` with `PerPixel`: thumbnails, chips, recording and scrolling bars) are painted by WPF in software into a
+  premultiplied DIB shown with `UpdateLayeredWindow`, which is faster for small surfaces than starting a GPU device and
+  gives real soft shadows. Hand-drawn GDI+ art (the mascot, the intro) goes into a `GdiLayer`, redrawn only when it moves.
+- The main window (`HomeWindow`) is prepared off-screen a few seconds after startup (`Prewarm`) so it opens at once; while
+  shown, its clock only runs for the mascot (15 fps idle, 30 following the mouse, 60 animating) and stops when hidden.
 - The desktop mascot (`PetWindow`) is a per-pixel-alpha layered window; without a bubble or the menu only the mascot's own
   box is sent to `UpdateLayeredWindow`, and its frame rate drops when idle, asleep or when the user is away.
 - Nothing heavy on the UI thread: each capture's PNG is written on another thread (`BeginWrite`; anyone who needs the
@@ -59,9 +66,17 @@ Windows 10 and 11 only. The user interface is in Spanish; code comments are in E
   preloaded at startup. Mascot previews in the main window render on the thread pool.
 - The region picker (`RegionPicker`) composes each changed part with `BitBlt` from two `Dib`s prepared once (bright and
   dimmed, with the hints already drawn), and recomposes everything Windows asks for when another window passes over it.
-- FFmpeg is downloaded from a fixed version (`FfmpegSetup`: `Version`, `Url`, `Sha256` in `Recorder.cs`); upgrading means
+- FFmpeg is downloaded from a fixed version (`FfmpegSetup`: `Version`, `Url`, `Sha256` in `Capture/FfmpegSetup.cs`); upgrading means
   changing all three together (the SHA-256 can be checked against the `digest` field of the GitHub API). Videos opened in
   the editor are read with a format whitelist (`Recorder.SafeInput`).
+- UI text goes through `TextKit` (GDI+, unhinted, same signatures as `TextRenderer`), never `TextRenderer` directly, so
+  everything is drawn and measured the same way. The one exception is sizing a real WinForms `TextBox`, which draws
+  with GDI itself.
+- Recording keeps image and sound on one clock (QPC): video frame n shows the image presented before its cut, and every
+  sound packet is written at its own time (gaps become silence, clock drift is absorbed a sample at a time). Screen
+  images are taken on their own thread so none is ever merged with the next; the D3D11 context is shared behind a
+  lock. Work files are NUT (exact frame times; Matroska rounds them to 1 ms) and raw 48 kHz float, named
+  `~grabando ...` and swept after an hour if a recording never finished.
 - `--test` and the test tools set `Settings.ReadOnly`: they never write the real settings.
 - Comments: in English and minimal; only the why of what isn't obvious.
 - Mascot catalogs (`MascotParts`) are stored by index in `settings.ini`: new items always go at the end.
@@ -71,16 +86,19 @@ Windows 10 and 11 only. The user interface is in Spanish; code comments are in E
 | File | What it does |
 |---|---|
 | `src/Program.cs` | Startup: welcome window, installation, updates, command-line options, version (`AssemblyVersion`) |
-| `src/Setup.cs` | `Installer` (copy, shortcuts, uninstall entry, Print Screen, MSI mode) and `SetupWindow` (welcome) |
+| `src/Setup.cs`, `src/Home/Welcome.cs` | `Installer` (copy, shortcuts, uninstall entry, Print Screen, MSI mode) and `SetupWindow` (welcome) |
+| `src/Design/*` | Design system: `Ds` (palette, type), `Glyphs`/`Ink` (icons, text, shapes, shadows, `Surface`), `Controls` (macOS-style WPF controls), `Sheet` (Mica window base) and `GdiLayer` |
 | `src/CloseListener.cs` | Hidden window that closes Stackshot cleanly when Windows asks (MSI, sign-out) |
 | `tools/Stackshot.wxs`, `tools/build-msi.ps1` | MSI package for organizations |
 | `src/Settings.cs` | `settings.ini` |
 | `src/ShotStack.cs` | The stack: hotkeys, tray, capture and save, thumbnails, scrolling, temporary file cleanup |
-| `src/Look.cs` | macOS-style palette (`Mac`) and hand-drawn line icons (`Icons`) |
-| `src/Home/HomeWindow.cs`, `HomePages.cs` | Main window: custom frame with Windows 11 buttons (minimize, close to tray), sections (Home, Shortcuts, General, Backdrop and editor, Recording, Mascot, About), profiles and their controls |
+| `src/Look.cs` | System accent colors (`Mac`) and the GDI+ line icons still used by the desktop mascot's comic menu (`Icons`) |
+| `src/Home/HomeWindow.cs`, `HomePages.cs`, `HomeViews.cs`, `HomeDashboard.cs`, `HomeBackdrop.cs`, `HomeRecordPage.cs`, `HomeMascotPage.cs` | Main window (WPF): sidebar, toolbar, mascot host and clock; settings rows; Home in three views (`Settings.HomeStyle`, only the chosen one is built), About, Backdrop and editor, Recording (devices) and Mascot (widgets, favorites, saved looks) |
+| `src/Home/Recents.cs` | Recent captures for Home: latest files, captures per day, folder size, cached thumbnails |
+| `src/Design/Menu.cs` | `MacMenu`: pop-up menus for WPF windows (device pickers, personality) |
 | `src/Home/Mascot.cs` | The mascot: moods, physics, eyes and mouth, particles, tricks; `RenderStill` for previews |
 | `src/Home/MascotParts.cs`, `MascotDraw.cs` | Catalog (`MascotLook`: species, color, eyes, hat, outfit, face accessory; friendship levels and unlocks) and the drawing of the original pieces |
-| `src/Home/MascotAnime.cs`, `MascotMore.cs`, `MascotExtra.cs`, `MascotCast.cs`, `MascotHeroes.cs` | Character tributes (`AnimeNames`, `AnimeInspiration`), extra species (dog, chibi, penguin, panda, fox, frog), hair styles, helmets, outfits and face paint |
+| `src/Home/MascotAnime.cs`, `MascotMore.cs`, `MascotExtra.cs`, `MascotCast.cs`, `MascotHeroes.cs`, `MascotReindeer.cs` | Character tributes (`AnimeNames`, `AnimeInspiration`), extra species (dog, chibi, penguin, panda, fox, frog, reindeer), hair styles, helmets, outfits and face paint |
 | `src/Home/MascotTalk.cs` | What the mascot says, by personality |
 | `src/Home/PetWindow.cs` | The desktop mascot: walks, naps, hops onto windows, drag and drop, comic menu, going home, remembered spot; hides for full-screen apps on its monitor |
 | `src/Home/LogoArt.cs`, `Intro.cs` | The logo as a parametric drawing (used by the app and `tools\make-logo.ps1`) and the launch animation |
@@ -88,14 +106,17 @@ Windows 10 and 11 only. The user interface is in Spanish; code comments are in E
 | `src/Home/TrayMenu.cs` | Tray menu with its own renderer |
 | `src/Capture/Dib.cs` | Shared GDI/GDI+ canvas |
 | `src/Capture/ScrollCapture.cs` | Scrolling capture: session, stitching by row hashes, bar and frame |
-| `src/Capture/Recorder.cs`, `Webcam.cs` | Screen recording through FFmpeg (quality levels, GIF) and the camera bubble |
+| `src/Capture/Recorder.cs`, `Webcam.cs` | Screen recording: the session (frame timing, writer thread, quality levels, final encode with sound, GIF) and the camera bubble |
+| `src/Capture/Duplication.cs` | Screen frames: DXGI Desktop Duplication on its own thread, a short history of images, NV12 on the GPU for large areas, cursor drawing, GDI fallback |
+| `src/Capture/Audio.cs` | Sound: WASAPI loopback and microphone, device list, alignment of every packet to the recording's clock |
 | `src/Editor/Backdrop.cs`, `BgPanel.cs` | Presentation backdrop (gradients, wallpaper, custom images, video) and its strip in the editor |
 | `src/Editor/Timeline.cs` | Video trimming and export options (speed, size, format) |
 | `src/Card.cs`, `src/Chip.cs` | Thumbnail and "N older / N newer" pills |
 | `src/FloatWindow.cs`, `src/Animation.cs` | Base for floating windows, springs and tweens |
 | `src/Capture/*` | Global hotkeys, screen and window capture, region selection, pin to screen, shutter sound |
 | `src/Editor/*` | Editor: marks (`Shapes`), canvas with selection and history (`Canvas`), toolbar (`Toolbar`), window (`Editor`) |
-| `src/Ui.cs` | Custom controls (`DarkForm`, `Pill`, `Toggle`, `HotkeyBox`, `Progress`) and the font cache (`Fonts`) |
+| `src/Ui.cs` | The font cache (`Fonts`) and GDI+ text drawing (`TextKit`) |
+| `src/Theme.cs` | GDI+ colors bridged to the design palette, and `Theme.Round` |
 | `src/TrackedData.cs`, `src/FileDrag.cs` | Clipboard that notices pastes; dragging with a thumbnail next to the cursor |
 
 ## Releasing a version
