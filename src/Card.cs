@@ -7,28 +7,27 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Drawing.Text;
 using System.IO;
+using System.Threading;
 using System.Windows.Forms;
+using W = System.Windows;
+using M = System.Windows.Media;
+using MI = System.Windows.Media.Imaging;
 
 namespace Stackshot
 {
-    // A stack thumbnail. Everything animates: slides in from the edge, springs into place, fades out when removed and
-    // hops screens with the stack. Hovering shows a toolbar and a close button without hiding the image; it can be
-    // dragged from anywhere, buttons included.
+    // A stack thumbnail, drawn like a Quick Access Overlay: rounded image with a soft shadow; on hover the capture blurs
+    // and dims behind Copy / Save and round corner buttons. It slides in from the edge, springs into place, can be
+    // swiped away or dragged from anywhere (buttons included) into other apps.
     public class Card : FloatWindow
     {
         public enum Exit { Slide, Swipe, Drop }
 
         public static bool ForceHover = false;
 
-        const string GClose = "\uE711", GPin = "\uE718", GFolder = "\uE838", GSave = "\uE74E", GCheck = "\uE73E",
-                     GPlay = "\uE768", GCopy = "\uE8C8", GEdit = "\uE70F";
-        const TextFormatFlags Centered = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter |
-                                         TextFormatFlags.SingleLine | TextFormatFlags.NoPadding;
         const double FlashMs = 1150;
 
-        class Btn { public Rectangle R; public string Glyph; public string Label; public Action Do; public bool Round; }
+        class Btn { public Rectangle R; public string Glyph; public string Label; public Action Do; public bool Corner; public bool Close; }
 
         public string FilePath;
         public string SavedPath;   // copy in the save folder, if the user kept it
@@ -37,8 +36,10 @@ namespace Stackshot
         public bool Leaving;       // removed from the stack, only the exit animation is left
         readonly ShotStack owner;
         readonly List<Btn> btns = new List<Btn>();
-        Bitmap preview, face, hoverBuf;
-        Rectangle faceRect, bar;
+        Bitmap preview;
+        MI.BitmapSource face, shadow;
+        Rectangle faceRect;
+        Size shadowFor;
         Size origSize = new Size(16, 9);
         float nextScale = 1f;
         Rectangle home;
@@ -47,7 +48,7 @@ namespace Stackshot
         Point pressPt;
         double swipeV, swipeLastX, swipeLastT;
         string flash;
-        Color flashColor;
+        bool flashGood;
         readonly Tween dim = new Tween(1), hoverT = new Tween(0), hotT = new Tween(1), pressT = new Tween(0),
                        flashT = new Tween(0), badgeT = new Tween(1), wait = new Tween(0);
 
@@ -58,6 +59,8 @@ namespace Stackshot
             IsMedia = ShotStack.IsMediaFile(path);
         }
 
+        protected override bool PerPixel { get { return true; } }
+
         // Pressed, swiping or dragging: the stack must not move it to another monitor.
         public bool Busy { get { return pressed || swiping || dragging; } }
 
@@ -66,9 +69,9 @@ namespace Stackshot
 
         public Size WantedFor(float scale)
         {
-            int w = (int)Math.Round(240 * scale);
+            int w = (int)Math.Round(256 * scale);
             int h = (int)Math.Round(w * (double)origSize.Height / Math.Max(1, origSize.Width));
-            return new Size(w, Math.Max((int)Math.Round(96 * scale), Math.Min((int)Math.Round(200 * scale), h)));
+            return new Size(w, Math.Max((int)Math.Round(110 * scale), Math.Min((int)Math.Round(200 * scale), h)));
         }
 
         protected override bool HoldX { get { return swiping; } }
@@ -84,10 +87,18 @@ namespace Stackshot
             double f = dim.Value;
             if (fadeByPos)
             {
-                double d = (home.X - x) / Math.Max(1.0, Width * 0.6);
+                double d = (home.X - x) / Math.Max(1.0, body.Width * 0.6);
                 f *= 1 - 0.85 * Math.Max(0, Math.Min(1, d));
             }
             return f;
+        }
+
+        void Fit(Size size)
+        {
+            Pad = P(26);
+            SetSize(size);
+            BuildButtons();
+            Redraw();
         }
 
         // Called by the stack with its slot. New cards slide in; when the stack changes monitor they fade out here and
@@ -100,7 +111,7 @@ namespace Stackshot
             {
                 Device = device;
                 s = scale;
-                SetSize(r.Size);
+                Fit(r.Size);
                 if (visible) SlideIn();
                 else { parked = true; JumpTo(r.X, r.Y); }
                 return;
@@ -126,8 +137,7 @@ namespace Stackshot
                 bool fromAbove = y < r.Y;
                 Device = device;
                 s = scale;
-                SetSize(r.Size);
-                BuildButtons();
+                Fit(r.Size);
                 if (!Visible)
                 {
                     alpha.Set(0);
@@ -154,7 +164,7 @@ namespace Stackshot
                 return;
             }
             if (migrating) { nextScale = scale; return; } // Arrive will use the new slot
-            if (scale != s || r.Size != Size) { s = scale; SetSize(r.Size); BuildButtons(); }
+            if (scale != s || r.Size != body) { s = scale; Fit(r.Size); }
             MoveTo(r.X, r.Y, 320, 0.8, 0);
         }
 
@@ -173,18 +183,19 @@ namespace Stackshot
             migrating = false;
             if (Leaving || IsDisposed) return;
             s = nextScale;
-            SetSize(home.Size);
-            BuildButtons();
+            Fit(home.Size);
             SlideIn();
         }
 
-        // Fully parked: hide and release images (reloaded when shown again).
+        // Fully parked: hide and free the window's pixels. The small pre-scaled face stays, so scrolling back to it
+        // never decodes the file again.
         void Park()
         {
             if (!parked || Leaving) return;
             moving = false;
             Hide();
-            ReleaseImages();
+            if (preview != null) { preview.Dispose(); preview = null; }
+            ReleaseSurface();
         }
 
         // Leaves the stack with an animation and closes when done.
@@ -227,7 +238,7 @@ namespace Stackshot
         {
             if (Leaving) return;
             if (parked) { then(); return; }
-            Flash(text, Theme.Green);
+            Flash(text, true);
             wait.Set(0);
             wait.Go(1, 560, 0, Ease.Linear, then);
             Anim.Wake(this);
@@ -244,10 +255,7 @@ namespace Stackshot
             badgeT.Step(now);
             wait.Step(now);
             if (IsDisposed) return false;
-            SetBorder(Mix(Theme.Border, Theme.Accent, ForceHover ? 1 : hoverT.Value));
-            // Free the hover layer when not hovered.
-            if (!hoverT.Running && hoverT.Value <= 0 && hoverBuf != null && !ForceHover) { hoverBuf.Dispose(); hoverBuf = null; }
-            if (repaint) Invalidate();
+            if (repaint) Redraw();
             return dim.Running || hoverT.Running || hotT.Running || pressT.Running || flashT.Running || badgeT.Running || wait.Running;
         }
 
@@ -259,7 +267,7 @@ namespace Stackshot
             if (p == null && !IsMedia) return false;
             ReleaseImages();
             preview = p;
-            Invalidate();
+            Redraw();
             return true;
         }
 
@@ -269,7 +277,7 @@ namespace Stackshot
             ReleaseImages();
             preview = p;
             origSize = orig;
-            Invalidate();
+            Redraw();
         }
 
         Bitmap LoadPreview()
@@ -297,96 +305,104 @@ namespace Stackshot
         void ReleaseImages()
         {
             if (preview != null) { preview.Dispose(); preview = null; }
-            if (face != null) { face.Dispose(); face = null; }
-            if (hoverBuf != null) { hoverBuf.Dispose(); hoverBuf = null; }
+            face = null;
+            loadingFor = Rectangle.Empty;
         }
 
-        protected override void OnSizeChanged(EventArgs e)
-        {
-            base.OnSizeChanged(e);
-            BuildButtons();
-            Invalidate();
-        }
-
-        // Close button top-left; toolbar at the bottom with Copy, Edit, Save and Pin.
+        // Close top-left, Pin (or Open for videos) top-right, Edit bottom-left; Copy and Save in the middle.
         void BuildButtons()
         {
             btns.Clear();
-            int W = ClientSize.Width, H = ClientSize.Height;
-            int cs = P(24), m = P(6);
-            AddBtn(new Rectangle(m, m, cs, cs), GClose, "Cerrar", delegate { owner.Remove(this); }, true);
+            int W = body.Width, H = body.Height;
+            int cs = P(26), m = P(8);
+            Corner(new Rectangle(m, m, cs, cs), "close", "Cerrar", delegate { owner.Remove(this); }).Close = true;
+            if (IsMedia) Corner(new Rectangle(W - m - cs, m, cs, cs), "play!", "Abrir", OpenFile);
+            else Corner(new Rectangle(W - m - cs, m, cs, cs), "pin", "Fijar en pantalla", Pin);
+            Corner(new Rectangle(m, H - m - cs, cs, cs), "edit", "Editar", Edit);
+            if (SavedPath != null) Corner(new Rectangle(W - m - cs, H - m - cs, cs, cs), "folder", "Mostrar en la carpeta", ShowInFolder);
 
-            List<Btn> tools = new List<Btn>();
-            tools.Add(MakeBtn(GCopy, "Copiar", Copy));
-            if (IsMedia)
+            List<Btn> pills = new List<Btn>();
+            pills.Add(Pill("Copiar", Copy));
+            pills.Add(SavedPath == null ? Pill("Guardar", Keep) : Pill("Abrir", IsMedia ? (Action)OpenFile : (Action)Edit));
+            int ph = P(28), gap = P(8), total = 0;
+            foreach (Btn b in pills) { b.R.Width = Measure(b.Label) + P(26); total += b.R.Width; }
+            total += gap * (pills.Count - 1);
+            int left = (W - total) / 2, top = (H - ph) / 2;
+            foreach (Btn b in pills)
             {
-                tools.Add(MakeBtn(GPlay, "Abrir", OpenFile));
-                tools.Add(MakeBtn(GEdit, "Editar", Edit)); // trim, annotate, crop and backdrop
-            }
-            else tools.Add(MakeBtn(GEdit, "Editar", Edit));
-            if (SavedPath == null) tools.Add(MakeBtn(GSave, "Guardar", Keep));
-            else tools.Add(MakeBtn(GFolder, "Abrir carpeta", ShowInFolder));
-            if (!IsMedia) tools.Add(MakeBtn(GPin, "Fijar en pantalla", Pin));
-            int bw = P(32), bh = P(28), pad = P(3);
-            int tw = tools.Count * bw + 2 * pad, th = bh + 2 * pad;
-            bar = new Rectangle((W - tw) / 2, H - th - P(8), tw, th);
-            for (int i = 0; i < tools.Count; i++)
-            {
-                tools[i].R = new Rectangle(bar.X + pad + i * bw, bar.Y + pad, bw, bh);
-                btns.Add(tools[i]);
+                b.R = new Rectangle(left, top, b.R.Width, ph);
+                left += b.R.Width + gap;
+                btns.Add(b);
             }
         }
 
-        static Btn MakeBtn(string glyph, string label, Action act)
+        Btn Corner(Rectangle r, string glyph, string label, Action act)
         {
             Btn b = new Btn();
-            b.Glyph = glyph; b.Label = label; b.Do = act;
+            b.R = r; b.Glyph = glyph; b.Label = label; b.Do = act; b.Corner = true;
+            btns.Add(b);
             return b;
         }
 
-        void AddBtn(Rectangle r, string glyph, string label, Action act, bool round)
+        static Btn Pill(string label, Action act)
         {
-            Btn b = MakeBtn(glyph, label, act);
-            b.R = r;
-            b.Round = round;
-            btns.Add(b);
+            Btn b = new Btn();
+            b.Label = label; b.Do = act;
+            return b;
         }
 
-        int HitTest(Point p)
+        int Measure(string text)
         {
-            for (int i = 0; i < btns.Count; i++)
-            {
-                if (btns[i].R.Contains(p)) return i;
-            }
+            return (int)Math.Ceiling(Ink.Px(text, Ds.Semibold, P(13), Palette.HudLabel).WidthIncludingTrailingWhitespace);
+        }
+
+        Point Local(Point p) { return new Point(p.X - Pad, p.Y - Pad); }
+
+        bool Inside(Point local) { return local.X >= 0 && local.Y >= 0 && local.X < body.Width && local.Y < body.Height; }
+
+        int HitTest(Point local)
+        {
+            if (hoverT.Target <= 0 && !ForceHover) return -1;
+            for (int i = 0; i < btns.Count; i++) if (btns[i].R.Contains(local)) return i;
             return -1;
         }
 
         // Fit the image without upscaling beyond its real size.
         Rectangle ImageRect(Rectangle box)
         {
-            double f = Math.Min((double)box.Width / origSize.Width, (double)box.Height / origSize.Height);
-            f = Math.Min(f, Math.Max(1.0, s));
+            double f = Math.Max((double)box.Width / origSize.Width, (double)box.Height / origSize.Height);
+            double fit = Math.Min((double)box.Width / origSize.Width, (double)box.Height / origSize.Height);
+            // Fill the card unless that would crop more than a sliver; very tall or wide captures are letterboxed.
+            if (f / fit > 1.12) f = fit;
             int w = Math.Max(1, (int)Math.Round(origSize.Width * f));
             int h = Math.Max(1, (int)Math.Round(origSize.Height * f));
             return new Rectangle(box.X + (box.Width - w) / 2, box.Y + (box.Height - h) / 2, w, h);
         }
 
-        // Preview pre-scaled to the card size, so each frame is a cheap blit.
-        Bitmap Face()
+        // Preview pre-scaled to the card size once, so each frame is a 1:1 copy. When the size changes (a monitor with
+        // another scale) the preview is read again off the UI thread, and meanwhile the old face is drawn scaled.
+        MI.BitmapSource Face()
         {
-            if (ClientSize.Width <= 0 || ClientSize.Height <= 0) return null;
-            Rectangle ir = ImageRect(ClientRectangle);
+            if (body.Width <= 0 || body.Height <= 0) return null;
+            Rectangle ir = ImageRect(new Rectangle(Point.Empty, body));
             if (face != null && faceRect == ir) return face;
-            if (preview == null) preview = LoadPreview();
-            if (preview == null) return null;
-            if (face != null) face.Dispose();
-            face = new Bitmap(ir.Width, ir.Height, PixelFormat.Format32bppPArgb);
-            using (Graphics g = Graphics.FromImage(face))
-            using (ImageAttributes ia = new ImageAttributes())
+            if (preview == null)
             {
-                Quality(g);
-                ia.SetWrapMode(WrapMode.TileFlipXY); // avoids dark edges when downscaling
-                g.DrawImage(preview, new Rectangle(0, 0, ir.Width, ir.Height), 0, 0, preview.Width, preview.Height, GraphicsUnit.Pixel, ia);
+                if (face != null && !IsMedia) { LoadAsync(ir); return face; }
+                preview = LoadPreview();
+            }
+            if (preview == null) return null;
+            using (Bitmap scaled = new Bitmap(ir.Width, ir.Height, PixelFormat.Format32bppPArgb))
+            {
+                using (Graphics g = Graphics.FromImage(scaled))
+                using (ImageAttributes ia = new ImageAttributes())
+                {
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    ia.SetWrapMode(WrapMode.TileFlipXY); // avoids dark edges when downscaling
+                    g.DrawImage(preview, new Rectangle(0, 0, ir.Width, ir.Height), 0, 0, preview.Width, preview.Height, GraphicsUnit.Pixel, ia);
+                }
+                face = Ink.FromGdi(scaled);
             }
             faceRect = ir;
             preview.Dispose();
@@ -394,122 +410,161 @@ namespace Stackshot
             return face;
         }
 
-        static void Blit(Graphics g, Image img, int left, int top, ImageAttributes ia)
-        {
-            InterpolationMode im = g.InterpolationMode;
-            g.InterpolationMode = InterpolationMode.NearestNeighbor;
-            g.DrawImage(img, new Rectangle(left, top, img.Width, img.Height), 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, ia);
-            g.InterpolationMode = im;
-        }
+        Rectangle loadingFor = Rectangle.Empty;
 
-        static Rectangle Shrink(Rectangle r, double f)
+        void LoadAsync(Rectangle forRect)
         {
-            int dx = (int)Math.Round(r.Width * f / 2), dy = (int)Math.Round(r.Height * f / 2);
-            return Rectangle.Inflate(r, -dx, -dy);
-        }
-
-        // Base layer is the plain thumbnail; the hover layer with buttons fades in on top. Both are opaque, so icons
-        // stay crisp.
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            Graphics g = e.Graphics;
-            Quality(g);
-            Rectangle r = ClientRectangle;
-            if (r.Width <= 0 || r.Height <= 0) return;
-            double h = ForceHover ? 1 : hoverT.Value;
-            if (h < 0.995) PaintBase(g, r);
-            if (h > 0.005)
+            if (loadingFor == forRect || !IsHandleCreated) return; // already asked (or it failed) for this size
+            loadingFor = forRect;
+            string path = FilePath;
+            ThreadPool.QueueUserWorkItem(delegate
             {
-                if (hoverBuf == null || hoverBuf.Size != r.Size)
+                Bitmap b = null;
+                Size orig = Size.Empty;
+                try { b = ShotStack.LoadPreview(path, 600, out orig); }
+                catch (Exception ex) { ShotStack.Log("No se pudo leer " + path + ": " + ex.Message); }
+                try
                 {
-                    if (hoverBuf != null) hoverBuf.Dispose();
-                    hoverBuf = new Bitmap(r.Width, r.Height, PixelFormat.Format32bppRgb);
-                }
-                using (Graphics hg = Graphics.FromImage(hoverBuf)) PaintHover(hg, r, h);
-                if (h >= 0.995) Blit(g, hoverBuf, 0, 0, null);
-                else
-                {
-                    ColorMatrix cm = new ColorMatrix();
-                    cm.Matrix33 = (float)h;
-                    using (ImageAttributes ia = new ImageAttributes())
+                    BeginInvoke((Action)delegate
                     {
-                        ia.SetColorMatrix(cm);
-                        Blit(g, hoverBuf, 0, 0, ia);
-                    }
+                        if (b == null) return; // failed: not asked again for this size
+                        if (IsDisposed || path != FilePath || preview != null) { b.Dispose(); return; }
+                        loadingFor = Rectangle.Empty;
+                        // Back at the size of the face it already has (the monitor changed again meanwhile).
+                        if (face != null && faceRect == ImageRect(new Rectangle(Point.Empty, body))) { b.Dispose(); return; }
+                        preview = b;
+                        origSize = orig;
+                        if (!parked) Redraw(); // a parked card uses it when it comes back
+                    });
                 }
-                PaintLabel(g, h);
-            }
-            PaintFlash(g, r);
+                catch { if (b != null) b.Dispose(); } // closed meanwhile
+            });
         }
 
-        void PaintFace(Graphics g, Rectangle r)
+        MI.BitmapSource Shadow(int w, int h)
         {
-            g.Clear(Theme.Bg);
-            Bitmap f = Face();
-            if (f != null) Blit(g, f, faceRect.X, faceRect.Y, null);
+            if (shadow != null && shadowFor == new Size(w, h)) return shadow;
+            W.Rect b = new W.Rect(Pad, Pad + P(6), body.Width, body.Height);
+            shadow = Ink.Shadow(w, h, b, P((float)Ds.RCard), P(18), Ds.Argb(Ds.Dark ? 0.55 : 0.32, 0, 0, 0));
+            shadowFor = new Size(w, h);
+            return shadow;
+        }
+
+        // Pieces of one small pre-blurred shadow, shared by every card of a scale and theme.
+        static readonly Dictionary<string, MI.BitmapSource[]> shadowTiles = new Dictionary<string, MI.BitmapSource[]>();
+
+        // The soft shadow as a nine-slice of that tile: a new card, size or monitor costs no blur.
+        void PaintShadow(M.DrawingContext dc, int w, int h)
+        {
+            double r = P((float)Ds.RCard);
+            int blur = P(18), off = P(6), c = (int)Math.Ceiling(r) + blur + off + 2, t = 2 * Pad + 2 * c;
+            if (body.Width < 2 * c || body.Height < 2 * c) { dc.DrawImage(Shadow(w, h), new W.Rect(0, 0, w, h)); return; }
+            int half = t / 2;
+            int[] sx = { 0, half - 1, half + 1 }, sw = { half - 1, 2, t - half - 1 };
+            string key = t + "|" + r + "|" + Ds.Dark;
+            MI.BitmapSource[] parts;
+            if (!shadowTiles.TryGetValue(key, out parts))
+            {
+                MI.BitmapSource tile = Ink.Shadow(t, t, new W.Rect(Pad, Pad + off, 2 * c, 2 * c), r, blur, Ds.Argb(Ds.Dark ? 0.55 : 0.32, 0, 0, 0));
+                parts = new MI.BitmapSource[9];
+                for (int i = 0; i < 3; i++)
+                    for (int j = 0; j < 3; j++)
+                    {
+                        MI.CroppedBitmap part = new MI.CroppedBitmap(tile, new W.Int32Rect(sx[i], sx[j], sw[i], sw[j]));
+                        part.Freeze();
+                        parts[i * 3 + j] = part;
+                    }
+                shadowTiles[key] = parts;
+            }
+            int[] dx = { 0, half - 1, w - (t - half - 1) }, dw = { half - 1, w - t + 2, t - half - 1 };
+            int[] dy = { 0, half - 1, h - (t - half - 1) }, dh = { half - 1, h - t + 2, t - half - 1 };
+            for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; j++)
+                    if (i != 1 || j != 1) // the middle is under the card
+                        dc.DrawImage(parts[i * 3 + j], new W.Rect(dx[i], dy[j], dw[i], dh[j]));
+        }
+
+        protected override void PaintSurface(M.DrawingContext dc, int w, int h)
+        {
+            if (body.Width <= 0 || body.Height <= 0) return;
+            PaintShadow(dc, w, h);
+            dc.PushTransform(new M.TranslateTransform(Pad, Pad));
+            PaintBody(dc, ForceHover ? 1 : hoverT.Value);
+            dc.Pop();
+        }
+
+        void PaintBody(M.DrawingContext dc, double h)
+        {
+            Palette pal = Ds.Brushes;
+            double R = P((float)Ds.RCard);
+            W.Rect b = new W.Rect(0, 0, body.Width, body.Height);
+            dc.PushClip(new M.RectangleGeometry(b, R, R));
+            Ink.Round(dc, pal.Thumb, b, 0);
+            MI.BitmapSource f = Face();
+            if (f != null)
+            {
+                Rectangle ir = ImageRect(new Rectangle(Point.Empty, body));
+                W.Rect fr = new W.Rect(ir.X, ir.Y, ir.Width, ir.Height);
+                dc.DrawImage(f, fr);
+            }
             else
             {
-                TextRenderer.DrawText(g, Path.GetFileName(FilePath), Fonts.Get("Segoe UI", P(12)), r, Theme.Fg, Centered | TextFormatFlags.EndEllipsis);
+                M.FormattedText t = Ink.Px(Path.GetFileName(FilePath), Ds.Medium, P(12), pal.Label2);
+                t.MaxTextWidth = Math.Max(1, body.Width - P(24));
+                t.MaxLineCount = 1;
+                t.Trimming = W.TextTrimming.CharacterEllipsis;
+                Ink.Center(dc, t, b);
             }
+            // Hover keeps the capture visible: a light veil, a little darker at the edges where the corner buttons sit.
+            if (h > 0.004)
+            {
+                Ink.Round(dc, Ds.Argb(0.22 * h, 0, 0, 0), b, 0);
+                M.RadialGradientBrush vig = new M.RadialGradientBrush(Ds.Argb(0, 0, 0, 0), Ds.Argb(0.22 * h, 0, 0, 0));
+                vig.RadiusX = vig.RadiusY = 0.75;
+                vig.Freeze();
+                dc.DrawRectangle(vig, null, b);
+            }
+            dc.Pop();
+            Ink.Hairline(dc, pal.Dark ? Ds.Argb(0.16, 255, 255, 255) : Ds.Argb(0.14, 0, 0, 0), b, R);
+
+            double rest = 1 - h;
+            if (rest > 0.004)
+            {
+                dc.PushOpacity(rest);
+                PaintBadges(dc, pal);
+                dc.Pop();
+            }
+            if (h > 0.004) PaintButtons(dc, h);
+            PaintFlash(dc, b, R);
         }
 
-        void PaintBase(Graphics g, Rectangle r)
+        // Resting state: play button and format on videos, green check once saved.
+        void PaintBadges(M.DrawingContext dc, Palette pal)
         {
-            PaintFace(g, r);
             if (IsMedia)
             {
-                int d = P(40);
-                Rectangle c = new Rectangle((r.Width - d) / 2, (r.Height - d) / 2, d, d);
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(210, Theme.Dark))) g.FillEllipse(b, c);
-                DrawGlyph(g, GPlay, c, Theme.Fg, P(16));
+                double d = P(40);
+                W.Rect c = new W.Rect((body.Width - d) / 2, (body.Height - d) / 2, d, d);
+                dc.DrawEllipse(Ds.Brush(Ds.Argb(0.42, 0, 0, 0)), null, new W.Point(c.X + d / 2, c.Y + d / 2), d / 2, d / 2);
+                Glyph.Draw(dc, "play!", c.X + P(10) + P(1), c.Y + P(10), P(20), Palette.HudLabel, 0);
                 string ext = Path.GetExtension(FilePath).TrimStart('.').ToUpperInvariant();
-                Font f = Fonts.Get("Segoe UI Semibold", P(11));
-                Size ts = TextRenderer.MeasureText(ext, f);
-                Rectangle lr = new Rectangle(P(8), r.Height - P(8) - P(20), ts.Width + P(12), P(20));
-                using (GraphicsPath p = Theme.Round(lr, P(10)))
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(210, Theme.Dark))) g.FillPath(b, p);
-                TextRenderer.DrawText(g, ext, f, lr, Theme.Fg, Centered);
+                M.FormattedText t = Ink.Px(ext, Ds.Semibold, P(10.5f), Palette.HudLabel);
+                double lw = t.WidthIncludingTrailingWhitespace + P(12), lh = P(18);
+                W.Rect lr = new W.Rect(P(8), body.Height - P(8) - lh, lw, lh);
+                Ink.Round(dc, Ds.Argb(0.48, 0, 0, 0), lr, lh / 2);
+                Ink.Center(dc, t, lr);
             }
             if (SavedPath != null)
             {
-                // The saved badge pops in.
-                double pop = badgeT.Value;
-                int d = (int)Math.Round(P(22) * pop);
+                double pop = badgeT.Value, d = P(20) * pop;
                 if (d > 2)
                 {
-                    int cx = r.Width - P(8) - P(11), cy = r.Height - P(8) - P(11);
-                    Rectangle c = new Rectangle(cx - d / 2, cy - d / 2, d, d);
-                    using (SolidBrush b = new SolidBrush(Theme.Green)) g.FillEllipse(b, c);
-                    DrawGlyph(g, GCheck, c, Color.White, (int)Math.Round(P(11) * pop));
+                    double cx = body.Width - P(8) - P(10), cy = body.Height - P(8) - P(10);
+                    dc.DrawEllipse(Ds.Brush(pal.Green), new M.Pen(Ds.Brush(Ds.Argb(0.9, 255, 255, 255)), P(1.5f)), new W.Point(cx, cy), d / 2, d / 2);
+                    double gs = P(13) * pop;
+                    Glyph.Draw(dc, "check", cx - gs / 2, cy - gs / 2, gs, Palette.HudLabel, P(2.2f) * pop);
                 }
             }
-        }
-
-        // Only the top and bottom edges darken, where the buttons are, so they stay readable on any capture.
-        void PaintHover(Graphics g, Rectangle r, double h)
-        {
-            Quality(g);
-            PaintFace(g, r);
-            int gb = Math.Min(r.Height / 2, P(58));
-            using (LinearGradientBrush lg = new LinearGradientBrush(new Rectangle(0, r.Height - gb - 1, r.Width, gb + 2),
-                   Color.FromArgb(0, 8, 8, 14), Color.FromArgb(170, 8, 8, 14), 90f))
-                g.FillRectangle(lg, 0, r.Height - gb, r.Width, gb);
-            int gt = P(40);
-            using (LinearGradientBrush lg = new LinearGradientBrush(new Rectangle(0, -1, r.Width, gt + 2),
-                   Color.FromArgb(130, 8, 8, 14), Color.FromArgb(0, 8, 8, 14), 90f))
-                g.FillRectangle(lg, 0, 0, r.Width, gt);
-
-            int lift = (int)Math.Round((1 - h) * P(8)); // the bar rises slightly as it appears
-            Rectangle br = bar;
-            br.Offset(0, lift);
-            using (GraphicsPath p = Theme.Round(br, br.Height / 2f))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(236, Theme.Dark)))
-            using (Pen pen = new Pen(Color.FromArgb(160, Theme.Border)))
-            {
-                g.FillPath(b, p);
-                g.DrawPath(pen, p);
-            }
-            for (int i = 0; i < btns.Count; i++) DrawBtn(g, btns[i], i, h, btns[i].Round ? 0 : lift);
         }
 
         double HotAmount(int i)
@@ -518,86 +573,95 @@ namespace Stackshot
             return (i == hot ? t : 0) + (i == prevHot ? 1 - t : 0);
         }
 
-        void DrawBtn(Graphics g, Btn b, int i, double h, int lift)
+        void PaintButtons(M.DrawingContext dc, double h)
         {
-            double hotA = HotAmount(i);
-            double press = i == pressShown ? pressT.Value : 0;
-            if (b.Round)
+            Palette pal = Ds.Brushes;
+            double lift = (1 - h) * P(6);
+            dc.PushOpacity(h);
+            for (int i = 0; i < btns.Count; i++)
             {
-                // The close button grows in and turns red on hover.
-                Rectangle r = Shrink(b.R, (1 - h) * 0.3 + press * 0.1);
-                using (SolidBrush br = new SolidBrush(Mix(Color.FromArgb(225, Theme.Dark), Theme.Red, hotA))) g.FillEllipse(br, r);
-                int px = (int)Math.Round(P(11) * r.Width / (double)Math.Max(1, b.R.Width));
-                DrawGlyph(g, b.Glyph, r, Mix(Theme.Fg, Color.White, hotA), px);
-                return;
+                Btn b = btns[i];
+                double hotA = HotAmount(i), press = i == pressShown ? pressT.Value : 0;
+                double k = (b.Corner ? 0.82 + 0.18 * h : 0.94 + 0.06 * h) * (1 - 0.06 * press);
+                W.Rect r = new W.Rect(b.R.X, b.R.Y + (b.Corner ? 0 : lift), b.R.Width, b.R.Height);
+                W.Point c = new W.Point(r.X + r.Width / 2, r.Y + r.Height / 2);
+                dc.PushTransform(new M.ScaleTransform(k, k, c.X, c.Y));
+                // White controls with dark ink, as in CleanShot's overlay: readable on any capture.
+                M.Color bg = b.Close ? Mix(Ds.Argb(0.94, 255, 255, 255), pal.Red, hotA) : Mix(Ds.Argb(0.94, 255, 255, 255), Ds.Rgb(255, 255, 255), hotA);
+                M.Color ink = b.Close && hotA > 0.5 ? Palette.HudLabel : Ds.Rgb(29, 29, 31);
+                W.Rect sh = r;
+                sh.Offset(0, P(1));
+                if (b.Corner)
+                {
+                    dc.DrawEllipse(Ds.Brush(Ds.Argb(0.25, 0, 0, 0)), null, new W.Point(c.X, c.Y + P(1)), r.Width / 2 + 0.5, r.Height / 2 + 0.5);
+                    dc.DrawEllipse(Ds.Brush(bg), null, c, r.Width / 2, r.Height / 2);
+                    double gs = P(14);
+                    Glyph.Draw(dc, b.Glyph, c.X - gs / 2 + (b.Glyph == "play!" ? P(1) : 0), c.Y - gs / 2, gs, ink, P(1.8f));
+                }
+                else
+                {
+                    Ink.Round(dc, Ds.Argb(0.22, 0, 0, 0), sh, r.Height / 2);
+                    Ink.Round(dc, bg, r, r.Height / 2);
+                    Ink.Center(dc, Ink.Px(b.Label, Ds.Semibold, P(13), ink), r);
+                }
+                dc.Pop();
             }
-            Rectangle rr = b.R;
-            rr.Offset(0, lift);
-            rr = Shrink(rr, press * 0.1);
-            if (hotA > 0.01)
-            {
-                using (GraphicsPath p = Theme.Round(rr, rr.Height / 2f))
-                using (SolidBrush br = new SolidBrush(Mix(Color.FromArgb(0, Theme.Accent), Theme.Accent, hotA))) g.FillPath(br, p);
-            }
-            DrawGlyph(g, b.Glyph, rr, Mix(Theme.Fg, Color.White, hotA), P(15));
+            PaintTip(dc);
+            dc.Pop();
         }
 
-        // Label of the hovered toolbar button, above the bar.
-        void PaintLabel(Graphics g, double h)
+        // Name of the hovered corner button, next to it.
+        void PaintTip(M.DrawingContext dc)
         {
             int i = hot >= 0 ? hot : prevHot;
-            if (i < 0 || i >= btns.Count || btns[i].Round) return;
-            double a = h * (i == hot ? hotT.Value : 1 - hotT.Value);
-            int ai = (int)Math.Round(255 * Math.Max(0, Math.Min(1, a)));
-            if (ai < 4) return;
+            if (i < 0 || i >= btns.Count || !btns[i].Corner) return;
+            double a = i == hot ? hotT.Value : 1 - hotT.Value;
+            if (a < 0.02) return;
             Btn b = btns[i];
-            Font f = Fonts.Get("Segoe UI Semibold", P(12));
-            using (StringFormat sf = new StringFormat())
-            {
-                sf.Alignment = StringAlignment.Center;
-                sf.LineAlignment = StringAlignment.Center;
-                sf.FormatFlags = StringFormatFlags.NoWrap;
-                SizeF ts = g.MeasureString(b.Label, f, PointF.Empty, sf);
-                float w = ts.Width + P(14), hh = P(22);
-                float cx = b.R.X + b.R.Width / 2f;
-                float left = Math.Max(P(4), Math.Min(ClientSize.Width - P(4) - w, cx - w / 2));
-                float top = bar.Y - hh - P(5) + (float)((1 - a) * P(3));
-                RectangleF lr = new RectangleF(left, top, w, hh);
-                using (GraphicsPath p = Theme.Round(lr, hh / 2f))
-                using (SolidBrush bg = new SolidBrush(Color.FromArgb(ai * 236 / 255, Theme.Dark))) g.FillPath(bg, p);
-                g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-                using (SolidBrush t = new SolidBrush(Color.FromArgb(ai, Theme.Fg))) g.DrawString(b.Label, f, t, lr, sf);
-            }
+            M.FormattedText t = Ink.Px(b.Label, Ds.Semibold, P(11.5f), Palette.HudLabel);
+            double w = t.WidthIncludingTrailingWhitespace + P(14), hh = P(22);
+            bool right = b.R.X < body.Width / 2;
+            double left = right ? b.R.Right + P(6) - (1 - a) * P(4) : b.R.X - P(6) - w + (1 - a) * P(4);
+            left = Math.Max(P(4), Math.Min(body.Width - P(4) - w, left));
+            W.Rect r = new W.Rect(left, b.R.Y + (b.R.Height - hh) / 2, w, hh);
+            dc.PushOpacity(a);
+            Ink.Round(dc, Palette.Hud, r, hh / 2);
+            Ink.Center(dc, t, r);
+            dc.Pop();
         }
 
         // Status label (copied, saved, pasted): pops in, holds, then fades.
-        void PaintFlash(Graphics g, Rectangle r)
+        void PaintFlash(M.DrawingContext dc, W.Rect b, double R)
         {
             if (flash == null) return;
             double ms = flashT.Value * FlashMs, sc, a;
             if (ms < 240) { double t = ms / 240; sc = 0.7 + 0.3 * Ease.OutBack(t); a = Ease.OutCubic(t); }
             else if (ms < FlashMs - 260) { sc = 1; a = 1; }
-            else { double t = (ms - (FlashMs - 260)) / 260; sc = 1 - 0.08 * t; a = 1 - t; }
-            int ai = (int)Math.Round(255 * Math.Max(0, Math.Min(1, a)));
-            if (ai == 0) return;
-            using (Font f = new Font("Segoe UI Semibold", (float)Math.Max(1, P(13) * sc), GraphicsUnit.Pixel))
-            using (StringFormat sf = new StringFormat())
-            {
-                sf.Alignment = StringAlignment.Center;
-                sf.LineAlignment = StringAlignment.Center;
-                sf.FormatFlags = StringFormatFlags.NoWrap;
-                SizeF ts = g.MeasureString(flash, f, PointF.Empty, sf);
-                float w = ts.Width + (float)(P(22) * sc), hh = (float)(P(30) * sc);
-                RectangleF fr = new RectangleF((r.Width - w) / 2f, (r.Height - hh) / 2f, w, hh);
-                RectangleF sh = fr;
-                sh.Offset(0, P(2));
-                using (GraphicsPath p = Theme.Round(sh, hh / 2f))
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(ai * 90 / 255, 0, 0, 0))) g.FillPath(b, p);
-                using (GraphicsPath p = Theme.Round(fr, hh / 2f))
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(ai, flashColor))) g.FillPath(b, p);
-                g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-                using (SolidBrush t = new SolidBrush(Color.FromArgb(ai, Color.White))) g.DrawString(flash, f, t, fr, sf);
-            }
+            else { double t = (ms - (FlashMs - 260)) / 260; sc = 1 - 0.06 * t; a = 1 - t; }
+            if (a <= 0.01) return;
+            dc.PushClip(new M.RectangleGeometry(b, R, R));
+            Ink.Round(dc, Ds.Argb(0.30 * a, 0, 0, 0), b, 0);
+            dc.Pop();
+            M.FormattedText t2 = Ink.Px(flash, Ds.Semibold, P(13), Palette.HudLabel);
+            double gs = P(15), w = t2.WidthIncludingTrailingWhitespace + gs + P(8) + P(28), hh = P(32);
+            W.Rect r = new W.Rect((b.Width - w) / 2, (b.Height - hh) / 2, w, hh);
+            W.Point c = new W.Point(r.X + w / 2, r.Y + hh / 2);
+            dc.PushOpacity(a);
+            dc.PushTransform(new M.ScaleTransform(sc, sc, c.X, c.Y));
+            Ink.Round(dc, Palette.Hud, r, hh / 2);
+            Ink.Hairline(dc, Palette.HudLine, r, hh / 2);
+            Palette pal = Ds.Brushes;
+            Glyph.Draw(dc, flashGood ? "check" : "close", r.X + P(14), r.Y + (hh - gs) / 2, gs, flashGood ? pal.Green : pal.Red, P(2.2f));
+            dc.DrawText(t2, new W.Point(Math.Round(r.X + P(14) + gs + P(8)), Math.Round(r.Y + (hh - t2.Height) / 2)));
+            dc.Pop();
+            dc.Pop();
+        }
+
+        static M.Color Mix(M.Color a, M.Color b, double t)
+        {
+            t = Math.Max(0, Math.Min(1, t));
+            return M.Color.FromArgb((byte)Math.Round(a.A + (b.A - a.A) * t), (byte)Math.Round(a.R + (b.R - a.R) * t),
+                                    (byte)Math.Round(a.G + (b.G - a.G) * t), (byte)Math.Round(a.B + (b.B - a.B) * t));
         }
 
         // Buttons appear after a short delay so they don't flicker when the mouse passes by.
@@ -605,8 +669,8 @@ namespace Stackshot
         {
             double want = hover && !swiping && !dragging && !Leaving ? 1 : 0;
             if (hoverT.Target == want) return;
-            if (want > 0) hoverT.Go(1, 150, hoverT.Value > 0.05 ? 0 : 60, Ease.OutCubic, null);
-            else hoverT.Go(0, 170, 0, Ease.OutCubic, null);
+            if (want > 0) hoverT.Go(1, 170, hoverT.Value > 0.05 ? 0 : 60, Ease.OutCubic, null);
+            else hoverT.Go(0, 180, 0, Ease.OutCubic, null);
             Anim.Wake(this);
         }
 
@@ -616,7 +680,7 @@ namespace Stackshot
             prevHot = hot;
             hot = h;
             hotT.Set(0);
-            hotT.Go(1, 110, 0, Ease.OutCubic, null);
+            hotT.Go(1, 120, 0, Ease.OutCubic, null);
             Cursor = h >= 0 ? Cursors.Hand : Cursors.Default;
             Anim.Wake(this);
         }
@@ -630,12 +694,14 @@ namespace Stackshot
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
-            if (Leaving || e.Button != MouseButtons.Left) return;
+            Point p = Local(e.Location);
+            if (Leaving || e.Button != MouseButtons.Left || !Inside(p)) return;
             pressed = true;
+            FileDrag.Warm(FilePath);
             gestureDecided = false;
             swiping = false;
-            pressPt = e.Location;
-            pressBtn = HitTest(e.Location);
+            pressPt = p;
+            pressBtn = HitTest(p);
             if (pressBtn >= 0)
             {
                 pressShown = pressBtn;
@@ -649,10 +715,12 @@ namespace Stackshot
             base.OnMouseMove(e);
             if (Leaving) return;
             if (swiping) { SwipeMove(); return; }
-            if (!hover) { hover = true; UpdateHover(); }
+            Point p = Local(e.Location);
+            bool inside = Inside(p);
+            if (inside != hover && !pressed) { hover = inside; UpdateHover(); if (inside) FileDrag.Warm(FilePath); }
             if (pressed && !gestureDecided && (e.Button & MouseButtons.Left) != 0)
             {
-                int dx = e.X - pressPt.X, dy = e.Y - pressPt.Y;
+                int dx = p.X - pressPt.X, dy = p.Y - pressPt.Y;
                 Size d = SystemInformation.DragSize;
                 if (Math.Abs(dx) > d.Width || Math.Abs(dy) > d.Height)
                 {
@@ -668,13 +736,13 @@ namespace Stackshot
                     return;
                 }
             }
-            if (!pressed) SetHot(HitTest(e.Location));
+            if (!pressed) SetHot(inside ? HitTest(p) : -1);
         }
 
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
-            if (swiping || ClientRectangle.Contains(PointToClient(Control.MousePosition))) return;
+            if (swiping || Inside(Local(PointToClient(Control.MousePosition)))) return;
             hover = false;
             SetHot(-1);
             UpdateHover();
@@ -685,17 +753,20 @@ namespace Stackshot
             base.OnMouseUp(e);
             if (Leaving) return;
             if (swiping) { EndSwipe(); return; }
+            Point p = Local(e.Location);
             if (pressShown >= 0 && pressT.Target > 0) { pressT.Go(0, 160, 0, Ease.OutCubic, null); Anim.Wake(this); }
-            if (e.Button == MouseButtons.Right || e.Button == MouseButtons.Middle) { owner.Remove(this); return; }
+            if ((e.Button == MouseButtons.Right || e.Button == MouseButtons.Middle) && Inside(p)) { owner.Remove(this); return; }
             if (e.Button != MouseButtons.Left || !pressed) return;
             pressed = false;
             int down = pressBtn;
             pressBtn = -1;
             Action act = null;
-            if (down >= 0) { if (HitTest(e.Location) == down) act = btns[down].Do; }
-            else if (ClientRectangle.Contains(e.Location)) act = IsMedia ? (Action)OpenFile : (Action)Edit;
+            if (down >= 0) { if (HitTest(p) == down) act = btns[down].Do; }
+            else if (Inside(p)) act = IsMedia ? (Action)OpenFile : (Action)Edit;
             if (act != null) BeginInvoke(act);
-            SetHot(HitTest(e.Location));
+            hover = Inside(p);
+            UpdateHover();
+            SetHot(hover ? HitTest(p) : -1);
         }
 
         protected override void OnMouseCaptureChanged(EventArgs e)
@@ -730,8 +801,9 @@ namespace Stackshot
         void SwipeMove()
         {
             Point m = Control.MousePosition;
-            // If the cursor enters another monitor, the user wants to move it there, not dismiss it.
-            if (Screen.FromPoint(new Point(m.X + P(30), m.Y)).DeviceName != Device)
+            // Well inside another monitor, the user is carrying the file there rather than dismissing it (a quick flick
+            // that just crosses the edge still dismisses).
+            if (Screen.FromPoint(new Point(m.X + P(100), m.Y)).DeviceName != Device)
             {
                 swiping = false;
                 pressed = false;
@@ -762,7 +834,7 @@ namespace Stackshot
             double gone = home.X - x;
             if (Anim.Now - swipeLastT > 90) swipeV = 0; // stopped before releasing
             // Dismissed past 30% or when flung towards the edge.
-            if (gone > Width * 0.3 || (swipeV < -700 && gone > P(12)))
+            if (gone > body.Width * 0.3 || (swipeV < -700 && gone > P(12)))
             {
                 vx = Math.Min(swipeV, -500);
                 owner.Remove(this, Exit.Swipe);
@@ -787,16 +859,15 @@ namespace Stackshot
             {
                 Point grab = pressPt;
                 Bitmap ghost;
-                int w = Math.Max(1, ClientSize.Width), h = Math.Max(1, ClientSize.Height);
-                using (Bitmap flat = new Bitmap(w, h, PixelFormat.Format32bppRgb))
+                int w = Math.Max(1, body.Width), h = Math.Max(1, body.Height);
+                MI.RenderTargetBitmap flat = Ink.Render(w, h, delegate(M.DrawingContext dc)
                 {
-                    using (Graphics g = Graphics.FromImage(flat))
-                    {
-                        Quality(g);
-                        PaintBase(g, new Rectangle(0, 0, w, h));
-                    }
-                    ghost = FileDrag.Ghost(flat, P(320), P(8), ref grab);
-                }
+                    Ink.Round(dc, Ds.Brushes.Thumb, new W.Rect(0, 0, w, h), 0);
+                    MI.BitmapSource f = Face();
+                    Rectangle ir = ImageRect(new Rectangle(0, 0, w, h));
+                    if (f != null) dc.DrawImage(f, new W.Rect(ir.X, ir.Y, ir.Width, ir.Height));
+                }, null);
+                using (Bitmap b = Ink.ToGdi(flat)) ghost = FileDrag.Ghost(b, P(320), P(10), ref grab);
                 result = FileDrag.Run(this, FilePath, ghost, grab);
             }
             catch (Exception ex) { ShotStack.Log("Arrastrar: " + ex.Message); }
@@ -806,39 +877,69 @@ namespace Stackshot
             // Dropped into another app: done, remove it.
             if (result != DragDropEffects.None) { owner.Remove(this, Exit.Drop); return; }
             dim.Go(1, 220, 0, Ease.OutCubic, null);
-            hover = ClientRectangle.Contains(PointToClient(Control.MousePosition));
+            hover = Inside(Local(PointToClient(Control.MousePosition)));
             UpdateHover();
             Anim.Wake(this);
         }
 
         void Copy()
         {
-            try
+            if (IsMedia)
             {
-                if (IsMedia)
+                try
                 {
                     StringCollection sc = new StringCollection();
                     sc.Add(FilePath);
                     Clipboard.SetFileDropList(sc);
+                    Flash("Copiado", true);
                 }
-                else
+                catch (Exception ex)
                 {
-                    owner.CopyTracked(FilePath, ShotStack.LoadFull(FilePath), false, true);
+                    ShotStack.Log("Copiar: " + ex.Message);
+                    Flash("No se pudo copiar", false);
                 }
-                Flash("Copiado", Theme.Green);
+                return;
             }
-            catch (Exception ex)
+            string path = FilePath;
+            WithFull(path, delegate(Bitmap img, string error)
             {
-                ShotStack.Log("Copiar: " + ex.Message);
-                Flash("No se pudo copiar", Theme.Red);
-            }
+                try
+                {
+                    if (img == null) throw new IOException(error);
+                    owner.CopyTracked(path, img, false, true);
+                    if (!IsDisposed) Flash("Copiado", true);
+                }
+                catch (Exception ex)
+                {
+                    ShotStack.Log("Copiar: " + ex.Message);
+                    if (!IsDisposed) Flash("No se pudo copiar", false);
+                }
+            });
+        }
+
+        // Decodes the whole capture off the UI thread (a large PNG takes a while), then continues on it.
+        void WithFull(string path, Action<Bitmap, string> then)
+        {
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                Bitmap img = null;
+                string error = null;
+                try { img = ShotStack.LoadFull(path); }
+                catch (Exception ex) { error = ex.Message; }
+                owner.Ui(delegate { then(img, error); });
+            });
         }
 
         void Edit() { owner.OpenEditor(FilePath); }
 
         void Pin()
         {
-            owner.Pin(FilePath);
+            WithFull(FilePath, delegate(Bitmap img, string error)
+            {
+                if (img == null) { ShotStack.Log("Fijar: " + error); return; }
+                try { PinWindow.Open(img); }
+                catch (Exception ex) { img.Dispose(); ShotStack.Log("Fijar: " + ex.Message); }
+            });
             owner.Remove(this);
         }
 
@@ -862,7 +963,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Guardar: " + ex.Message);
-                Flash("No se pudo guardar", Theme.Red);
+                Flash("No se pudo guardar", false);
             }
         }
 
@@ -875,18 +976,25 @@ namespace Stackshot
             {
                 badgeT.Set(0);
                 badgeT.Go(1, 420, 0, Ease.OutBack, null);
-                Flash("Guardada", Theme.Green);
+                Flash("Guardada", true);
             }
-            else Invalidate();
+            else Redraw();
         }
 
-        void Flash(string text, Color c)
+        void Flash(string text, bool good)
         {
             flash = text;
-            flashColor = c;
+            flashGood = good;
             flashT.Set(0);
-            flashT.Go(1, FlashMs, 0, Ease.Linear, delegate { flash = null; Invalidate(); });
+            flashT.Go(1, FlashMs, 0, Ease.Linear, delegate { flash = null; Redraw(); });
             Anim.Wake(this);
+        }
+
+        // Theme switched: shadow and colors are rebuilt on the next frame.
+        public void Restyle()
+        {
+            shadow = null;
+            Redraw();
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)

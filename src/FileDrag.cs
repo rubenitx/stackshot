@@ -16,6 +16,21 @@ namespace Stackshot
         static readonly Guid BHID_DataObject = new Guid("B8C0BD9F-ED24-455c-83E6-D5390C4FE8C4");
         static readonly Guid IID_IDataObject = new Guid("0000010e-0000-0000-C000-000000000046");
 
+        static string warmed;
+
+        // Loads the shell's data object for the file on a worker thread (the first bind loads shell extensions, ~150 ms)
+        // so the drag itself finds them warm. Called on hover/press, before the drag starts.
+        public static void Warm(string path)
+        {
+            if (path == null || string.Equals(warmed, path, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path)) return;
+            warmed = path;
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate
+            {
+                object o = ShellData(path);
+                if (o != null) Marshal.ReleaseComObject(o);
+            });
+        }
+
         // ghost: image attached to the cursor (disposed here); grab: point of ghost under the cursor.
         public static DragDropEffects Run(Control source, string path, Bitmap ghost, Point grab)
         {
@@ -83,6 +98,7 @@ namespace Stackshot
         // Thumbnail with rounded corners and a thin border. grab is scaled with it.
         public static Bitmap Ghost(Bitmap src, int maxDim, float radius, ref Point grab)
         {
+            maxDim = Math.Min(maxDim, 256); // Windows recomposes the drag image window on every move: keep it small
             double k = Math.Min(1.0, (double)maxDim / Math.Max(src.Width, src.Height));
             int w = Math.Max(2, (int)Math.Round(src.Width * k)), h = Math.Max(2, (int)Math.Round(src.Height * k));
             grab = new Point((int)Math.Round(grab.X * k), (int)Math.Round(grab.Y * k));
