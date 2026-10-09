@@ -19,7 +19,7 @@ namespace Stackshot
                 case 41: Hair(g, u, 5, now); Curl(g, u); return true;
                 case 42: IronHelmet(g, u, now); return true;
             }
-            return false;
+            return ReindeerHat(g, hat, u);
         }
 
         // Black cowl with pointed ears; leaves the lower face uncovered.
@@ -135,12 +135,12 @@ namespace Stackshot
                     Ellipse(g, Color.FromArgb(230, 250, 255), -0.03f * D, y + 0.05f * D, 0.06f * D, 0.06f * D);
                     return true;
             }
-            return false;
+            return ReindeerOutfit(g, l, D, geo);
         }
 
         static bool HeroFace(Graphics g, MascotLook l, float D, Geo geo)
         {
-            if (l.Face != 18) return false;
+            if (l.Face != 18) return ReindeerFace(g, l, D, geo);
             // Full red mask with a web pattern and big white lenses.
             float fy = geo.FaceY * D, gap = geo.EyeGap * D, hw = geo.HeadW * D / 2;
             RectangleF r = new RectangleF(-hw * 0.96f, geo.Top * D + 0.02f * D, hw * 1.92f, (geo.Bottom - geo.Top) * D * 0.78f);

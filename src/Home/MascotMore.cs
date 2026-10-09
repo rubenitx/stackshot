@@ -27,6 +27,9 @@ namespace Stackshot
                     FoxTail(g, D, c1, c2, p.Now);
                     foreach (int s in new int[] { -1, 1 }) FoxEar(g, D, s, c1, c2, s < 0 ? p.EarL : p.EarR);
                     break;
+                case KindReindeer:
+                    ReindeerBack(g, D, c1, c2, p);
+                    break;
                 case KindFrog:
                     foreach (int s in new int[] { -1, 1 })
                     {
@@ -114,6 +117,9 @@ namespace Stackshot
                 case KindPanda:
                 case KindFox:
                     Ellipse(g, PandaInk, -0.03f * D, fy + 0.055f * D, 0.06f * D, 0.04f * D);
+                    break;
+                case KindReindeer:
+                    ReindeerNose(g, geo, D);
                     break;
             }
         }

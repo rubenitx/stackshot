@@ -10,7 +10,7 @@ namespace Stackshot
     // Everything the user can customize. Indices are stored in settings, so new entries go at the end.
     public class MascotLook
     {
-        public int Kind, Color, Eyes, Hat, Outfit, Face, Personality;
+        public int Kind, Color, Eyes, Hat, Outfit, Face, Personality, Accessory;
         public bool Seasonal = true;
 
         public static MascotLook From(Settings s)
@@ -23,6 +23,7 @@ namespace Stackshot
             l.Outfit = Clamp(s.MascotOutfit, MascotParts.OutfitNames.Length);
             l.Face = Clamp(s.MascotFace, MascotParts.FaceNames.Length);
             l.Personality = Clamp(s.MascotPersonality, MascotParts.Personalities.Length);
+            l.Accessory = Clamp(s.MascotAccessory, MascotParts.AccessoryNames.Length);
             l.Seasonal = s.MascotSeasonal;
             return l;
         }
@@ -31,13 +32,14 @@ namespace Stackshot
         {
             s.MascotKind = Kind; s.MascotColor = Color; s.MascotEyes = Eyes; s.MascotHat = Hat;
             s.MascotOutfit = Outfit; s.MascotFace = Face; s.MascotPersonality = Personality; s.MascotSeasonal = Seasonal;
+            s.MascotAccessory = Accessory;
         }
 
         public MascotLook Clone() { return (MascotLook)MemberwiseClone(); }
 
         public string Key
         {
-            get { return Kind + "." + Color + "." + Eyes + "." + Hat + "." + Outfit + "." + Face + "." + (Seasonal ? 1 : 0); }
+            get { return Kind + "." + Color + "." + Eyes + "." + Hat + "." + Outfit + "." + Face + "." + (Seasonal ? 1 : 0) + (Accessory > 0 ? "." + Accessory : ""); }
         }
 
         // The hat actually worn: a seasonal costume replaces "no hat" around Halloween and Christmas.
@@ -54,7 +56,7 @@ namespace Stackshot
 
     public static partial class MascotParts
     {
-        public static readonly string[] Kinds = { "Robot", "Gato", "Conejo", "Fantasma", "Slime", "Drag\u00F3n", "Perro", "Chibi", "Ping\u00FCino", "Panda", "Zorro", "Rana" };
+        public static readonly string[] Kinds = { "Robot", "Gato", "Conejo", "Fantasma", "Slime", "Drag\u00F3n", "Perro", "Chibi", "Ping\u00FCino", "Panda", "Zorro", "Rana", "Reno" };
 
         public static readonly Color[,] Colors =
         {
@@ -80,27 +82,30 @@ namespace Stackshot
             { Color.FromArgb(140, 230, 210), Color.FromArgb(30, 150, 140) },
             { Color.FromArgb(236, 234, 228), Color.FromArgb(172, 166, 160) },
             { Color.FromArgb(236, 150, 118), Color.FromArgb(196, 98, 70) },
-            { Color.FromArgb(78, 80, 92), Color.FromArgb(22, 24, 30) }
+            { Color.FromArgb(78, 80, 92), Color.FromArgb(22, 24, 30) },
+            { Color.FromArgb(196, 128, 82), Color.FromArgb(120, 68, 38) }
         };
         public static readonly string[] ColorNames = { "Aurora", "Menta", "Coral", "Lavanda", "Oc\u00E9ano", "Sol", "Lima", "Grafito",
-                                                       "Chicle", "Calabaza", "Noche", "Nieve", "Galaxia", "Cereza", "Hielo", "Bosque", "Oro", "Melocot\u00F3n", "Canela", "Turquesa", "Ceniza", "Arcilla", "Medianoche" };
+                                                       "Chicle", "Calabaza", "Noche", "Nieve", "Galaxia", "Cereza", "Hielo", "Bosque", "Oro", "Melocot\u00F3n", "Canela", "Turquesa", "Ceniza", "Arcilla", "Medianoche", "Chocolate" };
 
-        public static readonly string[] EyeNames = { "Brillo", "Kawaii", "Puntitos", "Anime", "Chulo" };
+        public static readonly string[] EyeNames = { "Brillo", "Kawaii", "Puntitos", "Anime", "Chulo", "Estrella", "Pesta\u00F1as" };
 
         public const int HatPumpkin = 4, HatSanta = 11, HatCrown = 13, HatHalo = 14;
         public static readonly string[] HatNames = { "Ninguno", "Gorra", "Gorro de lana", "Sombrero de bruja", "Calabaza", "Cuernos",
                                                      "Chistera", "Fiesta", "Vaquero", "Auriculares", "Lazo", "Pap\u00E1 Noel", "Brote",
                                                      "Corona", "Aureola", "Boina", "Gorro de chef", "Flores", "Pelo rubio", "Pelo casta\u00F1o", "Pelo de punta", "Pelo blanco", "Pelo granate", "Capucha de oso", "Banda ninja", "Sombrero de paja", "Pelo negro", "Ninja rubio", "Casco de marine", "Casco de caballero", "Casco de astronauta", "Chispa",
                                                      "Pelo de punta oscuro", "Pelo magenta", "Ninja de pelo oscuro", "Pelo verde", "Pelo de llamas", "Melena negra",
-                                                     "Ninja de pelo plateado", "Capucha de murci\u00E9lago", "Casco rel\u00E1mpago", "Pelo con rizo", "Casco de armadura" };
+                                                     "Ninja de pelo plateado", "Capucha de murci\u00E9lago", "Casco rel\u00E1mpago", "Pelo con rizo", "Casco de armadura",
+                                                     "Sombrero de doctor" };
         public static readonly string[] OutfitNames = { "Nada", "Bufanda", "Pajarita", "Corbata", "Capa de vampiro", "Capa de h\u00E9roe",
                                                         "Cascabel", "Cadena de oro", "Capa verde", "Abrigo rojo", "Chaleco ninja", "Kimono de lucha", "Haori a cuadros", "Mochila", "Chaleco rojo", "Camiseta roja", "Botones de consola", "Panza del bosque", "Ch\u00E1ndal naranja",
                                                         "Hombrera", "Armadura verde", "Traje espacial", "Chaqueta verde", "Camiseta morada", "Traje de buf\u00F3n",
                                                         "Cuello alto azul", "Faja verde", "Armadura blanca", "Traje amarillo", "Kimono rosa", "Chaleco verde",
-                                                        "Traje ar\u00E1cnido", "Traje de murci\u00E9lago", "Traje rel\u00E1mpago", "Traje de acero", "Armadura roja" };
+                                                        "Traje ar\u00E1cnido", "Traje de murci\u00E9lago", "Traje rel\u00E1mpago", "Traje de acero", "Armadura roja",
+                                                        "Pantal\u00F3n corto" };
         public static readonly string[] FaceNames = { "Nada", "Gafas de sol", "Gafas pixel", "Gafas redondas", "Mon\u00F3culo", "Antifaz",
                                                       "Parche pirata", "Bigote", "Venda", "Cejas gordas", "Mofletes rojos", "Marcas de bigote", "Tatuaje y barba", "Barba de mago", "Terminal",
-                                                      "Estrella y l\u00E1grima", "Bozal de bamb\u00FA", "M\u00E1scara ninja", "M\u00E1scara ar\u00E1cnida" };
+                                                      "Estrella y l\u00E1grima", "Bozal de bamb\u00FA", "M\u00E1scara ninja", "M\u00E1scara ar\u00E1cnida", "Nariz azul" };
         public static readonly string[] Personalities = { "Alegre", "Tranquilo", "Gamberro" };
 
         // ---- Friendship: one point per capture. A few items unlock along the way, like companions that grow with you.
@@ -129,21 +134,33 @@ namespace Stackshot
         public static int UnlockLove(int level) { return LevelAt[Math.Max(0, Math.Min(LevelAt.Length - 1, level))]; }
 
         // Ready-made looks: kind, color, eyes, hat, outfit, face.
-        public static readonly string[] StyleNames = { "Cl\u00E1sico", "Halloween", "Chulo", "Cute", "Vampiro", "Dragoncito" };
+        public static readonly string[] StyleNames = { "Cl\u00E1sico", "Halloween", "Chulo", "Cute", "Vampiro", "Dragoncito", "Pirata", "Chef", "Vaquero", "Doctor", "Brujita", "M\u00FAsico", "Invierno", "Enamorado", "Fiestero", "Aventurero", "Primavera", "Campe\u00F3n" };
         static readonly int[,] Styles =
         {
-            { 0, 0, 0, 0, 0, 0 },
-            { 3, 11, 1, 3, 0, 0 },
-            { 0, 10, 4, 1, 7, 1 },
-            { 2, 8, 1, 10, 6, 0 },
-            { 1, 10, 3, 5, 4, 0 },
-            { 5, 6, 1, 12, 1, 0 }
+            { 0, 0, 0, 0, 0, 0, 0 },
+            { 3, 11, 1, 3, 0, 0, 0 },
+            { 0, 10, 4, 1, 7, 1, 0 },
+            { 2, 8, 1, 10, 6, 0, 0 },
+            { 1, 10, 3, 5, 4, 0, 0 },
+            { 5, 6, 1, 12, 1, 0, 0 },
+            { 1, 22, 4, 15, 7, 6, 0 },
+            { 2, 20, 1, 16, 2, 7, 0 },
+            { 6, 23, 2, 8, 1, 0, 0 },
+            { 8, 11, 0, 42, 3, 3, 0 },
+            { 1, 3, 3, 3, 4, 0, 7 },
+            { 9, 7, 1, 9, 0, 1, 0 },
+            { 9, 11, 1, 2, 0, 0, 4 },
+            { 2, 8, 1, 10, 6, 0, 1 },
+            { 10, 5, 1, 7, 2, 0, 2 },
+            { 11, 15, 3, 12, 0, 0, 3 },
+            { 3, 19, 1, 17, 0, 10, 5 },
+            { 5, 16, 4, 13, 5, 0, 8 }
         };
 
         public static void ApplyStyle(MascotLook l, int style)
         {
             l.Kind = Styles[style, 0]; l.Color = Styles[style, 1]; l.Eyes = Styles[style, 2];
-            l.Hat = Styles[style, 3]; l.Outfit = Styles[style, 4]; l.Face = Styles[style, 5];
+            l.Hat = Styles[style, 3]; l.Outfit = Styles[style, 4]; l.Face = Styles[style, 5]; l.Accessory = Styles[style, 6];
         }
 
         // A random look that only uses unlocked items.
@@ -155,6 +172,7 @@ namespace Stackshot
             do l.Hat = rnd.Next(HatNames.Length); while (HatUnlock(l.Hat) > level);
             l.Outfit = rnd.Next(OutfitNames.Length);
             l.Face = rnd.NextDouble() < 0.45 ? 0 : rnd.Next(FaceNames.Length);
+            l.Accessory = rnd.NextDouble() < 0.4 ? 0 : rnd.Next(AccessoryNames.Length);
         }
 
         // ---- Geometry, in units of D (the mascot box width), relative to the body center.
@@ -174,6 +192,7 @@ namespace Stackshot
                 case 5: // dragon
                 case 6: // dog
                 case 7: // chibi
+                case 12: // reindeer
                     g.HeadW = 0.70f; g.Top = -0.31f; g.FaceY = -0.05f; g.EyeGap = 0.125f; g.NeckY = 0.12f; g.NeckW = 0.60f;
                     g.Bottom = 0.31f; g.HandX = 0.33f; g.HandY = 0.21f; g.HatW = 0.58f;
                     break;

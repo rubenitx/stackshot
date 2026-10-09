@@ -10,7 +10,7 @@ namespace Stackshot
     public class MascotPose
     {
         public double Now, EarL, EarR, Antenna, Pulse, Wave, WaveRot;
-        public bool Sleeping;
+        public bool Sleeping, HideHands;
     }
 
     public static partial class MascotParts
@@ -207,7 +207,7 @@ namespace Stackshot
                 Fill(g, body, b, Color.FromArgb(238, Lighter(c1, 0.2)), Color.FromArgb(238, c2), 70f);
             }
             else Fill(g, body, b, c1, c2, 55f);
-            if (l.Kind == 1 || l.Kind == 2 || l.Kind == 5 || l.Kind == KindDog)
+            if (l.Kind == 1 || l.Kind == 2 || l.Kind == 5 || l.Kind == KindDog || l.Kind == KindReindeer)
             {
                 Region old = g.Clip;
                 g.SetClip(body, CombineMode.Intersect);
@@ -223,6 +223,7 @@ namespace Stackshot
                 Ellipse(g, Color.FromArgb(55, 255, 255, 255), 0.25f * D, 0.04f * D, 0.035f * D, 0.035f * D);
             }
             if (l.Kind == KindDog) DogMuzzle(g, geo, D);
+            if (l.Kind == KindReindeer) ReindeerMuzzle(g, geo, D);
             if (l.Kind >= KindPenguin && l.Kind <= KindFox) PaintBodyMore(g, l, geo, D, body);
             Shine(g, body, b, l.Kind == 4 ? 150 : 105);
             Stroke(g, body, Color.FromArgb(60, 255, 255, 255), Math.Max(1f, D * 0.008f));
@@ -287,6 +288,7 @@ namespace Stackshot
         // ---- Hands and paws; the right one waves (wave 0-1).
         public static void PaintHands(Graphics g, MascotLook l, float D, Color c1, Color c2, MascotPose p)
         {
+            if (p.HideHands) return;
             Geo geo = GeoFor(l.Kind);
             foreach (int side in new int[] { -1, 1 })
             {
