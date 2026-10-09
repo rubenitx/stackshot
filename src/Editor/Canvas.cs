@@ -30,10 +30,10 @@ namespace Stackshot
         Drag drag;
         int handle;
         bool committed, skipNextDown;
-        PointF dragFrom;
+        PointF dragFrom, grab;
         float k = 1f;
         PointF off;
-        Bitmap view, dots;
+        Bitmap view;
         Size viewFor;
         RectangleF viewCrop;
         TextBox box;
@@ -54,7 +54,7 @@ namespace Stackshot
             Crop = new RectangleF(0, 0, img.Width, img.Height);
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint |
                      ControlStyles.ResizeRedraw | ControlStyles.Selectable, true);
-            BackColor = Color.FromArgb(19, 20, 28);
+            BackColor = EdLook.Surround;
             int m = Math.Min(img.Width, img.Height);
             baseStroke = Math.Max(4f, m / 180f);
             baseFont = Math.Max(18f, m / 30f);
@@ -62,10 +62,16 @@ namespace Stackshot
 
         public bool Typing { get { return box != null; } }
         public bool HasSelection { get { return selected != null; } }
+        // A drag in progress (drawing, moving, resizing or panning): editor shortcuts wait until it ends.
+        public bool Busy { get { return drag != Drag.None || panning; } }
+        public bool IsCropped { get { return Crop != new RectangleF(0, 0, Img.Width, Img.Height); } }
         public bool CanUndo { get { return undo.Count > 0 || box != null; } }
-        public bool CanRedo { get { return redo.Count > 0; } }
+        // Not while typing: the marks would be swapped under the text box (and an edited mark lost).
+        public bool CanRedo { get { return redo.Count > 0 && box == null; } }
         public Color ActiveColor { get { return selected != null ? selected.Color : Color; } }
         public int ActiveWeight { get { return selected != null ? selected.Weight : Weight; } }
+        // What the color and weight options apply to: the selected mark, or the next one drawn with the tool.
+        public Tool ActiveKind { get { return selected != null ? selected.Kind : Tool; } }
         // Output size: the whole frame when the backdrop is on.
         public Size OutputSize
         {
@@ -98,13 +104,15 @@ namespace Stackshot
         void Fit()
         {
             float pad = 28 * Ui;
-            float aw = Math.Max(1f, Width - 2 * pad), ah = Math.Max(1f, Height - 2 * pad);
+            // Room below for the zoom control, so it doesn't cover the capture when fitted.
+            float padB = ShowPill ? Math.Max(pad, PillRoom * Ui) : pad;
+            float aw = Math.Max(1f, Width - 2 * pad), ah = Math.Max(1f, Height - pad - padB);
             bool bg = BgOn && Bg != null;
             Size cs = OutputSizeRaw, frame = cs;
             Rectangle inner = new Rectangle(Point.Empty, cs);
             if (bg) Backdrop.Measure(cs, Bg, false, out frame, out inner); // the whole frame fits; the capture sits inside it
             float fit = Math.Min(ShotStack.MaxZoom(cs), Math.Min(aw / frame.Width, ah / frame.Height));
-            if (!zoomReady && Width > 1 && Height > 1)
+            if (!zoomReady && Width > 1 && Height > 1 && IsHandleCreated)
             {
                 // Tall captures (scrolling ones) open fitted to the width and scrolled to the top, so they can be read.
                 zoomReady = true;
@@ -116,13 +124,23 @@ namespace Stackshot
             float cw = frame.Width * k, ch = frame.Height * k;
             float mx = Math.Max(0, (cw - Width) / 2 + pad), my = Math.Max(0, (ch - Height) / 2 + pad);
             pan = new PointF(Math.Max(-mx, Math.Min(mx, pan.X)), Math.Max(-my, Math.Min(my, pan.Y)));
-            float fx = (float)Math.Round((Width - cw) / 2f + pan.X), fy = (float)Math.Round((Height - ch) / 2f + pan.Y);
+            float fx = (float)Math.Round((Width - cw) / 2f + pan.X), fy = (float)Math.Round((Height - (padB - pad) - ch) / 2f + pan.Y);
             off = new PointF((float)Math.Round(fx + inner.X * k), (float)Math.Round(fy + inner.Y * k));
             if (bg)
             {
                 frameScreen = new Rectangle((int)fx, (int)fy, Math.Max(1, (int)Math.Round(cw)), Math.Max(1, (int)Math.Round(ch)));
                 radiusScreen = Backdrop.RadiusFor(cs, Bg) * k;
             }
+        }
+
+        // The window moved to a monitor with another scale (Ui changed).
+        public void Rescaled()
+        {
+            pillFitW = -1;
+            pillHot = pillDown = -1;
+            Fit();
+            PlaceBox();
+            Invalidate();
         }
 
         public int ZoomPercent { get { Fit(); return (int)Math.Round(k * 100); } }
@@ -162,18 +180,87 @@ namespace Stackshot
             Invalidate();
         }
 
-        // The middle button drags the view around.
-        bool panning;
+        protected override void WndProc(ref Message m)
+        {
+            // WM_MOUSEHWHEEL: touchpads and tilt wheels scroll sideways.
+            if (m.Msg == 0x020E)
+            {
+                if (box == null)
+                {
+                    int delta = (short)((m.WParam.ToInt64() >> 16) & 0xFFFF);
+                    pan.X -= delta / 120f * 90 * Ui;
+                    Fit();
+                    Invalidate();
+                }
+                m.Result = (IntPtr)1;
+                return;
+            }
+            // While one button drags, the others are ignored: WinForms would release the capture on their button-up,
+            // which drops the gesture.
+            MouseButtons active = panning ? panButton : drag != Drag.None ? MouseButtons.Left : MouseButtons.None;
+            if (active != MouseButtons.None)
+            {
+                MouseButtons b = m.Msg >= 0x201 && m.Msg <= 0x203 ? MouseButtons.Left : m.Msg >= 0x204 && m.Msg <= 0x206 ? MouseButtons.Right
+                               : m.Msg >= 0x207 && m.Msg <= 0x209 ? MouseButtons.Middle : m.Msg >= 0x20B && m.Msg <= 0x20D ? MouseButtons.XButton1
+                               : MouseButtons.None;
+                if (b != MouseButtons.None && b != active)
+                {
+                    m.Result = b == MouseButtons.XButton1 ? (IntPtr)1 : IntPtr.Zero;
+                    return;
+                }
+            }
+            base.WndProc(ref m);
+        }
+
+        // The middle button, or the left one while Space is held, drags the view around.
+        bool panning, spacePan;
+        MouseButtons panButton;
         Point panFrom;
         PointF panStart;
 
-        // Background and shadow at screen scale, rebuilt only when something changes.
+        // Shift pressed or let go mid-drag: the square/45-degree constraint follows at once, without moving the mouse.
+        void ShiftChanged()
+        {
+            if (drag != Drag.Draw && drag != Drag.Resize) return;
+            Point p = PointToClient(MousePosition);
+            OnMouseMove(new MouseEventArgs(MouseButtons.Left, 0, p.X, p.Y, 0));
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            if (e.KeyCode == Keys.ShiftKey) { ShiftChanged(); return; }
+            if (e.KeyCode != Keys.Space || box != null) return;
+            e.Handled = e.SuppressKeyPress = true;
+            if (spacePan || drag != Drag.None) return;
+            spacePan = true;
+            if (hover != null) { InvalidateOutline(hover); hover = null; }
+            Cursor = Cursors.SizeAll;
+        }
+
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            base.OnKeyUp(e);
+            if (e.KeyCode == Keys.ShiftKey) { ShiftChanged(); return; }
+            if (e.KeyCode != Keys.Space || !spacePan) return;
+            spacePan = false;
+            if (!panning) UpdateHover(PointToClient(MousePosition));
+        }
+
+        protected override void OnLostFocus(EventArgs e)
+        {
+            base.OnLostFocus(e);
+            spacePan = false;
+        }
+
+        // Background and shadow at screen scale, rebuilt only when something changes. Keyed by size and the capture's
+        // place inside the frame, not by screen position, so panning and scrolling reuse it.
         Bitmap BgView(Rectangle ir)
         {
-            string key = Bg.BgPreset + "|" + Bg.BgPadding + "|" + Bg.BgRadius + "|" + Bg.BgShadow + "|" + Bg.BgRatio + "|" + frameScreen + "|" + ir;
+            Rectangle inner = new Rectangle(ir.X - frameScreen.X, ir.Y - frameScreen.Y, ir.Width, ir.Height);
+            string key = Bg.BgPreset + "|" + Backdrop.Name(Bg.BgPreset) + "|" + Bg.BgPadding + "|" + Bg.BgRadius + "|" + Bg.BgShadow + "|" + Bg.BgRatio + "|" + frameScreen.Size + "|" + inner;
             if (bgView != null && key == bgKey) return bgView;
             if (bgView != null) bgView.Dispose();
-            Rectangle inner = new Rectangle(ir.X - frameScreen.X, ir.Y - frameScreen.Y, ir.Width, ir.Height);
             bgView = Backdrop.Background(frameScreen.Size, inner, Bg, (int)Math.Round(radiusScreen));
             bgKey = key;
             return bgView;
@@ -248,29 +335,12 @@ namespace Stackshot
             g.PixelOffsetMode = pm;
         }
 
-        // Subtle dot grid, rendered once per size.
-        Bitmap Dots()
-        {
-            if (dots != null && dots.Size == ClientSize) return dots;
-            if (dots != null) dots.Dispose();
-            dots = new Bitmap(Math.Max(1, ClientSize.Width), Math.Max(1, ClientSize.Height), PixelFormat.Format32bppPArgb);
-            using (Graphics g = Graphics.FromImage(dots))
-            using (SolidBrush dot = new SolidBrush(Color.FromArgb(34, 36, 50)))
-            {
-                g.Clear(BackColor);
-                int step = Math.Max(12, Pu(20)), d = Math.Max(2, Pu(2));
-                for (int yy = step / 2; yy < dots.Height; yy += step)
-                    for (int xx = step / 2; xx < dots.Width; xx += step)
-                        g.FillRectangle(dot, xx, yy, d, d);
-            }
-            return dots;
-        }
-
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
             Fit();
-            g.DrawImageUnscaled(Dots(), 0, 0);
+            g.Clear(EdLook.Surround);
             bool bg = BgOn && Bg != null;
             int vw = Math.Max(1, (int)Math.Round(Crop.Width * k)), vh = Math.Max(1, (int)Math.Round(Crop.Height * k));
             bool direct = !bg && (double)vw * vh > DirectPixels;
@@ -279,22 +349,16 @@ namespace Stackshot
             g.SmoothingMode = SmoothingMode.AntiAlias;
             if (bg)
             {
+                FloatShadow(g, frameScreen);
                 g.DrawImageUnscaled(BgView(ir), frameScreen.X, frameScreen.Y);
                 g.DrawImageUnscaled(radiusScreen >= 0.5f ? RoundView(v) : v, ir.X, ir.Y);
             }
             else
             {
-                for (int i = 1; i <= 6; i++) // soft shadow under the capture
-                {
-                    Rectangle sr = ir;
-                    sr.Inflate(Pu(i * 1.6f), Pu(i * 1.6f));
-                    sr.Offset(0, Pu(3));
-                    using (GraphicsPath p = Theme.Round(sr, Pu(3 + i * 1.6f)))
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(16, 0, 0, 0))) g.FillPath(b, p);
-                }
+                FloatShadow(g, ir);
                 if (v != null) g.DrawImageUnscaled(v, ir.X, ir.Y);
                 else DrawVisible(g, ir);
-                using (Pen p = new Pen(Theme.Border)) g.DrawRectangle(p, ir.X - 1, ir.Y - 1, ir.Width + 1, ir.Height + 1);
+                using (Pen p = new Pen(EdLook.C(Ds.Brushes.Hairline))) g.DrawRectangle(p, ir.X - 1, ir.Y - 1, ir.Width + 1, ir.Height + 1);
             }
 
             GraphicsState st = g.Save();
@@ -311,10 +375,142 @@ namespace Stackshot
             }
             if (cur != null && cur.Kind != Tool.Crop) Painter.Draw(g, cur, Img);
             g.Restore(st);
+            if (box != null)
+            {
+                // The view moved under the box (a pan, the backdrop toggled or resized): it follows on this paint.
+                if (BoxStale()) PlaceBox();
+                BoxLabel(g);
+            }
 
             if (hover != null && hover != selected && drag == Drag.None && box == null) Outline(g, hover, false);
             if (selected != null && box == null) Outline(g, selected, true);
             if (cur != null && cur.Kind == Tool.Crop) CropOverlay(g, ir, cur.Box);
+            // While a video exports the canvas is locked, and so is the zoom: the pill steps aside.
+            if (ShowPill && Enabled && e.ClipRectangle.IntersectsWith(PillArea)) DrawPill(g);
+        }
+
+        protected override void OnEnabledChanged(EventArgs e)
+        {
+            base.OnEnabledChanged(e);
+            if (!Enabled) { pillHot = pillDown = -1; EdTip.Cancel(); }
+            Invalidate();
+        }
+
+        // Soft shadow so the capture (or the backdrop frame) floats on the surround; only the part outside r is seen.
+        void FloatShadow(Graphics g, Rectangle r)
+        {
+            int sa = Ds.Dark ? 22 : 9;
+            // Only the ring around r is filled: blending seven full-size layers under the capture was most of the paint time.
+            Region old = g.Clip;
+            g.SetClip(r, CombineMode.Exclude);
+            for (int i = 1; i <= 7; i++)
+            {
+                Rectangle sr = r;
+                sr.Inflate(Pu(i * 1.8f), Pu(i * 1.8f));
+                sr.Offset(0, Pu(4));
+                using (GraphicsPath p = Theme.Round(sr, Pu(3 + i * 1.8f)))
+                using (SolidBrush b = new SolidBrush(Color.FromArgb(sa, 0, 0, 0))) g.FillPath(b, p);
+            }
+            g.Clip = old;
+            old.Dispose();
+        }
+
+        // Floating zoom control at the bottom right: out, percentage (click: actual size), in, and fit.
+        static readonly string[] PillTips = { "Alejar  (Ctrl+\u2212)", "Tama\u00F1o real  (Ctrl+1)", "Acercar  (Ctrl++)", "Ajustar a la ventana  (Ctrl+0)" };
+        int pillHot = -1, pillDown = -1;
+
+        public const float PillRoom = 58;
+
+        bool ShowPill { get { return Width >= Pu(320) && Height >= Pu(150); } }
+
+        Font PillFont { get { return Fonts.Get(EdLook.Text, 12 * Ui); } }
+
+        // 0 minus, 1 percentage, 2 plus, 3 fit; the last rectangle is the whole capsule.
+        int pillFitW = -1; // "Ajustar" measured once: the pill is hit-tested on every mouse move
+
+        Rectangle[] PillParts()
+        {
+            int h = Pu(30), bw = Pu(30), pw = Pu(50);
+            if (pillFitW < 0) pillFitW = TextKit.Measure("Ajustar", PillFont, Size.Empty, TextFormatFlags.NoPadding).Width;
+            int fw = pillFitW + Pu(26);
+            int w = Pu(3) + bw + pw + bw + Pu(5) + fw + Pu(3);
+            Rectangle all = new Rectangle(Width - Pu(16) - w, Height - Pu(16) - h, w, h);
+            int x = all.X + Pu(3);
+            Rectangle[] r = new Rectangle[5];
+            r[0] = new Rectangle(x, all.Y, bw, h); x += bw;
+            r[1] = new Rectangle(x, all.Y, pw, h); x += pw;
+            r[2] = new Rectangle(x, all.Y, bw, h); x += bw + Pu(5);
+            r[3] = new Rectangle(x, all.Y, fw, h);
+            r[4] = all;
+            return r;
+        }
+
+        Rectangle PillArea
+        {
+            get
+            {
+                Rectangle a = PillParts()[4];
+                a.Inflate(Pu(10), Pu(10));
+                return a;
+            }
+        }
+
+        int PillAt(Point p)
+        {
+            if (!ShowPill || drag != Drag.None || panning) return -1;
+            Rectangle[] r = PillParts();
+            if (!r[4].Contains(p)) return -1;
+            for (int i = 0; i < 4; i++) if (r[i].Contains(p)) return i;
+            return 4; // the capsule's padding: inert, but still not the canvas
+        }
+
+        void DrawPill(Graphics g)
+        {
+            Rectangle[] r = PillParts();
+            Rectangle all = r[4];
+            float rad = all.Height / 2f;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            for (int i = 1; i <= 3; i++)
+            {
+                RectangleF sr = all;
+                sr.Inflate(i * 1.5f * Ui, i * 1.5f * Ui);
+                sr.Offset(0, 2 * Ui);
+                EdLook.Fill(g, sr, rad + i * 1.5f * Ui, Color.FromArgb(Ds.Dark ? 30 : 14, 0, 0, 0));
+            }
+            EdLook.Fill(g, all, rad, EdLook.C(Palette.Hud));
+            EdLook.Hairline(g, all, rad, EdLook.C(Palette.HudLine));
+            for (int i = 0; i < 4; i++)
+            {
+                if (i != pillHot && i != pillDown) continue;
+                RectangleF hr = RectangleF.Inflate(r[i], -Pu(1), -Pu(3));
+                Color c = EdLook.C(Palette.HudHover);
+                if (i == pillDown && i == pillHot) c = Color.FromArgb(Math.Min(255, c.A * 2), c);
+                EdLook.Fill(g, hr, hr.Height / 2f, c);
+            }
+            float stroke = Math.Max(1.2f, 1.6f * Ui);
+            EdLook.Icon(g, "minus", r[0], Pu(14), Palette.HudLabel, stroke);
+            EdLook.Icon(g, "plus", r[2], Pu(14), Palette.HudLabel, stroke);
+            TextFormatFlags center = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding;
+            TextKit.Draw(g, (int)Math.Round(k * 100) + " %", Fonts.Get(EdLook.Semibold, 12 * Ui), r[1], EdLook.C(Palette.HudLabel), center);
+            using (SolidBrush b = new SolidBrush(EdLook.C(Palette.HudLine))) g.FillRectangle(b, r[3].X - Pu(3), all.Y + Pu(8), Math.Max(1, Pu(1)), all.Height - Pu(16));
+            TextKit.Draw(g, "Ajustar", PillFont, r[3], EdLook.C(Zoomed ? Palette.HudLabel : Palette.HudLabel2), center);
+        }
+
+        void SetPillHot(int part)
+        {
+            if (part == pillHot) return;
+            pillHot = part;
+            Invalidate(PillArea);
+            if (part >= 0 && part < 4) EdTip.Schedule(this, PillParts()[part], PillTips[part], true);
+            else EdTip.Cancel();
+        }
+
+        void PillClick(int part)
+        {
+            if (part == 0) ZoomBy(0.8f);
+            else if (part == 1) ZoomActual();
+            else if (part == 2) ZoomBy(1.25f);
+            else if (part == 3) ZoomFit();
         }
 
         static PointF[] Handles(Shape s)
@@ -332,39 +528,72 @@ namespace Stackshot
             }
         }
 
-        // Dashed outline: faint on hover, blue with handles when selected.
+        // Selection box on screen: just outside the mark, so the handles sit on it and never cover the stroke.
+        Rectangle OutlineRect(Shape s)
+        {
+            Rectangle r = ScreenRect(Painter.Bounds(s));
+            r.Inflate(Pu(4), Pu(4));
+            return r;
+        }
+
+        // Handle centers on screen (box marks: the corners of the selection box).
+        Point[] ScreenHandles(Shape s)
+        {
+            PointF[] hs = Handles(s);
+            Point[] r = new Point[hs.Length];
+            if (s.Kind == Tool.Arrow || hs.Length != 4)
+            {
+                for (int i = 0; i < hs.Length; i++) r[i] = ToScreen(hs[i]);
+                return r;
+            }
+            Rectangle o = OutlineRect(s);
+            r[0] = new Point(o.Left, o.Top);
+            r[1] = new Point(o.Right, o.Top);
+            r[2] = new Point(o.Right, o.Bottom);
+            r[3] = new Point(o.Left, o.Bottom);
+            return r;
+        }
+
+        // Dashed outline: faint on hover, blue with handles when selected (a selected arrow shows only its handles).
         void Outline(Graphics g, Shape s, bool strong)
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            Color c = strong ? Theme.Accent : Color.FromArgb(150, Theme.Accent);
-            using (Pen pen = new Pen(c, Math.Max(1f, 1.4f * Ui)))
+            Color accent = EdLook.C(Ds.Brushes.Accent);
+            Color c = strong ? accent : Color.FromArgb(150, accent);
+            using (Pen pen = new Pen(c, Math.Max(1f, 1.25f * Ui)))
             {
                 pen.DashStyle = DashStyle.Dash;
                 if (s.Kind == Tool.Arrow)
                 {
-                    PointF[] pts = s.Curve(32);
-                    Point[] sp = new Point[pts.Length];
-                    for (int i = 0; i < pts.Length; i++) sp[i] = ToScreen(pts[i]);
-                    g.DrawLines(pen, sp);
+                    if (!strong)
+                    {
+                        PointF[] pts = s.Curve(32);
+                        Point[] sp = new Point[pts.Length];
+                        for (int i = 0; i < pts.Length; i++) sp[i] = ToScreen(pts[i]);
+                        g.DrawLines(pen, sp);
+                    }
                 }
                 else
                 {
-                    Rectangle r = ScreenRect(Painter.Bounds(s));
-                    r.Inflate(Pu(4), Pu(4));
-                    g.DrawRectangle(pen, r);
+                    g.SmoothingMode = SmoothingMode.None; // crisp 1 px dashes
+                    g.DrawRectangle(pen, OutlineRect(s));
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
                 }
             }
             if (!strong) return;
-            int hs = Pu(5);
-            PointF[] handles = Handles(s);
+            float hs = 5f * Ui;
+            Point[] handles = ScreenHandles(s);
             for (int i = 0; i < handles.Length; i++)
             {
-                Point p = ToScreen(handles[i]);
-                Rectangle hr = new Rectangle(p.X - hs, p.Y - hs, hs * 2, hs * 2);
+                Point p = handles[i];
+                RectangleF hr = new RectangleF(p.X - hs, p.Y - hs, hs * 2, hs * 2);
                 // The bend handle is filled blue to tell it apart from the endpoints.
                 bool bend = s.Kind == Tool.Arrow && i == 2;
-                using (SolidBrush b = new SolidBrush(bend ? Theme.Accent : Color.White)) g.FillEllipse(b, hr);
-                using (Pen pen = new Pen(bend ? Color.White : Theme.Accent, Math.Max(1.5f, 2f * Ui))) g.DrawEllipse(pen, hr);
+                using (SolidBrush sh = new SolidBrush(Color.FromArgb(Ds.Dark ? 70 : 45, 0, 0, 0)))
+                    g.FillEllipse(sh, RectangleF.Inflate(new RectangleF(hr.X, hr.Y + Math.Max(1f, Ui), hr.Width, hr.Height), 0.5f * Ui, 0.5f * Ui));
+                using (SolidBrush b = new SolidBrush(bend ? accent : Color.White)) g.FillEllipse(b, hr);
+                float pw = Math.Max(1.5f, 1.75f * Ui);
+                using (Pen pen = new Pen(bend ? Color.White : accent, pw)) g.DrawEllipse(pen, hr);
             }
         }
 
@@ -397,15 +626,32 @@ namespace Stackshot
                 g.FillRectangle(b, cr.Right - L + t, cr.Bottom, L, t); g.FillRectangle(b, cr.Right, cr.Bottom - L + t, t, L);
             }
             string label = (int)Math.Round(crop.Width) + " \u00D7 " + (int)Math.Round(crop.Height);
-            using (Font f = new Font("Segoe UI Semibold", Pu(12), GraphicsUnit.Pixel))
-            {
-                Size ts = TextRenderer.MeasureText(label, f);
-                Rectangle lr = new Rectangle(cr.X, Math.Max(ir.Y, cr.Y - ts.Height - Pu(10)), ts.Width + Pu(14), ts.Height + Pu(6));
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                using (GraphicsPath p = Theme.Round(lr, lr.Height / 2f))
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(220, Theme.Dark))) g.FillPath(b, p);
-                TextRenderer.DrawText(g, label, f, lr, Theme.Fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
-            }
+            Font f = Fonts.Get(EdLook.Semibold, 12 * Ui);
+            Size ts = TextKit.Measure(label, f);
+            Rectangle lr = new Rectangle(cr.X, Math.Max(ir.Y, cr.Y - ts.Height - Pu(10)), ts.Width + Pu(14), ts.Height + Pu(6));
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (GraphicsPath p = Theme.Round(lr, lr.Height / 2f))
+            using (SolidBrush b = new SolidBrush(EdLook.C(Palette.Hud))) g.FillPath(b, p);
+            TextKit.Draw(g, label, f, lr, EdLook.C(Palette.HudLabel), TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+        }
+
+        // While typing, the label's rounded, padded background is drawn around the text box, as the mark will look.
+        Rectangle BoxLabelRect()
+        {
+            int pad = (int)Math.Round(BoxFont * 0.35f * k);
+            return new Rectangle(box.Left - pad, box.Top - pad, box.Width - boxSlack + 2 * pad, box.Height + 2 * pad);
+        }
+
+        void BoxLabel(Graphics g)
+        {
+            Rectangle r = BoxLabelRect();
+            float rad = (float)Math.Round(BoxFont * 0.35f * k);
+            float sh = Math.Max(1f, StrokeFor(editing != null ? editing.Weight : Weight) * 0.45f * k);
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            RectangleF shb = r;
+            shb.Offset(sh, sh);
+            EdLook.Fill(g, shb, rad, Color.FromArgb(60, 0, 0, 0));
+            EdLook.Fill(g, r, rad, BoxColor);
         }
 
         Shape ShapeAt(Point screen)
@@ -471,11 +717,11 @@ namespace Stackshot
         int HandleAt(Point screen)
         {
             if (selected == null) return -1;
-            PointF[] hs = Handles(selected);
+            Point[] hs = ScreenHandles(selected);
             int r = Pu(8);
             for (int i = hs.Length - 1; i >= 0; i--)
             {
-                Point p = ToScreen(hs[i]);
+                Point p = hs[i];
                 if (Math.Abs(p.X - screen.X) <= r && Math.Abs(p.Y - screen.Y) <= r) return i;
             }
             return -1;
@@ -483,6 +729,7 @@ namespace Stackshot
 
         void UpdateHover(Point p)
         {
+            if (spacePan || panning) { if (Cursor != Cursors.SizeAll) Cursor = Cursors.SizeAll; return; }
             Shape h = null;
             Cursor c;
             int hh = HandleAt(p);
@@ -492,15 +739,40 @@ namespace Stackshot
                 if (Tool != Tool.Crop) h = ShapeAt(p);
                 c = h != null ? Cursors.SizeAll : (Tool == Tool.Text ? Cursors.IBeam : Cursors.Cross);
             }
-            if (h != hover) { hover = h; Invalidate(); }
+            if (h != hover)
+            {
+                InvalidateOutline(hover);
+                hover = h;
+                InvalidateOutline(hover);
+            }
             if (Cursor != c) Cursor = c;
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
-            if (e.Button == MouseButtons.Middle) { panning = true; panFrom = e.Location; panStart = pan; Cursor = Cursors.SizeAll; return; }
+            if (panning) return;
+            if (drag == Drag.None && (e.Button == MouseButtons.Middle || (e.Button == MouseButtons.Left && spacePan && box == null)))
+            {
+                panning = true;
+                panButton = e.Button;
+                panFrom = e.Location;
+                panStart = pan;
+                EdTip.Cancel();
+                Cursor = Cursors.SizeAll;
+                return;
+            }
+            if (drag != Drag.None) return; // a second button while dragging
             if (skipNextDown) { skipNextDown = false; return; }
+            Fit(); // an undo or crop may not have been painted yet
+            int part = e.Button == MouseButtons.Left && box == null ? PillAt(e.Location) : -1;
+            if (part >= 0)
+            {
+                EdTip.Cancel();
+                pillDown = part;
+                Invalidate(PillArea);
+                return;
+            }
             if (box != null) { CommitText(); return; }
             Focus();
             if (e.Button == MouseButtons.Right) { SelectShape(null); return; }
@@ -511,7 +783,10 @@ namespace Stackshot
             {
                 drag = Drag.Resize;
                 handle = h;
-                Begin(ToImg(e.Location, false));
+                // Where the mark's point is relative to the grab, so it doesn't jump to the cursor.
+                PointF hp = Handles(selected)[h], at = ToImg(e.Location, false);
+                grab = new PointF(hp.X - at.X, hp.Y - at.Y);
+                Begin(at);
                 return;
             }
             if (Tool != Tool.Crop)
@@ -527,6 +802,8 @@ namespace Stackshot
                 }
             }
             SelectShape(null);
+            // Text and numbers go where the click is, so a click beside the capture only clears the selection.
+            if ((Tool == Tool.Text || Tool == Tool.Counter) && !ScreenRect(Crop).Contains(e.Location)) return;
             if (Tool == Tool.Text) { StartText(p, null); return; }
             if (Tool == Tool.Counter) { AddCounter(p); return; }
             cur = NewShape(Tool);
@@ -551,20 +828,54 @@ namespace Stackshot
             dragFrom = p;
             orig = selected.Clone();
             committed = false;
+            redoBeforeDrag = null;
+        }
+
+        // The undo step a move or reshape takes when it starts; the redo history it clears comes back if Esc cancels it.
+        List<Snapshot> redoBeforeDrag;
+
+        void CommitDrag()
+        {
+            redoBeforeDrag = redo.Count > 0 ? new List<Snapshot>(redo) : null;
+            Commit();
+            committed = true;
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            if (panning) { pan = new PointF(panStart.X + e.X - panFrom.X, panStart.Y + e.Y - panFrom.Y); Fit(); Invalidate(); return; }
+            if (panning)
+            {
+                pan = new PointF(panStart.X + e.X - panFrom.X, panStart.Y + e.Y - panFrom.Y);
+                Fit();
+                if (box != null) PlaceBox(); // a middle-button pan while typing: the box goes along
+                Invalidate();
+                return;
+            }
+            if (pillDown >= 0) { SetPillHot(PillAt(e.Location) == pillDown ? pillDown : -1); return; }
+            if ((drag == Drag.Move || drag == Drag.Resize) && (selected == null || orig == null)) drag = Drag.None;
+            if (spacePan && drag == Drag.None) { SetPillHot(-1); return; }
+            if (drag == Drag.None)
+            {
+                int part = box == null ? PillAt(e.Location) : -1;
+                SetPillHot(part);
+                if (part >= 0)
+                {
+                    if (hover != null) { InvalidateOutline(hover); hover = null; }
+                    if (Cursor != Cursors.Hand) Cursor = Cursors.Hand;
+                    return;
+                }
+            }
             switch (drag)
             {
                 case Drag.Draw:
                 {
                     PointF p = ToImg(e.Location, true);
                     if ((ModifierKeys & Keys.Shift) != 0) p = Constrain(cur.A, p, cur.Kind);
+                    if (cur.Kind == Tool.Crop) { cur.B = p; Invalidate(); return; } // the dimming covers everything
+                    InvalidateMark(cur);
                     cur.B = p;
-                    Invalidate();
+                    InvalidateMark(cur);
                     return;
                 }
                 case Drag.Move:
@@ -574,20 +885,27 @@ namespace Stackshot
                     if (!committed)
                     {
                         if (Math.Abs(dx) * k < 2 && Math.Abs(dy) * k < 2) return;
-                        Commit();
-                        committed = true;
+                        CommitDrag();
                     }
+                    InvalidateMark(selected);
                     selected.Offset(orig, dx, dy);
-                    Invalidate();
+                    InvalidateMark(selected);
                     return;
                 }
                 case Drag.Resize:
                 {
-                    if (!committed) { Commit(); committed = true; }
+                    if (!committed) CommitDrag();
+                    InvalidateMark(selected);
                     // The middle handle bends the arrow (snaps back to straight near the line).
-                    if (selected.Kind == Tool.Arrow && handle == 2) selected.SetMid(ToImg(e.Location, false), 8f * Ui / k);
-                    else ResizeShape(selected, orig, handle, ToImg(e.Location, true), (ModifierKeys & Keys.Shift) != 0);
-                    Invalidate();
+                    PointF to = ToImg(e.Location, false);
+                    to = new PointF(to.X + grab.X, to.Y + grab.Y);
+                    if (selected.Kind == Tool.Arrow && handle == 2) selected.SetMid(to, 8f * Ui / k);
+                    else
+                    {
+                        to = new PointF(Math.Max(Crop.Left, Math.Min(Crop.Right, to.X)), Math.Max(Crop.Top, Math.Min(Crop.Bottom, to.Y)));
+                        ResizeShape(selected, orig, handle, to, (ModifierKeys & Keys.Shift) != 0);
+                    }
+                    InvalidateMark(selected);
                     return;
                 }
             }
@@ -597,7 +915,23 @@ namespace Stackshot
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
-            if (panning && e.Button == MouseButtons.Middle) { panning = false; Cursor = Cursors.Default; return; }
+            if (panning)
+            {
+                if (e.Button != panButton) return;
+                panning = false;
+                if (spacePan) Cursor = Cursors.SizeAll;
+                else UpdateHover(e.Location);
+                return;
+            }
+            if (pillDown >= 0)
+            {
+                int part = pillDown;
+                pillDown = -1;
+                Invalidate(PillArea);
+                if (e.Button == MouseButtons.Left && PillAt(e.Location) == part) PillClick(part);
+                return;
+            }
+            if (e.Button != MouseButtons.Left && drag != Drag.None) return; // another button let go mid-drag
             Drag d = drag;
             drag = Drag.None;
             if (d == Drag.Draw && cur != null) FinishDraw();
@@ -610,7 +944,58 @@ namespace Stackshot
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
-            if (hover != null && drag == Drag.None) { hover = null; Invalidate(); }
+            if (hover != null && drag == Drag.None) { InvalidateOutline(hover); hover = null; }
+            SetPillHot(-1);
+        }
+
+        protected override void OnMouseCaptureChanged(EventArgs e)
+        {
+            base.OnMouseCaptureChanged(e);
+            // Capture lost mid-drag (a dialog, Alt+Tab): the gesture is dropped instead of being left half done.
+            if (!Capture && (drag != Drag.None || panning || pillDown >= 0)) CancelGesture();
+        }
+
+        // Esc during a drag: a mark being moved or reshaped goes back to where it was; one being drawn is dropped.
+        public void CancelGesture()
+        {
+            panning = false;
+            if (pillDown >= 0) { pillDown = -1; Invalidate(PillArea); }
+            if (drag == Drag.Draw && cur != null) { cur.DropCache(); cur = null; }
+            else if ((drag == Drag.Move || drag == Drag.Resize) && selected != null && orig != null && committed)
+            {
+                selected.A = orig.A;
+                selected.B = orig.B;
+                selected.C = orig.C;
+                selected.Curved = orig.Curved;
+                undo.RemoveAt(undo.Count - 1); // the snapshot taken when the drag began
+                if (redoBeforeDrag != null) redo.AddRange(redoBeforeDrag);
+                version++;
+            }
+            redoBeforeDrag = null;
+            drag = Drag.None;
+            orig = null;
+            committed = false;
+            Invalidate();
+            if (IsHandleCreated) UpdateHover(PointToClient(MousePosition));
+            Fire(StateChanged);
+        }
+
+        void InvalidateOutline(Shape s)
+        {
+            if (s == null) return;
+            Rectangle r = OutlineRect(s);
+            r.Inflate(Pu(10), Pu(10));
+            Invalidate(r);
+        }
+
+        // The mark with its outline, handles and drop shadow: dragging repaints only what moved.
+        void InvalidateMark(Shape s)
+        {
+            if (s == null) return;
+            Rectangle r = OutlineRect(s);
+            int m = Pu(10) + (int)Math.Ceiling(Math.Max(1f, s.Width * 0.45f) * k) + 2;
+            r.Inflate(m, m);
+            Invalidate(r);
         }
 
         void FinishDraw()
@@ -640,19 +1025,16 @@ namespace Stackshot
             Crop = ri;
             Fire(Changed);
             Invalidate();
+            // A crop is a one-off: back to the tool in use before it, so the next drag draws instead of cropping again.
+            SetTool(toolBeforeCrop);
         }
 
         void AddCounter(PointF p)
         {
-            int n = 1;
-            foreach (Shape s in shapes)
-            {
-                if (s.Kind == Tool.Counter && s.Number >= n) n = s.Number + 1;
-            }
             Shape c = NewShape(Tool.Counter);
             c.A = p;
             c.B = p;
-            c.Number = n;
+            c.Number = NextNumber();
             Commit();
             shapes.Add(c);
             Fire(Changed);
@@ -704,7 +1086,12 @@ namespace Stackshot
             undo.Add(Take());
             if (undo.Count > 100) undo.RemoveAt(0);
             redo.Clear();
+            version++;
         }
+
+        // Bumped by every undo step and every undo or redo, so repeated nudges can share one step.
+        int version, nudgedAt = -1;
+        Shape nudged;
 
         void Restore(Snapshot sn)
         {
@@ -713,6 +1100,8 @@ namespace Stackshot
             Crop = sn.Crop;
             selected = null;
             hover = null;
+            if (drag == Drag.Move || drag == Drag.Resize) { drag = Drag.None; orig = null; }
+            version++;
             Fire(Changed);
             Fire(StateChanged);
             Invalidate();
@@ -730,7 +1119,7 @@ namespace Stackshot
 
         public void Redo()
         {
-            if (redo.Count == 0) return;
+            if (!CanRedo) return;
             undo.Add(Take());
             Snapshot sn = redo[redo.Count - 1];
             redo.RemoveAt(redo.Count - 1);
@@ -740,14 +1129,18 @@ namespace Stackshot
         public void SelectShape(Shape s)
         {
             if (selected == s) return;
+            if (drag == Drag.Move || drag == Drag.Resize) { drag = Drag.None; orig = null; }
             selected = s;
             Invalidate();
             Fire(StateChanged);
         }
 
+        Tool toolBeforeCrop = Tool.Rect;
+
         public void SetTool(Tool t)
         {
             CommitText();
+            if (t == Tool.Crop && Tool != Tool.Crop) toolBeforeCrop = Tool;
             Tool = t;
             SelectShape(null);
             Cursor = t == Tool.Text ? Cursors.IBeam : Cursors.Cross;
@@ -765,6 +1158,7 @@ namespace Stackshot
                 Fire(Changed);
                 Invalidate();
             }
+            PlaceBox(); // the text being typed takes it at once
             Fire(StateChanged);
         }
 
@@ -781,12 +1175,14 @@ namespace Stackshot
                 Fire(Changed);
                 Invalidate();
             }
+            PlaceBox();
             Fire(StateChanged);
         }
 
         public void DeleteSelected()
         {
             if (selected == null) return;
+            if (drag == Drag.Move || drag == Drag.Resize) { drag = Drag.None; orig = null; }
             Commit();
             shapes.Remove(selected);
             selected.DropCache();
@@ -797,13 +1193,43 @@ namespace Stackshot
             Invalidate();
         }
 
+        // Arrow keys: holding one down (or tapping it several times) is a single undo step.
         public void Nudge(int dx, int dy)
         {
             if (selected == null) return;
-            Commit();
+            if (nudged != selected || nudgedAt != version) Commit();
+            nudged = selected;
+            nudgedAt = version;
+            InvalidateMark(selected);
             selected.Offset(selected.Clone(), dx, dy);
+            InvalidateMark(selected);
+            Fire(Changed);
+        }
+
+        // Ctrl+D: a copy of the selected mark, just below and to the right, selected so it can be moved at once.
+        // A copied number takes the next one.
+        public void DuplicateSelected()
+        {
+            if (selected == null || box != null) return;
+            Commit();
+            Shape c = selected.Clone();
+            float d = (float)Math.Round(Math.Max(1f, Pu(14) / k));
+            c.Offset(selected, d, d);
+            if (c.Kind == Tool.Counter) c.Number = NextNumber();
+            shapes.Add(c);
+            SelectShape(c);
             Fire(Changed);
             Invalidate();
+        }
+
+        int NextNumber()
+        {
+            int n = 1;
+            foreach (Shape s in shapes)
+            {
+                if (s.Kind == Tool.Counter && s.Number >= n) n = s.Number + 1;
+            }
+            return n;
         }
 
         public string HintText
@@ -813,10 +1239,10 @@ namespace Stackshot
                 if (box != null) return "Escribe y pulsa Enter \u00B7 May\u00FAs+Enter a\u00F1ade una l\u00EDnea \u00B7 Esc cancela";
                 if (selected != null)
                 {
-                    string how = selected.Kind == Tool.Arrow ? "arr\u00E1strala para moverla; tira del punto azul del medio para curvarla"
-                               : Handles(selected).Length > 0 ? "arr\u00E1strala para moverla o tira de sus puntos" : "arr\u00E1strala para moverla";
-                    if (selected.Kind == Tool.Text) how += " (doble clic para cambiar el texto)";
-                    return "Marca seleccionada: " + how + " \u00B7 Supr la borra \u00B7 el color y el grosor se le aplican";
+                    string how = selected.Kind == Tool.Arrow ? "arr\u00E1strala; tira del punto azul del medio para curvarla"
+                               : selected.Kind == Tool.Text ? "arr\u00E1strala; doble clic cambia el texto"
+                               : Handles(selected).Length > 0 ? "arr\u00E1strala o tira de sus puntos" : "arr\u00E1strala para moverla";
+                    return "Marca seleccionada: " + how + " \u00B7 Supr la borra \u00B7 Ctrl+D la duplica \u00B7 el color y el grosor se le aplican";
                 }
                 switch (Tool)
                 {
@@ -833,22 +1259,24 @@ namespace Stackshot
             }
         }
 
+        // Size and color of the text being typed: the mark's own when editing one, otherwise the current options.
+        float BoxFont { get { return editing != null ? editing.FontPx : FontFor(Weight); } }
+        Color BoxColor { get { return editing != null ? editing.Color : Color; } }
+        Font boxFont;
+        int boxSlack;
+        static Graphics measureDc;
+
         void StartText(PointF at, Shape existing)
         {
             editing = existing;
             boxAt = existing != null ? existing.A : at;
-            float fp = existing != null ? existing.FontPx : FontFor(Weight);
-            Color c = existing != null ? existing.Color : Color;
             box = new TextBox();
             box.Multiline = true;
+            box.WordWrap = false; // the box grows with the text; wrapping would make it jump while typing
             box.BorderStyle = BorderStyle.None;
-            box.Font = new Font("Segoe UI Semibold", Math.Max(9f, fp * k), GraphicsUnit.Pixel);
-            box.BackColor = c;
-            box.ForeColor = Painter.Contrast(c);
-            int pad = (int)Math.Round(fp * 0.35f * k);
-            Point pt = ToScreen(boxAt);
-            box.Location = new Point(pt.X + pad, pt.Y + pad);
+            box.HandleCreated += delegate(object o, EventArgs ea) { NoMargins((TextBox)o); };
             if (existing != null) box.Text = existing.Text;
+            PlaceBox();
             box.KeyDown += BoxKeyDown;
             box.TextChanged += delegate { SizeBox(); };
             box.LostFocus += delegate
@@ -859,7 +1287,6 @@ namespace Stackshot
                 CommitText();
                 if (clickOnCanvas) skipNextDown = true;
             };
-            SizeBox();
             Controls.Add(box);
             box.Focus();
             box.SelectionStart = box.Text.Length;
@@ -867,11 +1294,76 @@ namespace Stackshot
             Fire(StateChanged);
         }
 
+        // Font, colors and position of the text box for the current zoom (also after a resize or an option change).
+        void PlaceBox()
+        {
+            if (box == null) return;
+            float px = Math.Max(9f, BoxFont * k);
+            if (boxFont == null || Math.Abs(boxFont.Size - px) > 0.01f)
+            {
+                Font old = boxFont;
+                boxFont = new Font("Segoe UI Semibold", px, GraphicsUnit.Pixel);
+                box.Font = boxFont;
+                if (old != null) old.Dispose();
+                NoMargins(box);
+            }
+            Color c = BoxColor;
+            box.BackColor = c;
+            box.ForeColor = Painter.Contrast(c);
+            box.Location = BoxLocation();
+            SizeBox();
+            Invalidate();
+        }
+
+        Point BoxLocation()
+        {
+            int pad = (int)Math.Round(BoxFont * 0.35f * k);
+            Point pt = ToScreen(boxAt);
+            return new Point(pt.X + pad, pt.Y + pad);
+        }
+
+        bool BoxStale()
+        {
+            return box.Location != BoxLocation() || boxFont == null || Math.Abs(boxFont.Size - Math.Max(9f, BoxFont * k)) > 0.01f;
+        }
+
+        // Text drawn from the box's very edge, so it sits where the finished mark will draw it.
+        static void NoMargins(TextBox b)
+        {
+            if (b.IsHandleCreated) Native.SendMessage(b.Handle, 0xD3, (IntPtr)3, IntPtr.Zero); // EM_SETMARGINS: left and right 0
+        }
+
+        // As big as the text (measured the way the TextBox draws it, with GDI) plus room for the caret, which stays
+        // inside the label's padding: the label looks as it will once committed.
         void SizeBox()
         {
             if (box == null) return;
-            Size sz = TextRenderer.MeasureText(box.Text.Length > 0 ? box.Text + "  " : "Escribe aqu\u00ED", box.Font);
-            box.Size = new Size(sz.Width + 8, sz.Height + 4);
+            Rectangle before = BoxLabelRect();
+            string t = box.Text.Length > 0 ? box.Text : "Escribe aqu\u00ED";
+            if (t.EndsWith("\n")) t += " "; // a new, still empty line counts too
+            // Measured on a DC like the box's own: TextRenderer's default measuring DC comes out about 10% wider.
+            if (measureDc == null) measureDc = Graphics.FromImage(new Bitmap(1, 1));
+            Size sz = TextRenderer.MeasureText(measureDc, t, box.Font, Size.Empty, TextFormatFlags.NoPadding | TextFormatFlags.TextBoxControl);
+            boxSlack = Math.Max(2, (int)Math.Round(box.Font.Size * 0.25f));
+            box.Size = new Size(sz.Width + boxSlack, sz.Height);
+            Rectangle after = BoxLabelRect();
+            int m = Pu(8);
+            Invalidate(Rectangle.Inflate(Rectangle.Union(before, after), m, m));
+        }
+
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            if (box == null) return;
+            Fit();
+            PlaceBox();
+        }
+
+        void DropBox(TextBox b)
+        {
+            Controls.Remove(b);
+            b.Dispose();
+            if (boxFont != null) { boxFont.Dispose(); boxFont = null; }
         }
 
         void BoxKeyDown(object sender, KeyEventArgs e)
@@ -886,8 +1378,7 @@ namespace Stackshot
             if (b == null) return;
             box = null;
             string t = b.Text.TrimEnd();
-            Controls.Remove(b);
-            b.Dispose();
+            DropBox(b);
             Focus();
             Shape ed = editing;
             editing = null;
@@ -896,7 +1387,13 @@ namespace Stackshot
                 if (t != ed.Text)
                 {
                     Commit();
-                    if (t.Length == 0) { shapes.Remove(ed); selected = null; }
+                    if (t.Length == 0)
+                    {
+                        // Emptied: the mark goes, and so does its hover outline (the pointer is usually still on it).
+                        shapes.Remove(ed);
+                        selected = null;
+                        if (hover == ed) hover = null;
+                    }
                     else ed.Text = t;
                     Fire(Changed);
                 }
@@ -922,8 +1419,7 @@ namespace Stackshot
             if (b == null) return;
             box = null;
             editing = null;
-            Controls.Remove(b);
-            b.Dispose();
+            DropBox(b);
             Focus();
             Invalidate();
             Fire(StateChanged);
@@ -933,15 +1429,37 @@ namespace Stackshot
         public Bitmap Render()
         {
             Size o = OutputSizeRaw;
-            Bitmap b = new Bitmap(o.Width, o.Height, PixelFormat.Format32bppArgb);
+            Rectangle area = Rectangle.Round(Crop);
+            bool copy = area == Crop && area.Size == o && area.X >= 0 && area.Y >= 0 && area.Right <= Img.Width && area.Bottom <= Img.Height;
+            Bitmap b = copy ? CopyArea(Img, area) : new Bitmap(o.Width, o.Height, PixelFormat.Format32bppArgb);
             using (Graphics g = Graphics.FromImage(b))
             {
-                g.DrawImage(Img, new Rectangle(0, 0, b.Width, b.Height), Crop.X, Crop.Y, Crop.Width, Crop.Height, GraphicsUnit.Pixel);
+                if (!copy) g.DrawImage(Img, new Rectangle(0, 0, b.Width, b.Height), Crop.X, Crop.Y, Crop.Width, Crop.Height, GraphicsUnit.Pixel);
                 g.TranslateTransform(-Crop.X, -Crop.Y);
                 foreach (Shape s in shapes) Painter.Draw(g, s, Img);
             }
             if (!BgOn || Bg == null) return b;
             using (b) return Backdrop.Compose(b, Bg);
+        }
+
+        // The capture (or the cropped part) copied row by row: the same pixels as DrawImage, several times faster.
+        static Bitmap CopyArea(Bitmap src, Rectangle r)
+        {
+            Bitmap b = new Bitmap(r.Width, r.Height, PixelFormat.Format32bppArgb);
+            BitmapData s = src.LockBits(r, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            BitmapData d = b.LockBits(new Rectangle(0, 0, r.Width, r.Height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            try
+            {
+                UIntPtr row = new UIntPtr((uint)(r.Width * 4));
+                for (int y = 0; y < r.Height; y++)
+                    Native.CopyMemory(new IntPtr(d.Scan0.ToInt64() + (long)y * d.Stride), new IntPtr(s.Scan0.ToInt64() + (long)y * s.Stride), row);
+            }
+            finally
+            {
+                src.UnlockBits(s);
+                b.UnlockBits(d);
+            }
+            return b;
         }
 
         // Only the annotations in that area, on transparent (to overlay on a video).
@@ -965,7 +1483,6 @@ namespace Stackshot
             foreach (Shape s in shapes) s.DropCache();
             if (cur != null) cur.DropCache();
             if (view != null) view.Dispose();
-            if (dots != null) dots.Dispose();
             if (bgView != null) bgView.Dispose();
             if (roundView != null) roundView.Dispose();
             Img.Dispose();
