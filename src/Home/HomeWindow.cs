@@ -1,135 +1,172 @@
-// Stackshot - Main window: home with the mascot, hotkeys and all settings, macOS-style.
+// Stackshot - Main window: home with the mascot, hotkeys and all settings, in the style of macOS System Settings.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Windows.Forms;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using D = System.Drawing;
+using WF = System.Windows.Forms;
 
 namespace Stackshot
 {
-    // A single owner-drawn window: sidebar on the left, current section on the right. Changes apply immediately (no
-    // Save button). Closing it keeps Stackshot in the tray.
-    // Performance: sidebar and content are drawn into two DIBs that are rebuilt only on change; each frame blits them
-    // and draws the mascot and animations on top. No timer runs while hidden.
-    public partial class HomeWindow : Form
+    // Sidebar on Mica, the current section on a solid pane that scrolls under a toolbar. Changes apply immediately (no
+    // Save button). Closing it keeps Stackshot in the tray. Nothing ticks while hidden; while shown, only the mascot
+    // layer is redrawn, and only as often as it moves.
+    public partial class HomeWindow : Sheet
     {
-        const int LW = 980, LH = 660, Side = 240, Bar = 52;
+        const double LW = 980, LH = 660, Side = 236, Bar = 52;
         static readonly string[] PageIds = { "home", "keys", "general", "editor", "record", "mascot", "about" };
         static readonly string[] PageNames = { "Inicio", "Atajos", "General", "Fondo y editor", "Grabaci\u00F3n", "Mascota", "Acerca de" };
         static readonly string[] PageIcons = { "home", "keyboard", "gear", "photo", "video", "bot", "info" };
+        static readonly D.Color[] PageColors = { D.Color.FromArgb(10, 132, 255), D.Color.FromArgb(142, 142, 147), D.Color.FromArgb(142, 142, 147),
+                                                 D.Color.FromArgb(175, 82, 222), D.Color.FromArgb(255, 59, 48), D.Color.FromArgb(255, 149, 0),
+                                                 D.Color.FromArgb(142, 142, 147) };
 
         readonly ShotStack owner;
         readonly Settings settings;
-        float s = 1f;
         string page = "home";
-        readonly List<Widget> items = new List<Widget>();     // current section (content coordinates)
-        readonly List<Widget> nav = new List<Widget>();       // sidebar (window coordinates)
-        Widget hot, pressed;
-        Dib side, content, frame;   // frame: our own back buffer, so each repaint composes and copies only what changed
-        bool sideDirty = true, contentDirty = true;
-        int contentHeight;
-        double scroll, scrollTarget;
+        readonly Grid sidebar = new Grid(), pane = new Grid();
+        readonly StackPanel navList = new StackPanel();
+        readonly Border widgetSlot = new Border();
+        readonly ScrollViewer scroller = new ScrollViewer();
+        readonly Grid pageHost = new Grid();
+        readonly ToolbarStrip toolbar = new ToolbarStrip();
+        readonly TextBlock toolbarTitle = new TextBlock();
+        readonly List<FrameworkElement> bubbleAvoid = new List<FrameworkElement>();    // controls the speech bubble must not cover
+        StackPanel body;                       // current section column
         readonly Mascot mascot = new Mascot();
-        readonly Timer timer = new Timer();
-        readonly Tween pageIn = new Tween(1);
+        MascotHost mascotHost;                 // where the mascot lives on this page (hero, stage or sidebar)
+        readonly FrameClock timer = new FrameClock();
+        double quietUntil;            // a page is entering: the mascot ticks at half rate until it has landed
+        GdiLayer introLayer;
         Intro intro;
+        bool introGreeted;
         HotkeyRow listening;
-        TextBox nameBox;
-        Rectangle nameRect;
-        Point mouse = new Point(-1, -1);
-        Point lastScreenMouse;
-        bool active, mascotHot;
-        int captionHot = -1, captionDown = -1;
-        double nextTip, lastFrame;
-        string bubbleText;
-        RectangleF heroMascot;          // where the big mascot goes on Home (content coordinates)
-        readonly Dictionary<int, Font> fonts = new Dictionary<int, Font>();
-        Image logo;
+        D.Point lastScreenMouse;
+        double nextTip, lastMove;
+        bool active;
         static readonly Random Rng = new Random();
 
         public HomeWindow(ShotStack owner, Settings settings)
         {
             this.owner = owner;
             this.settings = settings;
-            Text = "Stackshot";
-            if (ShotStack.AppIcon != null) Icon = ShotStack.AppIcon;
-            AutoScaleMode = AutoScaleMode.None;
-            FormBorderStyle = FormBorderStyle.FixedSingle;
-            MaximizeBox = false;
-            MinimizeBox = true;
-            StartPosition = FormStartPosition.Manual;
-            BackColor = Mac.Window;
-            KeyPreview = true;
-            ShowInTaskbar = true;
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.Opaque, true);
-            logo = ShotStack.LoadResourceImage("logo.png");
+            Title = "Stackshot";
+            Width = LW;
+            Height = LH;
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            try { Icon = Imaging(ShotStack.LoadResourceImage("logo.png")); } catch { }
             mascot.Look = MascotLook.From(settings);
-            s = ShotStack.ScaleFor(Screen.FromPoint(Control.MousePosition));
-            Size = new Size(P(LW), P(LH));
-            Center(Screen.FromPoint(Control.MousePosition));
-            timer.Interval = 15;
+            ApplyMascotBehavior();
+            Center();
+
+            Root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Side) });
+            Root.ColumnDefinitions.Add(new ColumnDefinition());
+            sidebar.MouseLeftButtonDown += DragFromBackground;
+            BuildSidebar();
+            BuildPane();
+            KeepCaptionsOnTop();
+
             timer.Tick += Tick;
             owner.Captured += OnCaptured;
             Updater.Changed += OnUpdaterChanged;
+            Closing += delegate(object o, System.ComponentModel.CancelEventArgs e)
+            {
+                if (ShuttingDown) return;
+                e.Cancel = true;
+                HideToTray();
+            };
+            Closed += delegate
+            {
+                timer.Stop();
+                owner.Captured -= OnCaptured;
+                Updater.Changed -= OnUpdaterChanged;
+            };
+            IsVisibleChanged += delegate { VisibilityChanged(); };
+            StateChanged += delegate { VisibilityChanged(); };
+            Activated += delegate { active = true; };
+            Deactivated += delegate { active = false; CancelListening(); };
+            PreviewKeyDown += OnKeyDown;
+            PreviewKeyUp += OnKeyUp;
+            PreviewMouseDown += OnMouseBack;
             Build();
         }
 
-        int P(float v) { return (int)Math.Round(v * s); }
-        // The real client size (DPI rounding or a monitor change can make it differ from the design size), so the layers
-        // always cover the whole window.
-        int ViewW { get { return Math.Max(1, Real.Width - P(Side)); } }
-        int ViewH { get { return Real.Height; } }
-
-        // The real client size from Windows. WinForms keeps its own figure, worked out for a normal frame, and keeps going
-        // back to it; with no frame (WM_NCCALCSIZE) the real client is the whole window, so trusting WinForms left a black
-        // band at the bottom and right.
-        Size Real
+        static BitmapSource Imaging(D.Image img)
         {
-            get
-            {
-                Native.RECT rc;
-                if (IsHandleCreated && Native.GetClientRect(Handle, out rc) && rc.Right > 0 && rc.Bottom > 0) return new Size(rc.Right, rc.Bottom);
-                return new Size(P(LW), P(LH));
-            }
+            if (img == null) return null;
+            using (D.Bitmap b = new D.Bitmap(img)) return Ink.FromGdi(b);
         }
 
-        void Center(Screen scr)
+        void Center()
         {
-            Rectangle wa = scr.WorkingArea;
-            Location = new Point(wa.Left + (wa.Width - Width) / 2, wa.Top + Math.Max(0, (wa.Height - Height) / 2 - P(10)));
+            WF.Screen scr = WF.Screen.FromPoint(WF.Control.MousePosition);
+            double k = ShotStack.ScaleFor(scr);
+            D.Rectangle wa = scr.WorkingArea;
+            Left = (wa.Left + (wa.Width - LW * k) / 2) / k;
+            Top = (wa.Top + Math.Max(0, (wa.Height - LH * k) / 2 - 10 * k)) / k;
         }
 
         public void Present(string pageId, bool withIntro)
         {
-            bool wasHidden = !Visible || WindowState == FormWindowState.Minimized;
-            if (!Visible)
-            {
-                // If its monitor is gone, center it on the cursor's monitor.
-                bool onScreen = false;
-                foreach (Screen sc in Screen.AllScreens) if (sc.WorkingArea.IntersectsWith(Bounds)) onScreen = true;
-                if (!onScreen) Center(Screen.FromPoint(Control.MousePosition));
-            }
+            bool prewarming = Left < -30000;
+            if (prewarming) { ShowInTaskbar = true; ShowActivated = true; Center(); }
+            bool wasHidden = !IsVisible || WindowState == WindowState.Minimized || prewarming;
             if (pageId != null && pageId != page) SetPage(pageId, false);
-            if (withIntro)
+            if (!IsVisible)
             {
-                if (intro != null) intro.Dispose();
-                intro = new Intro(Anim.Now);
-                intro.TargetSize = P(30);
-                intro.Target = new PointF(P(20) + P(15), P(24) + P(15));
+                bool onScreen = false;
+                double k = ShotStack.ScaleFor(WF.Screen.FromPoint(WF.Control.MousePosition));
+                D.Rectangle me = new D.Rectangle((int)(Left * k), (int)(Top * k), (int)(LW * k), (int)(LH * k));
+                foreach (WF.Screen sc in WF.Screen.AllScreens) if (sc.WorkingArea.IntersectsWith(me)) onScreen = true;
+                if (!onScreen) Center();
             }
-            if (!Visible) Show();
-            if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal;
+            if (withIntro) StartIntro();
+            // Asked for while it was still warming up off screen: it is already "visible", so nothing else would tell the
+            // stack (and the desktop pet) that Home is now on screen.
+            if (prewarming && IsVisible) VisibilityChanged();
+            if (!IsVisible) Show();
+            if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
             Activate();
-            Native.ForceForeground(Handle);
+            if (Handle != IntPtr.Zero) Native.ForceForeground(Handle);
             if (intro == null && wasHidden && settings.MascotOn)
             {
                 mascot.PopIn();
                 if (settings.MascotTalks) mascot.Greet(MascotTalk.Hello(settings));
             }
             nextTip = Anim.Now + 25000;
-            timer.Start();
-            Invalidate();
+            Wake();
+        }
+
+        // Renders once off-screen and hides again: the graphics device, fonts and layout are ready, so the first real
+        // open takes a fraction of the time.
+        public void Prewarm()
+        {
+            if (IsVisible) return;
+            double left = Left, top = Top;
+            ShowInTaskbar = false;
+            ShowActivated = false;
+            Left = -32000;
+            EventHandler done = null;
+            done = delegate
+            {
+                ContentRendered -= done;
+                if (!ShowInTaskbar && Left < -30000)
+                {
+                    Hide();
+                    Left = left;
+                    Top = top;
+                }
+                ShowInTaskbar = true;
+                ShowActivated = true;
+            };
+            ContentRendered += done;
+            Show();
         }
 
         void HideToTray()
@@ -139,678 +176,759 @@ namespace Stackshot
             Hide();
         }
 
-        protected override void OnFormClosing(FormClosingEventArgs e)
+        void VisibilityChanged()
         {
-            if (e.CloseReason == CloseReason.UserClosing)
+            bool shown = IsVisible && WindowState != WindowState.Minimized && Left > -30000;
+            if (shown) Wake();
+            else
             {
-                e.Cancel = true;
-                HideToTray();
-                return;
+                timer.Stop();
+                if (mascotHost != null) mascotHost.Layer.Release();
             }
-            base.OnFormClosing(e);
+            owner.HomeShown(shown);
         }
 
-        protected override void OnVisibleChanged(EventArgs e)
+        protected override void ThemeChanged()
         {
-            base.OnVisibleChanged(e);
-            if (!Visible) { timer.Stop(); ReleaseLayers(); }
-            else if (WindowState != FormWindowState.Minimized && !timer.Enabled) { lastFrame = 0; timer.Start(); } // however it was shown
-            owner.HomeShown(Visible && WindowState != FormWindowState.Minimized);
+            BuildSidebar();
+            Build();
         }
 
-        // Minimized: stop the timer (0% CPU) until restored.
-        protected override void OnResize(EventArgs e)
+        // ---- Layout
+
+        void BuildSidebar()
         {
-            base.OnResize(e);
-            if (WindowState == FormWindowState.Minimized) timer.Stop();
-            else if (Visible && !timer.Enabled) { lastFrame = 0; timer.Start(); Invalidate(); }
-            // A different client size (DPI change, another monitor): lay everything out again for the new size.
-            if (WindowState != FormWindowState.Minimized && side != null && (side.Height != ViewH || (content != null && content.Width != ViewW)))
+            sidebar.Children.Clear();
+            sidebar.RowDefinitions.Clear();
+            sidebar.RowDefinitions.Add(new RowDefinition { Height = new GridLength(78) });
+            sidebar.RowDefinitions.Add(new RowDefinition());
+            sidebar.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            sidebar.Background = HasMica ? Ds.Brush(Ds.Brushes.Dark ? Ds.Argb(0.10, 0, 0, 0) : Ds.Argb(0.18, 255, 255, 255)) : Ds.Brush(Ds.Brushes.Sidebar);
+            if (sidebar.Parent == null) { Grid.SetColumn(sidebar, 0); Root.Children.Add(sidebar); }
+
+            StackPanel brand = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(20, 26, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+            Image logo = new Image { Width = 30, Height = 30, Source = Icon as ImageSource };
+            RenderOptions.SetBitmapScalingMode(logo, BitmapScalingMode.HighQuality);
+            brand.Children.Add(logo);
+            StackPanel names = new StackPanel { Margin = new Thickness(10, -1, 0, 0) };
+            names.Children.Add(Label("Stackshot", Ds.Title, 15, Ds.Brushes.Label));
+            names.Children.Add(Label("Versi\u00F3n " + Installer.MyVersion.ToString(3), Ds.Regular, 11.5, Ds.Brushes.Label3));
+            brand.Children.Add(names);
+            sidebar.Children.Add(brand);
+
+            navList.Margin = new Thickness(10, 4, 10, 0);
+            Grid.SetRow(navList, 1);
+            sidebar.Children.Add(navList);
+            RefreshNav();
+
+            widgetSlot.Margin = new Thickness(12, 0, 12, 14);
+            Grid.SetRow(widgetSlot, 2);
+            sidebar.Children.Add(widgetSlot);
+
+            Border line = new Border { Width = 1, HorizontalAlignment = HorizontalAlignment.Right, Background = Ds.Brush(Ds.Brushes.Separator) };
+            Grid.SetRowSpan(line, 3);
+            sidebar.Children.Add(line);
+        }
+
+        void RefreshNav()
+        {
+            navList.Children.Clear();
+            for (int i = 0; i < PageIds.Length; i++) navList.Children.Add(NavItem(i));
+        }
+
+        FrameworkElement NavItem(int i)
+        {
+            string id = PageIds[i];
+            bool on = page == id || (id == "mascot" && page == "mascotset");
+            Border b = new Border { Height = 32, CornerRadius = new CornerRadius(7), Margin = new Thickness(0, 0, 0, 2), Cursor = Cursors.Hand };
+            b.Background = on ? Ds.Brush(Ds.Brushes.Accent) : Brushes.Transparent;
+            StackPanel row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+            row.Children.Add(new IconTile(PageIcons[i], 20, W(PageColors[i]), W(Darker(PageColors[i]))));
+            row.Children.Add(Label(PageNames[i], on ? Ds.Medium : Ds.Regular, 13, on ? Colors.White : Ds.Brushes.Label, new Thickness(9, 0, 0, 0)));
+            b.Child = row;
+            if (!on)
             {
-                Build();
-                Invalidate();
+                b.MouseEnter += delegate { b.Background = Ds.Brush(Ds.Brushes.Control); };
+                b.MouseLeave += delegate { b.Background = Brushes.Transparent; };
             }
-            if (owner != null) owner.HomeShown(Visible && WindowState != FormWindowState.Minimized);
+            b.MouseLeftButtonUp += delegate { if (page != id) SetPage(id, true); };
+            return b;
         }
 
-        protected override void OnActivated(EventArgs e) { base.OnActivated(e); active = true; Invalidate(); }
-        protected override void OnDeactivate(EventArgs e) { base.OnDeactivate(e); active = false; CancelListening(); Invalidate(); }
-
-        protected override void Dispose(bool disposing)
+        void BuildPane()
         {
-            if (disposing)
+            Grid.SetColumn(pane, 1);
+            pane.Background = Ds.Brush(Ds.Brushes.Window);
+            Root.Children.Add(pane);
+
+            scroller.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+            scroller.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+            scroller.Focusable = false;
+            scroller.PanningMode = PanningMode.VerticalOnly;
+            scroller.Resources = ScrollStyle();
+            scroller.Content = pageHost;
+            scroller.ScrollChanged += delegate { ToolbarShade(); };
+            pane.Children.Add(scroller);
+
+            // macOS toolbar: invisible at the top, the section name and a hairline fade in when the page scrolls under it.
+            // It drags the window; while it is still clear, its lower edge belongs to the page below (the controls that
+            // start right under it, like Home's view switch, take their clicks there).
+            toolbar.Height = Bar;
+            toolbar.VerticalAlignment = VerticalAlignment.Top;
+            toolbar.Background = Brushes.Transparent;
+            toolbar.MouseLeftButtonDown += DragFromBackground;
+            toolbar.Through = ToolbarThrough;
+            toolbarTitle.FontFamily = Ds.Text;
+            toolbarTitle.FontWeight = FontWeights.SemiBold;
+            toolbarTitle.FontSize = 13.5;
+            toolbarTitle.VerticalAlignment = VerticalAlignment.Center;
+            toolbarTitle.Margin = new Thickness(40, 0, 0, 0);
+            toolbarTitle.Opacity = 0;
+            toolbarRow.Orientation = Orientation.Horizontal;
+            toolbar.Child = toolbarRow;
+            pane.Children.Add(toolbar);
+        }
+
+        readonly StackPanel toolbarRow = new StackPanel();
+
+        const double DragBand = 40;   // the toolbar's height that always drags; page content starts below it
+
+        bool ToolbarThrough(Point p)
+        {
+            return p.Y >= DragBand && scroller.VerticalOffset <= 20;
+        }
+
+        // The toolbar's own surface, with a part the hit test falls through.
+        sealed class ToolbarStrip : Border
+        {
+            public Func<Point, bool> Through;
+
+            protected override HitTestResult HitTestCore(PointHitTestParameters p)
             {
-                owner.Captured -= OnCaptured;
-                Updater.Changed -= OnUpdaterChanged;
-                timer.Dispose();
-                ReleaseLayers();
-                if (intro != null) intro.Dispose();
-                foreach (Font f in fonts.Values) f.Dispose();
-                fonts.Clear();
-                foreach (Bitmap b in previews.Values) b.Dispose();
-                previews.Clear();
-                if (logo != null) logo.Dispose();
+                Func<Point, bool> t = Through;
+                if (t != null && t(p.HitPoint)) return null;
+                return base.HitTestCore(p);
             }
-            base.Dispose(disposing);
         }
 
-        void ReleaseLayers()
+        // Sub-pages get a back button in the toolbar, where nothing scrolls over it.
+        void BuildToolbar()
         {
-            if (side != null) { side.Dispose(); side = null; }
-            if (content != null) { content.Dispose(); content = null; }
-            if (frame != null) { frame.Dispose(); frame = null; }
-            sideDirty = contentDirty = true;
-        }
-
-        // No Windows title bar (the whole client area is ours), but keep the system shadow, corners and minimize
-        // animation.
-        protected override void WndProc(ref Message m)
-        {
-            switch (m.Msg)
+            toolbarRow.Children.Clear();
+            if (page == "mascotset")
             {
-                case 0x0083: // WM_NCCALCSIZE
-                    if (m.WParam != IntPtr.Zero) { m.Result = IntPtr.Zero; return; }
-                    break;
-                case 0x0084: // WM_NCHITTEST: the top strip drags the window
-                {
-                    Point p = PointToClient(new Point((short)(m.LParam.ToInt64() & 0xFFFF), (short)((m.LParam.ToInt64() >> 16) & 0xFFFF)));
-                    if (p.Y >= 0 && p.Y < P(Bar) && CaptionAt(p) < 0 && HitTest(p) == null && intro == null) { m.Result = (IntPtr)2; return; }
-                    m.Result = (IntPtr)1;
-                    return;
-                }
-                case 0x02E0: // WM_DPICHANGED
-                {
-                    s = (m.WParam.ToInt64() & 0xFFFF) / 96f;
-                    Native.RECT r = (Native.RECT)System.Runtime.InteropServices.Marshal.PtrToStructure(m.LParam, typeof(Native.RECT));
-                    foreach (Font f in fonts.Values) f.Dispose();
-                    fonts.Clear();
-                    Bounds = new Rectangle(r.Left, r.Top, P(LW), P(LH));
-                    ReleaseLayers();
-                    Build();
-                    Invalidate();
-                    m.Result = IntPtr.Zero;
-                    return;
-                }
+                MacButton back = new MacButton(settings.MascotName, ButtonKind.Plain, "back", null, 28);
+                back.Margin = new Thickness(30, 0, 0, 0);
+                back.VerticalAlignment = VerticalAlignment.Center;
+                back.Click += delegate { SetPage("mascot", true); };
+                toolbarRow.Children.Add(back);
+                toolbarTitle.Margin = new Thickness(8, 0, 0, 0);
             }
-            base.WndProc(ref m);
+            else toolbarTitle.Margin = new Thickness(40, 0, 0, 0);
+            toolbarRow.Children.Add(toolbarTitle);
         }
 
-        protected override void OnHandleCreated(EventArgs e)
+        void ToolbarShade()
         {
-            base.OnHandleCreated(e);
-            try
-            {
-                int on = 1;
-                Native.DwmSetWindowAttribute(Handle, 20, ref on, 4);   // DWMWA_USE_IMMERSIVE_DARK_MODE
-                int round = 2;
-                Native.DwmSetWindowAttribute(Handle, 33, ref round, 4); // DWMWA_WINDOW_CORNER_PREFERENCE = round
-                int border = 58 | (58 << 8) | (62 << 16);
-                Native.DwmSetWindowAttribute(Handle, 34, ref border, 4);
-            }
-            catch { }
-            Native.SetWindowPos(Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020); // SWP_FRAMECHANGED
+            double k = Math.Max(0, Math.Min(1, scroller.VerticalOffset / 40.0));
+            Color bg = Ds.Brushes.Window;
+            toolbar.Background = Ds.Brush(Color.FromArgb((byte)(k * 245), bg.R, bg.G, bg.B));
+            toolbar.BorderBrush = Ds.Brush(Ds.WithAlpha(Ds.Brushes.Separator, k));
+            toolbar.BorderThickness = new Thickness(0, 0, 0, 1);
+            toolbarTitle.Opacity = Math.Max(0, Math.Min(1, (scroller.VerticalOffset - 30) / 30.0));
         }
+
+        void DragFromBackground(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource != sender && e.OriginalSource != toolbarRow && e.OriginalSource != toolbarTitle) return;
+            if (e.ClickCount == 1 && e.ButtonState == MouseButtonState.Pressed) try { DragMove(); } catch { }
+        }
+
+        static ResourceDictionary scrollStyle;
+
+        // Thin overlay-style scrollbar instead of the classic one.
+        internal static ResourceDictionary ScrollStyle()
+        {
+            if (scrollStyle != null) return scrollStyle;
+            string xaml =
+                "<ResourceDictionary xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>" +
+                "<Style TargetType='ScrollBar'><Setter Property='Width' Value='12'/><Setter Property='MinWidth' Value='12'/><Setter Property='Template'><Setter.Value>" +
+                "<ControlTemplate TargetType='ScrollBar'><Grid Background='Transparent'><Track x:Name='PART_Track' IsDirectionReversed='True'>" +
+                "<Track.Thumb><Thumb><Thumb.Template><ControlTemplate TargetType='Thumb'>" +
+                "<Border x:Name='b' CornerRadius='3' Width='6' Margin='0,4,3,4' HorizontalAlignment='Right' Background='#66808080'/>" +
+                "<ControlTemplate.Triggers><Trigger Property='IsMouseOver' Value='True'><Setter TargetName='b' Property='Width' Value='8'/>" +
+                "<Setter TargetName='b' Property='Background' Value='#99808080'/></Trigger></ControlTemplate.Triggers>" +
+                "</ControlTemplate></Thumb.Template></Thumb></Track.Thumb></Track></Grid></ControlTemplate></Setter.Value></Setter></Style>" +
+                "</ResourceDictionary>";
+            scrollStyle = (ResourceDictionary)System.Windows.Markup.XamlReader.Parse(xaml);
+            return scrollStyle;
+        }
+
+        // ---- Pages
 
         void SetPage(string id, bool animate)
         {
-            if (Array.IndexOf(PageIds, id) < 0) id = "home";
+            if (Array.IndexOf(PageIds, id) < 0 && id != "mascotset") id = "home";
             CancelListening();
             page = id;
-            scroll = scrollTarget = 0;
             Build();
-            if (animate) { pageIn.Set(0); pageIn.Go(1, 260, 0, Ease.OutCubic, null); }
+            scroller.ScrollToVerticalOffset(0);
+            if (animate) quietUntil = Anim.Now + 600;
+            if (animate)
+            {
+                // The new section fades and rises into place; the animations let go once they land.
+                TranslateTransform tt = new TranslateTransform(0, 10);
+                pageHost.RenderTransform = tt;
+                HomeTween(pageHost, OpacityProperty, 0, 1, 0, 220, null);
+                HomeTween(tt, TranslateTransform.YProperty, 10, 0, 0, 320, new CubicEase { EasingMode = EasingMode.EaseOut });
+            }
             if (id == "home" && settings.MascotOn && animate)
             {
                 mascot.PopIn();
                 if (settings.MascotTalks && mascot.Bubble == null && Rng.Next(3) == 0) mascot.Say(Tip(), 4200);
             }
-            Invalidate();
+            Wake();
         }
 
         void Build()
         {
-            hot = pressed = null;
-            nav.Clear();
-            int y = P(80);
-            for (int i = 0; i < PageIds.Length; i++)
+            pane.Background = Ds.Brush(Ds.Brushes.Window);
+            toolbarTitle.Foreground = Ds.Brush(Ds.Brushes.Label);
+            int pi = Array.IndexOf(PageIds, page == "mascotset" ? "mascot" : page);
+            toolbarTitle.Text = page == "mascotset" ? "Ajustes de la mascota" : PageNames[Math.Max(0, pi)];
+            BuildToolbar();
+            RefreshNav();
+            pageHost.Children.Clear();
+            bubbleAvoid.Clear();
+            body = new StackPanel { Margin = new Thickness(40, 0, 40, 40), MaxWidth = 660, HorizontalAlignment = HorizontalAlignment.Stretch };
+            pageHost.Children.Add(body);
+            if (mascotHost != null) { mascotHost.Detach(); mascotHost = null; }
+            try
             {
-                NavItem n = new NavItem(PageIds[i], PageNames[i], PageIcons[i]);
-                n.R = new Rectangle(P(12), y, P(Side - 24), P(36));
-                nav.Add(n);
-                y += P(38);
+                switch (page)
+                {
+                    case "keys": BuildKeys(); break;
+                    case "general": BuildGeneral(); break;
+                    case "editor": BuildEditor(); break;
+                    case "record": BuildRecord(); break;
+                    case "mascot": BuildMascot(); break;
+                    case "mascotset": BuildMascotSettings(); break;
+                    case "about": BuildAbout(); break;
+                    default: BuildHome(); break;
+                }
             }
-            MiniMascot mm = new MiniMascot();
-            mm.R = new Rectangle(P(12), ViewH - P(118), P(Side - 24), P(104));
-            nav.Add(mm);
+            catch (Exception ex) { ShotStack.Log("P\u00E1gina " + page + ": " + ex); }
+            BuildWidget();
+            ToolbarShade();
+            Wake();
+        }
 
-            items.Clear();
-            RemoveNameBox();
-            switch (page)
+        // Rebuilds the current section keeping the scroll position (e.g. when update information arrives).
+        void Rebuild()
+        {
+            if (IsDisposed) return;
+            double off = scroller.VerticalOffset;
+            Build();
+            scroller.UpdateLayout();
+            scroller.ScrollToVerticalOffset(off);
+        }
+
+        void Changed()
+        {
+            owner.ApplySettings();
+            BuildWidget();
+        }
+
+        // Actions from Home hide the window first so it doesn't appear in the capture.
+        void RunAction(string action)
+        {
+            if (action != "video" || !Recorder.Recording) Hide();
+            owner.Run(action);
+        }
+
+        // ---- Sidebar widget: the mascot standing on a little stage with its name and level or, where the mascot is
+        // already big on the page (or hidden), a capture card drawn as a selection marquee.
+
+        bool MiniMascot { get { return settings.MascotOn && page != "home" && page != "mascot"; } }
+        bool sideBuilt, sideWasMini;
+
+        void BuildWidget()
+        {
+            sideLastPage = page;
+            HomeWatchRecording();
+            bool mini = MiniMascot;
+            sideMeter = null;
+            FrameworkElement card = mini ? SideMascot() : SideCapture();
+            // Changing kind (to or from Home) eases the new card in and the mascot hops onto its plate; rebuilds of the
+            // same kind (a setting, the status) swap silently.
+            if (sideBuilt && mini != sideWasMini)
             {
-                case "keys": BuildKeys(); break;
-                case "general": BuildGeneral(); break;
-                case "editor": BuildEditor(); break;
-                case "record": BuildRecord(); break;
-                case "mascot": BuildMascot(); break;
-                case "about": BuildAbout(); break;
-                default: BuildHome(); break;
+                HomeTween(card, OpacityProperty, 0, 1, 0, 240, null);
+                if (mini) mascot.PopIn();
             }
-            contentHeight = P(40);
-            foreach (Widget w in items) contentHeight = Math.Max(contentHeight, w.R.Bottom + P(40));
-            sideDirty = contentDirty = true;
-            if (content != null && content.Height < Math.Max(ViewH, contentHeight)) { content.Dispose(); content = null; }
-            PlaceNameBox();
+            sideBuilt = true;
+            sideWasMini = mini;
+            widgetSlot.Child = card;
+        }
+
+        // The plate both kinds sit on: translucent over the sidebar with a hairline, a touch brighter under the mouse.
+        Border SideCard(bool hoverable)
+        {
+            Palette pal = Ds.Brushes;
+            Color rest = pal.Dark ? Ds.Argb(0.06, 255, 255, 255) : Ds.Argb(0.55, 255, 255, 255);
+            Color over = pal.Dark ? Ds.Argb(0.09, 255, 255, 255) : Ds.Argb(0.85, 255, 255, 255);
+            SolidColorBrush bg = new SolidColorBrush(rest);
+            Border card = new Border { CornerRadius = new CornerRadius(14), Background = bg, BorderBrush = Ds.Brush(pal.Hairline), BorderThickness = new Thickness(1) };
+            if (hoverable)
+            {
+                card.Cursor = Cursors.Hand;
+                card.MouseEnter += delegate { bg.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(over, TimeSpan.FromMilliseconds(140))); };
+                card.MouseLeave += delegate { bg.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(rest, TimeSpan.FromMilliseconds(220))); };
+            }
+            return card;
+        }
+
+        // The mascot on a pool of light under a halo of its colour; its name and level below (or the app status when there
+        // is news) and a thin meter of friendship towards the next level. A click goes Home.
+        FrameworkElement SideMascot()
+        {
+            Palette pal = Ds.Brushes;
+            Border card = SideCard(true);
+            Grid g = new Grid();
+            g.RowDefinitions.Add(new RowDefinition { Height = new GridLength(84) });
+            g.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            // Both glows fade to nothing inside their own box, so no edge ever shows.
+            Color mc = W(MascotParts.Colors[Math.Max(0, Math.Min(MascotParts.Colors.GetLength(0) - 1, mascot.Look.Color)), 0]);
+            g.Children.Add(new Border { Background = SideGlow(mc, pal.Dark ? 0.30 : 0.24, new Point(0.5, 0.46), 0.44, 0.54), IsHitTestVisible = false });
+            System.Windows.Shapes.Ellipse pool = new System.Windows.Shapes.Ellipse
+            {
+                Width = 112, Height = 22, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(0, 0, 0, 1), IsHitTestVisible = false, Fill = SideGlow(mc, pal.Dark ? 0.42 : 0.34, new Point(0.5, 0.5), 0.5, 0.5)
+            };
+            g.Children.Add(pool);
+
+            MascotHost host = new MascotHost(mascot, 56, true);
+            host.HorizontalAlignment = HorizontalAlignment.Center;
+            host.VerticalAlignment = VerticalAlignment.Bottom;
+            host.Margin = new Thickness(0, -30, 0, 7);
+            g.Children.Add(host);
+            UseMascot(host);
+
+            StackPanel info = new StackPanel { Margin = new Thickness(14, 4, 14, 12) };
+            Grid.SetRow(info, 1);
+            TextBlock name = Label(settings.MascotName, Ds.Semibold, 13.5, pal.Label);
+            name.HorizontalAlignment = HorizontalAlignment.Center;
+            name.TextTrimming = TextTrimming.CharacterEllipsis;
+            info.Children.Add(name);
+            sideStatus = new Border { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 1, 0, 0) };
+            sideStatusMini = true;
+            FillSideStatus();
+            info.Children.Add(sideStatus);
+            Grid meter = new Grid { Height = 3, Margin = new Thickness(30, 9, 30, 0) };
+            meter.ColumnDefinitions.Add(new ColumnDefinition());
+            meter.ColumnDefinitions.Add(new ColumnDefinition());
+            Border track = new Border { CornerRadius = new CornerRadius(1.5), Background = Ds.Brush(pal.Control) };
+            Grid.SetColumnSpan(track, 2);
+            meter.Children.Add(track);
+            meter.Children.Add(new Border { CornerRadius = new CornerRadius(1.5), Background = Ds.Brush(pal.Accent) });
+            info.Children.Add(meter);
+            sideMeter = meter;
+            FillSideMeter();
+            g.Children.Add(info);
+
+            card.Child = g;
+            card.MouseLeftButtonUp += delegate { SetPage("home", true); };
+            return card;
+        }
+
+        Border sideStatus;            // the card's status line, refreshed in place (the mascot dozes off, wakes up)
+        bool sideStatusMini, sideSleepShown;
+        Grid sideMeter;
+
+        void FillSideStatus()
+        {
+            if (sideStatus == null) return;
+            D.Color dot;
+            string status = Status(out dot);
+            sideSleepShown = mascot.Sleeping;
+            if (sideStatusMini && dot.ToArgb() == Mac.Green.ToArgb())
+            {
+                int lv = MascotParts.Level(Math.Max(0, settings.MascotLove));
+                sideStatus.Child = Label("Nivel " + (lv + 1) + " \u00B7 " + MascotParts.LevelNames[lv], Ds.Regular, 11.5, Ds.Brushes.Label2);
+            }
+            else
+            {
+                FrameworkElement line = StatusLine(status, dot, 11.5);
+                line.Margin = new Thickness(0);
+                sideStatus.Child = line;
+            }
+        }
+
+        // Friendship towards the next level; a capture moves it on without rebuilding the card.
+        void FillSideMeter()
+        {
+            if (sideMeter == null) return;
+            int love = Math.Max(0, settings.MascotLove), lv = MascotParts.Level(love), left;
+            double prog = Math.Max(0, Math.Min(1, MascotParts.Progress(love, out left)));
+            sideMeter.ColumnDefinitions[0].Width = new GridLength(Math.Max(0.0001, prog), GridUnitType.Star);
+            sideMeter.ColumnDefinitions[1].Width = new GridLength(Math.Max(0.0001, 1 - prog), GridUnitType.Star);
+            FrameworkElement info = sideMeter.Parent as FrameworkElement;
+            if (info != null) info.ToolTip = left > 0 ? left + (left == 1 ? " captura" : " capturas") + " para el nivel " + (lv + 2) : "Nivel m\u00E1ximo";
+        }
+
+        // A soft radial glow of one colour that reaches zero at its radius.
+        static RadialGradientBrush SideGlow(Color c, double a, Point centre, double rx, double ry)
+        {
+            RadialGradientBrush b = new RadialGradientBrush();
+            b.Center = b.GradientOrigin = centre;
+            b.RadiusX = rx;
+            b.RadiusY = ry;
+            b.GradientStops.Add(new GradientStop(Ds.WithAlpha(c, a), 0));
+            b.GradientStops.Add(new GradientStop(Ds.WithAlpha(c, a * 0.62), 0.35));
+            b.GradientStops.Add(new GradientStop(Ds.WithAlpha(c, a * 0.22), 0.7));
+            b.GradientStops.Add(new GradientStop(Ds.WithAlpha(c, 0), 1));
+            b.Freeze();
+            return b;
+        }
+
+        // Capture card: a selection marquee that is itself the button, with the status and a record button below.
+        FrameworkElement SideCapture()
+        {
+            Palette pal = Ds.Brushes;
+            Border card = SideCard(false);
+            card.Padding = new Thickness(10);
+            StackPanel st = new StackPanel();
+
+            Grid area = new Grid { Height = 66, Cursor = Cursors.Hand, Background = Brushes.Transparent };
+            Color restTint = Ds.WithAlpha(pal.Accent, pal.Dark ? 0.13 : 0.07), overTint = Ds.WithAlpha(pal.Accent, pal.Dark ? 0.22 : 0.13);
+            SolidColorBrush tint = new SolidColorBrush(restTint);
+            System.Windows.Shapes.Rectangle marquee = new System.Windows.Shapes.Rectangle
+            {
+                Margin = new Thickness(3), RadiusX = 5, RadiusY = 5, Fill = tint, Stroke = Ds.Brush(Ds.WithAlpha(pal.Accent, pal.Dark ? 0.9 : 0.75)),
+                StrokeThickness = 1.2, StrokeDashArray = new DoubleCollection { 3.5, 3 }, IsHitTestVisible = false
+            };
+            area.Children.Add(marquee);
+            HorizontalAlignment[] hs = { HorizontalAlignment.Left, HorizontalAlignment.Right };
+            VerticalAlignment[] vs = { VerticalAlignment.Top, VerticalAlignment.Bottom };
+            foreach (HorizontalAlignment ha in hs)
+                foreach (VerticalAlignment va in vs)
+                    area.Children.Add(new Border { Width = 7, Height = 7, CornerRadius = new CornerRadius(3.5), Background = Brushes.White, BorderBrush = Ds.Brush(pal.Accent),
+                                                   BorderThickness = new Thickness(1.5), HorizontalAlignment = ha, VerticalAlignment = va, IsHitTestVisible = false });
+            StackPanel txt = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
+            TextBlock title = Label("Capturar un \u00E1rea", Ds.Semibold, 13, pal.Label);
+            title.HorizontalAlignment = HorizontalAlignment.Center;
+            txt.Children.Add(title);
+            if (Hotkeys.Split(settings.HotRegion).Count > 0)
+            {
+                TextBlock k = Label(Hotkeys.Display(settings.HotRegion), Ds.Regular, 11.5, pal.Label2, new Thickness(0, 1, 0, 0));
+                k.HorizontalAlignment = HorizontalAlignment.Center;
+                txt.Children.Add(k);
+            }
+            area.Children.Add(txt);
+            // Under the mouse the tint deepens and the ants march a few steps; they stop by themselves (a resting mouse
+            // must not keep the window drawing), when it leaves or when the window hides. One step is one dash period.
+            Action still = delegate { marquee.BeginAnimation(System.Windows.Shapes.Shape.StrokeDashOffsetProperty, null); };
+            DoubleAnimation[] marching = new DoubleAnimation[1];
+            area.MouseEnter += delegate
+            {
+                tint.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(overTint, TimeSpan.FromMilliseconds(140)));
+                DoubleAnimation march = new DoubleAnimation(0, -6.5, TimeSpan.FromMilliseconds(650)) { RepeatBehavior = new RepeatBehavior(4) };
+                march.Completed += delegate { if (marching[0] == march) still(); };
+                marching[0] = march;
+                marquee.BeginAnimation(System.Windows.Shapes.Shape.StrokeDashOffsetProperty, march);
+            };
+            area.MouseLeave += delegate
+            {
+                tint.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(restTint, TimeSpan.FromMilliseconds(220)));
+                still();
+            };
+            area.IsVisibleChanged += delegate { if (!area.IsVisible) still(); };
+            area.ToolTip = "Capturar un \u00E1rea de la pantalla";
+            ToolTipService.SetInitialShowDelay(area, 900);
+            Press(area, delegate { still(); RunAction("region"); });
+            st.Children.Add(area);
+
+            Grid foot = new Grid { Margin = new Thickness(3, 9, 0, 0) };
+            foot.ColumnDefinitions.Add(new ColumnDefinition());
+            foot.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            sideStatus = new Border { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
+            sideStatusMini = false;
+            FillSideStatus();
+            foot.Children.Add(sideStatus);
+            FrameworkElement rec = SideRecord();
+            Grid.SetColumn(rec, 1);
+            foot.Children.Add(rec);
+            st.Children.Add(foot);
+            card.Child = st;
+            return card;
+        }
+
+        // Round record button; while recording it stops.
+        FrameworkElement SideRecord()
+        {
+            Palette pal = Ds.Brushes;
+            bool on = Recorder.Recording;
+            Color rest = on ? Ds.WithAlpha(pal.Red, 0.16) : pal.Control, over = on ? Ds.WithAlpha(pal.Red, 0.26) : pal.ControlHover;
+            SolidColorBrush bg = new SolidColorBrush(rest);
+            Border b = new Border { Width = 28, Height = 28, CornerRadius = new CornerRadius(14), Background = bg, Cursor = Cursors.Hand, VerticalAlignment = VerticalAlignment.Center };
+            b.Child = new GlyphView(on ? "stop!" : "record!", on ? 13 : 15, pal.Red, 1.6);
+            string combo = settings.HotVideo;
+            b.ToolTip = (on ? "Detener la grabaci\u00F3n" : "Grabar v\u00EDdeo") + (Hotkeys.Split(combo).Count > 0 ? "  (" + Hotkeys.Display(combo) + ")" : "");
+            b.MouseEnter += delegate { bg.Color = over; };
+            b.MouseLeave += delegate { bg.Color = rest; };
+            Press(b, delegate { RunAction("video"); });
+            return b;
+        }
+
+        // A status dot and its text; the text trims when the line is short of room.
+        FrameworkElement StatusLine(string status, D.Color dot, double size)
+        {
+            DockPanel p = new DockPanel { Margin = new Thickness(0, 2, 0, 0) };
+            System.Windows.Shapes.Ellipse e = new System.Windows.Shapes.Ellipse { Width = 6, Height = 6, Fill = Ds.Brush(W(dot)), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 1, 6, 0) };
+            DockPanel.SetDock(e, Dock.Left);
+            p.Children.Add(e);
+            TextBlock t = Label(status, Ds.Regular, size, Ds.Brushes.Label2);
+            t.TextTrimming = TextTrimming.CharacterEllipsis;
+            p.Children.Add(t);
+            return p;
+        }
+
+        // Current app status (sidebar and hero).
+        string Status(out D.Color dot)
+        {
+            if (Recorder.Recording) { dot = Mac.Red; return "Grabando\u2026"; }
+            if (ScrollCapture.Active) { dot = Mac.Blue; return "Capturando con desplazamiento"; }
+            if (Updater.Available != null) { dot = Mac.Blue; return "Versi\u00F3n " + Updater.Available.Version.ToString(3) + " disponible"; }
+            if (settings.MascotOn && mascot.Sleeping) { dot = Mac.Text3; return "Echando una siesta"; }
+            dot = Mac.Green;
+            return "Listo para capturar";
+        }
+
+        // ---- Mascot and the frame clock
+
+        // The page (or the sidebar) hands over the slot where the mascot should live.
+        void UseMascot(MascotHost host)
+        {
+            if (mascotHost != null && mascotHost != host) mascotHost.Detach();
+            mascotHost = settings.MascotOn ? host : null;
+            if (mascotHost != null)
+            {
+                host.Room = BubbleRoom;
+                host.Avoid = bubbleAvoid;
+                host.Poked += delegate
+                {
+                    if (page != "home" && page != "mascot") { SetPage("home", true); return; }
+                    mascot.Poke(MascotTalk.Pokes(settings));
+                    Wake();
+                };
+            }
+            Wake();
+        }
+
+        // Where a speech bubble may go: the sidebar for the little one, otherwise the visible page under the toolbar.
+        Rect BubbleRoom(MascotHost h)
+        {
+            if (sidebar.IsAncestorOf(h))
+                return h.Settled(sidebar, new Rect(6, 6, Math.Max(0, sidebar.ActualWidth - 12), Math.Max(0, sidebar.ActualHeight - 12)));
+            double w = scroller.ViewportWidth, ht = scroller.ViewportHeight;
+            if (w < 40 || ht < Bar + 40) return Rect.Empty;
+            return h.Settled(scroller, new Rect(6, Bar, w - 12, ht - Bar - 6));
+        }
+
+        double burstUntil;            // something just set the mascot moving: full rate for a moment, even if it naps
+
+        void Wake()
+        {
+            burstUntil = Anim.Now + 1200;
+            if (!IsVisible || WindowState == WindowState.Minimized) return;
+            if (!timer.IsEnabled) { timer.Interval = 16; timer.Start(); }
         }
 
         void Tick(object sender, EventArgs e)
         {
-            if (!Visible || WindowState == FormWindowState.Minimized) return;
+            if (!IsVisible || WindowState == WindowState.Minimized) { timer.Stop(); return; }
             double now = Anim.Now;
-            double dt = lastFrame == 0 ? 16 : Math.Min(60, now - lastFrame);
-            lastFrame = now;
-
-            bool repaintAll = false;
+            bool lively = false;
             if (intro != null)
             {
-                repaintAll = true;
+                lively = true;
+                introLayer.Refresh();
                 if (intro.T(now) > Intro.RevealAt + 120 && !introGreeted)
                 {
                     introGreeted = true;
                     if (settings.MascotOn)
                     {
                         mascot.PopIn();
-                        if (settings.MascotTalks) mascot.Greet(Greeting() + " Soy " + settings.MascotName + ". \u00BFQu\u00E9 capturamos?");
+                        if (settings.MascotTalks) mascot.Greet(MascotTalk.Greeting() + " Soy " + settings.MascotName + ". \u00BFQu\u00E9 capturamos?");
                     }
                 }
-                if (intro.Done(now)) { intro.Dispose(); intro = null; introGreeted = false; sideDirty = true; }
+                if (intro.Done(now)) EndIntro();
             }
 
-            // Smooth scrolling.
-            double before = scroll;
-            scrollTarget = Math.Max(0, Math.Min(Math.Max(0, contentHeight - ViewH), scrollTarget));
-            scroll += (scrollTarget - scroll) * (1 - Math.Exp(-dt / 70.0));
-            if (Math.Abs(scrollTarget - scroll) < 0.5) scroll = scrollTarget;
-            if (scroll != before) { repaintAll = true; PlaceNameBox(); }
-
-            pageIn.Step(now);
-            if (pageIn.Running) repaintAll = true;
-            foreach (Widget w in items) { w.Step(now); if (w.Running) DirtyContent(w.R); }
-            foreach (Widget w in nav) { w.Step(now); if (w.Running) { sideDirty = true; repaintAll = true; } }
-
-            // The mascot tracks the mouse even outside the window.
-            Point sm = Control.MousePosition;
+            D.Point sm = WF.Control.MousePosition;
             bool moved = sm != lastScreenMouse;
             lastScreenMouse = sm;
-            Point cm = PointToClient(sm);
-            RectangleF oldBounds = settings.MascotOn ? mascot.PaintBounds : RectangleF.Empty;
-            UpdateMascotBox();
-            mascot.Step(now, cm, moved);
-            if (settings.MascotOn && settings.MascotTalks && now > nextTip && intro == null)
-            {
-                nextTip = now + 38000 + Rng.NextDouble() * 20000;
-                if (mascot.Bubble == null && !mascot.Sleeping) mascot.Say(Tip(), 5200);
-            }
-
-            // Adaptive frame rate: 60 fps while animating, 30 while the mouse moves (the mascot follows it), ~25 idle
-            // with the mascot, 10 without it.
             if (moved) lastMove = now;
-            bool lively = repaintAll || listening != null || (settings.MascotOn && mascot.Lively);
-            bool looking = settings.MascotOn && now - lastMove < 600;
-            int interval = lively ? 15 : looking ? 31 : settings.MascotOn ? 47 : 100; // multiples of the 15.6 ms system tick
-            if (!active && !lively && !looking) interval = settings.MascotOn ? 50 : 200;
-            if (timer.Interval != interval) timer.Interval = interval;
-
-            if (repaintAll) { Invalidate(); return; }
-            if (settings.MascotOn)
+            // A slot that left the window (its card was swapped, the mascot was hidden from a page that stays) is let go,
+            // so nothing keeps the clock running for it.
+            if (mascotHost != null && (!settings.MascotOn || !mascotHost.Live)) { mascotHost.Detach(); mascotHost = null; }
+            if (mascotHost != null)
             {
-                RectangleF r = RectangleF.Union(oldBounds, mascot.PaintBounds);
-                Invalidate(Rectangle.Round(RectangleF.Inflate(r, 2, 2)));
-                if (mascot.BubbleAlpha > 0 || bubbleText != null) Invalidate(BubbleRect(true));
-                if (!lastBubble.IsEmpty) { Invalidate(lastBubble); if (bubbleText == null) lastBubble = Rectangle.Empty; }
-            }
-        }
-        bool introGreeted;
-        double lastMove;
-
-        void UpdateMascotBox()
-        {
-            if (page == "home" || page == "mascot")
-            {
-                RectangleF b = heroMascot;
-                b.Offset(P(Side), (float)(-scroll + ContentShift));
-                mascot.Box = b;
-            }
-            else
-            {
-                Widget mm = nav[nav.Count - 1];
-                float d = P(74);
-                mascot.Box = new RectangleF(mm.R.X + P(10), mm.R.Y + P(14), d, d);
-            }
-        }
-
-        float ContentShift { get { return (float)((1 - pageIn.Value) * P(12)); } }
-
-        protected override void OnPaintBackground(PaintEventArgs e) { }
-
-        // Composes only the invalidated rectangle into our own back buffer and copies just that to the screen: a mascot
-        // frame costs a few hundred pixels instead of the whole window, and nothing unpainted is ever shown.
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            Size real = Real;
-            Rectangle clip = Rectangle.Intersect(e.ClipRectangle, new Rectangle(Point.Empty, real));
-            if (clip.Width <= 0 || clip.Height <= 0) return;
-            EnsureLayers();
-            if (frame == null || frame.Width != real.Width || frame.Height != real.Height)
-            {
-                if (frame != null) frame.Dispose();
-                frame = new Dib(real.Width, real.Height);
-            }
-            int sy = (int)Math.Round(scroll), shift = (int)Math.Round(ContentShift);
-            Rectangle sr = Rectangle.Intersect(clip, new Rectangle(0, 0, side.Width, side.Height));
-            if (!sr.IsEmpty) Native.BitBlt(frame.Dc, sr.X, sr.Y, sr.Width, sr.Height, side.Dc, sr.X, sr.Y, Native.SRCCOPY);
-            Rectangle cr = Rectangle.Intersect(clip, new Rectangle(P(Side), shift, ViewW, ViewH - shift));
-            if (!cr.IsEmpty) Native.BitBlt(frame.Dc, cr.X, cr.Y, cr.Width, cr.Height, content.Dc, cr.X - P(Side), cr.Y - shift + sy, Native.SRCCOPY);
-            using (Graphics g = frame.DcGraphics())
-            {
-                g.SetClip(clip);
-                PaintOverlays(g, shift);
-            }
-            Native.GdiFlush();
-            IntPtr hdc = e.Graphics.GetHdc();
-            try { Native.BitBlt(hdc, clip.X, clip.Y, clip.Width, clip.Height, frame.Dc, clip.X, clip.Y, Native.SRCCOPY); }
-            finally { e.Graphics.ReleaseHdc(hdc); }
-        }
-
-        void PaintOverlays(Graphics g, int shift)
-        {
-            // While a section slides in, the background shows above it.
-            if (shift > 0) using (SolidBrush wb = new SolidBrush(Mac.Window)) g.FillRectangle(wb, P(Side), 0, ViewW, shift);
-
-            Mac.Quality(g);
-            if (pageIn.Value < 1 && timer.Enabled) // a stalled transition must never hide the page
-            {
-                using (SolidBrush b = new SolidBrush(Mac.Alpha(Mac.Window, 1 - pageIn.Value))) g.FillRectangle(b, P(Side), 0, ViewW, ViewH);
-            }
-            if (scroll > 1)
-            {
-                // Content fades under the top strip when scrolled, like a macOS toolbar.
-                Rectangle fade = new Rectangle(P(Side), 0, ViewW, P(Bar));
-                double k = Math.Min(1, scroll / P(30));
-                using (LinearGradientBrush b = new LinearGradientBrush(new Rectangle(fade.X, fade.Y - 1, fade.Width, fade.Height + 2),
-                                                                       Mac.Alpha(Mac.Window, k), Color.FromArgb(0, Mac.Window), 90f))
-                    g.FillRectangle(b, fade);
-            }
-            PaintCaption(g);
-            if (settings.MascotOn && (intro == null || intro.T(Anim.Now) > Intro.RevealAt))
-            {
-                Region old = g.Clip;
-                if (page == "home" || page == "mascot") g.SetClip(new Rectangle(P(Side), 0, ViewW, ViewH), CombineMode.Intersect);
-                mascot.Paint(g);
-                g.Clip = old;
-                old.Dispose();
-                PaintBubble(g);
-            }
-            if (intro != null) intro.Paint(g, new Rectangle(Point.Empty, Real), Anim.Now, s);
-        }
-
-        void EnsureLayers()
-        {
-            if (side != null && side.Height != ViewH) { side.Dispose(); side = null; }
-            if (side == null) { side = new Dib(P(Side), ViewH); sideDirty = true; }
-            int ch = Math.Max(ViewH, contentHeight);
-            if (content == null || content.Height < ch || content.Width != ViewW) { if (content != null) content.Dispose(); content = new Dib(ViewW, ch); contentDirty = true; }
-            if (sideDirty)
-            {
-                using (Graphics g = side.DcGraphics()) { Mac.Quality(g); PaintSide(g); }
-                sideDirty = false;
-            }
-            if (contentDirty)
-            {
-                using (Graphics g = content.DcGraphics())
+                ApplyMascotBehavior();
+                mascotHost.Step(now, sm, moved);
+                if (settings.MascotTalks && now > nextTip && intro == null)
                 {
-                    Mac.Quality(g);
-                    g.Clear(Mac.Window);
-                    foreach (Widget w in items) PaintWidget(g, w);
+                    nextTip = now + (38000 + Rng.NextDouble() * 20000) * TipScale;
+                    if (mascot.Bubble == null && !mascot.Sleeping) mascot.Say(Tip(), 5200);
                 }
-                contentDirty = false;
-                dirtyRects.Clear();
+                // Lively already covers a bubble fading in or out; one at rest needs no more than the idle rate. Asleep it
+                // always has a "z" in the air, which counts as lively, but those drift slowly (see dozing below); a pop-in
+                // or a reaction that starts while it naps still runs at the full rate.
+                if (mascot.Lively && (!mascot.Sleeping || now < burstUntil)) lively = true;
+                // Dozing off and waking up are the only status changes nothing announces.
+                if (sideStatus != null && mascot.Sleeping != sideSleepShown) FillSideStatus();
             }
-            else if (dirtyRects.Count > 0)
+
+            // 60 fps while something animates, 30 while the mouse moves (the mascot follows it) or it naps, ~15 idle with
+            // the mascot breathing (lower when the window is in the background); with nothing to draw, the clock stops
+            // until something wakes it.
+            bool looking = mascotHost != null && now - lastMove < 600;
+            bool dozing = mascotHost != null && mascot.Sleeping;   // its z's drift up: half rate is smooth enough
+            int ms = lively ? (now < quietUntil ? 33 : 16) : looking ? 33 : dozing ? (active ? 33 : 66) : mascotHost != null ? (active ? 33 : 100) : 0;
+            if (ms == 0) { timer.Stop(); return; }
+            timer.Interval = ms;
+        }
+
+        void StartIntro()
+        {
+            EndIntro();
+            intro = new Intro(Anim.Now);
+            intro.TargetSize = 30;
+            intro.Target = new D.PointF(20 + 15, 26 + 15);
+            introLayer = new GdiLayer();
+            introLayer.Painter = delegate(D.Graphics g, float k)
             {
-                // Only the parts that changed (a hovered tile, a toggle sliding): the rest of the page stays as is.
-                if (dirtyRects.Count > 8)
-                {
-                    Rectangle all = dirtyRects[0];
-                    foreach (Rectangle r in dirtyRects) all = Rectangle.Union(all, r);
-                    dirtyRects.Clear();
-                    dirtyRects.Add(all);
-                }
-                using (Graphics g = content.DcGraphics())
-                using (SolidBrush bg = new SolidBrush(Mac.Window))
-                {
-                    Mac.Quality(g);
-                    foreach (Rectangle r in dirtyRects)
-                    {
-                        g.SetClip(r);
-                        g.FillRectangle(bg, r);
-                        foreach (Widget w in items)
-                            if (Rectangle.Inflate(w.R, P(16), P(16)).IntersectsWith(r)) PaintWidget(g, w);
-                        g.ResetClip();
-                    }
-                }
-                dirtyRects.Clear();
-            }
+                intro.TargetSize = 30 * k;
+                intro.Target = new D.PointF((20 + 15) * k, (26 + 15) * k);
+                intro.Paint(g, new D.Rectangle(0, 0, (int)(ActualWidth * k), (int)(ActualHeight * k)), Anim.Now, k);
+            };
+            introLayer.IsHitTestVisible = true;
+            introLayer.MouseLeftButtonDown += delegate { SkipIntro(); };
+            Grid.SetColumnSpan(introLayer, 2);
+            Panel.SetZIndex(introLayer, 200);
+            Root.Children.Add(introLayer);
+            introGreeted = false;
         }
 
-        void PaintWidget(Graphics g, Widget w)
+        void EndIntro()
         {
-            // A failing widget must not break the rest of the section.
-            GraphicsState st = g.Save();
-            try { w.Paint(g, this); }
-            catch (Exception ex) { ShotStack.Log("Dibujar " + w.GetType().Name + ": " + ex); }
-            g.Restore(st);
-        }
-
-        readonly List<Rectangle> dirtyRects = new List<Rectangle>();
-
-        // Marks part of the section (content coordinates) for repainting, shadows included.
-        void DirtyContent(Rectangle r)
-        {
-            r.Inflate(P(14), P(14));
-            dirtyRects.Add(r);
-            Invalidate(new Rectangle(r.X + P(Side), r.Y - (int)Math.Round(scroll) + (int)Math.Round(ContentShift), r.Width, r.Height));
-        }
-
-        void PaintSide(Graphics g)
-        {
-            g.Clear(Mac.Sidebar);
-            using (Pen p = new Pen(Color.FromArgb(44, 44, 48))) g.DrawLine(p, P(Side) - 1, 0, P(Side) - 1, ViewH);
-            Rectangle lr = new Rectangle(P(20), P(24), P(30), P(30));
-            if (intro == null || intro.T(Anim.Now) > Intro.Length - 200)
-            {
-                if (logo != null) g.DrawImage(logo, lr);
-            }
-            TextRenderer.DrawText(g, "Stackshot", F(15, 2), new Rectangle(P(58), P(22), P(170), P(20)), Mac.Text, TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
-            TextRenderer.DrawText(g, "Versi\u00F3n " + Installer.MyVersion.ToString(3), F(11.5f, 0), new Rectangle(P(58), P(42), P(170), P(16)), Mac.Text3, TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
-            foreach (Widget w in nav) w.Paint(g, this);
-        }
-
-        // Windows 11 caption buttons: minimize and close (to tray). Fixed size, no maximize.
-        Rectangle CaptionButton(int i) { return new Rectangle(Real.Width - P(46) * (2 - i), 0, P(46), P(32)); }
-        Rectangle CaptionRect { get { return Rectangle.Union(CaptionButton(0), CaptionButton(1)); } }
-
-        int CaptionAt(Point p)
-        {
-            for (int i = 0; i < 2; i++) if (CaptionButton(i).Contains(p)) return i;
-            return -1;
-        }
-
-        void PaintCaption(Graphics g)
-        {
-            string[] glyphs = { "\uE921", "\uE8BB" };
-            for (int i = 0; i < 2; i++)
-            {
-                Rectangle r = CaptionButton(i);
-                bool h = captionHot == i, d = h && captionDown == i;
-                Color fg = active ? Mac.Text : Mac.Text3;
-                if (i == 1 && h)
-                {
-                    using (SolidBrush b = new SolidBrush(d ? Color.FromArgb(200, 196, 43, 28) : Color.FromArgb(196, 43, 28))) g.FillRectangle(b, r);
-                    fg = Color.White;
-                }
-                else if (h)
-                {
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(d ? 10 : 18, 255, 255, 255))) g.FillRectangle(b, r);
-                }
-                Font f = F(10, 3);
-                TextRenderer.DrawText(g, glyphs[i], f, r, fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
-            }
-        }
-
-        // The bubble sits above the mascot, never over the text next to it: above the head on Home and Mascota,
-        // above its card in the sidebar.
-        bool MiniMode { get { return page != "home" && page != "mascot"; } }
-
-        static readonly Bitmap measureBmp = new Bitmap(1, 1);
-        Rectangle lastBubble;          // area painted last time, so a shorter text never leaves leftovers behind
-        string measuredText;
-        int measuredW;
-        SizeF measuredSize;
-        int bubbleTail = 1;            // 1 points down at the mascot, -1 up, 0 none
-
-        Rectangle BubbleRect(bool inflate)
-        {
-            string text = mascot.Bubble ?? bubbleText;
-            if (text == null) return Rectangle.Empty;
-            RectangleF b = mascot.Box;
-            int maxW = MiniMode ? P(Side - 24) : P(214);
-            // Measured once per text and width, not on every tick.
-            if (text != measuredText || maxW != measuredW)
-            {
-                using (Graphics mg = Graphics.FromImage(measureBmp))
-                {
-                    mg.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                    measuredSize = mg.MeasureString(text, F(13, 0), maxW - P(28));
-                }
-                measuredText = text;
-                measuredW = maxW;
-            }
-            SizeF ts = measuredSize;
-            int w = (int)Math.Ceiling(ts.Width) + P(30), h = (int)Math.Ceiling(ts.Height) + P(20);
-            Rectangle r;
-            bubbleTail = 1;
-            if (MiniMode) r = new Rectangle(P(12), nav[nav.Count - 1].R.Y - h - P(12), w, h);
-            else
-            {
-                int left = (int)(b.X + b.Width / 2 - w / 2f), minX = P(Side) + P(14), maxX = P(Side) + P(40) + P(252) - w;
-                // Above the head, leaving room for a hat if it wears one.
-                int x = Math.Max(minX, Math.Min(maxX, left)), above = (int)(b.Y - h - P(10) - (mascot.Look.EffectiveHat(DateTime.Now) != 0 ? b.Height * 0.16f : 0)), below = (int)(b.Bottom - b.Height * 0.08f + P(10));
-                // Never above the card the mascot stands in by more than a little: the page title and subtitle stay readable,
-                // even if that means brushing the top of a hat.
-                int ceiling = CardTop(b) - P(30), plain = (int)(b.Y - h - P(10));
-                if (above < ceiling && ceiling <= plain) above = ceiling;
-                // Above the head when it fits; below the mascot (tail up) when its head is scrolled out of view; and when the
-                // mascot is out of view altogether, a plain note at the top of the page.
-                if (above >= P(8)) { r = new Rectangle(x, above, w, h); bubbleTail = 1; }
-                else if (b.Y + b.Height * 0.5f > P(8) && below + h < Real.Height - P(8)) { r = new Rectangle(x, below, w, h); bubbleTail = -1; }
-                else { r = new Rectangle(P(Side) + (Real.Width - P(Side) - w) / 2, P(14), w, h); bubbleTail = 0; }
-            }
-            if (inflate) r.Inflate(P(14), P(14));
-            return r;
-        }
-
-        // Top of the hero or stage card holding the mascot, in window coordinates (or 0 when there is none).
-        int CardTop(RectangleF box)
-        {
-            PointF c = new PointF(box.X + box.Width / 2, box.Y + box.Height / 2);
-            int dy = -(int)Math.Round(scroll) + (int)Math.Round(ContentShift);
-            foreach (Widget w in items)
-            {
-                if (!(w is Hero) && !(w is MascotStage)) continue;
-                Rectangle r = new Rectangle(w.R.X + P(Side), w.R.Y + dy, w.R.Width, w.R.Height);
-                if (r.Contains(Point.Round(c))) return r.Y;
-            }
-            return 0;
-        }
-
-        void PaintBubble(Graphics g)
-        {
-            if (mascot.Bubble != null) bubbleText = mascot.Bubble;
-            if (bubbleText == null) return;
-            double a = mascot.BubbleAlpha;
-            if (a < 0.02) { if (mascot.Bubble == null) bubbleText = null; return; }
-            Rectangle r = BubbleRect(false);
-            lastBubble = Rectangle.Inflate(r, P(16), P(16));
-            float pop = (float)(0.92 + 0.08 * a);
-            GraphicsState st = g.Save();
-            float tx = Math.Max(r.X + P(18), Math.Min(r.Right - P(18), mascot.Box.X + mascot.Box.Width / 2));
-            float ox = tx, oy = bubbleTail < 0 ? r.Top : r.Bottom;
-            g.TranslateTransform(ox, oy);
-            g.ScaleTransform(pop, pop);
-            g.TranslateTransform(-ox, -oy);
-            Color fill = Color.FromArgb((int)(250 * a), 62, 62, 68);
-            using (GraphicsPath p = Theme.Round(r, P(14)))
-            {
-                RectangleF sh = r;
-                sh.Offset(0, P(3));
-                using (GraphicsPath sp = Theme.Round(sh, P(14)))
-                using (SolidBrush b = new SolidBrush(Color.FromArgb((int)(70 * a), 0, 0, 0))) g.FillPath(b, sp);
-                using (SolidBrush b = new SolidBrush(fill)) g.FillPath(b, p);
-                if (bubbleTail != 0)
-                {
-                    float edge = bubbleTail > 0 ? r.Bottom - P(1) : r.Top + P(1), tip = bubbleTail > 0 ? r.Bottom + P(7) : r.Top - P(7);
-                    PointF[] tail = { new PointF(tx - P(7), edge), new PointF(tx + P(1), tip), new PointF(tx + P(7), edge) };
-                    using (SolidBrush b = new SolidBrush(fill)) g.FillPolygon(b, tail);
-                }
-                using (Pen pen = new Pen(Color.FromArgb((int)(40 * a), 255, 255, 255))) g.DrawPath(pen, p);
-            }
-            using (SolidBrush tb = new SolidBrush(Color.FromArgb((int)(255 * a), Mac.Text)))
-            {
-                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                RectangleF tr = new RectangleF(r.X + P(15), r.Y + P(10), r.Width - P(28), r.Height - P(16));
-                g.DrawString(bubbleText, F(13, 0), tb, tr);
-            }
-            g.Restore(st);
-        }
-
-        Widget HitTest(Point p)
-        {
-            foreach (Widget w in nav) if (w.Interactive && w.R.Contains(p)) return w;
-            if (p.X >= P(Side))
-            {
-                Point c = new Point(p.X - P(Side), p.Y + (int)Math.Round(scroll));
-                for (int i = items.Count - 1; i >= 0; i--) if (items[i].Interactive && items[i].Hit(c)) return items[i];
-            }
-            return null;
-        }
-
-        Point ToContent(Point p) { return new Point(p.X - P(Side), p.Y + (int)Math.Round(scroll)); }
-
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            base.OnMouseMove(e);
-            mouse = e.Location;
-            if (intro != null) return;
-            int ch = CaptionAt(e.Location);
-            if (ch != captionHot) { captionHot = ch; Invalidate(CaptionRect); }
-            bool lh = ch >= 0;
-            bool mh = settings.MascotOn && mascot.Box.Contains(e.Location);
-            if (mh != mascotHot) { mascotHot = mh; mascot.Hover(mh); }
-            Widget h = HitTest(e.Location);
-            if (h != hot)
-            {
-                TryOn(null);
-                if (hot != null) hot.SetHot(false);
-                hot = h;
-                if (hot != null) hot.SetHot(true);
-            }
-            if (hot != null) hot.Move(this, IsNav(hot) ? e.Location : ToContent(e.Location));
-            Cursor = ((hot != null && hot.Clickable) || mh) && !lh ? Cursors.Hand : Cursors.Default;
-        }
-
-        bool IsNav(Widget w) { return nav.Contains(w); }
-
-        protected override void OnMouseLeave(EventArgs e)
-        {
-            base.OnMouseLeave(e);
-            TryOn(null);
-            if (hot != null) { hot.SetHot(false); hot = null; }
-            if (captionHot >= 0) { captionHot = -1; captionDown = -1; Invalidate(CaptionRect); }
-            if (mascotHot) { mascotHot = false; mascot.Hover(false); }
-        }
-
-        protected override void OnMouseDown(MouseEventArgs e)
-        {
-            base.OnMouseDown(e);
-            if (intro != null) { SkipIntro(); return; }
-            if (e.Button != MouseButtons.Left) return;
-            if (CaptionAt(e.Location) >= 0) { captionDown = CaptionAt(e.Location); Invalidate(CaptionRect); return; }
-            if (settings.MascotOn && mascot.Box.Contains(e.Location))
-            {
-                if (page != "home" && page != "mascot") { SetPage("home", true); return; }
-                mascot.Poke(PokeLines());
-                return;
-            }
-            pressed = HitTest(e.Location);
-            if (pressed != null) pressed.Down(this, IsNav(pressed) ? e.Location : ToContent(e.Location));
-            if (listening != null && pressed != listening) CancelListening();
-        }
-
-        protected override void OnMouseUp(MouseEventArgs e)
-        {
-            base.OnMouseUp(e);
-            if (e.Button != MouseButtons.Left) return;
-            if (captionDown >= 0)
-            {
-                int i = captionDown;
-                captionDown = -1;
-                Invalidate(CaptionRect);
-                if (CaptionAt(e.Location) != i) return;
-                if (i == 1) HideToTray();
-                else WindowState = FormWindowState.Minimized;
-                return;
-            }
-            Widget p = pressed;
-            pressed = null;
-            if (p == null) return;
-            p.Up(this);
-            if (HitTest(e.Location) == p) p.Click(this, IsNav(p) ? e.Location : ToContent(e.Location));
-        }
-
-        protected override void OnMouseWheel(MouseEventArgs e)
-        {
-            base.OnMouseWheel(e);
-            if (e.X < P(Side)) return;
-            scrollTarget -= e.Delta / 120.0 * P(72);
-        }
-
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-        {
-            if (intro != null && (keyData & Keys.KeyCode) != Keys.None) { SkipIntro(); return true; }
-            if (listening != null)
-            {
-                Keys key = keyData & Keys.KeyCode;
-                if (key == Keys.ControlKey || key == Keys.ShiftKey || key == Keys.Menu || key == Keys.LWin || key == Keys.RWin) return true;
-                if (key == Keys.PrintScreen) return true; // arrives on key up (OnKeyUp)
-                listening.Take(this, keyData);
-                return true;
-            }
-            if (nameBox != null && nameBox.Focused) return base.ProcessCmdKey(ref msg, keyData);
-            switch (keyData)
-            {
-                case Keys.Control | Keys.W:
-                case Keys.Escape:
-                    HideToTray();
-                    return true;
-                case Keys.Control | Keys.Tab:
-                case Keys.Control | Keys.Shift | Keys.Tab:
-                {
-                    int i = Array.IndexOf(PageIds, page) + ((keyData & Keys.Shift) != 0 ? -1 : 1);
-                    SetPage(PageIds[(i + PageIds.Length) % PageIds.Length], true);
-                    return true;
-                }
-            }
-            return base.ProcessCmdKey(ref msg, keyData);
-        }
-
-        protected override void OnKeyUp(KeyEventArgs e)
-        {
-            base.OnKeyUp(e);
-            if (listening != null && e.KeyCode == Keys.PrintScreen) listening.Take(this, e.KeyData);
+            if (intro == null) return;
+            intro.Dispose();
+            intro = null;
+            if (introLayer != null) { introLayer.Release(); Root.Children.Remove(introLayer); introLayer = null; }
         }
 
         void SkipIntro()
         {
             if (intro == null) return;
-            intro.Dispose();
-            intro = null;
-            sideDirty = true;
+            EndIntro();
             if (settings.MascotOn)
             {
                 mascot.PopIn();
-                if (settings.MascotTalks) mascot.Greet(Greeting() + " Soy " + settings.MascotName + ".");
+                if (settings.MascotTalks) mascot.Greet(MascotTalk.Greeting() + " Soy " + settings.MascotName + ".");
             }
-            Invalidate();
+            Wake();
+        }
+
+        string Tip() { return MascotTalk.Tip(settings); }
+
+        void OnCaptured(string path)
+        {
+            if (!IsVisible || !settings.MascotOn) return;
+            int level = MascotParts.Level(settings.MascotLove);
+            bool up = level > MascotParts.Level(settings.MascotLove - 1);
+            mascot.Celebrate(settings.MascotTalks ? (up ? MascotTalk.LevelUp(settings, level) : MascotTalk.Celebrate(settings)) : null);
+            // Friendship and unlocks move on in place: no rebuild, so the dock keeps its scroll and the search its focus.
+            if (page == "mascot") MascotPageOnCaptured();
+            FillSideMeter();
+            FillSideStatus();
+            Wake();
+        }
+
+        void OnUpdaterChanged()
+        {
+            if (page == "about") Rebuild();
+            else BuildWidget();
+        }
+
+        // ---- Keyboard
+
+        void OnKeyDown(object sender, KeyEventArgs e)
+        {
+            Key key = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (intro != null) { SkipIntro(); e.Handled = true; return; }
+            if (listening != null)
+            {
+                e.Handled = true;
+                if (IsModifier(key) || key == Key.Snapshot) return; // Print Screen arrives on key up
+                listening.Take(this, ToKeys(key));
+                return;
+            }
+            if (e.OriginalSource is TextBox) return;
+            bool ctrl = (Keyboard.Modifiers & ModifierKeys.Control) != 0, shift = (Keyboard.Modifiers & ModifierKeys.Shift) != 0;
+            // Ctrl+W is the close button. Esc only tucks the window away: it never quits Stackshot, even when closing does.
+            if (ctrl && key == Key.W) { HideToTray(); e.Handled = true; return; }
+            if (key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                if (settings.CloseToTray) HideToTray();
+                e.Handled = true;
+                return;
+            }
+            if (ctrl && key == Key.Tab)
+            {
+                int i = Array.IndexOf(PageIds, page == "mascotset" ? "mascot" : page) + (shift ? -1 : 1);
+                SetPage(PageIds[(i + PageIds.Length) % PageIds.Length], true);
+                e.Handled = true;
+                return;
+            }
+            // Back from a sub-page, as the toolbar's back button does.
+            bool alt = (Keyboard.Modifiers & ModifierKeys.Alt) != 0;
+            if (page == "mascotset" && ((alt && key == Key.Left) || key == Key.BrowserBack))
+            {
+                SetPage("mascot", true);
+                e.Handled = true;
+            }
+        }
+
+        // The mouse's back button leaves a sub-page too.
+        void OnMouseBack(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton != MouseButton.XButton1 || page != "mascotset") return;
+            SetPage("mascot", true);
+            e.Handled = true;
+        }
+
+        void OnKeyUp(object sender, KeyEventArgs e)
+        {
+            Key key = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (listening != null && key == Key.Snapshot) { listening.Take(this, ToKeys(key)); e.Handled = true; }
+        }
+
+        static bool IsModifier(Key k)
+        {
+            return k == Key.LeftCtrl || k == Key.RightCtrl || k == Key.LeftShift || k == Key.RightShift || k == Key.LeftAlt || k == Key.RightAlt ||
+                   k == Key.LWin || k == Key.RWin;
+        }
+
+        static WF.Keys ToKeys(Key k)
+        {
+            WF.Keys r = (WF.Keys)KeyInterop.VirtualKeyFromKey(k);
+            ModifierKeys m = Keyboard.Modifiers;
+            if ((m & ModifierKeys.Control) != 0) r |= WF.Keys.Control;
+            if ((m & ModifierKeys.Shift) != 0) r |= WF.Keys.Shift;
+            if ((m & ModifierKeys.Alt) != 0) r |= WF.Keys.Alt;
+            return r;
         }
 
         void CancelListening()
@@ -819,172 +937,353 @@ namespace Stackshot
             listening.Stop(this);
         }
 
-        static string Greeting() { return MascotTalk.Greeting(); }
-        string[] PokeLines() { return MascotTalk.Pokes(settings); }
-        string Tip() { return MascotTalk.Tip(settings); }
+        // ---- Helpers shared by the pages
 
-        void OnCaptured(string path)
+        static Color W(D.Color c) { return Color.FromArgb(c.A, c.R, c.G, c.B); }
+
+        static D.Color Darker(D.Color c) { return D.Color.FromArgb(c.A, c.R * 3 / 4, c.G * 3 / 4, c.B * 3 / 4); }
+
+        static TextBlock Label(string text, Typeface face, double size, Color color) { return Label(text, face, size, color, new Thickness(0)); }
+
+        static TextBlock Label(string text, Typeface face, double size, Color color, Thickness margin)
         {
-            if (!Visible || !settings.MascotOn) return;
-            int level = MascotParts.Level(settings.MascotLove);
-            bool up = level > MascotParts.Level(settings.MascotLove - 1);
-            mascot.Celebrate(settings.MascotTalks ? (up ? MascotTalk.LevelUp(settings, level) : MascotTalk.Celebrate(settings)) : null);
-            InvalidatePreviews();
+            TextBlock t = new TextBlock();
+            t.Text = text;
+            t.FontFamily = face.FontFamily;
+            t.FontWeight = face.Weight;
+            t.FontSize = size;
+            t.Foreground = Ds.Brush(color);
+            t.Margin = margin;
+            if (size <= 15) TextOptions.SetTextFormattingMode(t, TextFormattingMode.Display);
+            t.VerticalAlignment = VerticalAlignment.Center;
+            return t;
         }
 
-        void OnUpdaterChanged()
+        static TextBlock Paragraph(string text, double size, Color color)
         {
-            if (page == "about") Rebuild();
-            else { sideDirty = true; contentDirty = true; Invalidate(); }
+            TextBlock t = Label(text, Ds.Regular, size, color);
+            t.TextWrapping = TextWrapping.Wrap;
+            t.LineHeight = Math.Round(size * 1.38);
+            return t;
         }
+    }
 
-        // ---- Mascot look: applying changes and cached picker previews.
+    // A slot for the mascot: a GDI+ layer a bit larger than the mascot (hats, hearts and stars spill over) and a speech
+    // bubble in real text. The bubble sits over the mascot's head; when there is no room there (the toolbar, the edge of
+    // the page) or it would cover a control, it slides sideways, moves beside the mascot or, as a last resort, below it.
+    // The mascot's clock. Up to 30 fps ticks ride the render loop (one frame, one tick, no second timer competing with it);
+    // slower rates use a low-priority timer so that an idle window never wakes the renderer.
+    sealed class FrameClock
+    {
+        readonly DispatcherTimer slow = new DispatcherTimer(DispatcherPriority.Background);
+        bool hooked, on;
+        int interval = 16;
+        TimeSpan last = TimeSpan.Zero;
+        public event EventHandler Tick;
 
-        readonly Dictionary<string, Bitmap> previews = new Dictionary<string, Bitmap>();
-        readonly Dictionary<string, Bitmap> shownInSlot = new Dictionary<string, Bitmap>();
-        readonly HashSet<string> rendering = new HashSet<string>();
-        MascotLook tryOn;
+        public FrameClock() { slow.Tick += delegate { Fire(); }; }
+        public bool IsEnabled { get { return on; } }
 
-        // Called after any look change: the live mascot, the desktop pet and every preview follow.
-        void LookChanged(MascotLook l, string reaction)
+        public int Interval
         {
-            l.ApplyTo(settings);
-            tryOn = null;
-            mascot.Look = MascotLook.From(settings);
-            InvalidatePreviews();
-            owner.MascotChanged();
-            if (reaction != null && settings.MascotTalks) mascot.Celebrate(reaction);
-            else mascot.Celebrate(null);
-            Changed();
-        }
-
-        void InvalidatePreviews()
-        {
-            contentDirty = true;
-        }
-
-        // Shows a look on the big mascot without saving it (hovering a picker); null goes back to the saved one.
-        void TryOn(MascotLook l)
-        {
-            string key = l == null ? null : l.Key, cur = tryOn == null ? null : tryOn.Key;
-            if (key == cur) return;
-            tryOn = l;
-            RectangleF before = mascot.PaintBounds;
-            mascot.Look = l ?? MascotLook.From(settings);
-            if (l != null && settings.MascotOn) mascot.Hop(0.45);
-            Invalidate(Rectangle.Round(RectangleF.Union(before, mascot.PaintBounds)));
-        }
-
-        // A still render of the mascot wearing one variation. Missing ones are rendered on a worker thread (so
-        // changing the look never freezes the window); meanwhile the slot keeps showing what it showed before.
-        Bitmap Preview(MascotLook l, int px, string slot, Rectangle area)
-        {
-            string key = l.Key + "@" + px;
-            Bitmap b;
-            if (previews.TryGetValue(key, out b)) { shownInSlot[slot] = b; return b; }
-            if (rendering.Add(key))
+            get { return interval; }
+            set
             {
-                MascotLook look = l.Clone();
-                System.Threading.ThreadPool.QueueUserWorkItem(delegate
+                interval = value;
+                if (on) Apply();
+            }
+        }
+
+        public void Start() { on = true; Apply(); }
+
+        public void Stop()
+        {
+            on = false;
+            slow.Stop();
+            Unhook();
+        }
+
+        void Apply()
+        {
+            if (interval <= 33)
+            {
+                slow.Stop();
+                if (!hooked) { hooked = true; last = TimeSpan.Zero; CompositionTarget.Rendering += Frame; }
+            }
+            else
+            {
+                Unhook();
+                TimeSpan t = TimeSpan.FromMilliseconds(interval);
+                if (slow.Interval != t) slow.Interval = t;
+                if (!slow.IsEnabled) slow.Start();
+            }
+        }
+
+        void Unhook()
+        {
+            if (!hooked) return;
+            hooked = false;
+            CompositionTarget.Rendering -= Frame;
+        }
+
+        void Frame(object o, EventArgs e)
+        {
+            TimeSpan t = ((RenderingEventArgs)e).RenderingTime;
+            if (t == last) return;
+            // 16 ms asks for every frame; 33 for every other one (a frame early is tolerated)
+            if (last != TimeSpan.Zero && (t - last).TotalMilliseconds < interval - 4) return;
+            last = t;
+            Fire();
+        }
+
+        void Fire()
+        {
+            EventHandler h = Tick;
+            if (h != null) h(this, EventArgs.Empty);
+        }
+    }
+
+    public class MascotHost : Grid
+    {
+        readonly Mascot mascot;
+        readonly double box;
+        readonly bool mini;
+        public readonly GdiLayer Layer = new GdiLayer();
+        readonly Border bubble = new Border();
+        readonly TextBlock bubbleText = new TextBlock();
+        readonly ScaleTransform bubblePop = new ScaleTransform(1, 1);
+        bool attached = true, hot, placed;
+        public event Action Poked;
+        public Func<MascotHost, Rect> Room;     // where the bubble may go, in this host's coordinates (empty: anywhere)
+        public List<FrameworkElement> Avoid;    // controls the bubble must not cover
+
+        public MascotHost(Mascot mascot, double box, bool mini)
+        {
+            this.mascot = mascot;
+            this.box = box;
+            this.mini = mini;
+            Width = box * 1.7;
+            Height = box * 1.75;
+            ClipToBounds = false;
+            Layer.Painter = Paint;
+            Children.Add(Layer);
+            bubble.CornerRadius = new CornerRadius(14);
+            bubble.Padding = new Thickness(13, 8, 13, 9);
+            bubble.HorizontalAlignment = HorizontalAlignment.Center;
+            bubble.VerticalAlignment = VerticalAlignment.Bottom;
+            bubble.MaxWidth = mini ? 200 : 230;
+            bubble.IsHitTestVisible = false;
+            bubble.Opacity = 0;
+            bubble.Visibility = Visibility.Collapsed;
+            bubble.RenderTransform = bubblePop;
+            bubbleText.TextWrapping = TextWrapping.Wrap;
+            bubbleText.FontSize = 13;
+            TextOptions.SetTextFormattingMode(bubbleText, TextFormattingMode.Display);
+            TextOptions.SetTextHintingMode(bubbleText, TextHintingMode.Fixed);
+            bubble.UseLayoutRounding = true;
+            bubble.SnapsToDevicePixels = true;
+            bubbleText.FontFamily = Ds.Text;
+            bubble.Child = bubbleText;
+            System.Windows.Controls.Canvas c = new System.Windows.Controls.Canvas { ClipToBounds = false, IsHitTestVisible = false };
+            c.Children.Add(bubble);
+            Children.Add(c);
+            Background = Brushes.Transparent;
+            Cursor = Cursors.Hand;
+            MouseEnter += delegate { hot = true; mascot.Hover(true); };
+            MouseLeave += delegate { hot = false; mascot.Hover(false); };
+            MouseLeftButtonDown += delegate(object o, MouseButtonEventArgs e) { e.Handled = true; Action h = Poked; if (h != null) h(); };
+            SizeChanged += delegate { Layer.Width = ActualWidth; Layer.Height = ActualHeight; };
+            // The current pose is drawn as soon as the slot has a size, so a rebuilt page never shows a frame without it.
+            Layer.SizeChanged += delegate { if (attached && PresentationSource.FromVisual(Layer) != null) Layer.Refresh(); };
+        }
+
+        // Still in a window and in charge of the mascot.
+        public bool Live { get { return attached && PresentationSource.FromVisual(this) != null; } }
+
+        // The bubble lives outside the slot. A slot pulled up with a negative margin (the sidebar card) would otherwise be
+        // clipped to its own box by layout and the bubble would never show.
+        protected override Geometry GetLayoutClip(Size layoutSlotSize)
+        {
+            return ClipToBounds ? base.GetLayoutClip(layoutSlotSize) : null;
+        }
+
+        public void Detach()
+        {
+            attached = false;
+            if (hot) { hot = false; mascot.Hover(false); }
+            Layer.Release();
+        }
+
+        // The mascot box inside the layer, in device pixels.
+        D.RectangleF Box(float k)
+        {
+            float d = (float)(box * k), w = (float)(ActualWidth * k), h = (float)(ActualHeight * k);
+            return new D.RectangleF((w - d) / 2, h - d - d * 0.06f, d, d);
+        }
+
+        public void Step(double now, D.Point screenMouse, bool moved)
+        {
+            if (!attached || !IsVisible || PresentationSource.FromVisual(this) == null) return;
+            float k = Layer.Scale;
+            mascot.Box = Box(k);
+            Point p = PointFromScreen(new Point(screenMouse.X, screenMouse.Y));
+            mascot.Step(now, new D.PointF((float)(p.X * k), (float)(p.Y * k)), moved);
+            Layer.Refresh();
+            UpdateBubble();
+        }
+
+        void Paint(D.Graphics g, float k)
+        {
+            mascot.Box = Box(k);
+            mascot.Paint(g);
+        }
+
+        double shownAlpha = -1;
+        Palette shownPalette;
+
+        // Touches the visual tree only when the bubble actually changes (an idle mascot must not relayout anything).
+        void UpdateBubble()
+        {
+            string text = mascot.Bubble;
+            double a = Math.Max(0, Math.Min(1, mascot.BubbleAlpha));
+            bool newText = text != null && bubbleText.Text != text;
+            bool waiting = a > 0.01 && !placed;
+            if (!newText && !waiting && Math.Abs(a - shownAlpha) < 0.004 && shownPalette == Ds.Brushes) return;
+            shownAlpha = a;
+            if (newText) { bubbleText.Text = text; placed = false; }
+            Palette pal = Ds.Brushes;
+            if (shownPalette != pal)
+            {
+                shownPalette = pal;
+                bubble.Background = Ds.Brush(pal.Dark ? Ds.Rgb(58, 58, 62) : Colors.White);
+                bubble.BorderBrush = Ds.Brush(pal.Hairline);
+                bubble.BorderThickness = new Thickness(1);
+                bubbleText.Foreground = Ds.Brush(pal.Label);
+            }
+            bubble.Opacity = (a > 0.97 ? 1 : a);
+            // A slot built a moment ago (a new page, a view, a rebuild while it talks) may not have its spot yet: its
+            // bubble waits a frame or two instead of being placed against a box that is about to move.
+            bool show = a > 0.01 && (placed || LaidOut());
+            if (a <= 0.01) placed = false;
+            bubble.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            if (!show) return;
+            if (!placed) Place();
+            double pop = a > 0.97 ? 1 : 0.92 + 0.08 * a; // settled: no transform, so the text is not resampled
+            bubblePop.ScaleX = pop;
+            bubblePop.ScaleY = pop;
+        }
+
+        int layoutWaits;
+
+        // The slot and everything above it have been measured and arranged (a few frames at most after it is built).
+        bool LaidOut()
+        {
+            if (ActualWidth < 1 || ActualHeight < 1) return false;
+            for (DependencyObject d = this; d != null; d = VisualTreeHelper.GetParent(d))
+            {
+                UIElement u = d as UIElement;
+                if (u != null && (!u.IsMeasureValid || !u.IsArrangeValid))
                 {
-                    Bitmap bmp = new Bitmap(px, px, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                    if (++layoutWaits < 30) return false;
+                    break;   // something keeps invalidating layout: place it anyway
+                }
+            }
+            layoutWaits = 0;
+            return true;
+        }
+
+        // Chooses the bubble's spot once per line, so it never jumps while it is read.
+        void Place()
+        {
+            placed = true;
+            bubble.Measure(new Size(bubble.MaxWidth, double.PositiveInfinity));
+            Size s = bubble.DesiredSize;
+            double w = ActualWidth, h = ActualHeight, cx = w / 2;
+            double top = h - box - box * 0.06, head = top - (mascot.Look.EffectiveHat(DateTime.Now) != 0 ? box * 0.16 : 0);
+            Rect room = Rect.Empty;
+            Func<MascotHost, Rect> rf = Room;
+            if (rf != null) { try { room = rf(this); } catch (InvalidOperationException) { room = Rect.Empty; } }
+            List<Rect> keep = new List<Rect>();
+            if (Avoid != null)
+                foreach (FrameworkElement e in Avoid)
+                {
+                    if (e == null || !e.IsVisible) continue;
                     try
                     {
-                        using (Graphics g = Graphics.FromImage(bmp))
-                        {
-                            float d = px * 0.62f;
-                            Mascot.RenderStill(g, new RectangleF((px - d) / 2, px * 0.22f, d, d), look);
-                        }
+                        Rect r = Settled(e, new Rect(e.RenderSize));
+                        r.Inflate(8, 8);
+                        keep.Add(r);
                     }
-                    catch (Exception ex) { ShotStack.Log("Vista previa: " + ex.Message); }
-                    try
-                    {
-                        BeginInvoke((Action)delegate
-                        {
-                            rendering.Remove(key);
-                            if (IsDisposed) { bmp.Dispose(); return; }
-                            TrimPreviews();
-                            previews[key] = bmp;
-                            DirtyContent(area);
-                        });
-                    }
-                    catch { bmp.Dispose(); }
-                });
-            }
-            return shownInSlot.TryGetValue(slot, out b) ? b : null;
-        }
+                    catch (InvalidOperationException) { }
+                }
 
-        // Keeps the cache bounded; bitmaps still on screen stay.
-        void TrimPreviews()
-        {
-            if (previews.Count < 600) return;
-            HashSet<Bitmap> keep = new HashSet<Bitmap>(shownInSlot.Values);
-            foreach (KeyValuePair<string, Bitmap> kv in new List<KeyValuePair<string, Bitmap>>(previews))
+            // Over the head; then slid a little sideways (still over the mascot); beside it; below it.
+            double ax = cx - s.Width / 2, ay = head - s.Height - 4, reach = s.Width / 4;
+            List<Rect> tries = new List<Rect>();
+            tries.Add(new Rect(ax, ay, s.Width, s.Height));
+            if (!room.IsEmpty) tries.Add(new Rect(Slide(Math.Max(room.Left, Math.Min(room.Right - s.Width, ax)), ax, reach), ay, s.Width, s.Height));
+            foreach (Rect r in keep)
             {
-                if (keep.Contains(kv.Value)) continue;
-                kv.Value.Dispose();
-                previews.Remove(kv.Key);
+                tries.Add(new Rect(Slide(r.Left - s.Width - 1, ax, reach), ay, s.Width, s.Height));
+                tries.Add(new Rect(Slide(r.Right + 1, ax, reach), ay, s.Width, s.Height));
             }
-        }
+            double sy = top + box * 0.4 - s.Height / 2;
+            if (!room.IsEmpty) sy = Math.Max(room.Top, Math.Min(room.Bottom - s.Height, sy));
+            Rect right = new Rect(cx + box * 0.42 + 6, sy, s.Width, s.Height), left = new Rect(cx - box * 0.42 - 6 - s.Width, sy, s.Width, s.Height);
+            bool rightFirst = room.IsEmpty || room.Right - right.Left >= left.Right - room.Left;
+            tries.Add(rightFirst ? right : left);
+            tries.Add(rightFirst ? left : right);
+            tries.Add(new Rect(ax, h + 4, s.Width, s.Height));
 
-        Font F(float px, int weight)
-        {
-            int key = (int)Math.Round(px * 100) * 4 + weight;
-            Font f;
-            if (fonts.TryGetValue(key, out f)) return f;
-            string fam = weight == 3 ? Theme.IconFont : weight == 2 ? Fonts.DisplaySemibold : weight == 1 ? "Segoe UI Semibold" : Mac.TextFont;
-            f = new Font(fam, Math.Max(1f, px * s), GraphicsUnit.Pixel);
-            fonts[key] = f;
-            return f;
-        }
-
-        static void Fill(Graphics g, Rectangle r, float radius, Color c)
-        {
-            using (GraphicsPath p = Theme.Round(r, radius))
-            using (SolidBrush b = new SolidBrush(c)) g.FillPath(b, p);
-        }
-
-        static void Txt(Graphics g, string t, Font f, Rectangle r, Color c, TextFormatFlags extra)
-        {
-            TextRenderer.DrawText(g, t, f, r, c, TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix | extra);
-        }
-
-        // Draws a combo as keycaps. Returns the width used.
-        int Keycaps(Graphics g, string combo, int right, int cy, bool big, Color fg, Color bg)
-        {
-            string[] keys = combo.Split(new string[] { " + " }, StringSplitOptions.None);
-            Font f = F(big ? 14 : 12, 1);
-            int h = P(big ? 30 : 24), pad = P(big ? 10 : 8), gap = P(5);
-            int total = 0;
-            int[] ws = new int[keys.Length];
-            for (int i = 0; i < keys.Length; i++)
+            Rect pick = Rect.Empty;
+            foreach (Rect t in tries) if (Fits(t, room, keep)) { pick = t; break; }
+            if (pick.IsEmpty)
             {
-                ws[i] = Math.Max(h, TextRenderer.MeasureText(keys[i], f).Width + pad * 2 - P(6));
-                total += ws[i] + (i > 0 ? gap : 0);
+                // Nowhere is clear: over the head, kept inside the room as well as it goes.
+                pick = tries[0];
+                if (!room.IsEmpty) pick.X = Math.Max(room.Left, Math.Min(room.Right - s.Width, pick.X));
             }
-            int x = right - total;
-            for (int i = 0; i < keys.Length; i++)
-            {
-                Rectangle r = new Rectangle(x, cy - h / 2, ws[i], h);
-                Rectangle sh = r;
-                sh.Offset(0, P(2));
-                Fill(g, sh, P(6), Color.FromArgb(20, 20, 22));
-                Fill(g, r, P(6), bg);
-                using (GraphicsPath p = Theme.Round(r, P(6)))
-                using (Pen pen = new Pen(Color.FromArgb(30, 255, 255, 255))) g.DrawPath(pen, p);
-                Txt(g, keys[i], f, r, fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
-                x += ws[i] + gap;
-            }
-            return total;
+            System.Windows.Controls.Canvas.SetLeft(bubble, Math.Round(pick.X));
+            System.Windows.Controls.Canvas.SetTop(bubble, Math.Round(pick.Y));
+            // It grows out of the side that faces the mascot.
+            if (pick.Bottom <= top + 1) bubble.RenderTransformOrigin = new Point(Math.Max(0.1, Math.Min(0.9, (cx - pick.X) / s.Width)), 1);
+            else if (pick.Top >= h) bubble.RenderTransformOrigin = new Point(0.5, 0);
+            else bubble.RenderTransformOrigin = new Point(pick.X > cx ? 0 : 1, 0.5);
         }
 
-        // Colored tile with a white icon, like iOS Settings.
-        void IconTile(Graphics g, Rectangle r, string icon, Color a, Color b)
+        // r (in from's coordinates) in this slot's, as things will be once they land. Only layout offsets count: the spot is
+        // chosen once per line, often while the page or the slot's tile still glides in or lifts under the mouse, and a
+        // spot picked against those transforms would end up on the view switch or under the toolbar when they settle.
+        public Rect Settled(Visual from, Rect r)
         {
-            using (GraphicsPath p = Theme.Round(r, r.Width * 0.26f))
-            using (LinearGradientBrush lb = new LinearGradientBrush(Rectangle.Inflate(r, 1, 1), a, b, 90f)) g.FillPath(lb, p);
-            int m = (int)(r.Width * 0.2f);
-            Icons.Draw(g, icon, Rectangle.Inflate(r, -m, -m), Color.White);
+            Visual a, b;
+            Vector at = LayoutOffset(from, out a), me = LayoutOffset(this, out b);
+            if (a != b) throw new InvalidOperationException("Not in the same window.");
+            r.Offset(at - me);
+            return r;
         }
+
+        static Vector LayoutOffset(Visual v, out Visual root)
+        {
+            Vector o = new Vector();
+            root = v;
+            for (Visual d = v; d != null; d = VisualTreeHelper.GetParent(d) as Visual)
+            {
+                o += VisualTreeHelper.GetOffset(d);
+                root = d;
+            }
+            return o;
+        }
+
+        static double Slide(double x, double from, double reach) { return Math.Max(from - reach, Math.Min(from + reach, x)); }
+
+        static bool Fits(Rect t, Rect room, List<Rect> keep)
+        {
+            if (!room.IsEmpty && (t.Left < room.Left - 0.5 || t.Top < room.Top - 0.5 || t.Right > room.Right + 0.5 || t.Bottom > room.Bottom + 0.5)) return false;
+            foreach (Rect k in keep) if (k.IntersectsWith(t)) return false;
+            return true;
+        }
+
+        public bool Hot { get { return hot; } }
     }
 }
