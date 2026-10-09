@@ -29,7 +29,18 @@ namespace Stackshot
             IntPtr win;
             Rectangle r = RegionPicker.Pick(RegionPicker.Mode.Scroll, out frozen, out vs, out win);
             frozen.Dispose();
-            if (r.Width < 40 || r.Height < 40) return;
+            Start(owner, r);
+        }
+
+        // Starts on an area already chosen (also the all-in-one picker).
+        public static void Start(ShotStack owner, Rectangle r)
+        {
+            if (current != null || r.IsEmpty) return;
+            if (r.Width < 40 || r.Height < 40)
+            {
+                if (owner != null) owner.Notify("Captura con desplazamiento", "El \u00E1rea es demasiado peque\u00F1a: elige una de al menos 40 \u00D7 40 p\u00EDxeles.");
+                return;
+            }
             current = new ScrollSession(owner, r);
             current.Start();
         }
@@ -168,7 +179,7 @@ namespace Stackshot
             {
                 if (kv.Value > bestVotes || (kv.Value == bestVotes && kv.Key == 0)) { best = kv.Key; bestVotes = kv.Value; }
             }
-            if (bestVotes < 3) return -1;
+            if (bestVotes < 3) return Scan(hs, flat, from, to);
             if (best == 0) return 0;
             if (best < 0) return -1;
 
@@ -181,6 +192,27 @@ namespace Stackshot
                 if (hs[i] == prevHash[i + best]) matched++;
             }
             if (considered < 4 || matched < considered * 0.8) return -1;
+            return best;
+        }
+
+        // Fallback when voting finds too few unique rows: the shift whose overlap matches best, if clearly good.
+        int Scan(ulong[] hs, bool[] flat, int from, int to)
+        {
+            int best = -1;
+            double bestScore = 0.9;
+            for (int d = 1; d < to - from - 8; d++)
+            {
+                int considered = 0, matched = 0;
+                for (int i = from; i < to - d; i++)
+                {
+                    if (flat[i] && prevFlat[i + d]) continue;
+                    considered++;
+                    if (hs[i] == prevHash[i + d]) matched++;
+                }
+                if (considered < 8) continue;
+                double sc = (double)matched / considered;
+                if (sc > bestScore) { bestScore = sc; best = d; }
+            }
             return best;
         }
 
@@ -222,8 +254,9 @@ namespace Stackshot
     public class ScrollSession
     {
         const int Interval = 120;         // ms between grabs
-        const int WheelEvery = 170;       // ms between wheel steps in Auto mode
-        const double AutoEndMs = 1600;    // Auto mode: no growth for this long = end of page
+        const int WheelGap = 70;          // ms between a settled frame and the next wheel step in Auto mode
+        const int WheelTimeout = 1500;    // ms to wait for a settled frame after a wheel step
+        const double AutoEndMs = 3200;    // Auto mode: hard stop when nothing grows for this long
         const long MaxPixels = 40000000;  // size cap (~160 MB in memory)
 
         readonly ShotStack owner;
@@ -239,6 +272,10 @@ namespace Stackshot
         long lastGrowth;
         bool auto, escDown = true, enterDown = true, ended;
         double nextWheel;
+        long wheelAt, doneT0 = -1;
+        volatile int lastAdded;
+        bool waiting;
+        int idle, wheelDelta = -120;
         Point autoAt;
 
         public ScrollSession(ShotStack owner, Rectangle area)
@@ -294,6 +331,9 @@ namespace Stackshot
             Cursor.Position = autoAt;
             Interlocked.Exchange(ref lastGrowth, clock.ElapsedMilliseconds);
             nextWheel = clock.ElapsedMilliseconds + 60;
+            waiting = false;
+            idle = 0;
+            wheelDelta = area.Height < 300 ? -60 : -120;
             if (bar != null) bar.Invalidate();
         }
 
@@ -312,10 +352,25 @@ namespace Stackshot
                 double now = clock.ElapsedMilliseconds;
                 if (Math.Abs(p.X - autoAt.X) > 4 || Math.Abs(p.Y - autoAt.Y) > 4) { auto = false; bar.Invalidate(); } // the user moved the mouse: stop Auto
                 else if (Full || now - Interlocked.Read(ref lastGrowth) > AutoEndMs) Finish();
+                else if (waiting)
+                {
+                    // One step at a time: the next wheel waits for a settled frame grabbed after the previous one.
+                    bool got = Interlocked.Read(ref doneT0) > wheelAt;
+                    if (got || now - wheelAt > WheelTimeout)
+                    {
+                        waiting = false;
+                        if (got && lastAdded > 0) idle = 0;
+                        else idle++;
+                        if (lost >= 2 && wheelDelta < -30) { wheelDelta /= 2; lost = 0; }
+                        if (idle >= 3 && now - Interlocked.Read(ref lastGrowth) > 600) Finish();
+                        else nextWheel = now + WheelGap;
+                    }
+                }
                 else if (now >= nextWheel)
                 {
-                    Wheel(-120);
-                    nextWheel = now + WheelEvery;
+                    wheelAt = clock.ElapsedMilliseconds;
+                    Wheel(wheelDelta);
+                    waiting = true;
                 }
             }
             if (bar != null) bar.Poll();
@@ -334,21 +389,41 @@ namespace Stackshot
             bi.biBitCount = 32;
             dib = Native.CreateDIBSection(screen, ref bi, 0, out bits, IntPtr.Zero, 0);
             old = Native.SelectObject(mem, dib);
-            int[] buf = new int[area.Width * area.Height];
+            int[] buf = new int[area.Width * area.Height], alt = null;
             string error = null;
             try
             {
                 while (!stopping)
                 {
                     long t0 = clock.ElapsedMilliseconds;
-                    Native.BitBlt(mem, 0, 0, area.Width, area.Height, screen, area.X, area.Y, Native.SRCCOPY);
-                    Marshal.Copy(bits, buf, 0, buf.Length);
+                    Grab(mem, screen, bits, buf);
+                    bool settled = true;
+                    if (auto)
+                    {
+                        // Smooth-scroll animations: wait until two consecutive grabs match before stitching.
+                        if (alt == null) alt = new int[buf.Length];
+                        for (int k = 0; k < 12 && !stopping; k++)
+                        {
+                            Thread.Sleep(25);
+                            Grab(mem, screen, bits, alt);
+                            settled = SameFrame(buf, alt);
+                            int[] t = buf; buf = alt; alt = t;
+                            if (settled) break;
+                        }
+                    }
                     Stitcher.Result r;
                     int added;
-                    int[] free = stitcher.Add(buf, out r, out added);
-                    buf = free ?? new int[area.Width * area.Height];
+                    r = Stitcher.Result.Same;
+                    added = 0;
+                    if (settled)   // a frame still moving would stitch badly; the next grab retries
+                    {
+                        int[] free = stitcher.Add(buf, out r, out added);
+                        buf = free ?? new int[area.Width * area.Height];
+                    }
                     if (added > 0) { lost = 0; Interlocked.Exchange(ref lastGrowth, clock.ElapsedMilliseconds); }
                     else if (r == Stitcher.Result.Lost) lost++;
+                    lastAdded = added;
+                    Interlocked.Exchange(ref doneT0, t0);
                     int wait = Interval - (int)(clock.ElapsedMilliseconds - t0);
                     if (wait > 0) Thread.Sleep(wait);
                 }
@@ -369,6 +444,19 @@ namespace Stackshot
             }
             if (error != null) ShotStack.Log("Captura con desplazamiento: " + error);
             owner.Ui(delegate { Done(result); });
+        }
+
+        void Grab(IntPtr mem, IntPtr screen, IntPtr bits, int[] dst)
+        {
+            Native.BitBlt(mem, 0, 0, area.Width, area.Height, screen, area.X, area.Y, Native.SRCCOPY);
+            Native.GdiFlush(); // the copy is done before its bits are read
+            Marshal.Copy(bits, dst, 0, dst.Length);
+        }
+
+        static bool SameFrame(int[] a, int[] b)
+        {
+            for (int i = 0; i < a.Length; i++) if (((a[i] ^ b[i]) & 0xFFFFFF) != 0) return false;
+            return true;
         }
 
         void Done(Bitmap result)
@@ -405,7 +493,7 @@ namespace Stackshot
         }
     }
 
-    // Floating bar next to the area. Excluded from the capture.
+    // Floating HUD capsule next to the area, with a soft shadow (per-pixel window). Excluded from the capture.
     class ScrollCaptureBar : FloatWindow
     {
         static readonly CultureInfo Es = CultureInfo.GetCultureInfo("es-ES");
@@ -414,28 +502,34 @@ namespace Stackshot
         int hot = -1, shownHeight = -1;
         string shownState = "";
         double pulse;
+        System.Windows.Media.Imaging.BitmapSource shadow;
 
         public ScrollCaptureBar(ScrollSession session, Rectangle area)
         {
             this.session = session;
             Screen scr = Screen.FromRectangle(area);
             s = ShotStack.ScaleFor(scr);
-            BackColor = Theme.Dark;
+            Pad = P(22);
             Size sz = new Size(P(400), P(48));
             Rectangle wa = scr.WorkingArea;
             int x = area.X + (area.Width - sz.Width) / 2;
-            int y = area.Bottom + P(12);
-            if (y + sz.Height > wa.Bottom) y = area.Top - sz.Height - P(12);
-            if (y < wa.Top) y = area.Bottom - sz.Height - P(16); // full-screen area: place it inside (it is excluded from the capture anyway)
+            int y = area.Bottom + P(14);
+            if (y + sz.Height > wa.Bottom) y = area.Top - sz.Height - P(14);
+            if (y < wa.Top) y = area.Bottom - sz.Height - P(18); // full-screen area: place it inside (it is excluded from the capture anyway)
             x = Math.Max(wa.Left + P(8), Math.Min(wa.Right - sz.Width - P(8), x));
             SetSize(sz);
-            JumpTo(x, y + P(8));
+            JumpTo(x, y + P(10));
             ShowQuiet();
-            alpha.Go(1, 180, 0, Ease.OutCubic, null);
-            MoveTo(x, y, 320, 0.8, 0);
+            alpha.Go(1, 200, 0, Ease.OutCubic, null);
+            MoveTo(x, y, 320, 0.78, 0);
         }
 
-        public void Saving() { saving = true; hot = -1; Invalidate(); }
+        protected override bool PerPixel { get { return true; } }
+
+        // The session asks for repaints through Invalidate.
+        public new void Invalidate() { Redraw(); }
+
+        public void Saving() { saving = true; hot = -1; Redraw(); }
 
         // Repaints only on visible changes (polled every 40 ms).
         public void Poll()
@@ -443,7 +537,7 @@ namespace Stackshot
             pulse += 0.04;
             string state = State();
             if (session.Height == shownHeight && state == shownState && !session.Auto && !saving) return;
-            Invalidate();
+            Redraw();
         }
 
         string State()
@@ -455,93 +549,132 @@ namespace Stackshot
             return "Baja con la rueda \u00B7 Esc cancela";
         }
 
-        Rectangle AutoRect() { return new Rectangle(ClientSize.Width - P(40) - P(78) - P(6) - P(64), P(9), P(64), ClientSize.Height - P(18)); }
-        Rectangle DoneRect() { return new Rectangle(ClientSize.Width - P(40) - P(78), P(9), P(78), ClientSize.Height - P(18)); }
-        Rectangle CancelRect() { return new Rectangle(ClientSize.Width - P(38), P(9), P(30), ClientSize.Height - P(18)); }
+        // Layout in body coordinates.
+        Rectangle AutoRect() { return new Rectangle(body.Width - P(40) - P(78) - P(6) - P(64), P(9), P(64), body.Height - P(18)); }
+        Rectangle DoneRect() { return new Rectangle(body.Width - P(40) - P(78), P(9), P(78), body.Height - P(18)); }
+        Rectangle CancelRect() { return new Rectangle(body.Width - P(38), P(9), P(30), body.Height - P(18)); }
 
-        protected override void OnPaint(PaintEventArgs e)
+        static System.Windows.Rect R(Rectangle r) { return new System.Windows.Rect(r.X, r.Y, r.Width, r.Height); }
+
+        static System.Windows.Media.FormattedText Line(string text, System.Windows.Media.Typeface face, double px, System.Windows.Media.Color c, double max)
         {
-            Graphics g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.Clear(Theme.Dark);
-            int cy = ClientSize.Height / 2;
+            System.Windows.Media.FormattedText t = Ink.Px(text, face, px, c);
+            t.MaxTextWidth = Math.Max(1, max);
+            t.MaxLineCount = 1;
+            t.Trimming = System.Windows.TextTrimming.CharacterEllipsis;
+            return t;
+        }
+
+        protected override void PaintSurface(System.Windows.Media.DrawingContext dc, int w, int h)
+        {
+            if (shadow == null)
+                shadow = Ink.Shadow(w, h, new System.Windows.Rect(Pad, Pad + P(5), body.Width, body.Height), P(14), P(16), Ds.Argb(0.45, 0, 0, 0));
+            dc.DrawImage(shadow, new System.Windows.Rect(0, 0, w, h));
+            dc.PushTransform(new System.Windows.Media.TranslateTransform(Pad, Pad));
+            System.Windows.Rect b = new System.Windows.Rect(0, 0, body.Width, body.Height);
+            Ink.Round(dc, Ds.Argb(0.93, 30, 30, 32), b, P(14));
+            Ink.Hairline(dc, Palette.HudLine, b, P(14));
+            double cy = body.Height / 2.0;
             shownHeight = session.Height;
             shownState = State();
+            System.Windows.Media.Color white = Palette.HudLabel, dim = Palette.HudLabel2, accent = Ds.Rgb(10, 132, 255);
 
-            Rectangle ic = new Rectangle(P(12), cy - P(13), P(26), P(26));
+            // Badge: accent tile with a down arrow, breathing while Auto scrolls.
             double a = session.Auto ? 0.6 + 0.4 * Math.Cos(pulse * Math.PI * 2) : 1;
-            using (GraphicsPath p = Theme.Round(ic, P(7)))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb((int)(255 * a), Theme.Accent))) g.FillPath(b, p);
-            DrawGlyph(g, "\uE74B", ic, Color.White, P(13)); // down arrow
+            System.Windows.Rect ic = new System.Windows.Rect(P(12), cy - P(14), P(28), P(28));
+            Ink.Round(dc, Ds.WithAlpha(accent, a), ic, P(8));
+            double gs = P(16);
+            Glyph.Draw(dc, "down", ic.X + (ic.Width - gs) / 2, cy - gs / 2 + P(1), gs, white, Math.Max(1.6, 2 * s));
 
-            Font big = Fonts.Get("Segoe UI Semibold", P(14)), small = Fonts.Get("Segoe UI", P(11));
+            int tx = P(50), tw = AutoRect().X - tx - P(8);
+            string hs = shownHeight > 0 ? shownHeight.ToString("N0", Es) + " px" : "Preparando\u2026";
+            System.Windows.Media.FormattedText ht = Line(hs, Ds.Semibold, P(14), white, tw);
+            dc.DrawText(ht, new System.Windows.Point(tx, Math.Round(cy - ht.Height + P(2))));
+            System.Windows.Media.Color sc = session.Losing || session.Full ? Ds.Rgb(255, 105, 97) : dim;
+            System.Windows.Media.FormattedText st = Line(shownState, Ds.Regular, P(11.5f), sc, tw);
+            dc.DrawText(st, new System.Windows.Point(tx, Math.Round(cy + P(1))));
+            if (!saving)
             {
-                int tx = P(48), tw = AutoRect().X - tx - P(6);
-                string h = shownHeight > 0 ? shownHeight.ToString("N0", Es) + " px" : "Preparando\u2026";
-                TextRenderer.DrawText(g, h, big, new Rectangle(tx, P(5), tw, P(22)), Theme.Fg, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
-                Color sc = session.Losing || session.Full ? Theme.Red : Theme.Muted;
-                TextRenderer.DrawText(g, shownState, small, new Rectangle(tx, P(26), tw, P(16)), sc,
-                                      TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis);
-            }
-            if (saving) return;
+                System.Windows.Rect ar = R(AutoRect());
+                Ink.Round(dc, session.Auto ? Ds.Argb(0.22, 10, 132, 255) : hot == 0 ? Palette.HudHover : Ds.Argb(0.10, 255, 255, 255), ar, ar.Height / 2);
+                if (session.Auto)
+                {
+                    System.Windows.Media.Pen pen = new System.Windows.Media.Pen(Ds.Brush(Ds.WithAlpha(accent, 0.9)), 1);
+                    pen.Freeze();
+                    System.Windows.Rect ai = ar;
+                    ai.Inflate(-0.5, -0.5);
+                    dc.DrawRoundedRectangle(null, pen, ai, ai.Height / 2, ai.Height / 2);
+                }
+                Ink.Center(dc, Ink.Px(session.Auto ? "Pausa" : "Auto", Ds.Semibold, P(13), session.Auto ? Ds.Rgb(120, 180, 255) : white), ar);
 
-            Font f = Fonts.Get("Segoe UI Semibold", P(13));
+                System.Windows.Rect dr = R(DoneRect());
+                Ink.Round(dc, hot == 1 ? Ds.Rgb(64, 156, 255) : accent, dr, dr.Height / 2);
+                Ink.Center(dc, Ink.Px("Listo", Ds.Semibold, P(13), white), dr);
+
+                System.Windows.Rect cr = R(CancelRect());
+                if (hot == 2) dc.DrawEllipse(Ds.Brush(Palette.HudHover), null, new System.Windows.Point(cr.X + cr.Width / 2, cy), cr.Width / 2, cr.Width / 2);
+                double cs = P(14);
+                Glyph.Draw(dc, "close", cr.X + (cr.Width - cs) / 2, cy - cs / 2, cs, hot == 2 ? white : dim, P(1.8f));
+            }
+            else
             {
-                Rectangle ar = AutoRect();
-                Color abg = session.Auto ? Theme.ButtonHover : hot == 0 ? Theme.ButtonHover : Theme.Button;
-                using (GraphicsPath p = Theme.Round(ar, ar.Height / 2f))
-                using (SolidBrush b = new SolidBrush(abg)) g.FillPath(b, p);
-                if (session.Auto) using (GraphicsPath p = Theme.Round(ar, ar.Height / 2f)) using (Pen pen = new Pen(Theme.Accent, Math.Max(1f, 1.5f * s))) g.DrawPath(pen, p);
-                TextRenderer.DrawText(g, session.Auto ? "Pausa" : "Auto", f, ar, session.Auto ? Theme.Accent : Theme.Fg,
-                                      TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
-
-                Rectangle dr = DoneRect();
-                using (GraphicsPath p = Theme.Round(dr, dr.Height / 2f))
-                using (SolidBrush b = new SolidBrush(hot == 1 ? Theme.AccentHover : Theme.Accent)) g.FillPath(b, p);
-                TextRenderer.DrawText(g, "Listo", f, dr, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+                // Composing: three dots breathing in turn.
+                for (int i = 0; i < 3; i++)
+                {
+                    double ph = (pulse * 1.6 - i * 0.25) % 1.0, k = 0.35 + 0.65 * Math.Max(0, Math.Sin(ph * Math.PI));
+                    dc.DrawEllipse(Ds.Brush(Ds.WithAlpha(white, k)), null, new System.Windows.Point(body.Width - P(36) + i * P(9), cy), P(2.5f), P(2.5f));
+                }
             }
-            Rectangle cr = CancelRect();
-            if (hot == 2) using (SolidBrush b = new SolidBrush(Theme.ButtonHover)) g.FillEllipse(b, cr);
-            DrawGlyph(g, "\uE711", cr, hot == 2 ? Theme.Fg : Theme.Muted, P(11));
+            dc.Pop();
         }
+
+        Point Local(Point p) { return new Point(p.X - Pad, p.Y - Pad); }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            int h = saving ? -1 : AutoRect().Contains(e.Location) ? 0 : DoneRect().Contains(e.Location) ? 1 : CancelRect().Contains(e.Location) ? 2 : -1;
-            if (h != hot) { hot = h; Cursor = h >= 0 ? Cursors.Hand : Cursors.Default; Invalidate(); }
+            Point p = Local(e.Location);
+            int h = saving ? -1 : AutoRect().Contains(p) ? 0 : DoneRect().Contains(p) ? 1 : CancelRect().Contains(p) ? 2 : -1;
+            if (h != hot) { hot = h; Cursor = h >= 0 ? Cursors.Hand : Cursors.Default; Redraw(); }
         }
 
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
-            if (hot != -1) { hot = -1; Invalidate(); }
+            if (hot != -1) { hot = -1; Redraw(); }
         }
 
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
             if (e.Button != MouseButtons.Left || saving) return;
-            if (AutoRect().Contains(e.Location)) session.ToggleAuto();
-            else if (DoneRect().Contains(e.Location)) session.Finish();
-            else if (CancelRect().Contains(e.Location)) session.Cancel();
+            Point p = Local(e.Location);
+            if (AutoRect().Contains(p)) session.ToggleAuto();
+            else if (DoneRect().Contains(p)) session.Finish();
+            else if (CancelRect().Contains(p)) session.Cancel();
         }
     }
 
-    // Blue frame around the area: four click-through strips, excluded from the capture.
+    // Thin frame around the area: four click-through strips, excluded from the capture. Each strip draws its part of a
+    // 1 px white ring with a faint dark halo on both sides.
     class ScrollEdge : FloatWindow
     {
-        ScrollEdge(Rectangle r)
+        const int T = 3;
+        readonly Rectangle ring, strip;
+
+        ScrollEdge(Rectangle r, Rectangle area)
         {
-            BackColor = Theme.Accent;
+            strip = r;
+            ring = Rectangle.Inflate(area, T / 2 + 1, T / 2 + 1);
             SetSize(r.Size);
             JumpTo(r.X, r.Y);
-            alpha.Set(0.9);
+            alpha.Set(1);
             ShowQuiet();
             ApplyAlpha();
         }
 
         protected override bool Rounded { get { return false; } }
+        protected override bool PerPixel { get { return true; } }
 
         protected override CreateParams CreateParams
         {
@@ -553,15 +686,25 @@ namespace Stackshot
             }
         }
 
+        protected override void PaintSurface(System.Windows.Media.DrawingContext dc, int w, int h)
+        {
+            dc.DrawRectangle(Ds.Brush(Ds.Argb(0.30, 0, 0, 0)), null, new System.Windows.Rect(0, 0, w, h));
+            System.Windows.Media.Brush white = Ds.Brush(Ds.Argb(0.95, 255, 255, 255));
+            int ox = ring.X - strip.X, oy = ring.Y - strip.Y;
+            dc.DrawRectangle(white, null, new System.Windows.Rect(ox, oy, ring.Width, 1));
+            dc.DrawRectangle(white, null, new System.Windows.Rect(ox, oy + ring.Height - 1, ring.Width, 1));
+            dc.DrawRectangle(white, null, new System.Windows.Rect(ox, oy, 1, ring.Height));
+            dc.DrawRectangle(white, null, new System.Windows.Rect(ox + ring.Width - 1, oy, 1, ring.Height));
+        }
+
         public static ScrollEdge[] Around(Rectangle a)
         {
-            int t = Math.Max(2, (int)Math.Round(2 * ShotStack.ScaleFor(Screen.FromRectangle(a))));
             return new ScrollEdge[]
             {
-                new ScrollEdge(new Rectangle(a.X - t, a.Y - t, a.Width + 2 * t, t)),
-                new ScrollEdge(new Rectangle(a.X - t, a.Bottom, a.Width + 2 * t, t)),
-                new ScrollEdge(new Rectangle(a.X - t, a.Y, t, a.Height)),
-                new ScrollEdge(new Rectangle(a.Right, a.Y, t, a.Height))
+                new ScrollEdge(new Rectangle(a.X - T, a.Y - T, a.Width + 2 * T, T), a),
+                new ScrollEdge(new Rectangle(a.X - T, a.Bottom, a.Width + 2 * T, T), a),
+                new ScrollEdge(new Rectangle(a.X - T, a.Y, T, a.Height), a),
+                new ScrollEdge(new Rectangle(a.Right, a.Y, T, a.Height), a)
             };
         }
     }

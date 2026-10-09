@@ -100,9 +100,21 @@ namespace Stackshot
         // Draws the cursor onto an HDC whose origin is screen point (ox, oy). Used for recordings.
         public static void DrawCursor(IntPtr hdc, int ox, int oy)
         {
+            DrawCursor(hdc, ox, oy, CursorNow());
+        }
+
+        // The cursor as it is now (shape, position, visibility).
+        public static Native.CURSORINFO CursorNow()
+        {
             Native.CURSORINFO ci = new Native.CURSORINFO();
             ci.cbSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Native.CURSORINFO));
-            if (!Native.GetCursorInfo(ref ci) || (ci.flags & 1) == 0 || ci.hCursor == IntPtr.Zero) return; // CURSOR_SHOWING
+            if (!Native.GetCursorInfo(ref ci)) ci.flags = 0;
+            return ci;
+        }
+
+        public static void DrawCursor(IntPtr hdc, int ox, int oy, Native.CURSORINFO ci)
+        {
+            if ((ci.flags & 1) == 0 || ci.hCursor == IntPtr.Zero) return; // CURSOR_SHOWING
             Native.ICONINFO ii;
             int hx = 0, hy = 0;
             if (Native.GetIconInfo(ci.hCursor, out ii))
