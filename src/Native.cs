@@ -59,6 +59,7 @@ namespace Stackshot
         [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT r);
         [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr hWnd, out RECT r);
         [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr hWnd, int index);
+        [DllImport("user32.dll")] public static extern int SetWindowLong(IntPtr hWnd, int index, int value);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder s, int max);
         [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")] public static extern uint GetWindowPid(IntPtr hWnd, out uint pid);
         [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr hWnd, uint flags);
@@ -101,7 +102,35 @@ namespace Stackshot
             bf.AlphaFormat = 1; // AC_SRC_ALPHA
             UpdateLayeredWindow(hwnd, IntPtr.Zero, ref dst, ref size, dc, ref src, 0, ref bf, 2); // ULW_ALPHA
         }
+
+        [DllImport("user32.dll", EntryPoint = "UpdateLayeredWindow", SetLastError = true)]
+        static extern bool UpdateLayeredWindowHere(IntPtr hwnd, IntPtr hdcDst, IntPtr dst, ref SIZE size, IntPtr hdcSrc, ref POINT src, int key, ref BLENDFUNCTION blend, int flags);
+        [DllImport("user32.dll", EntryPoint = "UpdateLayeredWindow", SetLastError = true)]
+        static extern bool UpdateLayeredWindowBlend(IntPtr hwnd, IntPtr hdcDst, IntPtr dst, IntPtr size, IntPtr hdcSrc, IntPtr src, int key, ref BLENDFUNCTION blend, int flags);
+
+        // New content for a layered window, keeping its position (moves go through SetWindowPos).
+        public static void PresentHere(IntPtr hwnd, IntPtr dc, int w, int h, byte alpha)
+        {
+            POINT src; src.X = 0; src.Y = 0;
+            SIZE size; size.cx = w; size.cy = h;
+            BLENDFUNCTION bf = new BLENDFUNCTION();
+            bf.SourceConstantAlpha = alpha;
+            bf.AlphaFormat = 1;
+            UpdateLayeredWindowHere(hwnd, IntPtr.Zero, IntPtr.Zero, ref size, dc, ref src, 0, ref bf, 2);
+        }
+
+        // Only the overall opacity of a layered window, without sending its pixels again.
+        public static void FadeLayered(IntPtr hwnd, byte alpha)
+        {
+            BLENDFUNCTION bf = new BLENDFUNCTION();
+            bf.SourceConstantAlpha = alpha;
+            bf.AlphaFormat = 1;
+            UpdateLayeredWindowBlend(hwnd, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 0, ref bf, 2);
+        }
         [DllImport("gdi32.dll")] public static extern bool GdiFlush();
+        [StructLayout(LayoutKind.Sequential)]
+        public struct BITMAP { public int bmType, bmWidth, bmHeight, bmWidthBytes; public short bmPlanes, bmBitsPixel; public IntPtr bmBits; }
+        [DllImport("gdi32.dll")] public static extern int GetObject(IntPtr obj, int size, out BITMAP bm);
         [DllImport("msimg32.dll")] public static extern bool AlphaBlend(IntPtr dst, int x, int y, int w, int h, IntPtr src, int sx, int sy, int sw, int sh, int blend);
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")] public static extern void CopyMemory(IntPtr dst, IntPtr src, UIntPtr count);
         [DllImport("kernel32.dll")] public static extern bool SetDefaultDllDirectories(uint flags);

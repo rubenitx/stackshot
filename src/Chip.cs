@@ -3,6 +3,9 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using W = System.Windows;
+using M = System.Windows.Media;
+using MI = System.Windows.Media.Imaging;
 
 namespace Stackshot
 {
@@ -11,16 +14,19 @@ namespace Stackshot
         readonly ShotStack owner;
         readonly int dir;          // -1 = top (newer), +1 = bottom (older)
         string label = "";
-        bool wanted, hover;
-        readonly Tween hoverT = new Tween(0);
+        bool wanted, pressed;
+        readonly Tween hoverT = new Tween(0), pressT = new Tween(0);
+        MI.BitmapSource shadow;
+        Size shadowFor;
 
         public Chip(ShotStack owner, int dir)
         {
             this.owner = owner;
             this.dir = dir;
-            BackColor = Theme.Dark;
             Cursor = Cursors.Hand;
         }
+
+        protected override bool PerPixel { get { return true; } }
 
         public void Set(Rectangle r, float scale, string text, bool visible)
         {
@@ -33,8 +39,11 @@ namespace Stackshot
                 return;
             }
             s = scale;
-            if (text != label) { label = text; Invalidate(); }
+            Pad = P(14);
+            bool changed = text != label || r.Size != body;
+            label = text;
             SetSize(r.Size);
+            if (changed) Redraw();
             // When the stack changes monitor, the pill fades out and reappears there instead of flying across.
             if (wanted && Visible && Math.Abs(r.X - x) > r.Width * 2)
             {
@@ -53,33 +62,54 @@ namespace Stackshot
             MoveTo(r.X, r.Y, 320, 0.8, 0);
         }
 
-        protected override bool StepExtra(double now)
+        public void Restyle()
         {
-            bool repaint = hoverT.Running;
-            hoverT.Step(now);
-            SetBorder(Mix(Theme.Border, Theme.Accent, hoverT.Value));
-            if (repaint) Invalidate();
-            return hoverT.Running;
+            shadow = null;
+            Redraw();
         }
 
-        protected override void OnPaint(PaintEventArgs e)
+        protected override bool StepExtra(double now)
         {
-            Graphics g = e.Graphics;
-            g.Clear(Mix(Theme.Dark, Theme.ButtonHover, hoverT.Value));
-            Rectangle r = ClientRectangle;
-            Font f = Fonts.Get("Segoe UI Semibold", P(12));
-            Size ts = TextRenderer.MeasureText(label, f);
-            int gw = P(16), total = gw + P(6) + ts.Width;
-            int left = (r.Width - total) / 2;
-            DrawGlyph(g, dir < 0 ? "\uE70E" : "\uE70D", new Rectangle(left, 0, gw, r.Height), Theme.Accent, P(11));
-            TextRenderer.DrawText(g, label, f, new Rectangle(left + gw + P(6), 0, ts.Width + P(2), r.Height), Theme.Fg,
-                                  TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
+            bool repaint = hoverT.Running || pressT.Running;
+            hoverT.Step(now);
+            pressT.Step(now);
+            if (repaint) Redraw();
+            return hoverT.Running || pressT.Running;
+        }
+
+        protected override void PaintSurface(M.DrawingContext dc, int w, int h)
+        {
+            W.Rect b = new W.Rect(Pad, Pad, body.Width, body.Height);
+            double R = b.Height / 2;
+            if (shadow == null || shadowFor != new Size(w, h))
+            {
+                W.Rect sb = b;
+                sb.Offset(0, P(3));
+                shadow = Ink.Shadow(w, h, sb, R, P(10), Ds.Argb(Ds.Dark ? 0.5 : 0.25, 0, 0, 0));
+                shadowFor = new Size(w, h);
+            }
+            dc.DrawImage(shadow, new W.Rect(0, 0, w, h));
+            Palette pal = Ds.Brushes;
+            M.Color bg = pal.Dark ? Ds.Rgb(44, 44, 46) : Ds.Rgb(255, 255, 255);
+            M.Color over = pal.Dark ? Ds.Rgb(58, 58, 60) : Ds.Rgb(242, 242, 247);
+            M.Color down = pal.Dark ? Ds.Rgb(72, 72, 74) : Ds.Rgb(229, 229, 234);
+            Ink.Round(dc, Blend(Blend(bg, over, hoverT.Value), down, pressT.Value), b, R);
+            Ink.Hairline(dc, pal.Hairline, b, R);
+            M.FormattedText ft = Ink.Px(label, Ds.Semibold, P(12), pal.Label);
+            double gs = P(14), total = gs + P(4) + ft.WidthIncludingTrailingWhitespace;
+            double left = b.X + (b.Width - total) / 2;
+            Glyph.Draw(dc, dir < 0 ? "up" : "down", left, b.Y + (b.Height - gs) / 2, gs, pal.Accent, P(2));
+            dc.DrawText(ft, new W.Point(Math.Round(left + gs + P(4)), Math.Round(b.Y + (b.Height - ft.Height) / 2)));
+        }
+
+        static M.Color Blend(M.Color a, M.Color b, double t)
+        {
+            return M.Color.FromRgb((byte)(a.R + (b.R - a.R) * t), (byte)(a.G + (b.G - a.G) * t), (byte)(a.B + (b.B - a.B) * t));
         }
 
         protected override void OnMouseEnter(EventArgs e)
         {
             base.OnMouseEnter(e);
-            hover = true;
             hoverT.Go(1, 120, 0, Ease.OutCubic, null);
             Anim.Wake(this);
         }
@@ -87,15 +117,39 @@ namespace Stackshot
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
-            hover = false;
             hoverT.Go(0, 160, 0, Ease.OutCubic, null);
             Anim.Wake(this);
         }
 
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            if (e.Button != MouseButtons.Left) return;
+            pressed = true;
+            pressT.Go(1, 70, 0, Ease.OutCubic, null);
+            Anim.Wake(this);
+        }
+
+        // Pages when released over the pill (it can appear under a still cursor, so no hover state is needed).
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
-            if (e.Button == MouseButtons.Left && hover) owner.Page(dir);
+            if (!pressed) return;
+            pressed = false;
+            pressT.Go(0, 160, 0, Ease.OutCubic, null);
+            Anim.Wake(this);
+            if (e.Button == MouseButtons.Left && new Rectangle(Pad, Pad, body.Width, body.Height).Contains(e.Location)) owner.Page(dir);
+        }
+
+        // Hidden mid-press or mid-hover, no button-up or leave will follow: it must not come back pressed or lit.
+        protected override void OnVisibleChanged(EventArgs e)
+        {
+            base.OnVisibleChanged(e);
+            if (Visible || (!pressed && pressT.Value == 0 && hoverT.Value == 0)) return;
+            pressed = false;
+            pressT.Set(0);
+            hoverT.Set(0);
+            Redraw();
         }
 
         protected override void OnMouseWheel(MouseEventArgs e)

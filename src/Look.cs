@@ -307,6 +307,28 @@ namespace Stackshot
                     g.DrawArc(p, 11.5f, 8.5f, 6, 7, -55, 110);
                     g.DrawArc(p, 11, 5, 10.5f, 14, -55, 110);
                     break;
+                case "mic":
+                case "micoff":
+                    using (GraphicsPath gp = Theme.Round(RectangleF.FromLTRB(8.5f, 2.5f, 15.5f, 14.5f), 3.5f)) g.DrawPath(p, gp);
+                    g.DrawArc(p, 5, 6.5f, 14, 11, 0, 180);
+                    g.DrawLine(p, 12, 17.5f, 12, 21);
+                    g.DrawLine(p, 8.5f, 21, 15.5f, 21);
+                    if (name == "micoff") g.DrawLine(p, 4, 3.5f, 20, 19.5f);
+                    break;
+                case "check":
+                    g.DrawLines(p, new PointF[] { new PointF(5, 12.5f), new PointF(10, 17.5f), new PointF(19.5f, 6.5f) });
+                    break;
+                case "film":
+                    RoundRect(g, p, 3, 3.5f, 21, 20.5f, 2.6f);
+                    g.DrawLine(p, 7.5f, 3.5f, 7.5f, 20.5f);
+                    g.DrawLine(p, 16.5f, 3.5f, 16.5f, 20.5f);
+                    for (int i = 0; i < 3; i++)
+                    {
+                        float y = 7.5f + i * 4.5f;
+                        g.DrawLine(p, 3, y, 7.5f, y);
+                        g.DrawLine(p, 16.5f, y, 21, y);
+                    }
+                    break;
                 case "copy":
                     g.DrawLines(p, new PointF[] { new PointF(4, 15.5f), new PointF(4, 6), new PointF(6, 4), new PointF(15.5f, 4) });
                     RoundRect(g, p, 8, 8, 20.5f, 20.5f, 2.6f);

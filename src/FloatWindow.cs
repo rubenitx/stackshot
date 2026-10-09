@@ -56,10 +56,10 @@ namespace Stackshot
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            Native.SetLayeredWindowAttributes(Handle, 0, shownAlpha, 2); // LWA_ALPHA: starts transparent and fades in
+            if (!PerPixel) Native.SetLayeredWindowAttributes(Handle, 0, shownAlpha, 2); // LWA_ALPHA: starts transparent and fades in
             try
             {
-                int round = Rounded ? 2 : 1; // DWMWCP_ROUND or DWMWCP_DONOTROUND
+                int round = Rounded && !PerPixel ? 2 : 1; // DWMWCP_ROUND or DWMWCP_DONOTROUND
                 Native.DwmSetWindowAttribute(Handle, 33, ref round, 4);
             }
             catch { }
@@ -68,6 +68,7 @@ namespace Stackshot
             {
                 ShotStack.Log("SetWindowDisplayAffinity fallo: " + Marshal.GetLastWin32Error());
             }
+            if (PerPixel) Redraw();
         }
 
         protected int P(float v) { return (int)Math.Round(v * s); }
@@ -86,7 +87,7 @@ namespace Stackshot
         void ApplyBorder()
         {
             if (!IsHandleCreated) return;
-            int v = border.R | (border.G << 8) | (border.B << 16);
+            int v = PerPixel ? unchecked((int)0xFFFFFFFE) : border.R | (border.G << 8) | (border.B << 16); // DWMWA_COLOR_NONE
             try { Native.DwmSetWindowAttribute(Handle, 34, ref v, 4); } catch { }
         }
 
@@ -100,10 +101,46 @@ namespace Stackshot
 
         protected void SetSize(Size size)
         {
+            body = size;
+            size = new Size(size.Width + 2 * Pad, size.Height + 2 * Pad);
             if (Size == size) return;
             if (IsHandleCreated)
                 Native.SetWindowPos(Handle, IntPtr.Zero, 0, 0, size.Width, size.Height, Native.SWP_NOMOVE | Native.SWP_NOZORDER | Native.SWP_NOACTIVATE);
             else Size = size;
+        }
+
+        // Per-pixel windows: the visible body is inset by Pad (room for the soft shadow); x and y track the body.
+        protected virtual bool PerPixel { get { return false; } }
+        protected int Pad;
+        protected Size body;
+        Surface surface;
+
+        protected virtual void PaintSurface(System.Windows.Media.DrawingContext dc, int w, int h) { }
+
+        // Repaints a per-pixel window now (plain windows just invalidate).
+        protected void Redraw()
+        {
+            if (!PerPixel) { Invalidate(); return; }
+            if (!IsHandleCreated || IsDisposed) return;
+            int w = body.Width + 2 * Pad, h = body.Height + 2 * Pad;
+            if (w <= 0 || h <= 0) return;
+            if (surface == null) surface = new Surface();
+            surface.Paint(w, h, delegate(System.Windows.Media.DrawingContext dc) { PaintSurface(dc, w, h); });
+            surface.Present(Handle, shownAlpha);
+        }
+
+        protected Bitmap SurfaceSnapshot(Rectangle part) { return surface == null ? null : surface.Snapshot(part); }
+
+        // Frees the pixel buffer of a hidden window; the next Redraw creates it again.
+        protected void ReleaseSurface()
+        {
+            if (surface != null) { surface.Dispose(); surface = null; }
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            base.OnFormClosed(e);
+            if (surface != null) { surface.Dispose(); surface = null; }
         }
 
         protected void JumpTo(double nx, double ny)
@@ -128,7 +165,7 @@ namespace Stackshot
 
         protected void ApplyPos()
         {
-            int ix = (int)Math.Round(x), iy = (int)Math.Round(y);
+            int ix = (int)Math.Round(x) - Pad, iy = (int)Math.Round(y) - Pad;
             if (ix == shownX && iy == shownY) return;
             shownX = ix;
             shownY = iy;
@@ -145,7 +182,9 @@ namespace Stackshot
             byte b = (byte)Math.Max(0, Math.Min(255, Math.Round(a * 255)));
             if (b == shownAlpha) return;
             shownAlpha = b;
-            if (IsHandleCreated) Native.SetLayeredWindowAttributes(Handle, 0, b, 2);
+            if (!IsHandleCreated) return;
+            if (PerPixel) Native.FadeLayered(Handle, b);
+            else Native.SetLayeredWindowAttributes(Handle, 0, b, 2);
         }
 
         // While true, the mouse drives the horizontal position (swipe to dismiss).
@@ -200,7 +239,7 @@ namespace Stackshot
 
         protected static void DrawGlyph(Graphics g, string glyph, Rectangle r, Color c, int px)
         {
-            TextRenderer.DrawText(g, glyph, Fonts.Get(Theme.IconFont, Math.Max(1, px)), r, c, TextFormatFlags.HorizontalCenter |
+            TextKit.Draw(g, glyph, Fonts.Get(Theme.IconFont, Math.Max(1, px)), r, c, TextFormatFlags.HorizontalCenter |
                                   TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding);
         }
     }

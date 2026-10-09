@@ -1,8 +1,10 @@
-// Stackshot - Easing curves, tweens and the shared animation timer.
+// Stackshot - Easing curves, tweens and the shared animation clock.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Stackshot
@@ -65,13 +67,23 @@ namespace Stackshot
         }
     }
 
-    // One timer drives every floating window. It only runs while something moves (0% CPU when idle) and requests 1 ms
-    // timer resolution meanwhile.
+    // One clock drives every floating window, in step with the display: a background thread waits for each frame of
+    // the desktop compositor and has the UI thread take one step, so every frame shows exactly one (a plain timer
+    // drifts against the refresh and shows two steps in some frames and none in others). Steps never queue up behind
+    // a busy UI thread, and nothing runs while nothing moves. A 10 ms timer takes over if the compositor can't be
+    // waited on.
     public static class Anim
     {
         static readonly Stopwatch clock = Stopwatch.StartNew();
         static readonly List<FloatWindow> active = new List<FloatWindow>();
-        static Timer timer;
+        static readonly AutoResetEvent resume = new AutoResetEvent(false);
+        static Control sync;           // takes the frames to the UI thread
+        static Thread pacer;
+        static volatile bool running, noCompositor;
+        static int posted;             // a step is waiting for the UI thread
+        static System.Windows.Forms.Timer timer; // fallback without the compositor
+
+        [DllImport("dwmapi.dll")] static extern int DwmFlush();
 
         public static double Now { get { return clock.Elapsed.TotalMilliseconds; } }
 
@@ -80,21 +92,70 @@ namespace Stackshot
             if (active.Contains(w)) return;
             w.LastStep = Now;
             active.Add(w);
-            if (timer == null)
+            Start();
+        }
+
+        static void Start()
+        {
+            if (active.Count == 0) return;
+            if (noCompositor)
             {
-                timer = new Timer();
-                timer.Interval = 10;
-                timer.Tick += Tick;
+                if (timer == null)
+                {
+                    timer = new System.Windows.Forms.Timer();
+                    timer.Interval = 10;
+                    timer.Tick += delegate { Tick(); };
+                }
+                if (!timer.Enabled) timer.Start();
+                return;
             }
-            if (!timer.Enabled)
+            if (running) return;
+            if (sync == null)
             {
-                Native.timeBeginPeriod(1);
-                timer.Start();
+                sync = new Control();
+                GC.KeepAlive(sync.Handle);
+            }
+            running = true;
+            if (pacer == null)
+            {
+                pacer = new Thread(Pace);
+                pacer.IsBackground = true;
+                pacer.Name = "Stackshot frames";
+                pacer.Start();
+            }
+            resume.Set();
+        }
+
+        // Frame thread: sleeps until woken, then posts one step per composed frame while anything moves.
+        static void Pace()
+        {
+            Action step = Tick, fallback = Start;
+            double last = 0;
+            while (true)
+            {
+                resume.WaitOne();
+                while (running)
+                {
+                    if (DwmFlush() != 0)
+                    {
+                        noCompositor = true;
+                        running = false;
+                        try { sync.BeginInvoke(fallback); } catch (InvalidOperationException) { }
+                        break;
+                    }
+                    // Never spin, even if a driver returns at once while the UI thread is busy (240 Hz still fits).
+                    if (Now - last < 3) Thread.Sleep(3);
+                    last = Now;
+                    if (Interlocked.CompareExchange(ref posted, 1, 0) != 0) continue; // the last step hasn't run yet
+                    try { sync.BeginInvoke(step); }
+                    catch (InvalidOperationException) { posted = 0; running = false; } // shutting down
+                }
             }
         }
 
-        static void Tick(object sender, EventArgs e)
+        static void Tick()
         {
+            Interlocked.Exchange(ref posted, 0);
             double now = Now;
             foreach (FloatWindow w in active.ToArray())
             {
@@ -108,8 +169,8 @@ namespace Stackshot
             }
             if (active.Count == 0)
             {
-                timer.Stop();
-                Native.timeEndPeriod(1);
+                running = false;
+                if (timer != null) timer.Stop();
             }
         }
 
