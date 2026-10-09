@@ -43,13 +43,15 @@ namespace Stackshot
         readonly NotifyIcon tray = new NotifyIcon();
         readonly Hotkeys hotkeys;
         readonly Timer follow = new Timer();
-        readonly Dictionary<string, ToolStripMenuItem> actionItems = new Dictionary<string, ToolStripMenuItem>();
         string anchorDevice, followCandidate;
         double followSince;
         readonly Chip upChip, downChip;
         int scroll, wheelAcc, pageSize = 1;    // scroll: how many of the newest cards are hidden above
 
-        public ShotStack(Settings settings, bool justInstalled, bool showHome)
+        public ShotStack(Settings settings, bool justInstalled, bool showHome) : this(settings, justInstalled, showHome, null) { }
+
+        // startPage: the main window opens on that section, without the launch animation (after an update: Acerca de).
+        public ShotStack(Settings settings, bool justInstalled, bool showHome, string startPage)
         {
             this.settings = settings;
             folder = Settings.TempDir;
@@ -58,6 +60,7 @@ namespace Stackshot
             Directory.CreateDirectory(folder);
             upChip = new Chip(this, -1);
             downChip = new Chip(this, 1);
+            Ds.Changed += delegate { Ui(Restyle); };
 
             // Watch the temp folder to refresh a card when its file changes (the editor rewrites it) and drop it if the
             // file is deleted or moved.
@@ -67,7 +70,7 @@ namespace Stackshot
             fsw.Changed += OnChanged;
             fsw.Renamed += OnRenamed;
             fsw.Deleted += OnDeleted;
-            fsw.Error += delegate(object o, ErrorEventArgs e) { Log("Vigilante: " + e.GetException().Message); };
+            fsw.Error += OnWatcherError;
             fsw.EnableRaisingEvents = true;
 
             poll.Interval = 150;
@@ -75,25 +78,32 @@ namespace Stackshot
             follow.Interval = 100;
             follow.Tick += FollowTick;
 
-            tray.ContextMenuStrip = BuildMenu();
+            panel = BuildMenu();
             tray.Icon = TrayIcon();
             tray.Text = Test ? "Stackshot (prueba)" : "Stackshot";
+            // Either button opens the tray panel; clicking the icon again closes it.
             tray.MouseClick += delegate(object o, MouseEventArgs e)
             {
-                // Left click on the tray icon opens the same menu as right click.
-                if (e.Button != MouseButtons.Left) return;
-                MethodInfo show = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
-                if (show != null) show.Invoke(tray, null);
+                if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Right) Panel().Toggle();
             };
-            // Double click opens the main window straight away (restored and in front), closing the menu the first click opened.
+            // Double click opens the main window straight away (restored and in front), closing the panel the first click opened.
             tray.MouseDoubleClick += delegate(object o, MouseEventArgs e)
             {
                 if (e.Button != MouseButtons.Left) return;
-                if (tray.ContextMenuStrip != null) tray.ContextMenuStrip.Close();
+                Panel().CloseNow();
                 ShowHome("home", false);
             };
-            tray.BalloonTipClicked += delegate { if (updateBalloon) ShowHome("about", false); };
-            tray.BalloonTipClosed += delegate { updateBalloon = false; };
+            // Pointing at the icon lists the recent captures in the background, so the panel opens with them ready.
+            tray.MouseMove += delegate { Panel().Warm(); };
+            tray.Disposed += delegate { panel.Shutdown(); };
+            // Built quietly a moment after startup, so even the first click opens it at once.
+            Timer warmPanel = new Timer();
+            warmPanel.Interval = 2500;
+            warmPanel.Tick += delegate { warmPanel.Dispose(); if (!exiting) panel.Prewarm(); };
+            warmPanel.Start();
+            // A notice that leads somewhere (busy shortcuts: Atajos) opens that section when clicked, also later from the
+            // notification center. Every notice sets its own target, so the hide of a replaced one can't clear it.
+            tray.BalloonTipClicked += delegate { string page = balloonPage; balloonPage = null; if (page != null && !exiting) ShowHome(page, false); };
             tray.Visible = true;
             if (!Test) closeListener = new CloseListener(delegate { sync.BeginInvoke((Action)ExitThread); });
 
@@ -119,28 +129,93 @@ namespace Stackshot
                         delegate { Ui(delegate { ShowHome("home", true); }); }, null, -1, false);
                 }
                 catch (Exception ex) { Log("Evento de mostrar: " + ex.Message); }
+                // A .md or .xml opened with Stackshot while it runs arrives here (the path is in a small file).
+                try
+                {
+                    openEvent = OpenHandle ?? new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, Installer.OpenEvent);
+                    OpenHandle = null;
+                    openWait = System.Threading.ThreadPool.RegisterWaitForSingleObject(openEvent,
+                        delegate { Ui(OpenRequested); }, null, -1, false);
+                }
+                catch (Exception ex) { Log("Evento de abrir: " + ex.Message); }
             }
 
             SystemEvents.DisplaySettingsChanged += OnDisplayChanged;
             Log("Stackshot " + Installer.MyVersion.ToString(3) + " en marcha (" + Installer.ExePath + ")");
 
-            // Test mode cleans nothing: the temp folder belongs to the real install.
-            if (!Test)
-            {
-                sweepTimer.Interval = 5 * 60 * 1000;
-                sweepTimer.Tick += delegate { Sweep(); };
-                sweepTimer.Start();
-                Sweep();
-            }
+            // Test mode cleans nothing: the temp folder belongs to the real install. Otherwise the sweep runs only when
+            // something can have become old enough (no timer at all while the folder holds nothing to clean).
+            sweepTimer.Tick += delegate { sweepTimer.Stop(); Sweep(); };
+            if (!Test) Sweep();
 
             Backdrop.Prewarm();
-            if (justInstalled || showHome) sync.BeginInvoke((Action)delegate { ShowHome("home", true); });
+            if (startPage != null) sync.BeginInvoke((Action)delegate { ShowHome(startPage, false); });
+            else if (justInstalled || showHome) sync.BeginInvoke((Action)delegate { ShowHome("home", true); });
+            else
+            {
+                // Build the main window quietly a little after startup, so the first time it opens it is instant.
+                Timer warm = new Timer();
+                warm.Interval = 6000;
+                warm.Tick += delegate
+                {
+                    warm.Dispose();
+                    if (exiting || home != null) return;
+                    try
+                    {
+                        HomeWindow warming = new HomeWindow(this, settings);
+                        home = warming;
+                        home.Closed += delegate { home = null; };
+                        home.Prewarm();
+                        // Once it has rendered (and hidden itself), make sure it isn't left showing off screen.
+                        EventHandler rendered = null;
+                        rendered = delegate
+                        {
+                            warming.ContentRendered -= rendered;
+                            sync.BeginInvoke((Action)delegate { if (home == warming && !exiting) HideIfOffScreen(warming); });
+                        };
+                        warming.ContentRendered += rendered;
+                    }
+                    catch (Exception ex) { Log("Preparar ventana: " + ex.Message); }
+                };
+                warm.Start();
+            }
             sync.BeginInvoke((Action)MascotChanged);
+            string startFile = OpenAtStart;
+            OpenAtStart = null;
+            // Also what other copies asked for while this one was starting.
+            sync.BeginInvoke((Action)delegate { if (!exiting) OpenRequested(startFile); });
             Updater.Start(this);
         }
 
-        System.Threading.EventWaitHandle showEvent;
-        System.Threading.RegisteredWaitHandle quitWait, showWait;
+        System.Threading.EventWaitHandle showEvent, openEvent;
+        System.Threading.RegisteredWaitHandle quitWait, showWait, openWait;
+
+        // The file the command line named (set before the window is built), opened once the stack is up.
+        public static string OpenAtStart;
+
+        // Made by Program as soon as it holds the lock; the window takes it over when it is built.
+        public static System.Threading.EventWaitHandle OpenHandle;
+
+        void OpenRequested() { OpenRequested(null); }
+
+        // The viewer shows one document at a time: the first one opens and the rest are announced.
+        void OpenRequested(string first)
+        {
+            List<string> all = new List<string>();
+            if (first != null) all.Add(first);
+            if (!Test) foreach (string p in Installer.TakeOpenRequests())
+                if (!all.Exists(x => string.Equals(x, p, StringComparison.OrdinalIgnoreCase))) all.Add(p);
+            if (all.Count == 0) return;
+            OpenViewerFile(all[0]);
+            if (all.Count > 1)
+                Notify("Stackshot", "Se abre " + Path.GetFileName(all[0]) + ". " + (all.Count - 1) + (all.Count == 2 ? " archivo m\u00E1s" : " archivos m\u00E1s") + " (el visor muestra uno cada vez).");
+        }
+
+        void OpenViewerFile(string path)
+        {
+            try { MarkdownWindow.OpenFile(this, path); }
+            catch (Exception ex) { Log("Abrir " + path + ": " + ex.Message); }
+        }
         CloseListener closeListener;
         PetWindow pet;
         bool homeShown;
@@ -172,17 +247,7 @@ namespace Stackshot
             if (pet != null) pet.SetHomeShown(shown);
         }
 
-        bool updateBalloon;
-
-        public void NotifyUpdate(Updater.Release r)
-        {
-            updateBalloon = true;
-            tray.BalloonTipTitle = "Stackshot " + r.Version.ToString(3) + " disponible";
-            tray.BalloonTipText = Installer.ManagedByMsi ? "P\u00EDdesela a inform\u00E1tica o instala el nuevo Stackshot.msi."
-                                                         : "Haz clic aqu\u00ED para ver las novedades y actualizar sin salir de la app.";
-            tray.BalloonTipIcon = ToolTipIcon.Info;
-            tray.ShowBalloonTip(8000);
-        }
+        string balloonPage;     // section the tray notice on screen opens when clicked, or null
 
         // One point per capture; reaching a new level is celebrated.
         void AddLove()
@@ -194,44 +259,41 @@ namespace Stackshot
             if (pet != null) pet.Celebrate(after > before ? MascotTalk.LevelUp(settings, after) : null);
         }
 
-        ContextMenuStrip BuildMenu()
+        TrayPanel panel;
+
+        // The tray panel, made again should anything ever have closed it for good.
+        TrayPanel Panel()
         {
-            ContextMenuStrip menu = TrayMenu.Create();
-            menu.Items.Add(TrayMenu.Item("Abrir Stackshot", "app", delegate { ShowHome("home", false); }));
-            menu.Items.Add(TrayMenu.Separator());
-            AddAction(menu, "region", "Capturar un \u00E1rea", "area");
-            AddAction(menu, "screen", "Capturar la pantalla", "screen");
-            AddAction(menu, "window", "Capturar la ventana activa", "window");
-            AddAction(menu, "scroll", "Captura con desplazamiento", "scroll");
-            menu.Items.Add(TrayMenu.Separator());
-            AddAction(menu, "video", "Grabar v\u00EDdeo", "video");
-            AddAction(menu, "gif", "Grabar GIF", "gif");
-            menu.Items.Add(TrayMenu.Separator());
-            menu.Items.Add(TrayMenu.Item("Cerrar todas las miniaturas", "stack", delegate { CloseAll(); }));
-            menu.Items.Add(TrayMenu.Item("Abrir capturas guardadas", "folder", delegate { OpenFolder(); }));
-            menu.Items.Add(TrayMenu.Item("Ajustes\u2026", "gear", delegate { ShowHome("general", false); }));
-            menu.Items.Add(TrayMenu.Separator());
-            menu.Items.Add(TrayMenu.Item("Salir", "power", delegate { ExitThread(); }));
-            menu.Opening += delegate
-            {
-                bool rec = Recorder.Recording;
-                actionItems["video"].Text = rec ? "Detener la grabaci\u00F3n" : "Grabar v\u00EDdeo";
-                actionItems["video"].Tag = rec ? "stop" : "video";
-                actionItems["gif"].Visible = !rec;
-                actionItems["scroll"].Text = ScrollCapture.Active ? "Terminar la captura con desplazamiento" : "Captura con desplazamiento";
-                foreach (KeyValuePair<string, ToolStripMenuItem> kv in actionItems)
-                    kv.Value.ShortcutKeyDisplayString = Hotkeys.Split(settings.HotkeysFor(kv.Key)).Count > 0 ? Hotkeys.Display(settings.HotkeysFor(kv.Key)) : "";
-            };
-            return menu;
+            if (panel.IsDisposed && !exiting) panel = BuildMenu();
+            return panel;
         }
 
-        void AddAction(ContextMenuStrip menu, string action, string text, string icon)
+        // The tray panel and what its entries do; they run once it has faded out.
+        TrayPanel BuildMenu()
         {
-            ToolStripMenuItem item = TrayMenu.Item(text, icon, null);
-            // Wait until the menu is fully closed so it doesn't appear in the capture.
-            item.Click += delegate { Delay(160, delegate { OnHotkey(action == "video" && Recorder.Recording ? "video" : action); }); };
-            actionItems[action] = item;
-            menu.Items.Add(item);
+            TrayPanel p = new TrayPanel(settings);
+            p.HasCards = delegate { return cards.Count > 0; };
+            p.OpenCapture = delegate(string path)
+            {
+                if (!IsMediaFile(path)) { OpenEditor(path); return; }
+                try { Process.Start(path); }
+                catch (Exception ex) { Log("Abrir: " + ex.Message); }
+            };
+            p.Command = delegate(string cmd)
+            {
+                switch (cmd)
+                {
+                    case "home": ShowHome("home", false); break;
+                    case "folder": OpenFolder(); break;
+                    case "closeall": CloseAll(); break;
+                    case "settings": ShowHome("general", false); break;
+                    case "quit": ExitThread(); break;
+                    // A capture: the panel has already blinked, faded out and hidden (~210 ms after the click, and it is
+                    // excluded from captures); a few frames more so the window that got the focus back has repainted.
+                    default: Delay(60, delegate { OnHotkey(cmd); }); break;
+                }
+            };
+            return p;
         }
 
         void RegisterHotkeys(bool report)
@@ -246,18 +308,18 @@ namespace Stackshot
             if (failed.Count == 0) return;
             Log("Atajos ocupados por otro programa: " + string.Join(", ", failed.ToArray()));
             if (!report) return;
-            updateBalloon = false;
             tray.BalloonTipTitle = "Algunos atajos est\u00E1n ocupados";
             tray.BalloonTipText = string.Join(", ", failed.ToArray()) + " los usa otro programa (\u00BFOneDrive, ShareX, Lightshot, Greenshot\u2026?). " +
-                                  "Ci\u00E9rralo o elige otros atajos en Ajustes.";
+                                  "Ci\u00E9rralo o haz clic aqu\u00ED para elegir otros atajos.";
             tray.BalloonTipIcon = ToolTipIcon.Warning;
+            balloonPage = "keys";
             tray.ShowBalloonTip(8000);
         }
 
         // A short notice from the tray icon.
         public void Notify(string title, string text)
         {
-            updateBalloon = false;
+            balloonPage = null;
             tray.BalloonTipTitle = title;
             tray.BalloonTipText = text;
             tray.BalloonTipIcon = ToolTipIcon.Info;
@@ -276,6 +338,7 @@ namespace Stackshot
                     case "window": CaptureWindow(); break;
                     case "scroll": picking = !ScrollCapture.Active; ScrollCapture.Toggle(this, settings); break;
                     case "video": picking = !Recorder.Recording; Recorder.Toggle(this, settings, false); break;
+                    case "markdown": MarkdownWindow.Open(this, settings); break;
                     case "gif": picking = !Recorder.Recording; Recorder.Toggle(this, settings, true); break;
                 }
             }
@@ -291,11 +354,29 @@ namespace Stackshot
             if (home == null || home.IsDisposed)
             {
                 home = new HomeWindow(this, settings);
-                home.FormClosed += delegate { home = null; };
+                home.Closed += delegate { home = null; };
             }
+            else HideIfOffScreen(home); // still warming up off screen (or left there): it comes back centered
             home.Present(page, intro && settings.ShowIntro);
         }
         HomeWindow home;
+
+        // The main window warms up parked far off screen. With display scaling above ~110% Windows clamps that spot, so
+        // the window could stay "shown" out of sight, with its clock running, and later open there. Hidden instead.
+        static void HideIfOffScreen(HomeWindow w)
+        {
+            try
+            {
+                if (w.IsDisposed || !w.IsVisible || w.WindowState == System.Windows.WindowState.Minimized) return;
+                IntPtr h = new System.Windows.Interop.WindowInteropHelper(w).Handle;
+                Native.RECT r;
+                if (h == IntPtr.Zero || !Native.GetWindowRect(h, out r)) return;
+                Rectangle px = Rectangle.FromLTRB(r.Left, r.Top, r.Right, r.Bottom);
+                foreach (Screen s in Screen.AllScreens) if (s.Bounds.IntersectsWith(px)) return;
+                w.Hide();
+            }
+            catch (Exception ex) { Log("Ventana fuera de pantalla: " + ex.Message); }
+        }
 
         // While a hotkey field is recording, global hotkeys must not swallow the keys.
         public void SuspendHotkeys() { if (!Test) hotkeys.Clear(); }
@@ -311,6 +392,7 @@ namespace Stackshot
 
         public void ApplySettings()
         {
+            Ds.Apply(settings.Appearance);
             if (settings.FollowMouse && cards.Count > 0) follow.Start();
             settings.Save();
         }
@@ -321,10 +403,14 @@ namespace Stackshot
             Bitmap frozen;
             Rectangle vs;
             IntPtr window;
-            Rectangle r = RegionPicker.Pick(RegionPicker.Mode.Image, out frozen, out vs, out window);
+            RegionPicker.Mode chosen;
+            Rectangle r = RegionPicker.Pick(RegionPicker.Mode.Image, settings.AllInOne, out frozen, out vs, out window, out chosen);
             using (frozen)
             {
                 if (r.IsEmpty) return;
+                // All-in-one: the bar can turn the area into a recording or a scrolling capture.
+                if (chosen == RegionPicker.Mode.Video || chosen == RegionPicker.Mode.Gif) { Recorder.Start(this, settings, r, chosen == RegionPicker.Mode.Gif); return; }
+                if (chosen == RegionPicker.Mode.Scroll) { ScrollCapture.Start(this, r); return; }
                 Rectangle src = new Rectangle(r.X - vs.X, r.Y - vs.Y, r.Width, r.Height);
                 src.Intersect(new Rectangle(0, 0, frozen.Width, frozen.Height));
                 if (src.Width < 1 || src.Height < 1) return;
@@ -369,7 +455,7 @@ namespace Stackshot
         // To feel instant: the sound plays first, the card uses the in-memory image and the PNG (the slowest part,
         // hundreds of ms on large screens) is written on a worker thread. Callers that need the file wait with
         // WaitWritten.
-        public void SaveCapture(Bitmap shot, string name)
+        public string SaveCapture(Bitmap shot, string name)
         {
             if (settings.Sound) Shutter.Play();
             Directory.CreateDirectory(folder);
@@ -378,10 +464,11 @@ namespace Stackshot
             Bitmap preview = Preview(shot, 600);
             Bitmap forClipboard = settings.CopyToClipboard && !Test ? TrackedData.DeepCopy(shot) : null;
             BeginWrite(path, shot);
+            PlanSweep(TempLife + TimeSpan.FromSeconds(5));
             if (!AddCard(path, preview, size))
             {
                 if (forClipboard != null) forClipboard.Dispose();
-                return;
+                return null;
             }
             if (forClipboard != null)
             {
@@ -391,6 +478,7 @@ namespace Stackshot
             Log("Captura: " + Path.GetFileName(path) + " (" + size.Width + "x" + size.Height + ")");
             if (!Test) AddLove();
             if (Captured != null) Captured(path);
+            return path;
         }
 
         // For the main window (the mascot celebrates each capture).
@@ -448,6 +536,7 @@ namespace Stackshot
         // Finished recording: add it to the stack and put the file on the clipboard (to paste into a chat).
         public void AddRecording(string path)
         {
+            PlanSweep(TempLife + TimeSpan.FromSeconds(5));
             if (!AddCard(path)) return;
             if (settings.CopyToClipboard && !Test)
             {
@@ -532,32 +621,111 @@ namespace Stackshot
             return kept.ContainsKey(path);
         }
 
+        readonly DateTime started = DateTime.Now;
+        static readonly TimeSpan[] KeepSpans = { TimeSpan.FromHours(1), TimeSpan.FromDays(3650), TimeSpan.FromDays(1), TimeSpan.FromDays(7), TimeSpan.FromDays(30) };
+        // How long a temporary capture lives (Settings.TempKeep). "Until closed" lives out the session; the exit sweep removes it.
+        TimeSpan TempLife { get { return KeepSpans[Math.Max(0, Math.Min(KeepSpans.Length - 1, settings.TempKeep))]; } }
+        bool sweepAll;
+        DateTime sweepDue = DateTime.MaxValue;
+
         // Permanently deletes temp captures older than one hour that are no longer on screen.
-        // Only inside %LOCALAPPDATA%\Stackshot\temp, never anywhere else.
+        // Only inside %LOCALAPPDATA%\Stackshot\temp, never anywhere else. Then plans the next sweep for when the next
+        // file comes of age (or stops if there is nothing left to clean).
         public void Sweep()
         {
-            DateTime limit = DateTime.Now.AddHours(-1);
+            if (Test || exiting) return;
+            DateTime now = DateTime.Now, limit = now - TempLife, next = DateTime.MaxValue;
+            if (sweepAll) limit = DateTime.MaxValue;
+            else if (settings.TempKeep == 1) limit = started;
+            bool held = false;  // something old enough that can't go yet (on screen, open, locked)
             string[] files;
             try { files = Directory.GetFiles(folder); }
-            catch (Exception ex) { Log("Limpieza: " + ex.Message); return; }
+            catch (Exception ex)
+            {
+                if (Directory.Exists(folder)) Log("Limpieza: " + ex.Message);
+                return;
+            }
             int n = 0;
             foreach (string f in files)
             {
-                if (Find(f) != null || editors.ContainsKey(f)) continue;
                 string ext = Path.GetExtension(f).ToLowerInvariant();
-                // Also ".png.part" files left by an interrupted write.
-                if (Array.IndexOf(ImageExts, ext) < 0 && Array.IndexOf(MediaExts, ext) < 0 && ext != ".part") continue;
+                // Also ".png.part" files left by an interrupted write, and work files of a recording that never finished
+                // (a file still being recorded can't be deleted).
+                if (Array.IndexOf(ImageExts, ext) < 0 && Array.IndexOf(MediaExts, ext) < 0 && ext != ".part" && ext != ".md" &&
+                    !Path.GetFileName(f).StartsWith("~grabando ", StringComparison.Ordinal)) continue;
                 try
                 {
-                    if (File.GetLastWriteTime(f) > limit) continue;
+                    DateTime written = File.GetLastWriteTime(f);
+                    if (written > limit)
+                    {
+                        if (written + TempLife < next) next = written + TempLife;
+                        continue;
+                    }
+                    // Old enough, but still on screen, open in the editor or part of a long recording under way: looked at
+                    // again a little later.
+                    if (Find(f) != null || (ext == ".md" && Find(Path.ChangeExtension(f, ".png")) != null) || editors.ContainsKey(f) || (Recorder.Recording && Path.GetFileName(f).StartsWith("~", StringComparison.Ordinal)))
+                    {
+                        held = true;
+                        continue;
+                    }
                     File.Delete(f);
                     kept.Remove(f);
                     n++;
                 }
-                catch (Exception ex) { Log("Limpieza de " + f + ": " + ex.Message); }
+                catch (Exception ex) { held = true; Log("Limpieza de " + f + ": " + ex.Message); }
             }
             if (n > 0) Log("Limpieza: " + n + " capturas temporales borradas");
+            sweepTimer.Stop();
+            sweepDue = DateTime.MaxValue;
+            TimeSpan wait = next != DateTime.MaxValue ? next - now + TimeSpan.FromSeconds(5) : TimeSpan.MaxValue;
+            if (held && wait > TimeSpan.FromMinutes(15)) wait = TimeSpan.FromMinutes(15);
+            if (wait != TimeSpan.MaxValue) PlanSweep(wait);
         }
+
+        // Deletes every temporary capture that is not on screen or open (the save folder is never touched).
+        public void ClearTemp()
+        {
+            sweepAll = true;
+            try { Sweep(); }
+            finally { sweepAll = false; }
+            Recents.Forget();
+        }
+
+        // Makes sure a sweep runs within that time (an earlier one already planned stays).
+        void PlanSweep(TimeSpan after)
+        {
+            if (Test || exiting) return;
+            double ms = Math.Max(30000, Math.Min(Math.Min(TempLife.TotalMilliseconds, 3 * 86400000.0) + 60000, after.TotalMilliseconds));
+            DateTime due = DateTime.Now.AddMilliseconds(ms);
+            if (sweepTimer.Enabled && sweepDue <= due) return;
+            sweepTimer.Stop();
+            sweepTimer.Interval = (int)ms;
+            sweepTimer.Start();
+            sweepDue = due;
+        }
+
+        // The temp folder can vanish under the watcher (cleaned by hand, a disk tool): make it again and keep watching,
+        // so cards still follow their files. An error that comes straight back is not retried in a loop: a few quick
+        // re-arms, then it waits for the next capture.
+        void OnWatcherError(object sender, ErrorEventArgs e)
+        {
+            Exception ex = e.GetException();
+            if (exiting || ex is InternalBufferOverflowException) { Log("Vigilante: " + (ex != null ? ex.Message : "?")); return; }
+            DateTime now = DateTime.UtcNow;
+            watcherErrors = now - watcherErrorAt < TimeSpan.FromSeconds(10) ? watcherErrors + 1 : 1;
+            watcherErrorAt = now;
+            Log("Vigilante: " + (ex != null ? ex.Message : "?") + (watcherErrors > 3 ? " (se deja de vigilar)" : ""));
+            try
+            {
+                fsw.EnableRaisingEvents = false;
+                if (watcherErrors > 3) return;
+                Directory.CreateDirectory(folder);
+                fsw.EnableRaisingEvents = true;
+            }
+            catch (Exception again) { Log("Vigilante, reinicio: " + again.Message); }
+        }
+        int watcherErrors;
+        DateTime watcherErrorAt;
 
         // Small captures open at 2x so they are easy to annotate; normal ones at most at 100%.
         public static float MaxZoom(Size img)
@@ -617,18 +785,23 @@ namespace Stackshot
             catch { return -1; }
         }
 
+        // An edited card reloads once its writer has closed the file. A file whose card is gone (deleted, or renamed and
+        // followed under its new name) or that stays held open for minutes is dropped, so the poll never ticks on idly.
         void Poll(object sender, EventArgs e)
         {
             DateTime now = DateTime.Now;
             foreach (string p in new List<string>(refresh.Keys))
             {
-                if ((now - refresh[p]).TotalMilliseconds < 300 || ClosedSize(p) <= 0) continue;
-                refresh.Remove(p);
+                double since = (now - refresh[p]).TotalMilliseconds;
                 Card c = Find(p);
-                if (c != null && c.Reload()) Relayout();
+                if (c == null || since > RefreshGiveUpMs) { refresh.Remove(p); continue; }
+                if (since < 300 || ClosedSize(p) <= 0) continue;
+                refresh.Remove(p);
+                if (c.Reload()) Relayout();
             }
             if (refresh.Count == 0) poll.Stop();
         }
+        const double RefreshGiveUpMs = 2 * 60 * 1000;
 
         bool AddCard(string p)
         {
@@ -640,8 +813,14 @@ namespace Stackshot
             Card c = new Card(this, p);
             if (preview != null) c.UsePreview(preview, orig);
             else if (!c.Reload()) { c.Dispose(); Log("No se pudo leer " + p); return false; }
+            // The folder watcher gave up after repeated errors: a new card is a good moment to try again.
+            if (!fsw.EnableRaisingEvents && !exiting)
+            {
+                try { fsw.EnableRaisingEvents = true; }
+                catch (Exception ex) { Log("Vigilante: " + ex.Message); }
+            }
             // The card appears on the monitor where the capture was taken; the stack follows it there.
-            anchorDevice = Screen.FromPoint(Control.MousePosition).DeviceName;
+            anchorDevice = MonitorName(Control.MousePosition);
             followCandidate = null;
             cards.Add(c);
             scroll = 0; // a new capture is always visible: scroll back to the newest
@@ -748,13 +927,15 @@ namespace Stackshot
         // It never moves while something is pressed, swiped or dragged.
         void FollowTick(object sender, EventArgs e)
         {
-            if (cards.Count == 0) { follow.Stop(); followCandidate = null; return; }
-            if (!settings.FollowMouse || Screen.AllScreens.Length < 2 || Control.MouseButtons != MouseButtons.None || Busy())
+            // Nothing to follow with no cards, one monitor or the option off: the timer stops until that changes (a new
+            // card, a monitor plugged in, the setting turned on).
+            if (cards.Count == 0 || !settings.FollowMouse || Screen.AllScreens.Length < 2) { follow.Stop(); followCandidate = null; return; }
+            if (Control.MouseButtons != MouseButtons.None || Busy())
             {
                 followCandidate = null;
                 return;
             }
-            string dev = Screen.FromPoint(Control.MousePosition).DeviceName;
+            string dev = MonitorName(Control.MousePosition);
             if (dev == anchorDevice) { followCandidate = null; return; }
             double now = Anim.Now;
             if (dev != followCandidate) { followCandidate = dev; followSince = now; return; }
@@ -764,6 +945,32 @@ namespace Stackshot
             Relayout();
         }
 
+        // The device name of the monitor under a point (Screen.FromPoint(p).DeviceName), cheap enough for every timer
+        // tick or mouse move: building a Screen opens a device context (a quarter of a millisecond with several monitors),
+        // so the last answer is kept per monitor handle until the displays change (WinForms then lists them anew).
+        public static string MonitorName(Point p)
+        {
+            Native.POINT pt;
+            pt.X = p.X;
+            pt.Y = p.Y;
+            IntPtr mon = Native.MonitorFromPoint(pt, 2); // MONITOR_DEFAULTTONEAREST
+            Screen[] all = Screen.AllScreens;
+            MonitorSeen seen = lastMonitor;
+            if (seen != null && mon != IntPtr.Zero && seen.Handle == mon && seen.All == all) return seen.Name;
+            seen = new MonitorSeen(mon, all, Screen.FromPoint(p).DeviceName);
+            lastMonitor = seen;
+            return seen.Name;
+        }
+
+        sealed class MonitorSeen
+        {
+            public readonly IntPtr Handle;
+            public readonly Screen[] All;
+            public readonly string Name;
+            public MonitorSeen(IntPtr h, Screen[] all, string name) { Handle = h; All = all; Name = name; }
+        }
+        static MonitorSeen lastMonitor;
+
         bool Busy()
         {
             foreach (Card c in cards)
@@ -771,6 +978,14 @@ namespace Stackshot
                 if (c.Busy) return true;
             }
             return false;
+        }
+
+        // Light/dark switched: floating surfaces repaint with the new palette.
+        void Restyle()
+        {
+            foreach (Card c in cards) c.Restyle();
+            upChip.Restyle();
+            downChip.Restyle();
         }
 
         // Bottom-left: the first capture stays at the bottom and newer ones stack above. When they don't all fit, the
@@ -790,7 +1005,7 @@ namespace Stackshot
             Rectangle wa = scr.WorkingArea;
             float s = ScaleFor(scr);
             int margin = (int)Math.Round(16 * s), gap = (int)Math.Round(10 * s), chipH = (int)Math.Round(26 * s);
-            int width = (int)Math.Round(240 * s), left = wa.Left + margin, avail = wa.Height - 2 * margin;
+            int width = (int)Math.Round(256 * s), left = wa.Left + margin, avail = wa.Height - 2 * margin;
 
             scroll = Math.Max(0, Math.Min(n - 1 - FitUp(s, avail, gap, chipH), scroll));
             int top = n - 1 - scroll, bottom = FitDown(top, s, avail, gap, chipH);
@@ -893,7 +1108,13 @@ namespace Stackshot
 
         void OnDisplayChanged(object sender, EventArgs e)
         {
-            sync.BeginInvoke((Action)delegate { Relayout(); if (pet != null) pet.ScreensChanged(); });
+            sync.BeginInvoke((Action)delegate
+            {
+                if (exiting) return;
+                Relayout();
+                if (cards.Count > 0 && settings.FollowMouse) follow.Start();
+                if (pet != null) pet.ScreensChanged();
+            });
         }
 
         public static float ScaleFor(Screen scr)
@@ -924,10 +1145,13 @@ namespace Stackshot
         {
             // The tracked clipboard object lives in this process: flush it to the clipboard before exiting.
             exiting = true;
+            if (settings.TempKeep == 1) { exiting = false; sweepAll = true; try { Sweep(); } catch { } exiting = true; }
             Recorder.Stop();
             ScrollCapture.Stop();
-            if (home != null && !home.IsDisposed) home.Dispose();
+            if (home != null && !home.IsDisposed) home.Shutdown();
             if (showWait != null) showWait.Unregister(null);
+            if (openWait != null) openWait.Unregister(null);
+            if (openEvent != null) openEvent.Dispose();
             if (quitWait != null) quitWait.Unregister(null);
             if (showEvent != null) showEvent.Dispose();
             if (clip != null) { try { Native.OleFlushClipboard(); } catch { } }
@@ -1066,24 +1290,36 @@ namespace Stackshot
         const long MaxLogBytes = 1024 * 1024;
         static readonly object logLock = new object();
 
-        // Called from several threads. Past 1 MB the log rotates to stackshot.log.old, so it never grows unbounded.
+        // Called from several threads (and processes: an update runs next to the copy it replaces). Past 1 MB the log
+        // rotates to stackshot.log.old, so it never grows unbounded; a rotation that can't happen now (the old file
+        // held open) never stops the logging. A line that meets the file busy is retried briefly.
         public static void Log(string msg)
         {
-            try
+            string path = LogPath;
+            if (path == null) return;
+            string line = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  " + msg + Environment.NewLine;
+            lock (logLock)
             {
-                lock (logLock)
+                try
                 {
-                    FileInfo fi = new FileInfo(LogPath);
+                    FileInfo fi = new FileInfo(path);
                     if (fi.Exists && fi.Length > MaxLogBytes)
                     {
-                        string old = LogPath + ".old";
+                        string old = path + ".old";
                         if (File.Exists(old)) File.Delete(old);
-                        File.Move(LogPath, old);
+                        File.Move(path, old);
                     }
-                    File.AppendAllText(LogPath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  " + msg + Environment.NewLine);
+                }
+                catch { }
+                for (int attempt = 0; attempt < 3; attempt++)
+                {
+                    try { File.AppendAllText(path, line); return; }
+                    catch (DirectoryNotFoundException) { return; } // folder gone (uninstalled, cleaned by hand): waiting won't help
+                    catch (PathTooLongException) { return; }
+                    catch (IOException) { System.Threading.Thread.Sleep(15); }
+                    catch { return; }
                 }
             }
-            catch { }
         }
     }
 }

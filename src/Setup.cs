@@ -21,6 +21,7 @@ namespace Stackshot
         public const string QuitEvent = "Local\\Stackshot.Quit";
         public const string MutexName = "Local\\Stackshot";
         public const string ShowEvent = "Local\\Stackshot.Show";
+        public const string OpenEvent = "Local\\Stackshot.Open";
 
         public static string StartupLink { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), "Stackshot.lnk"); } }
         public static string MenuLink { get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "Stackshot.lnk"); } }
@@ -85,18 +86,29 @@ namespace Stackshot
             ShotStack.Log("Instalado " + MyVersion + " en " + Settings.InstallDir);
         }
 
-        // Writes a new file with the contents only, like any installer: alternate data streams are not carried over,
-        // so the installed copy needs no stream manipulation afterwards.
+        // Writes a new file with the contents only, like any installer (alternate data streams are not carried over). The
+        // old file goes only once nothing runs from it (until then deleting fails and nothing has changed); if the new one
+        // can't be renamed into place right after (a scanner holding it), its bytes are written there directly, so there
+        // is never a moment without an installed Stackshot.
         static void CopyContents(string from, string to)
         {
+            byte[] data = File.ReadAllBytes(from);
             string tmp = to + ".new";
-            File.WriteAllBytes(tmp, File.ReadAllBytes(from));
+            File.WriteAllBytes(tmp, data);
             try
             {
                 if (File.Exists(to)) File.Delete(to);
-                File.Move(tmp, to);
+                try { File.Move(tmp, to); }
+                catch (Exception ex)
+                {
+                    if (!(ex is IOException || ex is UnauthorizedAccessException)) throw;
+                    File.WriteAllBytes(to, data);
+                }
             }
-            finally { if (File.Exists(tmp)) File.Delete(tmp); }
+            finally
+            {
+                try { if (File.Exists(tmp)) File.Delete(tmp); } catch { } // a leftover is overwritten next time
+            }
         }
 
         // Shortcuts and uninstall entry pointing to the installed copy.
@@ -104,7 +116,9 @@ namespace Stackshot
         {
             if (ManagedByMsi) return; // the MSI handles this
             string exe = Settings.InstalledExe;
-            CreateShortcut(MenuLink, exe, "Stackshot: capturas de pantalla, v\u00EDdeo y GIF", "");
+            // A shortcut the shell refuses (a locked-down profile) is logged, never a reason for the install to fail.
+            try { CreateShortcut(MenuLink, exe, "Stackshot: capturas de pantalla, v\u00EDdeo y GIF", ""); }
+            catch (Exception ex) { ShotStack.Log("Acceso directo del men\u00FA Inicio: " + ex.Message); }
             SetStartup(startup);
             try
             {
@@ -128,16 +142,37 @@ namespace Stackshot
             catch (Exception ex) { ShotStack.Log("Registro de desinstalaci\u00F3n: " + ex.Message); }
         }
 
-        // When running from the install folder, recreate missing shortcuts.
+        // When running from the install folder, recreate missing shortcuts and refresh the Apps entry of a copy replaced
+        // by hand. Cheap when all is in place (no shortcut is rewritten on every start).
         public static void Repair()
         {
             if (!RunningInstalled || ManagedByMsi) return;
             try
             {
-                if (!File.Exists(MenuLink) || Registry.CurrentUser.OpenSubKey(UninstallKey) == null) Register(StartupEnabled);
-                else if (StartupEnabled) SetStartup(true); // older shortcuts lacked --background
+                string shown;
+                using (RegistryKey k = Registry.CurrentUser.OpenSubKey(UninstallKey))
+                    shown = k == null ? null : k.GetValue("DisplayVersion") as string;
+                if (!File.Exists(MenuLink) || shown != MyVersion.ToString(3)) Register(StartupEnabled);
+                else if (StartupEnabled && !LinkHas(StartupLink, "--background")) SetStartup(true); // older shortcuts lacked it
             }
             catch (Exception ex) { ShotStack.Log("Reparar instalaci\u00F3n: " + ex.Message); }
+        }
+
+        // Whether a shortcut's arguments contain that text (a .lnk stores them as UTF-16), without COM.
+        static bool LinkHas(string lnk, string text)
+        {
+            try
+            {
+                byte[] data = File.ReadAllBytes(lnk), find = System.Text.Encoding.Unicode.GetBytes(text);
+                for (int i = 0; i + find.Length <= data.Length; i++)
+                {
+                    int j = 0;
+                    while (j < find.Length && data[i + j] == find[j]) j++;
+                    if (j == find.Length) return true;
+                }
+            }
+            catch { }
+            return false;
         }
 
         // The startup shortcut starts in the background (no window).
@@ -170,11 +205,106 @@ namespace Stackshot
             finally { Marshal.ReleaseComObject(shell); }
         }
 
+        // A Stackshot is running (it listens for the quit request; test runs don't).
+        public static bool Running
+        {
+            get
+            {
+                try
+                {
+                    System.Threading.EventWaitHandle e;
+                    if (!System.Threading.EventWaitHandle.TryOpenExisting(QuitEvent, out e)) return false;
+                    e.Dispose();
+                    return true;
+                }
+                catch { return false; }
+            }
+        }
+
         // Ask the running instance to show its window.
         public static void SignalShow()
         {
             try { System.Threading.EventWaitHandle.OpenExisting(ShowEvent).Set(); }
             catch { }
+        }
+
+        static string OpenFile { get { return Path.Combine(Settings.DataDir, "open.txt"); } }
+
+        // Ask the running instance to open a .md or .xml in the viewer. The request is written first (with its time), so it
+        // is found even when the running copy is still starting; the event is then looked for up to waitMs.
+        // False only when nothing could be written.
+        public static bool SendOpen(string path, int waitMs)
+        {
+            try
+            {
+                Directory.CreateDirectory(Settings.DataDir);
+                byte[] line = System.Text.Encoding.UTF8.GetBytes(DateTime.UtcNow.Ticks + "\t" + path + "\n");
+                using (FileStream f = new FileStream(OpenFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite)) f.Write(line, 0, line.Length);
+            }
+            catch { return false; }
+            DateTime end = DateTime.UtcNow.AddMilliseconds(waitMs);
+            while (true)
+            {
+                try
+                {
+                    using (System.Threading.EventWaitHandle e = System.Threading.EventWaitHandle.OpenExisting(OpenEvent)) { e.Set(); }
+                    break;
+                }
+                catch { }
+                if (DateTime.UtcNow >= end) break;
+                System.Threading.Thread.Sleep(100);
+            }
+            return true;
+        }
+
+        // The paths waiting for the running instance (taken by renaming the file, so nothing is read twice). Requests
+        // older than two minutes, or for files that are gone, are ignored.
+        public static List<string> TakeOpenRequests()
+        {
+            List<string> r = new List<string>();
+            for (int round = 0; round < 5 && File.Exists(OpenFile); round++)
+            {
+                string tmp = Path.Combine(Settings.DataDir, "open." + Guid.NewGuid().ToString("N") + ".txt");
+                bool moved = false;
+                for (int i = 0; i < 3 && !moved; i++)
+                {
+                    try { File.Move(OpenFile, tmp); moved = true; }
+                    catch (FileNotFoundException) { break; }
+                    catch (IOException) { System.Threading.Thread.Sleep(50); }
+                    catch { break; }
+                }
+                if (!moved) break;
+                try
+                {
+                    foreach (string l in File.ReadAllLines(tmp, System.Text.Encoding.UTF8))
+                    {
+                        string p = l.Trim();
+                        if (p.Length == 0) continue;
+                        int tab = p.IndexOf('\t');
+                        long ticks;
+                        if (tab > 0 && long.TryParse(p.Substring(0, tab), out ticks))
+                        {
+                            p = p.Substring(tab + 1).Trim();
+                            if (ticks > DateTime.UtcNow.Ticks + TimeSpan.TicksPerMinute || DateTime.UtcNow.Ticks - ticks > 2 * TimeSpan.TicksPerMinute) continue;
+                        }
+                        if (ViewerFile(p) && File.Exists(p) && !r.Exists(x => string.Equals(x, p, StringComparison.OrdinalIgnoreCase))) r.Add(p);
+                    }
+                }
+                catch { }
+                try { File.Delete(tmp); } catch { }
+            }
+            return r;
+        }
+
+        // A file Stackshot opens in its viewer (Markdown or XML).
+        public static bool ViewerFile(string path)
+        {
+            try
+            {
+                string e = Path.GetExtension(path).ToLowerInvariant();
+                return e == ".md" || e == ".markdown" || e == ".mdown" || e == ".mkd" || XmlDoc.IsXmlPath(path);
+            }
+            catch { return false; }
         }
 
         // Ask the running instance to quit (keeping the clipboard) and wait for it.
@@ -257,202 +387,5 @@ namespace Stackshot
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static extern IntPtr SendMessageTimeout(IntPtr hwnd, int msg, UIntPtr wParam, string lParam, int flags, int timeout, out UIntPtr result);
-    }
-
-    // Welcome window (first run of the downloaded .exe): the basics to get started. Everything else lives in the main
-    // window.
-    public class SetupWindow : DarkForm
-    {
-        readonly Settings settings;
-        readonly Toggle startup, printScreen, sound, copy;
-        readonly Label folderLabel;
-        readonly Image logo;
-        string folder;
-
-        public bool StartWithWindows { get { return startup.Checked; } }
-
-        // Returns false if closed without installing.
-        public static bool Welcome(Settings s, out bool startWithWindows)
-        {
-            using (SetupWindow w = new SetupWindow(s))
-            {
-                bool ok = w.ShowDialog() == DialogResult.OK;
-                startWithWindows = w.StartWithWindows;
-                return ok;
-            }
-        }
-
-        SetupWindow(Settings s) : base(520, 668)
-        {
-            settings = s;
-            folder = s.SaveFolder;
-            logo = ShotStack.LoadResourceImage("logo.png");
-            int x = 36, w = 448;
-            Label t = AddLabel("Bienvenido a Stackshot", 0, 140, 520, 26, Theme.Fg, true, ContentAlignment.TopCenter);
-            t.Font = new Font(Fonts.DisplaySemibold, P(27), GraphicsUnit.Pixel);
-            t.Height = P(40);
-            AddLabel("Captura, marca y comparte en segundos.\nPulsa Impr Pant y listo.", 40, 186, 440, 14, Theme.Fg2, false, ContentAlignment.TopCenter);
-            int y = 256;
-
-            // Grouped card like macOS Settings: toggles and the folder, separated by hairlines.
-            int top = y;
-            startup = AddToggleRow(x, ref y, w, "Iniciar con Windows", "Se abre solo, en segundo plano, al encender el equipo.", true);
-            printScreen = null;
-            if (Installer.SnippingOwnsPrintScreen)
-                printScreen = AddToggleRow(x, ref y, w, "Usar la tecla Impr Pant", "Windows la usa para Recortes; Stackshot se la queda solo en tu usuario.", true);
-            sound = AddToggleRow(x, ref y, w, "Sonido al capturar", "Un peque\u00F1o clic de c\u00E1mara.", s.Sound);
-            copy = AddToggleRow(x, ref y, w, "Copiar cada captura", "Lista para pegar con Ctrl+V nada m\u00E1s hacerla.", s.CopyToClipboard);
-            separators.Add(y - 9);
-            AddLabel("Carpeta de capturas", x, y, w - 116, 14, Theme.Fg, true, ContentAlignment.TopLeft);
-            folderLabel = AddLabel("", x, y + 21, w - 116, 12, Theme.Muted, false, ContentAlignment.TopLeft);
-            folderLabel.AutoEllipsis = true;
-            folderLabel.Height = P(20);
-            ShowFolder();
-            Pill change = MakePill("Cambiar\u2026", false, x + w - 96, y + 3, 96, 32);
-            change.Font = new Font("Segoe UI Semibold", P(13), GraphicsUnit.Pixel);
-            change.Click += delegate { PickFolder(); };
-            y += 40;
-            cards.Add(new Rectangle(x - 16, top - 14, w + 32, y - top + 28));
-            y += 48;
-
-            // The essentials as key caps, so there's nothing else to read.
-            top = y;
-            string[][] caps = { Hotkeys.Display(s.HotRegion).Split('+'), Hotkeys.Display(s.HotVideo).Split('+'), new string[] { "Clic" } };
-            string[] what = { "Capturar un \u00E1rea o una ventana", "Grabar la pantalla", "en la miniatura para editarla" };
-            for (int i = 0; i < caps.Length; i++)
-            {
-                if (i > 0) separators.Add(y - 7);
-                keys.Add(new KeyValuePair<Point, string[]>(new Point(x, y), caps[i]));
-                AddLabel(what[i], x + 196, y + 3, w - 196, 13, Theme.Fg2, false, ContentAlignment.TopLeft).Height = P(20);
-                y += 34;
-            }
-            cards.Add(new Rectangle(x - 16, top - 12, w + 32, y - top + 14));
-            y += 28;
-
-            Pill ok = MakePill("Instalar y empezar", true, 286, y, 198, 42);
-            ok.Click += delegate { Save(); };
-            Pill cancel = MakePill("Ahora no", false, 36, y, 120, 42);
-            cancel.Click += delegate { DialogResult = DialogResult.Cancel; Close(); };
-            AcceptButton = null;
-            // Height follows the content (one more row when Windows owns Print Screen).
-            ClientSize = new Size(ClientSize.Width, P(y + 42 + 30));
-            Rectangle wa = Grabber.CurrentScreen().WorkingArea;
-            Location = new Point(wa.Left + (wa.Width - Width) / 2, wa.Top + Math.Max(0, (wa.Height - Height) / 2));
-        }
-
-        readonly List<Rectangle> cards = new List<Rectangle>();
-        readonly List<int> separators = new List<int>();
-        readonly List<KeyValuePair<Point, string[]>> keys = new List<KeyValuePair<Point, string[]>>();
-        int toggleRows;
-
-        Pill MakePill(string text, bool accent, int x, int y, int w, int h)
-        {
-            Pill p = new Pill(text, accent);
-            p.Font = new Font("Segoe UI Semibold", P(14), GraphicsUnit.Pixel);
-            p.Bounds = new Rectangle(P(x), P(y), P(w), P(h));
-            Controls.Add(p);
-            p.BringToFront(); // above any label behind it
-            return p;
-        }
-
-        // Row with title, description and a toggle on the right.
-        Toggle AddToggleRow(int x, ref int y, int w, string title, string desc, bool value)
-        {
-            AddLabel(title, x, y, w - 70, 14, Theme.Fg, true, ContentAlignment.TopLeft);
-            Label d = AddLabel(desc, x, y + 21, w - 70, 12, Theme.Muted, false, ContentAlignment.TopLeft);
-            Toggle t = new Toggle(value);
-            t.Bounds = new Rectangle(P(x + w - 46), P(y + 8), P(46), P(26));
-            Controls.Add(t);
-            if (toggleRows++ > 0) separators.Add(y - 9);
-            y += Math.Max(56, 21 + (int)Math.Round(d.Height / s) + 18);
-            return t;
-        }
-
-        void ShowFolder()
-        {
-            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            folderLabel.Text = folder.StartsWith(home, StringComparison.OrdinalIgnoreCase) ? "~" + folder.Substring(home.Length) : folder;
-        }
-
-        void PickFolder()
-        {
-            using (FolderBrowserDialog d = new FolderBrowserDialog())
-            {
-                d.Description = "\u00BFD\u00F3nde quieres guardar las capturas que conserves?";
-                d.ShowNewFolderButton = true;
-                try { Directory.CreateDirectory(folder); d.SelectedPath = folder; } catch { }
-                if (d.ShowDialog(this) == DialogResult.OK) { folder = d.SelectedPath; ShowFolder(); }
-            }
-        }
-
-        void Save()
-        {
-            settings.SaveFolder = folder;
-            settings.Sound = sound.Checked;
-            settings.CopyToClipboard = copy.Checked;
-            settings.FirstRunDone = true;
-            settings.Save();
-            if (printScreen != null && printScreen.Checked) Installer.FreePrintScreen();
-            DialogResult = DialogResult.OK;
-            Close();
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            base.OnPaint(e);
-            Graphics g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            // Soft halo behind the logo.
-            Rectangle halo = new Rectangle(ClientSize.Width / 2 - P(150), P(-40), P(300), P(220));
-            using (GraphicsPath gp = new GraphicsPath())
-            {
-                gp.AddEllipse(halo);
-                using (PathGradientBrush pb = new PathGradientBrush(gp))
-                {
-                    pb.CenterColor = Color.FromArgb(70, 110, 120, 255);
-                    pb.SurroundColors = new Color[] { Color.FromArgb(0, Theme.Bg) };
-                    g.FillEllipse(pb, halo);
-                }
-            }
-            foreach (Rectangle c in cards)
-            {
-                Rectangle r = new Rectangle(P(c.X), P(c.Y), P(c.Width), P(c.Height));
-                using (GraphicsPath p = Theme.Round(r, P(12)))
-                {
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(38, 38, 41))) g.FillPath(b, p);
-                    using (Pen pen = new Pen(Color.FromArgb(14, 255, 255, 255))) g.DrawPath(pen, p);
-                }
-            }
-            using (Pen hair = new Pen(Color.FromArgb(52, 52, 56), Math.Max(1f, s)))
-                foreach (int sy in separators) g.DrawLine(hair, P(36), P(sy), P(36 + 448), P(sy));
-            Font kf = Fonts.Get("Segoe UI Semibold", P(12));
-            foreach (KeyValuePair<Point, string[]> k in keys)
-            {
-                int kx = P(k.Key.X);
-                foreach (string raw in k.Value)
-                {
-                    string cap = raw.Trim();
-                    int kw = Math.Max(P(26), TextRenderer.MeasureText(cap, kf).Width + P(8));
-                    Rectangle kr = new Rectangle(kx, P(k.Key.Y), kw, P(24));
-                    using (GraphicsPath p = Theme.Round(new Rectangle(kr.X, kr.Y + P(2), kr.Width, kr.Height), P(6)))
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(24, 24, 26))) g.FillPath(b, p); // key edge
-                    using (GraphicsPath p = Theme.Round(kr, P(6)))
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(62, 62, 66))) g.FillPath(b, p);
-                    TextRenderer.DrawText(g, cap, kf, kr, Theme.Fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
-                    kx += kw + P(5);
-                }
-            }
-            int d = P(96);
-            Rectangle lr = new Rectangle((ClientSize.Width - d) / 2, P(30), d, d);
-            if (logo != null) g.DrawImage(logo, lr);
-            else if (ShotStack.AppIcon != null) g.DrawIcon(ShotStack.AppIcon, lr);
-        }
-
-        protected override void OnFormClosed(FormClosedEventArgs e)
-        {
-            base.OnFormClosed(e);
-            if (logo != null) logo.Dispose();
-        }
     }
 }
