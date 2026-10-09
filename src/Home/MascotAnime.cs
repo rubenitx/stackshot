@@ -17,14 +17,14 @@ namespace Stackshot
         // endorsed by their owners; see the README. Ready-made costumes below: kind, color, eyes, hat, outfit, face.
         public static readonly string[] AnimeNames = { "Finn", "Jake", "Pakkun", "Edward Elric", "Eren Jaeger", "Luffy", "Goku", "Tanjiro", "Gojo",
                                                        "Shin-chan", "BMO", "Pikachu", "Doraemon", "Naruto", "Totoro", "Kratos", "Doom Slayer", "Claude",
-                                                       "Codex", "Gon", "Killua", "Hisoka", "Sasuke", "Kakashi", "Zoro", "Vegeta", "Saitama", "Levi",
+                                                       "Codex", "Gon", "Killua", "Hisoka", "Sasuke", "Kakashi", "Zoro", "Chopper", "Vegeta", "Saitama", "Levi",
                                                        "Nezuko", "Spider-Man", "Batman", "Flash", "Superman", "Iron Man",
                                                        "Caballero", "Astronauta", "Mago sabio", "Superh\u00E9roe" };
         public static readonly string[] AnimeInspiration = { "Hora de aventuras", "Hora de aventuras", "Naruto", "Fullmetal Alchemist", "Ataque a los titanes",
                                                              "One Piece", "Dragon Ball", "Kimetsu no Yaiba", "Jujutsu Kaisen", "Crayon Shin-chan",
                                                              "Hora de aventuras", "Pok\u00E9mon", "Doraemon", "Naruto", "Mi vecino Totoro", "God of War", "Doom",
                                                              "Anthropic", "OpenAI", "Hunter x Hunter", "Hunter x Hunter", "Hunter x Hunter", "Naruto", "Naruto",
-                                                             "One Piece", "Dragon Ball", "One Punch Man", "Ataque a los titanes", "Kimetsu no Yaiba",
+                                                             "One Piece", "One Piece", "Dragon Ball", "One Punch Man", "Ataque a los titanes", "Kimetsu no Yaiba",
                                                              "Marvel", "DC", "DC", "DC", "Marvel", null, null, null, null };
         static readonly int[,] Anime =
         {
@@ -53,6 +53,7 @@ namespace Stackshot
             { 7, 17, 4, 34, 25, 0 },
             { 7, 17, 4, 38, 30, 17 },
             { 7, 17, 4, 35, 26, 0 },
+            { 12, 23, 1, 43, 36, 19 },
             { 7, 17, 4, 36, 27, 0 },
             { 7, 17, 2, 0, 28, 0 },
             { 7, 17, 4, 26, 8, 0 },
