@@ -348,7 +348,7 @@ namespace Stackshot
             count = new TextBlock { FontSize = 12, Foreground = Ds.Brush(pal.Label2), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), IsHitTestVisible = false };
             Grid.SetColumn(count, 2);
             g.Children.Add(count);
-            prev = new DocIconButton("up", "Anterior (Mayús+Enter)", 24);
+            prev = new DocIconButton("up", "Anterior (May\u00FAs+Enter)", 24);
             next = new DocIconButton("down", "Siguiente (Enter)", 24);
             filter = new DocIconButton("filter", "Mostrar solo lo que coincide", 24) { Margin = new Thickness(2, 0, 3, 0) };
             prev.Click += delegate { if (Step != null) Step(-1); };
@@ -373,6 +373,9 @@ namespace Stackshot
             };
             Sync();
         }
+
+        // For a search with nothing to filter (the PDF viewer).
+        public void HideFilter() { filter.Visibility = Visibility.Collapsed; }
 
         public bool Filtering { get { return filter.On; } }
 

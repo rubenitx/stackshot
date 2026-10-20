@@ -284,6 +284,17 @@ namespace Stackshot
             return SaveCapture(shot, name, null);
         }
 
+        bool hushed;
+
+        // One of several captures made at once (the pages of a PDF): no shutter and no clipboard for each of them; the
+        // caller says what was done once.
+        public string SaveCaptureQuiet(Bitmap shot, string name)
+        {
+            hushed = true;
+            try { return SaveCapture(shot, name, null); }
+            finally { hushed = false; }
+        }
+
         // ---- Where kept captures go
 
         // The save folder or, with dated subfolders, the one for the time the capture was taken. A capture kept before is

@@ -119,6 +119,17 @@ namespace Stackshot
             return true;
         }
 
+        // Text made elsewhere (the summary of a PDF's marks), opened as a document that is not a file yet.
+        public static void OpenText(ShotStack owner, string text, string label)
+        {
+            if (open != null && open.Dirty)
+            {
+                Show(owner);
+                if (!open.ConfirmDiscard()) return;
+            }
+            Pending(owner).LoadText(text, label, null);
+        }
+
         // The window to load a file into, shown (or brought to the front) only when the document is ready: a cold
         // open never flashes the empty start screen, and an open window doesn't show its old document first.
         static MarkdownWindow Pending(ShotStack owner)
