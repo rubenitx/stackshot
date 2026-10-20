@@ -31,10 +31,10 @@ $wpf = Join-Path (Split-Path $csc) 'WPF'
 foreach ($dll in 'PresentationFramework.dll', 'PresentationCore.dll', 'WindowsBase.dll', 'WindowsFormsIntegration.dll') { $cscArgs += '/r:' + (Join-Path $wpf $dll) }
 # UI Automation (also part of Windows): what screen readers learn about the controls Stackshot draws itself.
 foreach ($dll in 'UIAutomationProvider.dll', 'UIAutomationTypes.dll') { $cscArgs += '/r:' + (Join-Path $wpf $dll) }
-# Windows' own OCR (Windows.Media.Ocr) is reached through its WinRT metadata, also part of Windows.
+# Windows' own OCR (Windows.Media.Ocr) and PDF engine (Windows.Data.Pdf) are reached through their WinRT metadata, also part of Windows.
 $cscArgs += '/r:' + (Join-Path (Split-Path $csc) 'System.Runtime.dll')
 $cscArgs += '/r:' + (Join-Path (Split-Path $csc) 'System.Runtime.WindowsRuntime.dll')
-foreach ($md in 'Foundation', 'Graphics', 'Media', 'Storage', 'Globalization') { $cscArgs += '/r:' + (Join-Path $env:WINDIR "System32\WinMetadata\Windows.$md.winmd") }
+foreach ($md in 'Data', 'Foundation', 'Graphics', 'Media', 'Storage', 'Globalization') { $cscArgs += '/r:' + (Join-Path $env:WINDIR "System32\WinMetadata\Windows.$md.winmd") }
 if (Test-Path $icon) { $cscArgs += "/resource:$icon,stackshot.ico" }
 
 if (Test-Path $exe) { Remove-Item $exe -Force }

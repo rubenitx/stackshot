@@ -24,7 +24,7 @@ $refs = @('/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.IO.
 foreach ($dll in 'PresentationFramework.dll', 'PresentationCore.dll', 'WindowsBase.dll', 'WindowsFormsIntegration.dll', 'UIAutomationProvider.dll', 'UIAutomationTypes.dll') { $refs += '/r:' + (Join-Path $wpf $dll) }
 $refs += '/r:' + (Join-Path $fw 'System.Runtime.dll')
 $refs += '/r:' + (Join-Path $fw 'System.Runtime.WindowsRuntime.dll')
-foreach ($md in 'Foundation', 'Graphics', 'Media', 'Storage', 'Globalization') { $refs += '/r:' + (Join-Path $env:WINDIR "System32\WinMetadata\Windows.$md.winmd") }
+foreach ($md in 'Data', 'Foundation', 'Graphics', 'Media', 'Storage', 'Globalization') { $refs += '/r:' + (Join-Path $env:WINDIR "System32\WinMetadata\Windows.$md.winmd") }
 $out = & $csc /nologo /optimize+ /codepage:65001 /target:winexe /main:Stackshot.Film "/out:$exe" "/win32manifest:$root\src\app.manifest" `
     "/resource:$root\assets\logo-256.png,logo.png" "/resource:$root\assets\stackshot.ico,stackshot.ico" @refs $src 2>&1
 if ($LASTEXITCODE -ne 0) { $out | ForEach-Object { Write-Host $_ }; throw 'Film does not compile.' }
