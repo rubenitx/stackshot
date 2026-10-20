@@ -25,7 +25,7 @@ namespace Stackshot.Tests
         }
 
         static readonly List<Outcome> outcomes = new List<Outcome>();
-        static readonly string[] defaultSuites = { "io", "tools", "commands", "find", "syntax", "perf", "render", "editor", "window", "lists", "xmlinner", "w6xml", "w6md" };
+        static readonly string[] defaultSuites = { "io", "tools", "commands", "find", "syntax", "perf", "render", "editor", "window", "lists", "xmlinner", "w6xml", "w6md", "pdf", "textdata", "textview" };
         static string currentDetail;
         static Dictionary<string, object> currentData;
         static string testsDir, workRoot, resultDir;
@@ -46,6 +46,8 @@ namespace Stackshot.Tests
 
             List<string> suites = args.Length > 0 ? new List<string>(args) : new List<string>(defaultSuites);
             foreach (string suite in suites) RunSuite(suite);
+            // As Stackshot does on its way out: what the PDF engine and the OCR left is let go before the process ends.
+            PdfEngine.Settle();
             DeleteDir(workRoot);
 
             int passes = 0, fails = 0, skips = 0;
@@ -58,6 +60,8 @@ namespace Stackshot.Tests
             WriteMarkdown(Path.Combine(resultDir, "results.md"), stamp, suites, passes, fails, skips);
             WriteJson(Path.Combine(resultDir, "results.json"), stamp, suites, passes, fails, skips);
             Console.WriteLine("TOTAL " + passes + " PASS, " + fails + " FAIL, " + skips + " SKIP -> " + resultDir);
+            // Ends as Stackshot does after a PDF was opened (PdfEngine.EndProcess), with the number of failures.
+            PdfEngine.EndProcess(fails);
             return fails;
         }
 
@@ -82,6 +86,9 @@ namespace Stackshot.Tests
                 case "xmlinner": XmlInnerSuite(); break;
                 case "w6xml": W6XmlSuite(); break;
                 case "w6md": W6MdSuite(); break;
+                case "pdf": PdfSuite(); break;
+                case "textdata": TextDataSuite(); break;
+                case "textview": TextViewSuite(); break;
                 default: Test("main", suite, delegate { throw new TestFailed("unknown suite"); }); break;
             }
         }
