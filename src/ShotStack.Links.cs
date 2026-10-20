@@ -12,6 +12,20 @@ namespace Stackshot
     public sealed class QuickLink
     {
         public string Name, Target;
+        public string Keys = "";     // its shortcut (Atajos > Accesos rápidos), or none
+
+        // A line of accesos.txt: name, tab, target and, when it has one, tab and its shortcut.
+        public string Line { get { return Name + "\t" + Target + (Keys.Length > 0 ? "\t" + Keys : ""); } }
+
+        public static QuickLink Parse(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return null;
+            string[] p = line.Split('\t');
+            if (p.Length < 2 || p[0].Trim().Length == 0) return null;
+            QuickLink l = new QuickLink { Name = p[0].Trim(), Target = p[1].Trim() };
+            if (p.Length > 2) l.Keys = Hotkeys.Normalize(p[2].Trim());
+            return l;
+        }
 
         public bool Web { get { return Target.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || Target.StartsWith("https://", StringComparison.OrdinalIgnoreCase); } }
 
@@ -108,8 +122,84 @@ namespace Stackshot
         public void RemoveLink(QuickLink l)
         {
             if (links == null) LoadLinks();
+            bool keyed = false;
+            foreach (QuickLink x in links) if (x.Name == l.Name && x.Target == l.Target && x.Keys.Length > 0) keyed = true;
             links.RemoveAll(delegate(QuickLink x) { return x.Name == l.Name && x.Target == l.Target; });
             SaveLinks();
+            // Its shortcut goes with it at once.
+            if (keyed) RegisterHotkeys(false);
+        }
+
+        // ---- A shortcut for each link (registered with the hotkeys, as "link:" + its target, which is unique)
+
+        public const string LinkPrefix = "link:";
+
+        public static string LinkAction(QuickLink l) { return LinkPrefix + l.Target; }
+
+        public QuickLink LinkOf(string action)
+        {
+            if (action == null || !action.StartsWith(LinkPrefix, StringComparison.Ordinal)) return null;
+            if (links == null) LoadLinks();
+            string target = action.Substring(LinkPrefix.Length);
+            foreach (QuickLink l in links) if (string.Equals(l.Target, target, StringComparison.OrdinalIgnoreCase)) return l;
+            return null;
+        }
+
+        // Saves the link's shortcut (the caller registers the hotkeys again).
+        public void SetLinkKeys(QuickLink l, string combos)
+        {
+            if (links == null) LoadLinks();
+            foreach (QuickLink x in links)
+                if (string.Equals(x.Target, l.Target, StringComparison.OrdinalIgnoreCase)) x.Keys = combos ?? "";
+            l.Keys = combos ?? "";
+            SaveLinks();
+            LinksWindow.Refresh();
+        }
+
+        // Atajos, with that link's field listening for its new shortcut (from the quick links window).
+        public void RecordLinkKeys(QuickLink l)
+        {
+            ShowHome("keys", false);
+            if (home != null) home.RecordLink(l);
+        }
+
+        // Pressed its shortcut: opened at once; the mascot, when out, says so, and a failure is always told.
+        void RunLink(string action)
+        {
+            QuickLink l = LinkOf(action);
+            if (l == null) return;
+            string why = OpenLink(l);
+            if (why != null)
+            {
+                if (PetShown) pet.FocusSay(why);
+                else Notify("No se ha podido abrir \u00AB" + l.Name + "\u00BB", why);
+                return;
+            }
+            if (PetShown && settings.MascotTalks) pet.SayOpening(l);
+        }
+
+        // "--link Intranet" or "--link 2": a link by its name (or the start of it) or its place in the list.
+        void RunLinkNamed(string which)
+        {
+            List<QuickLink> all = Links;
+            QuickLink pick = null;
+            int n;
+            string w = (which ?? "").Trim();
+            if (int.TryParse(w, out n) && n >= 1 && n <= all.Count) pick = all[n - 1];
+            if (pick == null) foreach (QuickLink l in all) if (string.Equals(l.Name, w, StringComparison.CurrentCultureIgnoreCase)) { pick = l; break; }
+            if (pick == null && w.Length > 0)
+            {
+                string f = PdfPageText.Fold(w);
+                foreach (QuickLink l in all) if (PdfPageText.Fold(l.Name).StartsWith(f, StringComparison.Ordinal)) { pick = l; break; }
+            }
+            if (pick == null)
+            {
+                List<string> names = new List<string>();
+                foreach (QuickLink l in all) names.Add("\u00AB" + l.Name + "\u00BB");
+                Notify("No encuentro el acceso \u00AB" + w + "\u00BB", all.Count == 0 ? "Todav\u00EDa no tienes accesos r\u00E1pidos." : "Tus accesos: " + string.Join(", ", names.ToArray()) + ".");
+                return;
+            }
+            RunLink(LinkAction(pick));
         }
 
         // Opens it the way Windows would (the browser, Explorer, the program); null when it opened, or why not.
@@ -154,9 +244,8 @@ namespace Stackshot
                 if (!File.Exists(LinksFile)) return;
                 foreach (string line in File.ReadAllLines(LinksFile, Encoding.UTF8))
                 {
-                    string[] p = line.Split(new char[] { '\t' }, 2);
-                    if (p.Length == 2 && p[0].Trim().Length > 0 && Safe(p[1].Trim()) && links.Count < MaxLinks)
-                        links.Add(new QuickLink { Name = p[0].Trim(), Target = p[1].Trim() });
+                    QuickLink l = QuickLink.Parse(line);
+                    if (l != null && Safe(l.Target) && links.Count < MaxLinks) links.Add(l);
                 }
             }
             catch (Exception ex) { Log("Accesos r\u00E1pidos: " + ex.Message); }
@@ -167,7 +256,7 @@ namespace Stackshot
             try
             {
                 StringBuilder b = new StringBuilder();
-                foreach (QuickLink l in links) b.Append(l.Name).Append('\t').Append(l.Target).Append('\n');
+                foreach (QuickLink l in links) b.Append(l.Line).Append('\n');
                 Directory.CreateDirectory(Settings.DataDir);
                 File.WriteAllText(LinksFile, b.ToString(), new UTF8Encoding(false));
             }

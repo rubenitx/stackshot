@@ -746,6 +746,13 @@ namespace Stackshot
             if (settings.MascotTalks) m.Say(Opening[rnd.Next(Opening.Length)] + " \u00AB" + l.Name + "\u00BB", 2200);
         }
 
+        // A link opened with its shortcut: said as from the menu.
+        public void SayOpening(QuickLink l)
+        {
+            if (IsDisposed || !Visible) return;
+            m.Say(Opening[rnd.Next(Opening.Length)] + " \u00AB" + l.Name + "\u00BB", 2200);
+        }
+
         // "Mi actividad": the watch is read now and the mascot tells how the day goes.
         void TellActivity()
         {
@@ -1784,7 +1791,7 @@ namespace Stackshot
             for (int i = 0; i < links.Count && i < room; i++)
             {
                 QuickLink it = links[i];
-                Add(it.Icon, it.Name, null, delegate { OpenLink(it); });
+                Add(it.Icon, it.Name, Keys(it.Keys), delegate { OpenLink(it); });
             }
             Add("plus", links.Count == 0 ? "A\u00F1adir un acceso r\u00E1pido\u2026" : "Accesos r\u00E1pidos\u2026", links.Count > room ? (links.Count - room) + " m\u00E1s" : null,
                 delegate { LinksWindow.Show(owner); });

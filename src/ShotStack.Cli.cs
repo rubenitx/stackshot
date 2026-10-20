@@ -30,6 +30,7 @@ namespace Stackshot
             if (picking) return;
             if (command == CliCommand.Home) ShowHome("home", true);
             else if (command == CliCommand.LastXml) OpenLatestXmlQuietly();
+            else if (command.StartsWith(CliCommand.Link, StringComparison.Ordinal)) RunLinkNamed(command.Substring(CliCommand.Link.Length));
             else if (command.StartsWith(CliCommand.Capture, StringComparison.Ordinal)) OnHotkey(command.Substring(CliCommand.Capture.Length));
         }
 

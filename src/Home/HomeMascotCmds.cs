@@ -280,7 +280,9 @@ namespace Stackshot
             if (l.Count == 0) return "Webs, carpetas, archivos o programas que la mascota te abre desde su men\u00FA. Tambi\u00E9n puedes soltarle una carpeta encima.";
             string names = l.Count == 1 ? "\u00AB" + l[0].Name + "\u00BB" : l.Count == 2 ? "\u00AB" + l[0].Name + "\u00BB y \u00AB" + l[1].Name + "\u00BB"
                          : "\u00AB" + l[0].Name + "\u00BB, \u00AB" + l[1].Name + "\u00BB y " + (l.Count - 2) + " m\u00E1s";
-            return names + " en el men\u00FA de la mascota.";
+            int keyed = 0;
+            foreach (QuickLink x in l) if (x.Keys.Length > 0) keyed++;
+            return names + " en el men\u00FA de la mascota" + (keyed == 0 ? "; en Atajos les pones un atajo de teclado." : keyed == l.Count ? ", todos con su atajo." : "; " + keyed + " con atajo.");
         }
 
         // A summary time other than 17:00, 18:00 and 19:00.

@@ -21,6 +21,14 @@ namespace Stackshot
         TextBox nameBox, targetBox;
         TextBlock error;
 
+        // A link's shortcut changed in Atajos: the list shows it.
+        public static void Refresh()
+        {
+            if (open == null) return;
+            open.Keep();
+            open.Build();
+        }
+
         public static void Show(ShotStack owner)
         {
             if (open != null) { open.Activate(); return; }
@@ -71,7 +79,7 @@ namespace Stackshot
             head.Children.Add(new IconTile("open", 36, Ds.Rgb(124, 92, 255), Ds.Rgb(10, 132, 255)));
             head.Children.Add(QuickWindow.Text("Accesos r\u00E1pidos", Ds.Title, 18, pal.Label, new Thickness(12, 0, 0, 0)));
             page.Children.Add(head);
-            TextBlock about = QuickWindow.Text("Webs, carpetas, archivos o programas que quieras tener a mano: salen en el men\u00FA de la mascota y te los abre con un clic.",
+            TextBlock about = QuickWindow.Text("Webs, carpetas, archivos o programas que quieras tener a mano: salen en el men\u00FA de la mascota y te los abre con un clic. Con un atajo de teclado, desde cualquier sitio.",
                                                Ds.Regular, 12.5, pal.Label2, new Thickness(0, 12, 0, 0));
             about.TextWrapping = TextWrapping.Wrap;
             page.Children.Add(about);
@@ -120,6 +128,19 @@ namespace Stackshot
                 g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 g.ColumnDefinitions.Add(new ColumnDefinition());
                 g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                // Its shortcut, or a way to give it one: Atajos opens with its field listening.
+                TapBorder keys = new TapBorder { Background = Brushes.Transparent, Cursor = Cursors.Hand, CornerRadius = new CornerRadius(6), Padding = new Thickness(4, 1, 4, 1), Margin = new Thickness(0, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center,
+                                                 Label = l.Keys.Length > 0 ? "Cambiar el atajo de " + l.Name : "Ponerle un atajo a " + l.Name, ToolTip = l.Keys.Length > 0 ? "Cambiar el atajo" : "Ponerle un atajo de teclado" };
+                if (l.Keys.Length > 0) keys.Child = new Keycaps(Hotkeys.Display(l.Keys), 18);
+                else keys.Child = QuickWindow.Text("Atajo\u2026", Ds.Regular, 12, pal.Link, new Thickness(0));
+                Action setKeys = delegate { owner.RecordLinkKeys(it); };
+                keys.MouseEnter += delegate { keys.Background = Ds.Brush(Ds.Brushes.Control); };
+                keys.MouseLeave += delegate { keys.Background = Brushes.Transparent; };
+                keys.MouseLeftButtonUp += delegate { setKeys(); };
+                Access.Clickable(keys, setKeys);
+                Grid.SetColumn(keys, 2);
+                g.Children.Add(keys);
                 g.Children.Add(new GlyphView(l.Icon, 15, pal.Label2, 1.6) { VerticalAlignment = VerticalAlignment.Center });
                 // Name, then where it goes, cut with "…" to the room left.
                 DockPanel txt = new DockPanel { Margin = new Thickness(6, 2, 6, 2), VerticalAlignment = VerticalAlignment.Center, LastChildFill = true };
@@ -149,7 +170,7 @@ namespace Stackshot
                 Action drop = delegate { Keep(); owner.RemoveLink(it); Build(); };
                 x.MouseLeftButtonUp += delegate { drop(); };
                 Access.Clickable(x, drop);
-                Grid.SetColumn(x, 2);
+                Grid.SetColumn(x, 3);
                 g.Children.Add(x);
                 page.Children.Add(g);
             }

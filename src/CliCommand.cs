@@ -12,10 +12,11 @@ namespace Stackshot
     //   --capture <mode>   any hotkey action (region, screen, window, scroll, text, video, gif, markdown...) or pause
     //   --open-home        the main window
     //   --last-xml         the newest XML of the watched folder, in the viewer
+    //   --link <name|n>    one of the quick links, by its name (or how it starts) or its place in the list
     // Options may also be written /capture region, /capture:region or --capture=region, in any case.
     public static class CliCommand
     {
-        public const string Home = "open-home", LastXml = "last-xml", Capture = "capture ";
+        public const string Home = "open-home", LastXml = "last-xml", Capture = "capture ", Link = "link ";
 
         // A command's line in open.txt starts with a character no path can start with, so a file is never taken for one
         // (not even one named "--capture").
@@ -34,6 +35,7 @@ namespace Stackshot
         public static bool Known(string command)
         {
             if (command == Home || command == LastXml) return true;
+            if (command != null && command.StartsWith(Link, StringComparison.Ordinal)) return command.Substring(Link.Length).Trim().Length > 0;
             return command != null && command.StartsWith(Capture, StringComparison.Ordinal) && IsMode(command.Substring(Capture.Length));
         }
 
@@ -47,7 +49,16 @@ namespace Stackshot
             for (int i = 0; i < args.Length; i++)
             {
                 string a = args[i], name, value;
-                if (!Option(a, out name, out value) || (name != "capture" && name != Home && name != LastXml) || IsFile(a)) continue;
+                if (!Option(a, out name, out value) || (name != "capture" && name != Home && name != LastXml && name != "link") || IsFile(a)) continue;
+                if (name == "link")
+                {
+                    bool next = value == null && i + 1 < args.Length;
+                    if (next) value = args[i + 1];
+                    string which = (value ?? "").Trim().Trim('"').Trim();
+                    if (which.Length > 0 && which.Length <= 80) return Link + which;
+                    bad = next ? a + " " + value : a;
+                    return null;
+                }
                 if (name == "capture")
                 {
                     bool next = value == null && i + 1 < args.Length;
@@ -89,7 +100,8 @@ namespace Stackshot
         // The arguments that ask another copy (the installed one) for the same, with the file to open if there is one.
         public static string Arguments(string command, string view)
         {
-            string a = command.StartsWith(Capture, StringComparison.Ordinal) ? "--capture " + command.Substring(Capture.Length) : "--" + command;
+            string a = command.StartsWith(Capture, StringComparison.Ordinal) ? "--capture " + command.Substring(Capture.Length)
+                     : command.StartsWith(Link, StringComparison.Ordinal) ? "--link \"" + command.Substring(Link.Length) + "\"" : "--" + command;
             return view != null ? a + " --open \"" + view + "\"" : a;
         }
 
