@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using D = System.Drawing;
 using WF = System.Windows.Forms;
 
@@ -158,6 +159,8 @@ namespace Stackshot
             public HomeWindow W;
             public string Title, Sub, Icon;
             public D.Color C1, C2;
+            // An app's own icon in place of the coloured tile (another app's row).
+            public ImageSource Picture;
             // Only applies while When holds; otherwise it dims, and WhenOff (if any) explains why.
             public Func<bool> When;
             public string WhenOff;
@@ -188,7 +191,15 @@ namespace Stackshot
                 ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 ColumnDefinitions.Add(new ColumnDefinition());
                 ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                if (Icon != null)
+                if (Picture != null)
+                {
+                    Image img = new Image { Source = Picture, Width = 28, Height = 28, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+                    RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+                    // Readers hear whose icon it is (the row's title follows).
+                    System.Windows.Automation.AutomationProperties.SetName(img, "Icono de " + Title);
+                    Children.Add(img);
+                }
+                else if (Icon != null)
                 {
                     IconTile t = new IconTile(Icon, 28, HomeWindow.W(C1), HomeWindow.W(C2));
                     t.Margin = new Thickness(0, 0, 12, 0);
@@ -331,6 +342,7 @@ namespace Stackshot
         public class HotkeyRow : Row
         {
             readonly string action;
+            readonly QuickLink link;      // a quick link's shortcut instead of an action's
             bool on;
             string hint;
             Border field;
@@ -346,27 +358,63 @@ namespace Stackshot
                 Unloaded += delegate { if (on && W != null) Stop(W); };
             }
 
+            public HotkeyRow(QuickLink link) : base(link.Name, null, link.Icon, Mac.Indigo, Mac.Blue)
+            {
+                this.link = link;
+                action = ShotStack.LinkAction(link);
+                Unloaded += delegate { if (on && W != null) Stop(W); };
+            }
+
+            internal string Action { get { return action; } }
+
+            string Combos() { return link != null ? link.Keys : W.settings.HotkeysFor(action); }
+
+            void Store(HomeWindow w, string combos)
+            {
+                if (link != null) w.owner.SetLinkKeys(link, combos);
+                else w.settings.SetHotkeys(action, combos);
+            }
+
             public override void Build()
             {
                 Sub = null;
-                string taken = null;
+                string taken = null, took = null;
                 if (!on)
-                    foreach (string c in Hotkeys.Split(W.settings.HotkeysFor(action)))
-                        if (Hotkeys.IsBusy(action, c)) { taken = c; break; }
+                    foreach (string c in Hotkeys.Split(Combos()))
+                    {
+                        if (taken == null && Hotkeys.IsBusy(action, c)) taken = c;
+                        if (took == null && Hotkeys.IsGrabbed(action, c)) took = c;
+                    }
                 if (taken != null)
                 {
                     // Refused because another action of Stackshot has it (a settings file edited by hand), or another program.
-                    string other = null;
-                    for (int i = 0; i < Settings.Actions.Length && other == null; i++)
-                    {
-                        if (Settings.Actions[i] == action) continue;
-                        foreach (string c in Hotkeys.Split(W.settings.HotkeysFor(Settings.Actions[i])))
-                            if (Hotkeys.Same(c, taken)) { other = ActionNames[i]; break; }
-                    }
-                    Sub = Hotkeys.DisplayOne(taken) + (other != null ? " tambi\u00E9n es de \u00AB" + other + "\u00BB" : " lo est\u00E1 usando otro programa");
+                    string other = W.OwnerOfCombo(taken, action);
+                    string who = W.KeyHolder(taken);
+                    Sub = Hotkeys.DisplayOne(taken) + (other != null ? " tambi\u00E9n es de \u00AB" + other + "\u00BB"
+                                                       : who != null ? " lo usa " + who : " lo est\u00E1 usando otro programa");
                 }
+                else if (took != null)
+                {
+                    // Taken on its way in: said quietly, so it is known why Windows' own tool no longer opens with it.
+                    KeyOwners.Reserved r = KeyOwners.OfWindows(took);
+                    Sub = Hotkeys.DisplayOne(took) + (r != null ? ", en lugar de " + r.Owner : ", antes que el programa que lo ten\u00EDa");
+                }
+                else if (link != null) Sub = Where(link);
                 base.Build();
                 if (taken != null && SubText != null) SubText.Foreground = Ds.Brush(Ds.Brushes.Warn);
+            }
+
+            // Where a link goes, short: the site, or the folder or file with its parent.
+            static string Where(QuickLink l)
+            {
+                if (l.Web) return ShotStack.LinkName(l.Target);
+                try
+                {
+                    string p = l.Target.TrimEnd('\\', '/');
+                    string parent = System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(p) ?? "");
+                    return (parent.Length > 0 ? parent + "\\" : "") + System.IO.Path.GetFileName(p);
+                }
+                catch { return l.Target; }
             }
 
             protected override FrameworkElement Control()
@@ -374,7 +422,7 @@ namespace Stackshot
                 Palette pal = Ds.Brushes;
                 StopPulse();
                 field = new TapBorder { Width = 236, Height = 32, CornerRadius = new CornerRadius(8), Cursor = Cursors.Hand, Margin = new Thickness(0, 8, 0, 8),
-                                        Do = Click, Help = on ? KeysPrompt : Hotkeys.Display(W.settings.HotkeysFor(action)) };
+                                        Do = Click, Help = on ? KeysPrompt : Hotkeys.Display(Combos()) };
                 if (on)
                 {
                     field.BorderThickness = new Thickness(2);
@@ -385,7 +433,7 @@ namespace Stackshot
                     field.BorderThickness = new Thickness(1);
                     field.BorderBrush = Ds.Brush(pal.Hairline);
                     field.Background = Ds.Brush(pal.Control);
-                    List<string> combos = Hotkeys.Split(W.settings.HotkeysFor(action));
+                    List<string> combos = Hotkeys.Split(Combos());
                     if (combos.Count == 0) field.Child = Center(Label("Sin atajo", Ds.Regular, 12.5, pal.Label3));
                     else
                     {
@@ -497,6 +545,9 @@ namespace Stackshot
                 pulse = null;
             }
 
+            // Starts listening, as a click on the field does (from the quick links window).
+            internal void Listen() { if (!on && W != null) Click(); }
+
             void Click()
             {
                 if (on) { Stop(W); return; }
@@ -505,6 +556,8 @@ namespace Stackshot
                 hint = null;
                 W.listening = this;
                 W.owner.SuspendHotkeys();
+                // Keys Windows or another app would keep (Win + Shift + S opens the Snipping Tool) reach the field too.
+                W.owner.RecordKeys(new System.Windows.Interop.WindowInteropHelper(W).Handle);
                 Build();
                 Listen(true);
                 W.Wake();
@@ -518,15 +571,20 @@ namespace Stackshot
                 StopPulse();
                 if (w.listening == this) w.listening = null;
                 w.owner.ResumeHotkeys();
+                w.owner.RecordKeys(IntPtr.Zero);
                 Build();
+            }
+
+            public void Take(HomeWindow w, WF.Keys keyData)
+            {
+                Take(w, keyData, (Keyboard.Modifiers & ModifierKeys.Windows) != 0);
             }
 
             // Like a classic hotkey box: Delete or Backspace clears it, Esc cancels; extra combos from the settings file
             // are kept. Combos that would break typing or a system shortcut everywhere are refused with the reason.
-            public void Take(HomeWindow w, WF.Keys keyData)
+            public void Take(HomeWindow w, WF.Keys keyData, bool win)
             {
                 WF.Keys key = keyData & WF.Keys.KeyCode, mods = keyData & WF.Keys.Modifiers;
-                bool win = (Keyboard.Modifiers & ModifierKeys.Windows) != 0;
                 // Dead keys (the accent keys) and IME keys arrive without their code: ask Windows which one is down.
                 if (key == WF.Keys.None || key == WF.Keys.ProcessKey || key == WF.Keys.Packet) key = Hotkeys.HeldKey();
                 if (key == WF.Keys.None || Hotkeys.IsModifierKey(key)) return;
@@ -540,7 +598,7 @@ namespace Stackshot
                     if (why != null) { hint = why; StopPulse(); ShowLive(); return; }
                     combo = Hotkeys.ToSetting(key | mods, win);
                 }
-                List<string> list = Hotkeys.Split(w.settings.HotkeysFor(action));
+                List<string> list = Hotkeys.Split(Combos());
                 if (list.Count == 0 && clear) { Stop(w); return; }
                 if (!clear && list.Count > 0 && Hotkeys.Same(list[0], combo)) { Stop(w); return; } // unchanged
                 if (list.Count > 0) list.RemoveAt(0);
@@ -548,28 +606,22 @@ namespace Stackshot
                 {
                     list.RemoveAll(delegate(string c) { return Hotkeys.Same(c, combo); });
                     list.Insert(0, combo);
-                    // A combo maps to one action: take it from any other, and say so under the list.
-                    for (int i = 0; i < Settings.Actions.Length; i++)
-                    {
-                        string a = Settings.Actions[i];
-                        if (a == action) continue;
-                        List<string> others = Hotkeys.Split(w.settings.HotkeysFor(a));
-                        if (others.RemoveAll(delegate(string o) { return Hotkeys.Same(o, combo); }) == 0) continue;
-                        w.settings.SetHotkeys(a, string.Join(", ", others.ToArray()));
-                        w.keysMoved = Hotkeys.DisplayOne(combo) + " era de \u00AB" + ActionNames[i] + "\u00BB" +
-                                      (others.Count == 0 ? ", que se ha quedado sin atajo." : "; ahora es de \u00AB" + Title + "\u00BB.");
-                    }
+                    // A combo maps to one action or link: take it from any other, and say so under the list.
+                    w.TakeCombo(combo, action, Title);
                 }
-                w.settings.SetHotkeys(action, string.Join(", ", list.ToArray()));
+                Store(w, string.Join(", ", list.ToArray()));
+                w.PruneKeysFirst();
                 w.settings.Save();
                 // Choosing Print Screen means wanting it: take it back from the Snipping Tool right away.
-                if (Hotkeys.Same(combo, "PrintScreen") && Installer.SnippingOwnsPrintScreen)
-                {
-                    Installer.FreePrintScreen();
-                    w.owner.Notify("Impr Pant ya es de Stackshot",
-                                   "Windows la ten\u00EDa reservada para Recortes; ya est\u00E1 liberada en tu usuario. Si a\u00FAn se abre Recortes, cierra sesi\u00F3n y vuelve a entrar.");
-                }
+                bool freed = false;
+                if (Hotkeys.Same(combo, "PrintScreen") && Installer.SnippingOwnsPrintScreen) { Installer.FreePrintScreen(); freed = true; }
+                KeyOwners.Reserved windows = clear || freed ? null : KeyOwners.OfWindows(combo);
                 Stop(w);
+                if (freed)
+                    w.owner.Notify("Impr Pant ya es de Stackshot", "Windows la ten\u00EDa reservada para Recortes; ya est\u00E1 liberada en tu usuario y responde Stackshot.");
+                else if (windows != null && Hotkeys.IsGrabbed(action, combo))
+                    w.owner.Notify(Hotkeys.DisplayOne(combo) + " ya es de Stackshot",
+                                   windows.Owner + " lo usaba para " + windows.Does + ". Mientras Stackshot est\u00E9 abierto responde \u00E9l; si lo quitas de aqu\u00ED, vuelve a ser de Windows.");
                 w.Rebuild();
             }
         }
@@ -634,14 +686,15 @@ namespace Stackshot
         void BuildKeys()
         {
             Header("Atajos", "Haz clic en un atajo y pulsa la combinaci\u00F3n que quieras, con Ctrl, Alt, May\u00FAs o Win. Supr lo quita y Esc cancela.");
-            if (PrintScreenToSnipping())
-                Group(null, new ButtonRow("Impr Pant abre Recortes de Windows", "Para que capture con Stackshot hay que liberarla. Solo cambia en tu usuario.",
-                                          "keyboard", Mac.Orange, Mac.Red, "Liberar", FreePrintScreen));
+            LoadKeyApps();
             Row[] rows = new Row[Settings.Actions.Length];
             for (int i = 0; i < rows.Length; i++) rows[i] = new HotkeyRow(Settings.Actions[i], i);
             Group(null, rows);
             if (keysMoved != null) { Note(keysMoved); keysMoved = null; }
-            Note("Si otro programa (Recortes, ShareX, Lightshot\u2026) ya usa alguno, aparecer\u00E1 marcado en naranja y Stackshot te avisar\u00E1 junto al reloj.");
+            Section("accesos r\u00E1pidos", BuildLinkKeys);
+            Section("atajos de Windows", BuildWindowsKeys);
+            Section("atajos ocupados", BuildBusyKeys);
+            Section("apps de captura", BuildCaptureApps);
             if (!DefaultHotkeys())
                 NoteLink("", "Restaurar los atajos de serie", delegate
                 {
@@ -681,8 +734,421 @@ namespace Stackshot
             Installer.FreePrintScreen();
             owner.ResumeHotkeys();
             Rebuild();
-            owner.Notify("Impr Pant ya es de Stackshot",
-                         "Windows la ten\u00EDa reservada para Recortes; ya est\u00E1 liberada en tu usuario. Si a\u00FAn se abre Recortes, cierra sesi\u00F3n y vuelve a entrar.");
+            owner.Notify("Impr Pant ya es de Stackshot", "Windows la ten\u00EDa reservada para Recortes; ya est\u00E1 liberada en tu usuario y responde Stackshot.");
+        }
+
+        // Windows' capture shortcuts: Print Screen for the Snipping Tool, and the Win ones Stackshot can answer instead.
+        void BuildWindowsKeys()
+        {
+            List<Row> rows = new List<Row>();
+            if (PrintScreenToSnipping())
+                rows.Add(new ButtonRow("Impr Pant abre Recortes de Windows", "Para que capture con Stackshot hay que liberarla. Solo cambia en tu usuario y responde al momento.",
+                                       "keyboard", Mac.Orange, Mac.Red, "Liberar", FreePrintScreen));
+            List<string> missing = new List<string>(), used = new List<string>();
+            foreach (string[] pair in KeyOwners.WindowsSet) (ActionOf(pair[0]) >= 0 ? used : missing).Add(Hotkeys.DisplayOne(pair[0]));
+            string all = Listed(AllWindowsSet());
+            if (missing.Count == 0)
+                rows.Add(new ButtonRow("Los atajos de Windows abren Stackshot", all + " capturan y graban con Stackshot en lugar de Recortes.",
+                                       "keyboard", Mac.Indigo, Mac.Blue, "Devolver", ReturnWindowsKeys));
+            else
+                rows.Add(new ButtonRow("Usar los atajos de Windows", "Win + May\u00FAs + S captura un \u00E1rea, Win + May\u00FAs + R graba la pantalla y Win + Impr Pant la captura entera, con Stackshot en lugar de Recortes." +
+                                       (used.Count > 0 ? " Ya usas " + Listed(used) + "." : ""),
+                                       "keyboard", Mac.Indigo, Mac.Blue, "Usar", UseWindowsKeys));
+            Group("Atajos de Windows", rows.ToArray());
+            Note("Cualquier atajo de captura de Windows que pongas arriba pasa a Stackshot mientras est\u00E9 abierto; si lo quitas, vuelve a ser de Windows.");
+        }
+
+        List<string> AllWindowsSet()
+        {
+            List<string> o = new List<string>();
+            foreach (string[] pair in KeyOwners.WindowsSet) o.Add(Hotkeys.DisplayOne(pair[0]));
+            return o;
+        }
+
+        // The action a combo is on, or -1.
+        int ActionOf(string combo)
+        {
+            for (int i = 0; i < Settings.Actions.Length; i++)
+                foreach (string c in Hotkeys.Split(settings.HotkeysFor(Settings.Actions[i])))
+                    if (Hotkeys.Same(c, combo)) return i;
+            return -1;
+        }
+
+        // The quick link a combo is on, or null.
+        QuickLink LinkWith(string combo)
+        {
+            foreach (QuickLink l in owner.Links)
+                foreach (string c in Hotkeys.Split(l.Keys))
+                    if (Hotkeys.Same(c, combo)) return l;
+            return null;
+        }
+
+        // The name of what else has a combo (an action or a quick link other than except), or null.
+        internal string OwnerOfCombo(string combo, string except)
+        {
+            for (int i = 0; i < Settings.Actions.Length; i++)
+            {
+                if (Settings.Actions[i] == except) continue;
+                foreach (string c in Hotkeys.Split(settings.HotkeysFor(Settings.Actions[i])))
+                    if (Hotkeys.Same(c, combo)) return ActionNames[i];
+            }
+            foreach (QuickLink l in owner.Links)
+            {
+                if (ShotStack.LinkAction(l) == except) continue;
+                foreach (string c in Hotkeys.Split(l.Keys))
+                    if (Hotkeys.Same(c, combo)) return l.Name;
+            }
+            return null;
+        }
+
+        // A combo given to one action or link leaves whatever else had it; the note under the list says so.
+        internal void TakeCombo(string combo, string to, string toName)
+        {
+            for (int i = 0; i < Settings.Actions.Length; i++)
+            {
+                string a = Settings.Actions[i];
+                if (a == to) continue;
+                List<string> others = Hotkeys.Split(settings.HotkeysFor(a));
+                if (others.RemoveAll(delegate(string o) { return Hotkeys.Same(o, combo); }) == 0) continue;
+                settings.SetHotkeys(a, string.Join(", ", others.ToArray()));
+                keysMoved = Hotkeys.DisplayOne(combo) + " era de \u00AB" + ActionNames[i] + "\u00BB" +
+                            (others.Count == 0 ? ", que se ha quedado sin atajo." : "; ahora es de \u00AB" + toName + "\u00BB.");
+            }
+            foreach (QuickLink l in owner.Links)
+            {
+                if (ShotStack.LinkAction(l) == to) continue;
+                List<string> others = Hotkeys.Split(l.Keys);
+                if (others.RemoveAll(delegate(string o) { return Hotkeys.Same(o, combo); }) == 0) continue;
+                owner.SetLinkKeys(l, string.Join(", ", others.ToArray()));
+                keysMoved = Hotkeys.DisplayOne(combo) + " era del acceso \u00AB" + l.Name + "\u00BB" +
+                            (others.Count == 0 ? ", que se ha quedado sin atajo." : "; ahora es de \u00AB" + toName + "\u00BB.");
+            }
+        }
+
+        // ---- Quick links: a shortcut for each
+
+        void BuildLinkKeys()
+        {
+            List<QuickLink> links = owner.Links;
+            if (links.Count == 0)
+            {
+                Group("Accesos r\u00E1pidos", new ButtonRow("Accesos r\u00E1pidos", "Webs, carpetas, archivos o programas que se abren con un atajo, adem\u00E1s de desde el men\u00FA de la mascota.",
+                                                            "open", Mac.Indigo, Mac.Blue, "A\u00F1adir\u2026", delegate { LinksWindow.Show(owner); }));
+                return;
+            }
+            Row[] rows = new Row[links.Count];
+            for (int i = 0; i < links.Count; i++) rows[i] = new HotkeyRow(links[i]);
+            Group("Accesos r\u00E1pidos", rows);
+            bool bare = links.Exists(delegate(QuickLink l) { return l.Keys.Length == 0; });
+            TextBlock n = Paragraph("Pulsa su atajo y se abre, est\u00E9s donde est\u00E9s. ", 12, Ds.Brushes.Label2);
+            n.Margin = new Thickness(8, -14, 8, 24);
+            n.Inlines.Add(InlineLink("A\u00F1adir o quitar accesos", delegate { LinksWindow.Show(owner); }));
+            if (bare)
+            {
+                n.Inlines.Add(new System.Windows.Documents.Run(" \u00B7 "));
+                n.Inlines.Add(InlineLink("Ponerles Ctrl + May\u00FAs + Alt + 1, 2, 3\u2026", NumberLinks));
+            }
+            body.Children.Add(n);
+        }
+
+        // Each link without a shortcut gets Ctrl+Shift+Alt and the next free digit (1 to 9, then 0), skipping the
+        // combinations already used and those this keyboard types a character with.
+        internal void NumberLinks()
+        {
+            CancelListening();
+            List<string> given = new List<string>();
+            int digit = 1;
+            foreach (QuickLink l in owner.Links)
+            {
+                if (l.Keys.Length > 0) continue;
+                string pick = null;
+                for (; digit <= 10 && pick == null; digit++)
+                {
+                    string c = "Ctrl+Shift+Alt+" + (digit % 10);
+                    WF.Keys key = WF.Keys.D0 + (digit % 10);
+                    if (ActionOf(c) >= 0 || LinkWith(c) != null) continue;
+                    if (Hotkeys.Problem(key, WF.Keys.Control | WF.Keys.Shift | WF.Keys.Alt, false) != null) continue;
+                    pick = c;
+                }
+                if (pick == null) break;
+                owner.SetLinkKeys(l, pick);
+                given.Add("\u00AB" + l.Name + "\u00BB " + Hotkeys.DisplayOne(pick));
+            }
+            owner.ResumeHotkeys();
+            Rebuild();
+            if (given.Count == 0) owner.Notify("No quedan atajos libres", "Las combinaciones Ctrl + May\u00FAs + Alt + n\u00FAmero ya est\u00E1n todas en uso: ponle otra a mano.");
+            else owner.Notify(given.Count == 1 ? "Acceso con atajo" : "Accesos con atajo", string.Join(", ", given.ToArray()) + ".");
+        }
+
+        // From the quick links window: Atajos opens with that link's field already listening.
+        internal void RecordLink(QuickLink l)
+        {
+            string id = ShotStack.LinkAction(l);
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(delegate
+            {
+                List<Row> rows = new List<Row>();
+                FindRows(body, rows);
+                foreach (Row r in rows)
+                {
+                    HotkeyRow h = r as HotkeyRow;
+                    if (h == null || h.Action != id) continue;
+                    h.BringIntoView();
+                    h.Listen();
+                    return;
+                }
+            }));
+        }
+
+        // Each Windows shortcut joins its action as one more combo (the user's own stay first), unless it is already on one.
+        void UseWindowsKeys()
+        {
+            CancelListening();
+            List<string> added = new List<string>();
+            foreach (string[] pair in KeyOwners.WindowsSet)
+            {
+                if (ActionOf(pair[0]) >= 0 || LinkWith(pair[0]) != null) continue;
+                List<string> l = Hotkeys.Split(settings.HotkeysFor(pair[1]));
+                l.Add(pair[0]);
+                settings.SetHotkeys(pair[1], string.Join(", ", l.ToArray()));
+                added.Add(pair[0]);
+            }
+            Changed();
+            owner.ResumeHotkeys();
+            Rebuild();
+            List<string> works = new List<string>();
+            foreach (string c in added) if (Hotkeys.IsGrabbed(Settings.Actions[ActionOf(c)], c)) works.Add(Hotkeys.DisplayOne(c));
+            if (works.Count > 0)
+                owner.Notify("Atajos de Windows en Stackshot", Listed(works) + " ya abren Stackshot. Mientras est\u00E9 abierto responde \u00E9l; con \u00ABDevolver\u00BB vuelven a Recortes.");
+        }
+
+        void ReturnWindowsKeys()
+        {
+            CancelListening();
+            foreach (string a in Settings.Actions)
+            {
+                List<string> l = Hotkeys.Split(settings.HotkeysFor(a));
+                int n = l.Count;
+                l.RemoveAll(delegate(string c) { foreach (string[] pair in KeyOwners.WindowsSet) if (Hotkeys.Same(c, pair[0])) return true; return false; });
+                if (l.Count != n) settings.SetHotkeys(a, string.Join(", ", l.ToArray()));
+            }
+            PruneKeysFirst();
+            Changed();
+            owner.ResumeHotkeys();
+            Rebuild();
+        }
+
+        // Combos another program also has: who it is and the choice to answer them first; and those Stackshot already
+        // answers first, to give back.
+        void BuildBusyKeys()
+        {
+            List<Row> rows = new List<Row>();
+            // The actions and the quick links with a shortcut: id, name shown, combos.
+            List<string[]> keyed = new List<string[]>();
+            for (int i = 0; i < Settings.Actions.Length; i++) keyed.Add(new string[] { Settings.Actions[i], ActionNames[i], settings.HotkeysFor(Settings.Actions[i]) });
+            foreach (QuickLink l in owner.Links) if (l.Keys.Length > 0) keyed.Add(new string[] { ShotStack.LinkAction(l), l.Name, l.Keys });
+            foreach (string[] k in keyed)
+            {
+                string a = k[0], name = k[1];
+                foreach (string c in Hotkeys.Split(k[2]))
+                {
+                    string combo = c, keys = Hotkeys.DisplayOne(c);
+                    if (Hotkeys.IsBusy(a, c) && KeyOwners.OfWindows(c) == null && !InKeysFirst(c))
+                    {
+                        string who = KeyHolder(c);
+                        rows.Add(new ButtonRow(keys + " no llega a \u00AB" + name + "\u00BB",
+                                               (who != null ? "Lo usa " + who + "." : "Lo usa otro programa.") + " Stackshot puede responder antes, sin cerrarlo.",
+                                               "warning", Mac.Orange, Mac.Red, "Usar en Stackshot", delegate { SetKeysFirst(combo, true); }));
+                    }
+                    else if (InKeysFirst(c))
+                    {
+                        bool works = Hotkeys.IsGrabbed(a, c);
+                        string who = KeyHolder(c);
+                        rows.Add(new ButtonRow(keys + (works ? " responde en Stackshot" : " sigue ocupado"),
+                                               works ? "Antes que " + (who ?? "el programa que lo ten\u00EDa") + ", que ya no lo recibe." : "Windows no deja a Stackshot responder antes: elige otro atajo o cierra " + (who ?? "el otro programa") + ".",
+                                               works ? "keyboard" : "warning", works ? Mac.Green : Mac.Orange, works ? Mac.Teal : Mac.Red, "Dej\u00E1rselo", delegate { SetKeysFirst(combo, false); }));
+                    }
+                }
+            }
+            if (rows.Count == 0) return;
+            Group("Atajos que tiene otra app", rows.ToArray());
+        }
+
+        bool InKeysFirst(string combo)
+        {
+            return Hotkeys.Split(settings.KeysFirst).Exists(delegate(string c) { return Hotkeys.Same(c, combo); });
+        }
+
+        void SetKeysFirst(string combo, bool on)
+        {
+            CancelListening();
+            List<string> l = Hotkeys.Split(settings.KeysFirst);
+            l.RemoveAll(delegate(string c) { return Hotkeys.Same(c, combo); });
+            if (on) l.Add(Hotkeys.Normalize(combo));
+            settings.KeysFirst = string.Join(", ", l.ToArray());
+            Changed();
+            owner.ResumeHotkeys();
+            Rebuild();
+        }
+
+        // Combos Stackshot answers first that no action or link uses any more are forgotten.
+        internal void PruneKeysFirst()
+        {
+            List<string> l = Hotkeys.Split(settings.KeysFirst);
+            if (l.RemoveAll(delegate(string c) { return ActionOf(c) < 0 && LinkWith(c) == null; }) > 0) settings.KeysFirst = string.Join(", ", l.ToArray());
+        }
+
+        // ---- Other capture apps
+
+        List<KeyOwners.App> keyApps;
+        Dictionary<string, ImageSource> keyAppIcons = new Dictionary<string, ImageSource>();
+        DateTime keyAppsAt;
+        bool keyAppsLoading;
+
+        // Which capture apps are open, looked up in the background when the page opens (at most every few seconds); the
+        // page is built again with them.
+        void LoadKeyApps()
+        {
+            if (keyAppsLoading || (keyApps != null && (DateTime.UtcNow - keyAppsAt).TotalSeconds < 4)) return;
+            keyAppsLoading = true;
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate
+            {
+                List<KeyOwners.App> found = null;
+                Dictionary<string, ImageSource> icons = new Dictionary<string, ImageSource>();
+                try
+                {
+                    found = KeyOwners.Running();
+                    foreach (KeyOwners.App a in found)
+                    {
+                        if (a.Exe == null || icons.ContainsKey(a.Exe)) continue;
+                        try
+                        {
+                            using (D.Icon ic = D.Icon.ExtractAssociatedIcon(a.Exe))
+                            {
+                                BitmapSource b = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(ic.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                                b.Freeze();
+                                icons[a.Exe] = b;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                catch (Exception ex) { ShotStack.Log("Apps de captura: " + ex.Message); }
+                Dispatcher.BeginInvoke(new Action(delegate
+                {
+                    keyAppsLoading = false;
+                    bool changed = !SameApps(keyApps, found);
+                    keyApps = found ?? new List<KeyOwners.App>();
+                    keyAppIcons = icons;
+                    keyAppsAt = DateTime.UtcNow;
+                    if (changed && page == "keys" && listening == null) Rebuild();
+                }));
+            });
+        }
+
+        static bool SameApps(List<KeyOwners.App> a, List<KeyOwners.App> b)
+        {
+            if (a == null || b == null) return a == b;
+            if (a.Count != b.Count) return false;
+            for (int i = 0; i < a.Count; i++) if (a[i].Name != b[i].Name || a[i].Pids.Count != b[i].Pids.Count) return false;
+            return true;
+        }
+
+        // Who most likely holds a combo Stackshot could not register (Windows itself or an open capture app), or null.
+        internal string KeyHolder(string combo)
+        {
+            KeyOwners.Reserved r = KeyOwners.OfWindows(combo);
+            if (r != null) return r.Owner;
+            return KeyOwners.Holder(combo, keyApps);
+        }
+
+        void BuildCaptureApps()
+        {
+            if (keyApps == null || keyApps.Count == 0) return;
+            List<Row> rows = new List<Row>();
+            foreach (KeyOwners.App a in keyApps)
+            {
+                // OneDrive and Dropbox only matter when Print Screen is busy and nothing surer has it.
+                if (a.Maybe && !MaybeMatters(a)) continue;
+                rows.Add(new AppRow(a, a.Exe != null && keyAppIcons.ContainsKey(a.Exe) ? keyAppIcons[a.Exe] : null));
+            }
+            if (rows.Count == 0) return;
+            Group("Otras apps de captura abiertas", rows.ToArray());
+            NoteLink("Cerrar una solo la cierra ahora. Para que no se abra al encender el equipo:", "Aplicaciones de inicio", KeyOwners.OpenStartupApps);
+        }
+
+        bool MaybeMatters(KeyOwners.App app)
+        {
+            foreach (string a in Settings.Actions)
+                foreach (string c in Hotkeys.Split(settings.HotkeysFor(a)))
+                    if (Hotkeys.IsBusy(a, c) && app.Keys.Exists(delegate(string k) { return Hotkeys.Same(k, c); }) && KeyOwners.Holder(c, keyApps) == app.Name) return true;
+            return false;
+        }
+
+        // An open capture app: what it uses, and closing it (gently first; forcing it only on a second, explicit click).
+        public class AppRow : Row
+        {
+            readonly KeyOwners.App app;
+            int state;      // 0 open, 1 closing, 2 would not close (the button now forces it)
+
+            public AppRow(KeyOwners.App app, ImageSource icon) : base(app.Name, null, "app", Mac.Teal, Mac.Blue)
+            {
+                this.app = app;
+                Picture = icon;
+            }
+
+            public override void Build()
+            {
+                Sub = Describe();
+                base.Build();
+                if (state == 2 && SubText != null) SubText.Foreground = Ds.Brush(Ds.Brushes.Warn);
+            }
+
+            string Describe()
+            {
+                if (state == 2) return "No se ha cerrado sola. Forzarlo pierde lo que tenga sin guardar.";
+                List<string> shown = new List<string>();
+                foreach (string k in app.Keys) if (shown.Count < 3) shown.Add(Hotkeys.DisplayOne(k));
+                string keys = shown.Count == 0 ? "" : Listed(shown) + (app.Keys.Count > 3 ? " y " + (app.Keys.Count - 3) + " m\u00E1s" : "");
+                if (app.Maybe) return "Puede quedarse " + keys + " si guarda capturas: desact\u00EDvalo en sus ajustes.";
+                return keys.Length == 0 ? "Abierta" : "Abierta \u00B7 " + (app.FromSettings ? "usa " : "suele usar ") + keys;
+            }
+
+            protected override FrameworkElement Control()
+            {
+                if (app.Maybe) return null;
+                MacButton b = new MacButton(state == 1 ? "Cerrando\u2026" : state == 2 ? "Forzar cierre" : "Cerrar", state == 2 ? ButtonKind.Danger : ButtonKind.Secondary);
+                b.IsEnabled = state != 1;
+                b.Click += delegate { Close(); };
+                return b;
+            }
+
+            void Close()
+            {
+                bool force = state == 2;
+                state = 1;
+                Build();
+                HomeWindow w = W;
+                System.Threading.ThreadPool.QueueUserWorkItem(delegate
+                {
+                    string error = null;
+                    bool gone = force ? KeyOwners.CloseNow(app, out error) : KeyOwners.CloseGently(app, 2500);
+                    w.Dispatcher.BeginInvoke(new Action(delegate
+                    {
+                        if (!gone)
+                        {
+                            state = 2;
+                            Build();
+                            if (error != null) w.owner.Notify("No se ha podido cerrar " + app.Name, error);
+                            return;
+                        }
+                        ShotStack.Log("Cerrada otra app de captura: " + app.Name);
+                        w.keyAppsAt = DateTime.MinValue;
+                        w.owner.ResumeHotkeys();
+                        w.Rebuild();
+                        w.owner.Notify(app.Name + " cerrada", "Sus atajos quedan libres para Stackshot.");
+                    }));
+                });
+            }
         }
 
         // ---- General
@@ -783,6 +1249,18 @@ namespace Stackshot
                 new ToggleRow("Abrir .mkv con Stackshot", null, "video", D.Color.FromArgb(64, 156, 255), D.Color.FromArgb(10, 110, 230),
                               delegate { return FileAssoc.Registered(FileAssoc.Video); }, delegate(bool v) { SetAssoc(FileAssoc.Video, v); })
                     { SubNow = delegate { return AssocNote(FileAssoc.Video, ".mkv"); } },
+                new ToggleRow("Abrir PDF con Stackshot", null, "book", Mac.Red, Mac.Orange,
+                              delegate { return FileAssoc.Registered(FileAssoc.Pdf); }, delegate(bool v) { SetAssoc(FileAssoc.Pdf, v); })
+                    { SubNow = delegate { return AssocNote(FileAssoc.Pdf, ".pdf"); } },
+                new ToggleRow("Abrir texto y logs con Stackshot", null, "text", Gray1, Gray2,
+                              delegate { return FileAssoc.Registered(FileAssoc.Text); }, delegate(bool v) { SetAssoc(FileAssoc.Text, v); })
+                    { SubNow = delegate { return AssocNote(FileAssoc.Text, ".txt"); } },
+                new ToggleRow("Abrir JSON y CSV con Stackshot", null, "doc", Mac.Green, Mac.Teal,
+                              delegate { return FileAssoc.Registered(FileAssoc.Data); }, delegate(bool v) { SetAssoc(FileAssoc.Data, v); })
+                    { SubNow = delegate { return AssocNote(FileAssoc.Data, ".json"); } },
+                new ToggleRow("Abrir im\u00E1genes con Stackshot", null, "photo", Mac.Blue, Mac.Teal,
+                              delegate { return FileAssoc.Registered(FileAssoc.Image); }, delegate(bool v) { SetAssoc(FileAssoc.Image, v); })
+                    { SubNow = delegate { return AssocNote(FileAssoc.Image, ".png"); } },
                 new ButtonRow("Aplicaciones predeterminadas de Windows", "Ah\u00ED eliges qu\u00E9 programa abre cada tipo de archivo; Stackshot nunca lo cambia por su cuenta.", "gear", Gray1, Gray2, "Abrir", FileAssoc.OpenDefaultApps));
             // Shown only while there is something in it: recordings saved from a crash or a failed final pass.
             ButtonRow recovered = null;
@@ -913,8 +1391,14 @@ namespace Stackshot
         static string AssocNote(AssocKind k, string ext)
         {
             if (!FileAssoc.Registered(k))
-                return k == FileAssoc.Video ? "Doble clic en un " + ext + " (los m\u00E1sters Cine, que el reproductor de Windows no abre) y se ve en el reproductor de Stackshot, a tama\u00F1o real."
-                                            : "Doble clic en un " + ext + " y se abre en el visor de Stackshot.";
+            {
+                if (k == FileAssoc.Video) return "Doble clic en un " + ext + " (los m\u00E1sters Cine, que el reproductor de Windows no abre) y se ve en el reproductor de Stackshot, a tama\u00F1o real.";
+                if (k == FileAssoc.Pdf) return "Doble clic en un PDF y se abre en el visor de Stackshot: busca, resalta, anota y captura sus p\u00E1ginas.";
+                if (k == FileAssoc.Text) return "Los .txt y .log, con n\u00FAmeros de l\u00EDnea, b\u00FAsqueda y los logs en vivo.";
+                if (k == FileAssoc.Data) return "Los .json en \u00E1rbol y los .csv en tabla, con su texto al lado.";
+                if (k == FileAssoc.Image) return "PNG, JPG y BMP se abren en el editor de Stackshot para marcarlos y compartirlos.";
+                return "Doble clic en un " + ext + " y se abre en el visor de Stackshot.";
+            }
             if (FileAssoc.IsDefault(k)) return "Stackshot es la aplicaci\u00F3n predeterminada para " + ext + ".";
             return "Registrado, pero Windows abre los " + ext + " con otra aplicaci\u00F3n. Elige Stackshot en Aplicaciones predeterminadas.";
         }

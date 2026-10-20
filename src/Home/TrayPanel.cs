@@ -499,6 +499,7 @@ namespace Stackshot
             Add(KRow, "home", "Abrir Stackshot", "home", 3);
             Add(KRow, "folder", "Abrir capturas guardadas", "folder", 3);
             Add(KRow, "openvideo", "Abrir v\u00EDdeo\u2026", "video", 3);
+            Add(KRow, "opendoc", "Abrir PDF o documento\u2026", "doc", 3);
             if (settings.XmlWatch) Add(KRow, "lastxml", "Abrir el \u00FAltimo XML", "doc", 3);
             Add(KRow, "closeall", "Cerrar todas las miniaturas", "stack", 3).Enabled = HasCards == null || HasCards();
             Add(KRow, "settings", "Ajustes\u2026", "gear", 3);

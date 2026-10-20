@@ -1,4 +1,5 @@
-// Stackshot - Per-user file associations for .md, .xml and .mkv (HKCU only; Windows keeps the final choice to the user).
+// Stackshot - Per-user file associations for documents, PDFs, text, data, images and .mkv (HKCU only; Windows keeps the
+// final choice to the user).
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Diagnostics;
@@ -23,7 +24,11 @@ namespace Stackshot
         public static readonly AssocKind Xml = new AssocKind("Stackshot.Xml", "Documento XML", ".xml");
         // Cine masters: Windows' own player cannot decode them, Stackshot's can.
         public static readonly AssocKind Video = new AssocKind("Stackshot.Video", "V\u00EDdeo MKV", ".mkv");
-        static readonly AssocKind[] All = { Markdown, Xml, Video };
+        public static readonly AssocKind Pdf = new AssocKind("Stackshot.Pdf", "Documento PDF", ".pdf");
+        public static readonly AssocKind Text = new AssocKind("Stackshot.Text", "Texto", ".txt", ".log");
+        public static readonly AssocKind Data = new AssocKind("Stackshot.Data", "Datos", ".json", ".csv", ".tsv");
+        public static readonly AssocKind Image = new AssocKind("Stackshot.Image", "Imagen", ".png", ".jpg", ".jpeg", ".bmp");
+        public static readonly AssocKind[] All = { Markdown, Xml, Video, Pdf, Text, Data, Image };
 
         const string Classes = @"Software\Classes\";
         const string CapKey = @"Software\Stackshot\Capabilities";
@@ -88,7 +93,7 @@ namespace Stackshot
                 using (RegistryKey cap = Hkcu.CreateSubKey(CapKey))
                 {
                     cap.SetValue("ApplicationName", AppName);
-                    cap.SetValue("ApplicationDescription", "Capturas de pantalla, v\u00EDdeo y GIF, con reproductor de v\u00EDdeo y visor de Markdown y XML");
+                    cap.SetValue("ApplicationDescription", "Capturas de pantalla, v\u00EDdeo y GIF, con editor de im\u00E1genes, reproductor de v\u00EDdeo y visor de PDF, Markdown, XML, texto y datos");
                     cap.SetValue("ApplicationIcon", "\"" + exe + "\",0");
                     using (RegistryKey fa = cap.CreateSubKey("FileAssociations"))
                         foreach (string ext in k.Exts) fa.SetValue(ext, k.ProgId);

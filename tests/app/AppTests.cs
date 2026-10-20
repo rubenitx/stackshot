@@ -18,7 +18,7 @@ namespace Stackshot.Tests
         static string work;
         static readonly string[] defaultSuites = { "quit", "orphans", "keep", "explain", "clipboard", "uninstall", "pin", "posters",
                                                        "hunt-settings", "hunt-updater", "hunt-recents", "hunt-ffmpeg", "hunt-tracked", "hunt-setup", "hunt-ui", "text", "xmlwatch",
-                                                       "w6capture", "w6sensitive", "w6history", "w6cli", "w6search", "w6a11y", "w6toast", "w6contrast", "w6e2e", "w6home", "scroll", "backdrop", "news" };
+                                                       "w6capture", "w6sensitive", "w6history", "w6cli", "w6search", "w6a11y", "w6toast", "w6contrast", "w6e2e", "w6home", "scroll", "backdrop", "news", "keys" };
 
         [STAThread]
         static int Main(string[] args)
@@ -73,6 +73,7 @@ namespace Stackshot.Tests
                 case "scroll": AppTestsScroll.Suite(); break;
                 case "backdrop": AppTestsBackdrop.Suite(); break;
                 case "news": AppTestsNews.Suite(); break;
+                case "keys": AppTestsKeys.Suite(); break;
                 default: Test(name, "unknown suite", delegate { throw new TestFailed("no such suite"); }); break;
             }
         }
@@ -699,14 +700,16 @@ namespace Stackshot.Tests
                 });
                 Test("uninstall", "files that the running Stackshot opens", delegate
                 {
-                    foreach (string p in new string[] { @"C:\v\Cine 2026-10-11 17.03.26.mkv", @"C:\v\A.MKV", @"C:\v\b.mp4", @"C:\v\c.webm", @"C:\v\n.md", @"C:\v\x.xml" })
+                    foreach (string p in new string[] { @"C:\v\Cine 2026-10-11 17.03.26.mkv", @"C:\v\A.MKV", @"C:\v\b.mp4", @"C:\v\c.webm", @"C:\v\n.md", @"C:\v\x.xml",
+                                                        @"C:\v\d.pdf", @"C:\v\a.png", @"C:\v\a.txt", @"C:\v\l.log", @"C:\v\j.json", @"C:\v\t.csv" })
                         Check(Installer.OpensHere(p), p + " should open in the running Stackshot");
-                    foreach (string p in new string[] { @"C:\v\a.gif", @"C:\v\a.png", @"C:\v\a.txt", @"C:\v\noext", "" })
+                    foreach (string p in new string[] { @"C:\v\a.gif", @"C:\v\noext", @"C:\v\a.docx", "" })
                         Check(!Installer.OpensHere(p), p + " should not");
-                    // What a file given alone to the exe does: a video plays, an image or a GIF is edited.
+                    // What a file given alone to the exe does: a video plays, a GIF is edited, an image or a PDF opens in the
+                    // running Stackshot (its editor, its viewer).
                     Check(ShotStack.IsEditable(@"C:\v\a.mkv") && Installer.OpensHere(@"C:\v\a.mkv"), "an .mkv goes to the player, not the editor");
                     Check(ShotStack.IsEditable(@"C:\v\a.gif") && !Installer.OpensHere(@"C:\v\a.gif"), "a GIF still goes to the editor");
-                    Check(ShotStack.IsEditable(@"C:\v\a.png") && !Installer.OpensHere(@"C:\v\a.png"), "an image still goes to the editor");
+                    Check(ShotStack.IsImageFile(@"C:\v\a.png") && Installer.OpensHere(@"C:\v\a.png"), "an image opens in the running Stackshot, in its editor");
                     // A request a second copy writes (SendOpen's line, without signalling the running Stackshot, which may be
                     // the user's) is taken: only with a private data folder (STACKSHOT_TEST_DATA).
                     string real = Path.Combine(Environment.GetEnvironmentVariable("LOCALAPPDATA"), "Stackshot");

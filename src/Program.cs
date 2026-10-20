@@ -30,6 +30,7 @@ namespace Stackshot
     //   --capture <mode>       captures as its hotkey does (region, screen, window, scroll, text, video, gif, markdown, pause...)
     //   --open-home, --last-xml   the main window; the newest XML of the watched folder (all three in the running Stackshot
     //                          when there is one; also /capture region; an unknown mode does nothing and exits with 2)
+    //   --link <name|n>        opens one of the quick links (by its name or its place in the list), as its shortcut does
     //   --test                 not excluded from capture; leaves clipboard, hotkeys and the single-instance lock alone
     //   --background           start without showing the window (startup shortcut)
     //   --home                 with --test, show the window anyway
@@ -284,6 +285,8 @@ namespace Stackshot
                 Settings.Flush();   // before the lock goes: the copy that takes over reads the latest
                 ShotStack.FlushLog();
                 if (mine) { try { mutex.ReleaseMutex(); } catch { } }
+                // Everything is saved: a session that opened a PDF ends here, past the graphics driver's unloading.
+                PdfEngine.EndProcess(0);
             }
             return 0;
         }

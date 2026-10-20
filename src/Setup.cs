@@ -315,11 +315,11 @@ namespace Stackshot
         }
 
         // A file given on the command line (double click, "Open with") that the running Stackshot opens: a document in the
-        // viewer or a video in the player (a Cine master .mkv, which Windows' own player cannot decode). A GIF is still an
-        // image to edit.
+        // viewer, a PDF in its own viewer, a picture in the editor, or a video in the player (a Cine master .mkv, which
+        // Windows' own player cannot decode). A GIF is still an image to edit.
         public static bool OpensHere(string path)
         {
-            if (ViewerFile(path)) return true;
+            if (ViewerFile(path) || PdfWindow.IsPdf(path) || TextWindow.Opens(path) || ShotStack.IsImageFile(path)) return true;
             try { return ShotStack.IsVideoFile(path) && !string.Equals(Path.GetExtension(path), ".gif", StringComparison.OrdinalIgnoreCase); }
             catch { return false; }
         }
@@ -506,14 +506,12 @@ namespace Stackshot
             catch { return false; }
         }
 
-        // Puts back what Stackshot changed in Windows for this user: the .md/.xml/.mkv associations and, if Stackshot took
+        // Puts back what Stackshot changed in Windows for this user: its file associations and, if Stackshot took
         // it, the Print Screen key for Snipping Tool. Safe to run when nothing was changed (also `--cleanup-shell`, for the
         // MSI's uninstall). True when Print Screen was given back.
         public static bool CleanShell()
         {
-            FileAssoc.Disable(FileAssoc.Markdown);
-            FileAssoc.Disable(FileAssoc.Xml);
-            FileAssoc.Disable(FileAssoc.Video);
+            foreach (AssocKind k in FileAssoc.All) FileAssoc.Disable(k);
             bool back = RestorePrintScreen();
             try
             {
@@ -581,6 +579,21 @@ namespace Stackshot
                 catch { }
                 if (v is int) return (int)v != 0;
                 return Environment.OSVersion.Version.Build >= 22000; // on by default on Windows 11
+            }
+        }
+
+        // Stackshot took Print Screen from the Snipping Tool for this user (given back on uninstall). The shell may hold
+        // on to it until the next sign-in, so it is still taken on the way in meanwhile.
+        public static bool FreedPrintScreen
+        {
+            get
+            {
+                try
+                {
+                    using (RegistryKey k = Hkcu.OpenSubKey(MsiKey))
+                        return k != null && k.GetValue(FreedFlag) != null;
+                }
+                catch { return false; }
             }
         }
 

@@ -418,15 +418,15 @@ namespace Stackshot.Tests
                 @"C:\v\a.mkv", @"C:\v\A.MKV", @"C:\v\b.Mkv", @"C:\v\c.mp4", @"C:\v\d.webm", @"C:\v\e.MOV", @"C:\v\f.ts",
                 @"C:\v\g.m2ts", @"C:\v\h.avi", @"C:\v\i.wmv", @"\\srv\share\clip.mkv", @"C:\v\Cine 2026-10-11 17.03.26.mkv",
                 @"C:\v\a.png.mkv", @"C:\v\j.md", @"C:\v\K.MD", @"C:\v\l.markdown", @"C:\v\m.mkd", @"C:\v\n.xml", @"C:\v\o.XSD",
-                @"C:\v\p.svg", "C:\\v\\Documento \u00F1.md" };
+                @"C:\v\p.svg", "C:\\v\\Documento \u00F1.md", @"C:\v\b.png", @"C:\v\c.JPG", @"C:\v\d.txt", @"C:\v\a.mkv.png", @"C:\v\e.PDF" };
             foreach (string p in open) Check(Installer.OpensHere(p), "should open here: " + p);
         }
 
         static void OpensHereNot()
         {
             string[] alone = {
-                @"C:\v\a.gif", @"C:\v\A.GIF", @"C:\v\b.png", @"C:\v\c.JPG", @"C:\v\d.txt", @"C:\v\noext",
-                @"C:\v\a.mkv.png", @"C:\v\a.mkv.exe", @"C:\v\a.mkv.", @"C:\v\a.mkv ", "", null };
+                @"C:\v\a.gif", @"C:\v\A.GIF", @"C:\v\noext", @"C:\v\a.docx",
+                @"C:\v\a.mkv.exe", @"C:\v\a.mkv.", @"C:\v\a.mkv ", "", null };
             foreach (string p in alone) Check(!Installer.OpensHere(p), "should not open here: " + p);
         }
 

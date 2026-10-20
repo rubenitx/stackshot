@@ -115,6 +115,7 @@ namespace Stackshot
 
             hotkeys = new Hotkeys();
             hotkeys.Pressed += OnHotkey;
+            hotkeys.Recorded += OnRecorded;
             RegisterHotkeys(true);
 
             // A folder whose new XML files open in the viewer (SOAP messages); off unless turned on.
@@ -305,7 +306,14 @@ namespace Stackshot
             foreach (string p in all)
                 if (!Installer.ViewerFile(p))
                 {
-                    try { OpenPlayer(p); }
+                    // Each PDF in its viewer window, each image in the editor, each video in its player.
+                    try
+                    {
+                        if (PdfWindow.IsPdf(p)) PdfWindow.OpenFile(this, p);
+                        else if (TextWindow.Opens(p)) TextWindow.OpenFile(this, p);
+                        else if (IsImageFile(p)) OpenEditor(p);
+                        else OpenPlayer(p);
+                    }
                     catch (Exception ex) { Log("Abrir " + p + ": " + ex.Message); }
                 }
             if (docs.Count == 0) return;
@@ -413,6 +421,7 @@ namespace Stackshot
                     case "home": ShowHome("home", false); break;
                     case "folder": OpenFolder(); break;
                     case "openvideo": OpenVideoDialog(); break;
+                    case "opendoc": OpenDocumentDialog(); break;
                     case "lastxml": OpenLatestXml(); break;
                     case "closeall": CloseAll(); break;
                     case "settings": ShowHome("general", false); break;
@@ -430,13 +439,20 @@ namespace Stackshot
         {
             if (Test) return;
             hotkeys.Clear();
+            hotkeys.First = Hotkeys.Split(settings.KeysFirst);
             // Failures sorted by cause: another program holds it, Stackshot already registered it for an action (written
             // twice in a settings file edited by hand), or it is not a combination at all. Each combination is told once.
             List<string> failed = new List<string>(), twice = new List<string>(), unreadable = new List<string>(), mine = new List<string>();
-            foreach (string action in Settings.Actions)
+            List<string> failedCombos = new List<string>();
+            // The actions, then the quick links that have a shortcut of their own.
+            List<KeyValuePair<string, string>> keyed = new List<KeyValuePair<string, string>>();
+            foreach (string a in Settings.Actions) keyed.Add(new KeyValuePair<string, string>(a, settings.HotkeysFor(a)));
+            foreach (QuickLink l in Links) if (l.Keys.Length > 0) keyed.Add(new KeyValuePair<string, string>(LinkAction(l), l.Keys));
+            foreach (KeyValuePair<string, string> pair in keyed)
             {
-                List<string> bad = hotkeys.Register(action, settings.HotkeysFor(action));
-                List<string> combos = Hotkeys.Split(settings.HotkeysFor(action));
+                string action = pair.Key;
+                List<string> bad = hotkeys.Register(action, pair.Value);
+                List<string> combos = Hotkeys.Split(pair.Value);
                 // The same text twice in one action: the first that registered works, the rest failed.
                 Dictionary<string, int> works = new Dictionary<string, int>();
                 foreach (string c in combos) works[c] = (works.ContainsKey(c) ? works[c] : 0) + 1;
@@ -450,19 +466,57 @@ namespace Stackshot
                     string shown = Hotkeys.Display(combo);
                     if (!Hotkeys.TryParse(combo, out mods, out key)) { if (!unreadable.Contains("\u00AB" + combo.Trim() + "\u00BB")) unreadable.Add("\u00AB" + combo.Trim() + "\u00BB"); }
                     else if (mine.Exists(delegate(string o) { return Hotkeys.Same(o, combo); })) { if (!twice.Contains(shown)) twice.Add(shown); }
-                    else if (!failed.Contains(shown)) failed.Add(shown);
+                    else if (!failed.Contains(shown)) { failed.Add(shown); failedCombos.Add(combo); }
                 }
             }
+            hotkeys.Settle();
             if (failed.Count + twice.Count + unreadable.Count == 0) return;
             Log("Atajos sin registrar: ocupados " + string.Join(", ", failed.ToArray()) + "; repetidos " + string.Join(", ", twice.ToArray()) +
                 "; no v\u00E1lidos " + string.Join(", ", unreadable.ToArray()));
             if (!report) return;
-            List<string> why = new List<string>();
-            if (failed.Count > 0) why.Add(string.Join(", ", failed.ToArray()) + " los usa otro programa (\u00BFOneDrive, ShareX, Lightshot, Greenshot\u2026?).");
+            if (failed.Count == 0) { TellKeys(failed, failedCombos, twice, unreadable, null); return; }
+            // Who holds them is looked up in the background (it lists the processes); the notice follows.
+            System.Threading.ThreadPool.QueueUserWorkItem(delegate
+            {
+                List<KeyOwners.App> apps = null;
+                try { apps = KeyOwners.Running(); }
+                catch (Exception ex) { Log("Apps de captura: " + ex.Message); }
+                Ui(delegate { if (!exiting) TellKeys(failed, failedCombos, twice, unreadable, apps); });
+            });
+        }
+
+        // The notice about shortcuts that do not work, naming who has the busy ones when it is known.
+        void TellKeys(List<string> failed, List<string> combos, List<string> twice, List<string> unreadable, List<KeyOwners.App> apps)
+        {
+            List<string> why = new List<string>(), unknown = new List<string>();
+            Dictionary<string, List<string>> by = new Dictionary<string, List<string>>();
+            List<string> order = new List<string>();
+            for (int i = 0; i < failed.Count; i++)
+            {
+                KeyOwners.Reserved win = KeyOwners.OfWindows(combos[i]);
+                string who = win != null ? win.Owner : KeyOwners.Holder(combos[i], apps);
+                if (who == null) { unknown.Add(failed[i]); continue; }
+                if (!by.ContainsKey(who)) { by[who] = new List<string>(); order.Add(who); }
+                by[who].Add(failed[i]);
+            }
+            foreach (string who in order) why.Add(string.Join(", ", by[who].ToArray()) + (by[who].Count == 1 ? " lo usa " : " los usa ") + who + ".");
+            if (unknown.Count > 0) why.Add(string.Join(", ", unknown.ToArray()) + (unknown.Count == 1 ? " lo usa" : " los usa") + " otro programa.");
             if (twice.Count > 0) why.Add(string.Join(", ", twice.ToArray()) + " est\u00E1 puesto dos veces en los atajos de Stackshot: solo cuenta la primera.");
             if (unreadable.Count > 0) why.Add(string.Join(", ", unreadable.ToArray()) + " no es una combinaci\u00F3n de teclas v\u00E1lida.");
             Notify(failed.Count > 0 ? "Algunos atajos est\u00E1n ocupados" : "Algunos atajos no funcionan", string.Join(" ", why.ToArray()),
-                   NoticeKind.Warning, "Elegir otros atajos", ChooseOtherKeys);
+                   NoticeKind.Warning, failed.Count > 0 ? "Resolverlo" : "Elegir otros atajos", ChooseOtherKeys);
+        }
+
+        // While a shortcut field records, the keys pressed in that window come straight to it (see Hotkeys.Record).
+        public bool RecordKeys(IntPtr window)
+        {
+            if (Test) return false;
+            return hotkeys.Record(window);
+        }
+
+        void OnRecorded(Keys keyData, bool win)
+        {
+            if (home != null) home.TakeRecorded(keyData, win);
         }
 
         // A short notice: Stackshot's own toast by the clock (ShotStack.Toast.cs).
@@ -486,6 +540,7 @@ namespace Stackshot
         void OnHotkey(string action)
         {
             if (picking) return;
+            if (action != null && action.StartsWith(LinkPrefix, StringComparison.Ordinal)) { RunLink(action); return; }
             try
             {
                 switch (action)
@@ -857,12 +912,12 @@ namespace Stackshot
         // WaitWritten.
         public string SaveCapture(Bitmap shot, string name, CaptureStart start)
         {
-            if (settings.Sound) Shutter.Play();
+            if (settings.Sound && !hushed) Shutter.Play();
             Directory.CreateDirectory(folder);
             string path = NewCapturePath(name, start);
             Size size = shot.Size;
             Bitmap preview = Preview(shot, 600);
-            Bitmap forClipboard = settings.CopyToClipboard && !Test ? TrackedData.DeepCopy(shot) : null;
+            Bitmap forClipboard = settings.CopyToClipboard && !Test && !hushed ? TrackedData.DeepCopy(shot) : null;
             bool covering = CoverBeforeShowing(shot, path, ref preview, ref forClipboard);
             if (!covering) BeginWrite(path, shot, delegate(Exception ex)
             {
@@ -1709,11 +1764,43 @@ namespace Stackshot
             }
         }
 
+        // The tray's "Abrir PDF o documento…": each file to its viewer (PDF, text, logs, data, Markdown, XML) or, a
+        // picture, to the editor.
+        public void OpenDocumentDialog()
+        {
+            using (System.Windows.Forms.OpenFileDialog d = new System.Windows.Forms.OpenFileDialog())
+            {
+                d.Title = "Abrir PDF o documento";
+                d.Multiselect = true;
+                d.Filter = "PDF, texto y datos|*.pdf;*.txt;*.log;*.json;*.jsonl;*.csv;*.tsv;*.md;*.markdown;*.xml;*.ini;*.cfg;*.conf;*.yaml;*.yml;*.toml|" +
+                           "PDF|*.pdf|Texto y logs|*.txt;*.log|JSON y CSV|*.json;*.jsonl;*.csv;*.tsv|Markdown y XML|*.md;*.markdown;*.xml|Im\u00E1genes|*.png;*.jpg;*.jpeg;*.bmp|Todos los archivos|*.*";
+                if (d.ShowDialog() != DialogResult.OK) return;
+                foreach (string f in d.FileNames)
+                {
+                    try
+                    {
+                        if (Installer.ViewerFile(f)) OpenViewerFile(f);
+                        else if (PdfWindow.IsPdf(f)) PdfWindow.OpenFile(this, f);
+                        else if (IsImageFile(f)) OpenEditor(f);
+                        else TextWindow.OpenFile(this, f);
+                    }
+                    catch (Exception ex) { Log("Abrir " + f + ": " + ex.Message); }
+                }
+            }
+        }
+
         // What the editor can open: images, videos and GIFs.
         public static bool IsEditable(string path)
         {
             string ext = Path.GetExtension(path).ToLowerInvariant();
             return Array.IndexOf(ImageExts, ext) >= 0 || Array.IndexOf(MediaExts, ext) >= 0;
+        }
+
+        // A still image the editor opens (not a GIF, which is played as a video).
+        public static bool IsImageFile(string path)
+        {
+            try { return Array.IndexOf(ImageExts, Path.GetExtension(path).ToLowerInvariant()) >= 0; }
+            catch { return false; }
         }
 
         Card Find(string path)
@@ -2198,6 +2285,9 @@ namespace Stackshot
             if (toasts != null) toasts.CloseAll();
             if (pet != null) { pet.Close(); pet = null; }
             StickyNotes.CloseAll();
+            PdfWindow.CloseAll();
+            PdfEngine.Settle();
+            TextWindow.CloseAll();
             Updater.Stop();
             upChip.Close();
             downChip.Close();
