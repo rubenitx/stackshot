@@ -366,7 +366,7 @@ namespace Stackshot.Tests
                    button = "Notify(String,String,NoticeKind,String,Action)";
             string[][] want =
             {
-                new[] { "ShotStack.RegisterHotkeys", button },      // busy shortcuts: "Elegir otros atajos"
+                new[] { "ShotStack.TellKeys", button },             // busy shortcuts: "Resolverlo" or "Elegir otros atajos"
                 new[] { "ShotStack.TellArrivedXml", button },       // new XML with unsaved changes: "Abrir el XML"
                 new[] { "ShotStack.OpenArrivedXml", null },         // ... only through TellArrivedXml
                 new[] { "ShotStack.RescueOrphans", folder },        // recovered recording: its folder

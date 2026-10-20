@@ -1046,6 +1046,12 @@ namespace Stackshot
             listening.Stop(this);
         }
 
+        // A key taken for the shortcut field before Windows or another app could keep it (Hotkeys.Record).
+        internal void TakeRecorded(WF.Keys keyData, bool win)
+        {
+            if (listening != null) listening.Take(this, keyData, win);
+        }
+
         // ---- Helpers shared by the pages
 
         static Color W(D.Color c) { return Color.FromArgb(c.A, c.R, c.G, c.B); }

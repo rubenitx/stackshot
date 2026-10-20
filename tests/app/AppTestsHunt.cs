@@ -45,7 +45,7 @@ namespace Stackshot.Tests
             v["Sound"] = false; v["CopyToClipboard"] = false; v["FollowMouse"] = false; v["StackTuck"] = 10; v["FirstRunDone"] = true;
             v["HotRegion"] = "Ctrl+Shift+F1, PrintScreen"; v["HotScreen"] = "Ctrl+F2"; v["HotWindow"] = "Alt+F3";
             v["HotScroll"] = "Ctrl+Alt+F4"; v["HotVideo"] = "Shift+F5"; v["HotGif"] = "Ctrl+Shift+F6"; v["HotMarkdown"] = "Ctrl+Shift+Alt+F7"; v["HotText"] = "Ctrl+Alt+F8";
-            v["HotRepeat"] = "Ctrl+Shift+Alt+F9"; v["HotDelayed"] = "Ctrl+Shift+Alt+F11"; v["CaptureDelay"] = 10;
+            v["HotRepeat"] = "Ctrl+Shift+Alt+F9"; v["HotDelayed"] = "Ctrl+Shift+Alt+F11"; v["CaptureDelay"] = 10; v["KeysFirst"] = "Ctrl+Shift+F1, Win+Alt+K";
             v["VideoFps"] = 60; v["GifFps"] = 25; v["VideoQuality"] = 3;
             v["RecordSystemAudio"] = true; v["RecordMic"] = true;
             v["MicDevice"] = "{0.0.1.00000000}.{abc-123}"; v["SystemAudioDevice"] = "{0.0.0.00000000}.{xyz}";

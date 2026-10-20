@@ -114,7 +114,7 @@ namespace Stackshot.Tests
             v["Sound"] = false; v["CopyToClipboard"] = false; v["FollowMouse"] = false; v["StackTuck"] = 3; v["FirstRunDone"] = true;
             v["HotRegion"] = "Ctrl+Shift+S, F1"; v["HotScreen"] = "Ctrl+Alt+S"; v["HotWindow"] = "Alt+F2";
             v["HotScroll"] = "Ctrl+Alt+F3"; v["HotVideo"] = "Shift+F4"; v["HotGif"] = "Ctrl+F5"; v["HotMarkdown"] = "Ctrl+Shift+Alt+N"; v["HotText"] = "Ctrl+Alt+F9";
-            v["HotRepeat"] = "Ctrl+Shift+Alt+F10"; v["HotDelayed"] = "Ctrl+Shift+Alt+F12"; v["CaptureDelay"] = 5;
+            v["HotRepeat"] = "Ctrl+Shift+Alt+F10"; v["HotDelayed"] = "Ctrl+Shift+Alt+F12"; v["CaptureDelay"] = 5; v["KeysFirst"] = "Alt+F9";
             v["VideoFps"] = 24; v["GifFps"] = 20; v["VideoQuality"] = 3; v["RecordSystemAudio"] = true; v["RecordMic"] = true;
             v["MicDevice"] = "{0.0.1.00000000}.{ab-cd}"; v["SystemAudioDevice"] = "{0.0.0.00000000}.{xy}";
             v["Webcam"] = 2; v["WebcamSize"] = 2; v["WebcamDevice"] = "C\u00E1mara HD"; v["Ffmpeg"] = "C:\\Tools\\ffmpeg.exe";

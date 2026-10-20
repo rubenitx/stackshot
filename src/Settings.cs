@@ -39,6 +39,7 @@ namespace Stackshot
         public string HotMarkdown = "Ctrl+Shift+Alt+M";
         public string HotRepeat = "";       // capture the last area again; no shortcut unless the user gives it one
         public string HotDelayed = "";      // capture an area after a countdown; no shortcut unless the user gives it one
+        public string KeysFirst = "";       // combos Stackshot takes even when another program registered them first
         public int VideoFps = 30;
         public int GifFps = 15;
         public int VideoQuality = 0;    // 0 standard, 1 maximum (60 fps, lossless capture, slow encode), 2 high (60 fps, crisp), 3 cinema (lossless RGB H.264 + PCM in MKV, verified)
@@ -337,6 +338,7 @@ namespace Stackshot
                         case "text": s.HotText = v; break;
                         case "repeat": s.HotRepeat = v; break;
                         case "delayed": s.HotDelayed = v; break;
+                        case "keysfirst": s.KeysFirst = v; break;
                         case "videofps": s.VideoFps = Int(v, s.VideoFps, 5, 60); break;
                         case "giffps": s.GifFps = Int(v, s.GifFps, 5, 30); break;
                         case "videoquality": s.VideoQuality = Int(v, s.VideoQuality, 0, 3); break;
@@ -505,6 +507,8 @@ namespace Stackshot
             b.AppendLine("Markdown = " + OneLine(HotMarkdown));
             b.AppendLine("Repeat = " + OneLine(HotRepeat));
             b.AppendLine("Delayed = " + OneLine(HotDelayed));
+            b.AppendLine("# Atajos que Stackshot atiende aunque otro programa los tenga");
+            b.AppendLine("KeysFirst = " + OneLine(KeysFirst));
             b.AppendLine("VideoFps = " + VideoFps);
             b.AppendLine("GifFps = " + GifFps);
             b.AppendLine("Profile = " + Profile);

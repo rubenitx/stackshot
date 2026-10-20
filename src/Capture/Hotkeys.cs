@@ -15,10 +15,21 @@ namespace Stackshot
         const uint MOD_ALT = 1, MOD_CONTROL = 2, MOD_SHIFT = 4, MOD_WIN = 8, MOD_NOREPEAT = 0x4000;
 
         public event Action<string> Pressed;
+        // A key pressed while a shortcut field records (Record): the combination, and whether Win was held.
+        public event Action<Keys, bool> Recorded;
         readonly Dictionary<int, string> ids = new Dictionary<int, string>();
         int next = 1;
         // Combos another program held at the last registration, by action (the Keys page marks them).
         static readonly Dictionary<string, List<string>> busy = new Dictionary<string, List<string>>();
+        // Combos taken on their way in (KeyGrab) at the last registration, by action.
+        static readonly Dictionary<string, List<string>> grabbed = new Dictionary<string, List<string>>();
+        static bool refused;
+
+        // Combos Stackshot takes even when another program registered them (Settings.KeysFirst).
+        public List<string> First = new List<string>();
+        readonly List<KeyGrabRules.Entry> grabbing = new List<KeyGrabRules.Entry>();
+        KeyGrab grab;
+        IntPtr recordWindow;
 
         public Hotkeys()
         {
@@ -27,22 +38,76 @@ namespace Stackshot
             CreateHandle(cp);
         }
 
-        // Registers every combo of an action ("PrintScreen, Ctrl+Shift+4"). Returns the ones that failed.
+        // Registers every combo of an action ("PrintScreen, Ctrl+Shift+4"). Returns the ones that failed. Windows' own
+        // capture keys (Win + Shift + S...) never reach RegisterHotKey: they are taken on the way in, and so is Print
+        // Screen while the Snipping Tool keeps it, or a combo another program has that the user chose to take anyway.
         public List<string> Register(string action, string combos)
         {
-            List<string> failed = new List<string>(), taken = new List<string>();
+            List<string> failed = new List<string>(), held = new List<string>(), took = new List<string>();
             foreach (string c in Split(combos))
             {
                 uint mods;
                 Keys key;
                 if (!TryParse(c, out mods, out key)) { failed.Add(c); continue; }
                 int id = next++;
-                if (Native.RegisterHotKey(Handle, id, mods | MOD_NOREPEAT, (uint)key)) ids[id] = action;
-                else { failed.Add(c); taken.Add(c); }
+                string combo = c;
+                bool windows = KeyOwners.OfWindows(c) != null, alone = Same(c, "PrintScreen");
+                bool registered = !(windows && !alone) && Native.RegisterHotKey(Handle, id, mods | MOD_NOREPEAT, (uint)key);
+                if (registered) { ids[id] = action; continue; }
+                // Print Screen alone stays the Snipping Tool's unless Stackshot was let free it (the shell may hold on
+                // to it until the next sign-in); the user may have kept it there on purpose.
+                bool take = alone ? Installer.FreedPrintScreen && !Installer.SnippingOwnsPrintScreen : windows;
+                if ((take || First.Exists(delegate(string f) { return Same(f, combo); })) && Grab(id, mods, key)) { ids[id] = action; took.Add(c); continue; }
+                failed.Add(c);
+                held.Add(c);
             }
-            if (taken.Count > 0) busy[action] = taken;
+            if (held.Count > 0) busy[action] = held;
             else busy.Remove(action);
+            if (took.Count > 0) grabbed[action] = took;
+            else grabbed.Remove(action);
             return failed;
+        }
+
+        bool Grab(int id, uint mods, Keys key)
+        {
+            grabbing.Add(new KeyGrabRules.Entry(mods, (int)key, id));
+            if (SyncGrab()) return true;
+            grabbing.RemoveAt(grabbing.Count - 1);
+            return false;
+        }
+
+        // The hook, started when first needed; false when Windows refuses it (then nothing is taken on the way in).
+        bool SyncGrab()
+        {
+            if (grab == null)
+            {
+                if (refused) return false;
+                grab = KeyGrab.Start(Handle);
+                if (grab.Failed) { grab.Dispose(); grab = null; refused = true; return false; }
+            }
+            grab.Rules.Entries = grabbing.ToArray();
+            grab.RecordWindow = recordWindow;
+            return true;
+        }
+
+        // Once the registration is done: the hook stays only while a shortcut or a recording field needs it.
+        public void Settle()
+        {
+            if (grab == null || grabbing.Count > 0 || recordWindow != IntPtr.Zero) return;
+            grab.Dispose();
+            grab = null;
+        }
+
+        // While a shortcut field records, every key pressed in its window comes to Recorded first, so even those that
+        // Windows or another program would keep reach the field. False when that is not possible (the field then gets
+        // the keys that reach it).
+        public bool Record(IntPtr window)
+        {
+            recordWindow = window;
+            if (window != IntPtr.Zero) return SyncGrab();
+            if (grab != null) grab.RecordWindow = IntPtr.Zero;
+            Settle();
+            return true;
         }
 
         public void Clear()
@@ -50,23 +115,48 @@ namespace Stackshot
             foreach (int id in ids.Keys) Native.UnregisterHotKey(Handle, id);
             ids.Clear();
             busy.Clear();
+            grabbed.Clear();
+            grabbing.Clear();
+            refused = false;
+            if (grab != null) grab.Rules.Entries = null;
         }
 
         // True when the combo could not be registered for that action because something else holds it.
         public static bool IsBusy(string action, string combo)
         {
+            return Listed(busy, action, combo);
+        }
+
+        // True when the combo works for that action by being taken on the way in (from Windows or another program).
+        public static bool IsGrabbed(string action, string combo)
+        {
+            return Listed(grabbed, action, combo);
+        }
+
+        static bool Listed(Dictionary<string, List<string>> map, string action, string combo)
+        {
             List<string> l;
-            if (action == null || !busy.TryGetValue(action, out l)) return false;
+            if (action == null || !map.TryGetValue(action, out l)) return false;
             foreach (string c in l) if (Same(c, combo)) return true;
             return false;
         }
 
         protected override void WndProc(ref Message m)
         {
-            if (m.Msg == WM_HOTKEY)
+            if (m.Msg == WM_HOTKEY || m.Msg == KeyGrab.WM_FIRE)
             {
                 string action;
                 if (ids.TryGetValue(m.WParam.ToInt32(), out action) && Pressed != null) Pressed(action);
+                return;
+            }
+            if (m.Msg == KeyGrab.WM_TAKE)
+            {
+                uint mods = (uint)m.LParam.ToInt64();
+                Keys k = (Keys)m.WParam.ToInt32();
+                if ((mods & MOD_CONTROL) != 0) k |= Keys.Control;
+                if ((mods & MOD_SHIFT) != 0) k |= Keys.Shift;
+                if ((mods & MOD_ALT) != 0) k |= Keys.Alt;
+                if (recordWindow != IntPtr.Zero && Recorded != null) Recorded(k, (mods & MOD_WIN) != 0);
                 return;
             }
             base.WndProc(ref m);
@@ -75,6 +165,8 @@ namespace Stackshot
         public void Dispose()
         {
             Clear();
+            recordWindow = IntPtr.Zero;
+            Settle();
             DestroyHandle();
         }
 
