@@ -119,12 +119,12 @@ namespace Stackshot
         ContextMenuStrip BuildMenu()
         {
             ContextMenuStrip m = TrayMenu.Create();
-            m.Items.Add(TrayMenu.Item("Copiar", "copy", delegate { Copy(); }));
-            if (ShotStack.Running != null) m.Items.Add(TrayMenu.Item("Copiar el texto", "textscan", delegate { ShotStack.Running.CopyText(img, null); }));
-            m.Items.Add(TrayMenu.Item("Guardar como\u2026", "save", delegate { SaveAs(); }));
-            m.Items.Add(TrayMenu.Item("Tama\u00F1o real", "actualsize", delegate { SetZoom(1f, new Point(body.Width / 2, body.Height / 2)); }));
+            m.Items.Add(TrayMenu.Item(I18n.Copy, "copy", delegate { Copy(); }));
+            if (ShotStack.Running != null) m.Items.Add(TrayMenu.Item(I18n.T("Copiar el texto", "Copy text"), "textscan", delegate { ShotStack.Running.CopyText(img, null); }));
+            m.Items.Add(TrayMenu.Item(I18n.T("Guardar como\u2026", "Save as\u2026"), "save", delegate { SaveAs(); }));
+            m.Items.Add(TrayMenu.Item(I18n.T("Tama\u00F1o real", "Actual size"), "actualsize", delegate { SetZoom(1f, new Point(body.Width / 2, body.Height / 2)); }));
             m.Items.Add(TrayMenu.Separator());
-            m.Items.Add(TrayMenu.Item("Cerrar", "close", delegate { BeginInvoke((Action)Close); })); // after the menu finishes, since closing disposes it
+            m.Items.Add(TrayMenu.Item(I18n.Close, "close", delegate { BeginInvoke((Action)Close); })); // after the menu finishes, since closing disposes it
             return m;
         }
 
@@ -139,12 +139,12 @@ namespace Stackshot
             try
             {
                 ShotStack.CopyImage(img);
-                Tell("Imagen copiada", "Ya puedes pegarla donde quieras.", null);
+                Tell(I18n.T("Imagen copiada", "Image copied"), I18n.T("Ya puedes pegarla donde quieras.", "Ready to paste anywhere."), null);
             }
             catch (Exception ex)
             {
                 ShotStack.Log("Fijada, copiar: " + ex.Message);
-                Tell("No se pudo copiar", "Otro programa est\u00E1 usando el portapapeles. Vuelve a intentarlo.", null);
+                Tell(I18n.T("No se pudo copiar", "Could not copy"), I18n.T("Otro programa est\u00E1 usando el portapapeles. Vuelve a intentarlo.", "Another program is using the clipboard. Please try again."), null);
             }
         }
 
@@ -152,19 +152,19 @@ namespace Stackshot
         {
             using (SaveFileDialog d = new SaveFileDialog())
             {
-                d.Filter = "Imagen PNG|*.png";
+                d.Filter = I18n.T("Imagen PNG|*.png", "PNG Image|*.png");
                 d.FileName = "Stackshot " + DateTime.Now.ToString("yyyy-MM-dd HH.mm.ss") + ".png";
                 if (d.ShowDialog(this) == DialogResult.OK)
                 {
                     try
                     {
                         img.Save(d.FileName, ImageFormat.Png);
-                        Tell("Imagen guardada", System.IO.Path.GetFileName(d.FileName), System.IO.Path.GetDirectoryName(d.FileName));
+                        Tell(I18n.T("Imagen guardada", "Image saved"), System.IO.Path.GetFileName(d.FileName), System.IO.Path.GetDirectoryName(d.FileName));
                     }
                     catch (Exception ex)
                     {
                         ShotStack.Log("Guardar como " + d.FileName + ": " + ex);
-                        Dialogs.Show(this, "No se pudo guardar la imagen.\n\n" + ShotStack.Explain(ex, d.FileName),
+                        Dialogs.Show(this, I18n.T("No se pudo guardar la imagen.\n\n", "Could not save image.\n\n") + ShotStack.Explain(ex, d.FileName),
                                         "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                 }

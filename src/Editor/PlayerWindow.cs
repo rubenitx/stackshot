@@ -177,7 +177,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Reproductor: " + ex.Message);
-                message = "No se pudo iniciar la reproducci\u00F3n.";
+                message = I18n.T("No se pudo iniciar la reproducci\u00F3n.", "Could not start playback.");
             }
             Invalidate();
         }
@@ -190,7 +190,7 @@ namespace Stackshot
                 // A long video starts where it was left last time (Inicio goes back to the beginning).
                 double at = PlayerKit.ResumeAt(path, info.Duration);
                 play.Start(at, info.Duration);
-                if (at > 0) Flash("Sigue donde lo dejaste (" + PlayerKit.Clock(at) + ") \u00B7 Inicio vuelve al principio");
+                if (at > 0) Flash(I18n.Fmt("Sigue donde lo dejaste ({0}) \u00B7 Inicio vuelve al principio", "Resume from where you left off ({0}) \u00B7 Home returns to start", PlayerKit.Clock(at)));
             }
             Wake();
         }
@@ -360,7 +360,7 @@ namespace Stackshot
             volume = Math.Max(0, Math.Min(1, Math.Round(v * 100) / 100.0));
             if (volume > 0) muted = false;
             ApplyVolume();
-            if (say) Flash("Volumen " + (int)Math.Round(volume * 100) + " %");
+            if (say) Flash(I18n.Fmt("Volumen {0} %", "Volume {0} %", (int)Math.Round(volume * 100)));
             settings.PlayerVolume = (int)Math.Round(volume * 100);
             Remember();
             Invalidate(BarArea());
@@ -370,7 +370,7 @@ namespace Stackshot
         {
             muted = !muted;
             ApplyVolume();
-            Flash(muted ? "Sin sonido" : "Volumen " + (int)Math.Round(volume * 100) + " %");
+            Flash(muted ? I18n.T("Sin sonido", "Muted") : I18n.Fmt("Volumen {0} %", "Volume {0} %", (int)Math.Round(volume * 100)));
             Invalidate(BarArea());
         }
 
@@ -383,7 +383,7 @@ namespace Stackshot
         {
             speed = v;
             if (play != null) play.Speed = v;
-            Flash("Velocidad " + PlayerKit.SpeedText(v));
+            Flash(I18n.Fmt("Velocidad {0}", "Speed {0}", PlayerKit.SpeedText(v)));
             Invalidate(BarArea());
         }
 
@@ -393,7 +393,7 @@ namespace Stackshot
             if (play != null) play.Repeat = loop;
             settings.PlayerLoop = loop;
             Remember();
-            Flash(loop ? "Repetir: s\u00ED" : "Repetir: no");
+            Flash(loop ? I18n.T("Repetir: s\u00ED", "Loop: on") : I18n.T("Repetir: no", "Loop: off"));
             Invalidate(BarArea());
         }
 
@@ -461,7 +461,7 @@ namespace Stackshot
         {
             string p = path;
             try { Process.Start(Native.Explorer, "/select,\"" + p + "\""); }
-            catch (Exception ex) { ShotStack.Log("Reproductor: carpeta " + ex.Message); Flash("No se pudo abrir la carpeta"); }
+            catch (Exception ex) { ShotStack.Log("Reproductor: carpeta " + ex.Message); Flash(I18n.T("No se pudo abrir la carpeta", "Could not open folder")); }
         }
 
         bool CanEdit { get { return owner != null && info != null && info.CanPlay && Array.IndexOf(PlayerKit.EditorFormats, Path.GetExtension(path ?? "").ToLowerInvariant()) >= 0; } }
@@ -491,7 +491,7 @@ namespace Stackshot
             if (info == null || !info.CanPlay) return;
             markIn = FrameNow();
             if (markOut >= 0 && markOut <= markIn + 0.05) markOut = -1;
-            Flash(markOut < 0 ? "Inicio del tramo en " + PlayerKit.Clock(markIn) + " \u00B7 S marca el final" : "Tramo " + PlayerKit.Clock(markIn) + " \u2013 " + PlayerKit.Clock(markOut));
+            Flash(markOut < 0 ? I18n.Fmt("Inicio del tramo en {0} \u00B7 S marca el final", "In-point at {0} \u00B7 S sets out-point", PlayerKit.Clock(markIn)) : I18n.Fmt("Tramo {0} \u2013 {1}", "Clip {0} \u2013 {1}", PlayerKit.Clock(markIn), PlayerKit.Clock(markOut)));
         }
 
         void MarkOut()
@@ -500,15 +500,15 @@ namespace Stackshot
             // The frame on screen is the last one in.
             double end = Math.Min(Duration, FrameNow() + 1 / info.Fps);
             if (markIn < 0) markIn = 0;
-            if (end <= markIn + 0.05) { Flash("El final tiene que ir despu\u00E9s del inicio (" + PlayerKit.Clock(markIn) + ")"); return; }
+            if (end <= markIn + 0.05) { Flash(I18n.Fmt("El final tiene que ir despu\u00E9s del inicio ({0})", "Out-point must be after in-point ({0})", PlayerKit.Clock(markIn))); return; }
             markOut = end;
-            Flash("Tramo " + PlayerKit.Clock(markIn) + " \u2013 " + PlayerKit.Clock(markOut) + " \u00B7 Exportar lo crea en MP4; G, en GIF");
+            Flash(I18n.Fmt("Tramo {0} \u2013 {1} \u00B7 Exportar lo crea en MP4; G, en GIF", "Clip {0} \u2013 {1} \u00B7 Export creates MP4; G creates GIF", PlayerKit.Clock(markIn), PlayerKit.Clock(markOut)));
         }
 
         void ClearRange()
         {
             markIn = markOut = -1;
-            Flash("Tramo quitado");
+            Flash(I18n.T("Tramo quitado", "Clip cleared"));
         }
 
         // ---- the frame on screen as a capture (C) ----
@@ -540,21 +540,21 @@ namespace Stackshot
                 OnUi(delegate
                 {
                     grabbing = false;
-                    if (px == null) { Flash("No se pudo capturar el fotograma."); return; }
+                    if (px == null) { Flash(I18n.T("No se pudo capturar el fotograma.", "Could not capture frame.")); return; }
                     Bitmap bmp = PlayerKit.FromBgra(px, d.Width, d.Height);
                     string name = Path.GetFileNameWithoutExtension(src);
                     if (owner != null)
                     {
-                        if (owner.SaveCapture(bmp, "Fotograma " + name) != null) Flash("Fotograma de " + PlayerKit.Clock(t) + " en la pila");
+                        if (owner.SaveCapture(bmp, (I18n.IsSpanish ? "Fotograma " : "Frame ") + name) != null) Flash(I18n.Fmt("Fotograma de {0} en la pila", "Frame at {0} added to stack", PlayerKit.Clock(t)));
                         return;
                     }
                     try
                     {
-                        string png = ShotStack.Unique(Path.Combine(Path.GetDirectoryName(src), name + " fotograma " + PlayerKit.Clock(t).Replace(':', '.') + ".png"));
+                        string png = ShotStack.Unique(Path.Combine(Path.GetDirectoryName(src), name + I18n.T(" fotograma ", " frame ") + PlayerKit.Clock(t).Replace(':', '.') + ".png"));
                         bmp.Save(png, ImageFormat.Png);
-                        Flash("Fotograma guardado: " + Path.GetFileName(png));
+                        Flash(I18n.Fmt("Fotograma guardado: {0}", "Frame saved: {0}", Path.GetFileName(png)));
                     }
-                    catch (Exception ex) { Flash("No se pudo guardar el fotograma: " + ex.Message); }
+                    catch (Exception ex) { Flash(I18n.T("No se pudo guardar el fotograma: ", "Could not save frame: ") + ex.Message); }
                     finally { bmp.Dispose(); }
                 });
             });
@@ -621,7 +621,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Reproductor: exportar " + ex.Message);
-                Flash("No se pudo preparar la exportaci\u00F3n.");
+                Flash(I18n.T("No se pudo preparar la exportaci\u00F3n.", "Could not prepare export."));
                 return;
             }
             if (play != null && Playing) play.Pause();
@@ -713,7 +713,7 @@ namespace Stackshot
             {
                 ShotStack.Log("Reproductor: FFmpeg " + code + ": " + err);
                 try { if (File.Exists(output)) File.Delete(output); } catch (Exception) { }
-                Alert("No se pudo crear el MP4.\n\n" + Tail(err));
+                Alert(I18n.T("No se pudo crear el MP4.\n\n", "Could not create MP4.\n\n") + Tail(err));
                 return;
             }
             ShotStack.Log("Reproductor: comprobaci\u00F3n " + (rep != null && rep.Passed ? "correcta" : "FALLIDA") + " de " + Path.GetFileName(output) + "\n" + rep);
@@ -723,9 +723,9 @@ namespace Stackshot
                 if (owner != null)
                 {
                     owner.AddRecording(output);
-                    Flash(SaveFolders.Inside(settings, Path.GetDirectoryName(output)) ? "MP4 listo y guardado junto al original" : "MP4 listo: est\u00E1 en la pila");
+                    Flash(SaveFolders.Inside(settings, Path.GetDirectoryName(output)) ? I18n.T("MP4 listo y guardado junto al original", "MP4 ready and saved next to original") : I18n.T("MP4 listo: est\u00E1 en la pila", "MP4 ready: added to stack"));
                 }
-                else Flash("MP4 listo");
+                else Flash(I18n.T("MP4 listo", "MP4 ready"));
                 return;
             }
             // Not a normal result: kept under another name so it is never taken for a good export.
@@ -736,7 +736,7 @@ namespace Stackshot
                 File.Move(output, kept);
             }
             catch (Exception ex) { kept = output; ShotStack.Log("Reproductor: no se pudo renombrar: " + ex.Message); }
-            Alert((rep != null ? rep.Summary : "No se pudo comprobar el v\u00EDdeo.") + "\n\nEl archivo no se ha a\u00F1adido a la pila. Queda en:\n" + kept);
+            Alert((rep != null ? rep.Summary : I18n.T("No se pudo comprobar el v\u00EDdeo.", "Could not verify video.")) + I18n.Fmt("\n\nEl archivo no se ha a\u00F1adido a la pila. Queda en:\n{0}", "\n\nThe file was not added to stack. Stored in:\n{0}", kept));
         }
 
         // A message the user must read; tests set Quiet so nothing blocks.
@@ -976,7 +976,7 @@ namespace Stackshot
             string[] files = e.Data.GetData(DataFormats.FileDrop) as string[];
             if (files == null || files.Length == 0) return;
             string f = files[0];
-            if (Directory.Exists(f) || !File.Exists(f)) { Flash("No se puede abrir eso."); return; }
+            if (Directory.Exists(f) || !File.Exists(f)) { Flash(I18n.T("No se puede abrir eso.", "Cannot open that.")); return; }
             // An extension FFmpeg is not known to read is probed first, so a stray file does not replace what is playing.
             if (ShotStack.IsVideoFile(f)) { OpenAndPlay(f); return; }
             if (probing) return;
@@ -989,7 +989,7 @@ namespace Stackshot
                 {
                     probing = false;
                     UseWaitCursor = false;
-                    if (!playable) { Flash("Ese archivo no es un v\u00EDdeo que se pueda abrir."); return; }
+                    if (!playable) { Flash(I18n.T("Ese archivo no es un v\u00EDdeo que se pueda abrir.", "That file is not a playable video.")); return; }
                     OpenAndPlay(f);
                 });
             });
@@ -1031,7 +1031,7 @@ namespace Stackshot
             foreach (AudioTrackInfo a in info.Audio)
             {
                 int idx = a.Index;
-                ToolStripMenuItem it = TrayMenu.Item(string.IsNullOrEmpty(a.Title) ? "Pista " + (idx + 1) : a.Title, null, delegate { if (play != null) play.Track = idx; });
+                ToolStripMenuItem it = TrayMenu.Item(string.IsNullOrEmpty(a.Title) ? I18n.Fmt("Pista {0}", "Track {0}", idx + 1) : a.Title, null, delegate { if (play != null) play.Track = idx; });
                 it.Checked = play != null && play.Track == idx;
                 m.Items.Add(it);
             }
@@ -1058,41 +1058,41 @@ namespace Stackshot
         {
             if (info == null) return;
             ContextMenuStrip m = TrayMenu.Create();
-            if (CanEdit) m.Items.Add(TrayMenu.Item("Editar", "edit", delegate { Edit(); }));
-            if (CanExport) m.Items.Add(TrayMenu.Item(HasRange ? "Exportar el tramo" : "Exportar MP4", "share", delegate { ExportMp4(); }));
+            if (CanEdit) m.Items.Add(TrayMenu.Item(I18n.T("Editar", "Edit"), "edit", delegate { Edit(); }));
+            if (CanExport) m.Items.Add(TrayMenu.Item(HasRange ? I18n.T("Exportar el tramo", "Export clip") : I18n.T("Exportar MP4", "Export MP4"), "share", delegate { ExportMp4(); }));
             if (info.CanPlay && exportThread == null) m.Items.Add(GifMenuItem());
-            m.Items.Add(TrayMenu.Item("Calidad al exportar: " + QualityName(settings.ExportQuality) + "\u2026", null, delegate { OnUi(delegate { ShowQuality(at, b); }); }));
-            m.Items.Add(TrayMenu.Item("Capturar este fotograma", "photo", "C", delegate { GrabFrame(); }));
-            m.Items.Add(TrayMenu.Item("Marcar el inicio del tramo", null, "E", delegate { MarkIn(); }));
-            m.Items.Add(TrayMenu.Item("Marcar el final del tramo", null, "S", delegate { MarkOut(); }));
-            if (markIn >= 0 || markOut >= 0) m.Items.Add(TrayMenu.Item("Quitar el tramo", null, "Esc", delegate { ClearRange(); }));
-            m.Items.Add(TrayMenu.Item("Mostrar en carpeta", "folder", delegate { Reveal(); }));
-            m.Items.Add(TrayMenu.Item("Abrir otro v\u00EDdeo\u2026", "video", "Ctrl+O", delegate { OpenDialog(); }));
+            m.Items.Add(TrayMenu.Item((I18n.IsSpanish ? "Calidad al exportar: " : "Export quality: ") + QualityName(settings.ExportQuality) + "\u2026", null, delegate { OnUi(delegate { ShowQuality(at, b); }); }));
+            m.Items.Add(TrayMenu.Item(I18n.T("Capturar este fotograma", "Capture this frame"), "photo", "C", delegate { GrabFrame(); }));
+            m.Items.Add(TrayMenu.Item(I18n.T("Marcar el inicio del tramo", "Set in-point"), null, "E", delegate { MarkIn(); }));
+            m.Items.Add(TrayMenu.Item(I18n.T("Marcar el final del tramo", "Set out-point"), null, "S", delegate { MarkOut(); }));
+            if (markIn >= 0 || markOut >= 0) m.Items.Add(TrayMenu.Item(I18n.T("Quitar el tramo", "Clear range"), null, "Esc", delegate { ClearRange(); }));
+            m.Items.Add(TrayMenu.Item(I18n.T("Mostrar en carpeta", "Show in folder"), "folder", delegate { Reveal(); }));
+            m.Items.Add(TrayMenu.Item(I18n.T("Abrir otro v\u00EDdeo\u2026", "Open another video\u2026"), "video", "Ctrl+O", delegate { OpenDialog(); }));
             m.Items.Add(TrayMenu.Separator());
-            ToolStripMenuItem inf = TrayMenu.Item("Informaci\u00F3n", "info", "I", delegate { ToggleInfo(); });
+            ToolStripMenuItem inf = TrayMenu.Item(I18n.T("Informaci\u00F3n", "Information"), "info", "I", delegate { ToggleInfo(); });
             inf.Checked = infoOn;
             m.Items.Add(inf);
-            ToolStripMenuItem lp = TrayMenu.Item("Repetir al terminar", "update", delegate { ToggleLoop(); });
+            ToolStripMenuItem lp = TrayMenu.Item(I18n.T("Repetir al terminar", "Loop playback"), "update", delegate { ToggleLoop(); });
             lp.Checked = loop;
             m.Items.Add(lp);
             m.Items.Add(TrayMenu.Separator());
-            ToolStripMenuItem best = TrayMenu.Item("Escalado: mejor calidad", null, delegate { SetScaling(0); });
+            ToolStripMenuItem best = TrayMenu.Item(I18n.T("Escalado: mejor calidad", "Scaling: best quality"), null, delegate { SetScaling(0); });
             best.Checked = settings.PlayerScaling == 0;
             m.Items.Add(best);
-            ToolStripMenuItem fast = TrayMenu.Item("Escalado: m\u00E1s r\u00E1pido", null, delegate { SetScaling(1); });
+            ToolStripMenuItem fast = TrayMenu.Item(I18n.T("Escalado: m\u00E1s r\u00E1pido", "Scaling: faster"), null, delegate { SetScaling(1); });
             fast.Checked = settings.PlayerScaling != 0;
             m.Items.Add(fast);
-            ToolStripMenuItem real = TrayMenu.Item("Imagen: tama\u00F1o real (la m\u00E1s n\u00EDtida)", null, delegate { SetFill(false); });
+            ToolStripMenuItem real = TrayMenu.Item(I18n.T("Imagen: tama\u00F1o real (la m\u00E1s n\u00EDtida)", "Image: 100% scale (sharpest)"), null, delegate { SetFill(false); });
             real.Checked = !settings.PlayerFill;
             m.Items.Add(real);
-            ToolStripMenuItem fill = TrayMenu.Item("Imagen: llenar la ventana", null, delegate { SetFill(true); });
+            ToolStripMenuItem fill = TrayMenu.Item(I18n.T("Imagen: llenar la ventana", "Image: fit window"), null, delegate { SetFill(true); });
             fill.Checked = settings.PlayerFill;
             m.Items.Add(fill);
-            ToolStripMenuItem opens = TrayMenu.Item("Abrir los v\u00EDdeos en Stackshot", null, delegate
+            ToolStripMenuItem opens = TrayMenu.Item(I18n.T("Abrir los v\u00EDdeos en Stackshot", "Open videos in Stackshot"), null, delegate
             {
                 settings.PlayerOpensVideos = !settings.PlayerOpensVideos;
                 Remember();
-                Flash(settings.PlayerOpensVideos ? "Los v\u00EDdeos se abrir\u00E1n en Stackshot" : "Los v\u00EDdeos se abrir\u00E1n en el reproductor de Windows");
+                Flash(settings.PlayerOpensVideos ? I18n.T("Los v\u00EDdeos se abrir\u00E1n en Stackshot", "Videos will open in Stackshot") : I18n.T("Los v\u00EDdeos se abrir\u00E1n en el reproductor de Windows", "Videos will open in Windows player"));
             });
             opens.Checked = settings.PlayerOpensVideos;
             m.Items.Add(opens);
@@ -1103,7 +1103,7 @@ namespace Stackshot
         static string QualityName(int q)
         {
             q = Math.Max(0, Math.Min(Timeline.Qualities.Length - 1, q));
-            return Timeline.Qualities[q] + (q == 3 ? " (WhatsApp)" : q == 4 ? " (correo)" : "");
+            return Timeline.Qualities[q] + (q == 3 ? " (WhatsApp)" : q == 4 ? (I18n.IsSpanish ? " (correo)" : " (email)") : "");
         }
 
         // The export quality, shared with the editor; 16 MB and 25 MB fit the file in that size.
@@ -1113,7 +1113,7 @@ namespace Stackshot
             for (int i = 0; i < Timeline.Qualities.Length; i++)
             {
                 int q = i;
-                ToolStripMenuItem it = TrayMenu.Item(QualityName(q), null, delegate { settings.ExportQuality = q; Remember(); Flash("Calidad al exportar: " + QualityName(q)); });
+                ToolStripMenuItem it = TrayMenu.Item(QualityName(q), null, delegate { settings.ExportQuality = q; Remember(); Flash((I18n.IsSpanish ? "Calidad al exportar: " : "Export quality: ") + QualityName(q)); });
                 it.Checked = settings.ExportQuality == q;
                 m.Items.Add(it);
             }
@@ -1205,15 +1205,16 @@ namespace Stackshot
             List<string[]> rows = new List<string[]>(infoRows);
             // Right under the video's size: how big it is shown now.
             string scale = PlayerKit.ScaleNote(info.Display, VideoRect(), !fullscreen && WindowState != FormWindowState.Maximized);
-            int at = rows.FindIndex(x => x[0] == "Tama\u00F1o");
-            if (scale.Length > 0) rows.Insert(at >= 0 ? at + 1 : rows.Count, new string[] { "En pantalla", scale });
-            if (play != null) rows.Add(new string[] { "Reproducci\u00F3n", play.FramesShown + " fotogramas mostrados, " + play.FramesDropped + " omitidos" });
+            // The rows were made when the video opened, in the language of that moment.
+            int at = rows.FindIndex(x => x[0] == "Tama\u00F1o" || x[0] == "Size");
+            if (scale.Length > 0) rows.Insert(at >= 0 ? at + 1 : rows.Count, new string[] { I18n.T("En pantalla", "On screen"), scale });
+            if (play != null) rows.Add(new string[] { I18n.T("Reproducci\u00F3n", "Playback"), I18n.Fmt("{0} fotogramas mostrados, {1} omitidos", "{0} frames shown, {1} dropped", play.FramesShown, play.FramesDropped) });
             int h = pad * 2 + P(26) + rows.Count * rowH;
             int floor = (bar.IsEmpty ? ClientSize.Height : bar.Y) - P(12);
             Rectangle r = new Rectangle(P(16), P(16), w, Math.Max(P(60), Math.Min(h, floor - P(16))));
             EdLook.Fill(g, r, P(12), ChromeBack(222, 28, 28, 30, 1));
             EdLook.Hairline(g, r, P(12), Hud(31, 255));
-            TextKit.Draw(g, "Informaci\u00F3n", tf, new Rectangle(r.X + pad, r.Y + pad - P(2), r.Width - pad * 2, P(22)), Hud(255, 255), TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
+            TextKit.Draw(g, I18n.T("Informaci\u00F3n", "Information"), tf, new Rectangle(r.X + pad, r.Y + pad - P(2), r.Width - pad * 2, P(22)), Hud(255, 255), TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
             int y = r.Y + pad + P(26), lw = P(150);
             foreach (string[] row in rows)
             {
@@ -1237,12 +1238,12 @@ namespace Stackshot
             int pad = P(16), timeW = P(62);
             seek = new Rectangle(bar.X + pad + timeW + P(8), bar.Y + P(11), Math.Max(P(20), bar.Width - 2 * pad - 2 * timeW - P(16)), P(18));
             int y2 = bar.Y + P(40), h2 = P(32), x = bar.X + pad;
-            AddBtn("play", Playing ? "pause" : "play!", null, Playing ? "Pausa  (Espacio)" : "Reproducir  (Espacio)", new Rectangle(x, y2, P(36), h2), false, false);
+            AddBtn("play", Playing ? "pause" : "play!", null, Playing ? I18n.T("Pausa  (Espacio)", "Pause  (Space)") : I18n.T("Reproducir  (Espacio)", "Play  (Space)"), new Rectangle(x, y2, P(36), h2), false, false);
             x += P(40);
             vol = Rectangle.Empty;
             if (info.Audio.Count > 0)
             {
-                AddBtn("mute", muted || volume == 0 ? "soundoff" : "sound", null, muted ? "Activar el sonido  (M)" : "Silenciar  (M)", new Rectangle(x, y2, P(34), h2), false, false);
+                AddBtn("mute", muted || volume == 0 ? "soundoff" : "sound", null, muted ? I18n.T("Activar el sonido  (M)", "Unmute  (M)") : I18n.T("Silenciar  (M)", "Mute  (M)"), new Rectangle(x, y2, P(34), h2), false, false);
                 x += P(36);
                 vol = new Rectangle(x, y2 + P(4), P(84), h2 - P(8));
                 x += P(84) + P(10);
@@ -1250,16 +1251,16 @@ namespace Stackshot
             int left = x + P(8), rx = bar.Right - pad, gap = P(4);
             Font pf = Face(true, 12);
             List<Btn> right = new List<Btn>();
-            right.Add(Make("full", fullscreen ? "restore" : "maximize", null, "Pantalla completa  (F)", P(34), false, false));
-            if (info.Audio.Count > 1) right.Add(Make("tracks", null, "Audio", "Pista de audio", Math.Max(P(52), TextKit.Measure(g, "Audio", pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(24)), false, true));
-            right.Add(Make("speed", null, PlayerKit.SpeedText(speed), "Velocidad", Math.Max(P(48), TextKit.Measure(g, PlayerKit.SpeedText(speed), pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(20)), speed != 1, true));
-            right.Add(Make("loop", "update", null, "Repetir al terminar", P(34), loop, false));
-            right.Add(Make("menu", "gear", null, "M\u00E1s opciones", P(34), false, false));
-            right.Add(Make("info", "info", null, "Informaci\u00F3n  (I)", P(34), infoOn, false));
-            right.Add(Make("folder", "folder", null, "Mostrar en carpeta", P(34), false, false));
-            if (CanEdit) right.Add(Make("edit", null, "Editar", "Abrir en el editor", TextKit.Measure(g, "Editar", pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(26), false, true));
-            string exportLabel = HasRange ? "Exportar tramo" : "Exportar MP4";
-            if (CanExport) right.Add(Make("export", null, exportLabel, (HasRange ? "Crear un MP4 con el tramo marcado (E y S)" : "Crear un MP4 para compartir") + " \u00B7 calidad " + QualityName(settings.ExportQuality), TextKit.Measure(g, exportLabel, pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(26), false, true));
+            right.Add(Make("full", fullscreen ? "restore" : "maximize", null, I18n.T("Pantalla completa  (F)", "Full screen  (F)"), P(34), false, false));
+            if (info.Audio.Count > 1) right.Add(Make("tracks", null, "Audio", I18n.T("Pista de audio", "Audio track"), Math.Max(P(52), TextKit.Measure(g, "Audio", pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(24)), false, true));
+            right.Add(Make("speed", null, PlayerKit.SpeedText(speed), I18n.T("Velocidad", "Speed"), Math.Max(P(48), TextKit.Measure(g, PlayerKit.SpeedText(speed), pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(20)), speed != 1, true));
+            right.Add(Make("loop", "update", null, I18n.T("Repetir al terminar", "Loop playback"), P(34), loop, false));
+            right.Add(Make("menu", "gear", null, I18n.T("M\u00E1s opciones", "More options"), P(34), false, false));
+            right.Add(Make("info", "info", null, I18n.T("Informaci\u00F3n  (I)", "Information  (I)"), P(34), infoOn, false));
+            right.Add(Make("folder", "folder", null, I18n.T("Mostrar en carpeta", "Show in folder"), P(34), false, false));
+            if (CanEdit) right.Add(Make("edit", null, I18n.T("Editar", "Edit"), I18n.T("Abrir en el editor", "Open in editor"), TextKit.Measure(g, I18n.T("Editar", "Edit"), pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(26), false, true));
+            string exportLabel = HasRange ? I18n.T("Exportar tramo", "Export clip") : I18n.T("Exportar MP4", "Export MP4");
+            if (CanExport) right.Add(Make("export", null, exportLabel, (HasRange ? I18n.T("Crear un MP4 con el tramo marcado (E y S)", "Create MP4 with marked range (E and S)") : I18n.T("Crear un MP4 para compartir", "Create shareable MP4")) + " \u00B7 " + I18n.T("calidad ", "quality ") + QualityName(settings.ExportQuality), TextKit.Measure(g, exportLabel, pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(26), false, true));
             if (CanGif) right.Add(Make("gif", null, "GIF", GifTip(), TextKit.Measure(g, "GIF", pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(26), false, true));
             foreach (Btn b in right)
             {

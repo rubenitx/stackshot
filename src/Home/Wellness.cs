@@ -11,11 +11,15 @@ namespace Stackshot
         public const int Water = 0, Eyes = 1, Move = 2, Breathe = 3;
         public const int Count = 4;
 
-        public static readonly string[] Names = { "Beber agua", "Descansar la vista", "Moverse", "Respirar" };
+        static readonly string[] NamesEs = { "Beber agua", "Descansar la vista", "Moverse", "Respirar" };
+        static readonly string[] NamesEn = { "Drink water", "Rest your eyes", "Move", "Breathe" };
+        public static string[] Names { get { return I18n.IsSpanish ? NamesEs : NamesEn; } }
         public static readonly string[] Glyphs = { "drop", "eye", "walk", "wind" };
         // Choices for each interval, in minutes (0: off).
         public static readonly int[] Minutes = { 0, 20, 30, 45, 60, 90, 120 };
-        public static readonly string[] MinuteNames = { "No", "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" };
+        static readonly string[] MinuteNamesEs = { "No", "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" };
+        static readonly string[] MinuteNamesEn = { "Off", "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" };
+        public static string[] MinuteNames { get { return I18n.IsSpanish ? MinuteNamesEs : MinuteNamesEn; } }
 
         public static int IndexOf(int minutes)
         {
@@ -116,11 +120,21 @@ namespace Stackshot
         public static string Summary(Settings s)
         {
             int[] n = Today(s);
-            if (n[0] + n[1] + n[2] + n[3] == 0) return "Hoy todav\u00EDa no has hecho ninguna pausa.";
-            string r = "Hoy: " + n[0] + (n[0] == 1 ? " vaso de agua" : " vasos de agua") + " \u00B7 " + n[1] + (n[1] == 1 ? " descanso de vista" : " descansos de vista") +
-                       " \u00B7 " + n[2] + (n[2] == 1 ? " pausa para moverte" : " pausas para moverte");
-            if (n[3] > 0) r += " \u00B7 " + n[3] + (n[3] == 1 ? " respiraci\u00F3n" : " respiraciones");
-            return r + ".";
+            if (n[0] + n[1] + n[2] + n[3] == 0) return I18n.T("Hoy todav\u00EDa no has hecho ninguna pausa.", "You haven't taken any breaks yet today.");
+            if (I18n.IsSpanish)
+            {
+                string r = "Hoy: " + n[0] + (n[0] == 1 ? " vaso de agua" : " vasos de agua") + " \u00B7 " + n[1] + (n[1] == 1 ? " descanso de vista" : " descansos de vista") +
+                           " \u00B7 " + n[2] + (n[2] == 1 ? " pausa para moverte" : " pausas para moverte");
+                if (n[3] > 0) r += " \u00B7 " + n[3] + (n[3] == 1 ? " respiraci\u00F3n" : " respiraciones");
+                return r + ".";
+            }
+            else
+            {
+                string r = "Today: " + n[0] + (n[0] == 1 ? " glass of water" : " glasses of water") + " \u00B7 " + n[1] + (n[1] == 1 ? " eye rest" : " eye rests") +
+                           " \u00B7 " + n[2] + (n[2] == 1 ? " movement break" : " movement breaks");
+                if (n[3] > 0) r += " \u00B7 " + n[3] + (n[3] == 1 ? " breathing break" : " breathing breaks");
+                return r + ".";
+            }
         }
 
         public static int[] MinutesOf(Settings s)

@@ -1160,6 +1160,7 @@ namespace Stackshot
 
         static string[] KleiLines(int kind)
         {
+            if (!I18n.IsSpanish) return KleiLinesEn(kind);
             switch (kind)
             {
                 // Their own lines from the game, translated.
@@ -1178,6 +1179,27 @@ namespace Stackshot
                                                         "Wendy: \u00ABAbigail siempre ha sido mi luz en la oscuridad\u2026\u00BB", "Wendy: \u00ABMe sent\u00EDa tan sola sin ti aqu\u00ED.\u00BB",
                                                         "Wendy: \u00AB\u00A1Ten cuidado, Abigail!\u00BB", "Wilson: \u00ABOooh, tiene un lacito mon\u00EDsimo.\u00BB", "Willow: \u00ABBueno, \u00BFy a ti qu\u00E9 te pas\u00F3?\u00BB" };
                 default: return new string[] { "Necesito ox\u00EDgeno\u2026", "\u00BFQui\u00E9n ha dejado el slime aqu\u00ED?", "\u00A1Tarea completada!" };
+            }
+        }
+
+        static string[] KleiLinesEn(int kind)
+        {
+            switch (kind)
+            {
+                case KindWilson: return new string[] { "I'm so very hungry!", "It's getting late. It will be dark soon.", "It's so dark!",
+                                                       "That presence\u2026 it feels familiar! Hello?", "BEEEEEEEEEEEEES!!", "It's freezing!",
+                                                       "I need\u2026 ice\u2026 or\u2026 shade!", "Did you hear that?", "I feel so smart now!", "Never stop learning!",
+                                                       "Better this than the dark.", "I worship only science.", "I will conquer it all with the power of my MIND!" };
+                case KindWillow: return new string[] { "I need food!", "Night is coming. I need fire!", "Where did I put my lighter?!",
+                                                       "I'm not afraid of you!", "Aah! Stinging bugs!", "The cold! It burns!", "My precious light went out!",
+                                                       "Show yourself!", "I made a fire!", "I can't help it!", "It's my lucky lighter!",
+                                                       "My childhood friend: Bernie!", "Help me, Bernie!", "BURN! BURN FASTER!", "I like fire.",
+                                                       "I could watch it for hours.", "Things are so much prettier when they burn.", "I have no time to waste on flowers." };
+                case KindAbigail: return new string[] { "Uuuuuuuuuh\u2026", "Ooooooooh\u2026", "(whispers)\u2026", "Wendy: \u201CAbigail! Are you ready to play?\u201D",
+                                                        "Wendy: \u201CWe'll never be apart again.\u201D", "Wendy: \u201CLet's play, Abigail!\u201D",
+                                                        "Wendy: \u201CAbigail has always been my light in the dark\u2026\u201D", "Wendy: \u201CI was so lonely here without you.\u201D",
+                                                        "Wendy: \u201CBe careful, Abigail!\u201D", "Wilson: \u201COooh, she has the cutest little bow.\u201D", "Willow: \u201CWell, what happened to you?\u201D" };
+                default: return new string[] { "Need oxygen\u2026", "Who left this slime here?", "Errand complete!" };
             }
         }
     }

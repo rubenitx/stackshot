@@ -12,14 +12,14 @@ namespace Stackshot
     public partial class HomeWindow
     {
         // What a hotkey field says to a reader while it waits for the combination.
-        const string KeysPrompt = "Pulsa la combinaci\u00F3n que quieras; Supr la quita y Esc cancela";
+        static string KeysPrompt { get { return I18n.T("Pulsa la combinaci\u00F3n que quieras; Supr la quita y Esc cancela", "Press the combination you want; Del removes it and Esc cancels"); } }
 
         // The sidebar's card: a button that goes home.
         void AccessSideCard(Border card, Action act)
         {
             ITap t = card as ITap;
             if (t == null) return;
-            t.State.Label = "Ir a Inicio";
+            t.State.Label = I18n.T("Ir a Inicio", "Go to Home");
             t.State.Help = settings.MascotName;
             Access.Clickable(card, act);
         }

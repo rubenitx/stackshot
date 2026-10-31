@@ -19,7 +19,7 @@ namespace Stackshot
             get
             {
                 string n = string.IsNullOrEmpty(FilePath) ? "" : Path.GetFileName(FilePath);
-                return (IsMedia ? (ShotStack.IsVideoFile(FilePath) ? "V\u00EDdeo " : "GIF ") : "Captura ") + n;
+                return (IsMedia ? (ShotStack.IsVideoFile(FilePath) ? I18n.T("V\u00EDdeo ", "Video ") : "GIF ") : I18n.T("Captura ", "Capture ")) + n;
             }
         }
 
@@ -31,7 +31,7 @@ namespace Stackshot
 
             public override AccessibleRole Role { get { return AccessibleRole.Grouping; } }
             public override string Name { get { return c.AccessName; } }
-            public override string Description { get { return c.SavedPath != null ? "Guardada en " + c.SavedPath : "Sin guardar todav\u00EDa"; } }
+            public override string Description { get { return c.SavedPath != null ? I18n.T("Guardada en ", "Saved in ") + c.SavedPath : I18n.T("Sin guardar todav\u00EDa", "Not saved yet"); } }
 
             protected override string Signature()
             {
@@ -50,7 +50,7 @@ namespace Stackshot
                     r.Offset(c.Pad, c.Pad);
                     PartAccessible p = NewPart(into, x.Label, AccessibleRole.PushButton, r);
                     p.PartState = StateOf(true, false, false);
-                    p.PartAction = "Pulsar";
+                    p.PartAction = I18n.T("Pulsar", "Press");
                     Btn b = x;
                     p.Do = delegate { if (!c.Leaving && !c.IsDisposed && b.Do != null) b.Do(); };
                 }

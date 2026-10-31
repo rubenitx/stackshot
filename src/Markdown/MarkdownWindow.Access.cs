@@ -12,12 +12,12 @@ namespace Stackshot
         // After each build: only names, so it costs a handful of property sets.
         void AccessNames()
         {
-            if (mode != null) AutomationProperties.SetName(mode, "Modo");
-            if (editor != null) AutomationProperties.SetName(editor.Box, xml ? "Texto del XML" : "Texto Markdown");
-            if (flow != null) AutomationProperties.SetName(flow.Box, "Vista previa");
-            if (search != null) AutomationProperties.SetName(search.Box, "Buscar o filtrar");
+            if (mode != null) AutomationProperties.SetName(mode, I18n.T("Modo", "Mode"));
+            if (editor != null) AutomationProperties.SetName(editor.Box, xml ? I18n.T("Texto del XML", "XML text") : I18n.T("Texto Markdown", "Markdown text"));
+            if (flow != null) AutomationProperties.SetName(flow.Box, I18n.T("Vista previa", "Preview"));
+            if (search != null) AutomationProperties.SetName(search.Box, I18n.T("Buscar o filtrar", "Search or filter"));
             GridSplitter gs = Divider(page, 0);
-            if (gs != null) { AutomationProperties.SetName(gs, "Ancho del texto y de la vista previa"); gs.FocusVisualStyle = Access.FocusRing; }
+            if (gs != null) { AutomationProperties.SetName(gs, I18n.T("Ancho del texto y de la vista previa", "Width of the text and the preview")); gs.FocusVisualStyle = Access.FocusRing; }
         }
 
         static GridSplitter Divider(DependencyObject o, int depth)

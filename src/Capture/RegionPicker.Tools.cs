@@ -96,7 +96,7 @@ namespace Stackshot
             }
             Cancel();
             if (ShotStack.Running != null)
-                ShotStack.Running.Notify(ok ? "Color copiado" : "No se pudo copiar el color", ok ? hex + " est\u00E1 listo para pegar." : "El portapapeles est\u00E1 ocupado: vuelve a intentarlo.");
+                ShotStack.Running.Notify(ok ? I18n.T("Color copiado", "Color copied") : I18n.T("No se pudo copiar el color", "Could not copy color"), ok ? (hex + I18n.T(" est\u00E1 listo para pegar.", " is ready to paste.")) : I18n.T("El portapapeles est\u00E1 ocupado: vuelve a intentarlo.", "Clipboard is busy: please try again."));
         }
 
         // ---- Loupe: a rounded dark card beside the pointer with the 9 x 9 pixels around it and the colour's code.

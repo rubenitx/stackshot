@@ -17,11 +17,17 @@ namespace Stackshot
     public partial class Editor : Form
     {
         static readonly Tool[] ToolOrder = { Tool.Arrow, Tool.Line, Tool.Rect, Tool.Ellipse, Tool.Text, Tool.Counter, Tool.Highlight, Tool.Spotlight, Tool.Pixelate, Tool.Redact, Tool.Crop };
-        static readonly string[] ToolNames = { "Flecha", "L\u00EDnea", "Recuadro", "Elipse", "Texto", "N\u00FAmeros", "Resaltar", "Foco: oscurece el resto", "Pixelar", "Tapar (lo m\u00E1s seguro para datos)", "Recortar" };
+        static readonly string[] ToolNamesEs = { "Flecha", "L\u00EDnea", "Recuadro", "Elipse", "Texto", "N\u00FAmeros", "Resaltar", "Foco: oscurece el resto", "Pixelar", "Tapar (lo m\u00E1s seguro para datos)", "Recortar" };
+        static readonly string[] ToolNamesEn = { "Arrow", "Line", "Rectangle", "Ellipse", "Text", "Numbers", "Highlight", "Spotlight: dims the rest", "Pixelate", "Redact (safest for sensitive data)", "Crop" };
+        static string[] ToolNames { get { return I18n.IsSpanish ? ToolNamesEs : ToolNamesEn; } }
         static readonly string[] ToolKeys = { "F", "L", "R", "E", "T", "N", "H", "O", "P", "X", "C" };
         static readonly string[] ToolGlyphs = { "arrow", "line", "rect", "ellipse", "text", "counter", "highlight", "spotlight", "pixelate!", "redact!", "crop" };
-        static readonly string[] WeightNames = { "Fino", "Medio", "Grueso" };
-        static readonly string[] SizeNames = { "Peque\u00F1o", "Mediano", "Grande" };
+        static readonly string[] WeightNamesEs = { "Fino", "Medio", "Grueso" };
+        static readonly string[] WeightNamesEn = { "Thin", "Medium", "Thick" };
+        static string[] WeightNames { get { return I18n.IsSpanish ? WeightNamesEs : WeightNamesEn; } }
+        static readonly string[] SizeNamesEs = { "Peque\u00F1o", "Mediano", "Grande" };
+        static readonly string[] SizeNamesEn = { "Small", "Medium", "Large" };
+        static string[] SizeNames { get { return I18n.IsSpanish ? SizeNamesEs : SizeNamesEn; } }
         // Captures that already have the backdrop applied, so reopening them doesn't add a second one.
         static readonly HashSet<string> withBackdrop = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -139,43 +145,43 @@ namespace Stackshot
                 Bar.Item it = bar.Add(Bar.Kind.Weight);
                 it.Index = i;
                 it.Group = 2;
-                it.Tip = "Grosor: " + WeightNames[i] + "  (\u2212 / +)";
+                it.Tip = (I18n.IsSpanish ? "Grosor: " : "Thickness: ") + WeightNames[i] + "  (\u2212 / +)";
                 it.Do = delegate { SetWeight(idx); };
                 weightItems.Add(it);
             }
             bar.Add(Bar.Kind.Gap);
-            undoItem = Button(null, "undo", "Deshacer  (Ctrl+Z)", delegate { canvas.Undo(); }, false);
-            redoItem = Button(null, "redo", "Rehacer  (Ctrl+Y)", delegate { canvas.Redo(); }, false);
+            undoItem = Button(null, "undo", I18n.T("Deshacer  (Ctrl+Z)", "Undo  (Ctrl+Z)"), delegate { canvas.Undo(); }, false);
+            redoItem = Button(null, "redo", I18n.T("Rehacer  (Ctrl+Y)", "Redo  (Ctrl+Y)"), delegate { canvas.Redo(); }, false);
             bar.Add(Bar.Kind.Gap);
-            bgItem = Button("Fondo", "backdrop", "Fondo de presentaci\u00F3n: degradados, im\u00E1genes, desenfocado o color liso, con margen, sombra y esquinas  (B)", ToggleBgPanel, false);
+            bgItem = Button(I18n.T("Fondo", "Backdrop"), "backdrop", I18n.T("Fondo de presentaci\u00F3n: degradados, im\u00E1genes, desenfocado o color liso, con margen, sombra y esquinas  (B)", "Presentation backdrop: gradients, images, blur or solid color, with padding, shadow and rounded corners  (B)"), ToggleBgPanel, false);
 
             if (IsVideo)
             {
-                exportItem = Button("Exportar", "share", ExportTip(), Done, true);
+                exportItem = Button(I18n.T("Exportar", "Export"), "share", ExportTip(), Done, true);
                 exportItem.Accent = true;
             }
             else
             {
                 SensitiveSetup();
-                Button(null, "pin", "Fijar en pantalla: queda flotando encima de todo", PinOut, true);
-                pdfItem = Button("PDF", "doc", "Guardar como PDF: las capturas largas se reparten en p\u00E1ginas sin perder nitidez  (Ctrl+P)", delegate { SaveAs(true); }, true);
+                Button(null, "pin", I18n.T("Fijar en pantalla: queda flotando encima de todo", "Pin to screen: stays floating on top"), PinOut, true);
+                pdfItem = Button("PDF", "doc", I18n.T("Guardar como PDF: las capturas largas se reparten en p\u00E1ginas sin perder nitidez  (Ctrl+P)", "Save as PDF: tall scrolling captures split across pages without losing crispness  (Ctrl+P)"), delegate { SaveAs(true); }, true);
                 pdfItem.Alt = "PDF \u2713";
                 pdfItem.Optional = true; // Ctrl+P
-                Bar.Item drag = Button("Arrastrar", "share", "Arr\u00E1strala al chat o a otra aplicaci\u00F3n", null, true);
+                Bar.Item drag = Button(I18n.T("Arrastrar", "Drag"), "share", I18n.T("Arr\u00E1strala al chat o a otra aplicaci\u00F3n", "Drag to chat or another application"), null, true);
                 drag.DragOut = true;
                 drag.Optional = true;    // the thumbnail in the stack drags too
-                Bar.Item textItem = Button("Copiar texto", "textscan", "Copiar el texto de la imagen (reconocimiento de texto de Windows)  (Ctrl+May\u00FAs+C)", CopyTextOut, true);
+                Bar.Item textItem = Button(I18n.T("Copiar texto", "Copy text"), "textscan", I18n.T("Copiar el texto de la imagen (reconocimiento de texto de Windows)  (Ctrl+May\u00FAs+C)", "Copy text from image (Windows OCR)  (Ctrl+Shift+C)"), CopyTextOut, true);
                 textItem.Optional = true; // Ctrl+Shift+C
-                copyItem = Button("Copiar", "copy", "Copiar al portapapeles  (Ctrl+C)", CopyOut, true);
-                copyItem.Alt = "Copiado \u2713";
-                saveItem = Button("Guardar", "save", InTemp ? "Conservarla en tu carpeta de capturas  (Ctrl+S)" : "Guardar sobre la imagen  (Ctrl+S)", KeepCopy, true);
-                saveItem.Alt = "Guardada \u2713";
-                Bar.Item done = Button("Listo", "check", "Aplicar, copiar y cerrar  (Enter)", Done, true);
+                copyItem = Button(I18n.T("Copiar", "Copy"), "copy", I18n.T("Copiar al portapapeles  (Ctrl+C)", "Copy to clipboard  (Ctrl+C)"), CopyOut, true);
+                copyItem.Alt = I18n.T("Copiado \u2713", "Copied \u2713");
+                saveItem = Button(I18n.T("Guardar", "Save"), "save", InTemp ? I18n.T("Conservarla en tu carpeta de capturas  (Ctrl+S)", "Keep in your captures folder  (Ctrl+S)") : I18n.T("Guardar sobre la imagen  (Ctrl+S)", "Save over the image  (Ctrl+S)"), KeepCopy, true);
+                saveItem.Alt = I18n.T("Guardada \u2713", "Saved \u2713");
+                Bar.Item done = Button(I18n.T("Listo", "Done"), "check", I18n.T("Aplicar, copiar y cerrar  (Enter)", "Apply, copy and close  (Enter)"), Done, true);
                 done.Accent = true;
                 bar.DragOut += StartDragOut;
             }
             // The toolbar is also the title bar: window buttons at the top right.
-            string[] captionTips = { "Minimizar", "Maximizar", "Cerrar" };
+            string[] captionTips = I18n.IsSpanish ? new string[] { "Minimizar", "Maximizar", "Cerrar" } : new string[] { "Minimize", "Maximize", "Close" };
             for (int i = 0; i < 3; i++)
             {
                 int idx = i;
@@ -453,7 +459,7 @@ namespace Stackshot
             if (z != bar.Maximized)
             {
                 bar.Maximized = z;
-                if (maxItem != null) maxItem.Tip = z ? "Restaurar" : "Maximizar";
+                if (maxItem != null) maxItem.Tip = z ? I18n.T("Restaurar", "Restore") : I18n.T("Maximizar", "Maximize");
                 bar.Invalidate();
             }
         }
@@ -467,9 +473,9 @@ namespace Stackshot
 
         string ExportTip()
         {
-            if (ExportsGif) return "Crear un GIF con el recorte, las marcas, el fondo y las opciones de abajo  (Enter)";
-            if (IsMaster) return "Exportar para compartir: crea un MP4 (comprimido) con el recorte, las marcas, el fondo y las opciones de abajo. El m\u00E1ster sin p\u00E9rdidas no cambia  (Enter)";
-            return "Crear un MP4 con el recorte, las marcas, el fondo y las opciones de abajo; el original no cambia  (Enter)";
+            if (ExportsGif) return I18n.T("Crear un GIF con el recorte, las marcas, el fondo y las opciones de abajo  (Enter)", "Create a GIF with trims, annotations, backdrop and the options below  (Enter)");
+            if (IsMaster) return I18n.T("Exportar para compartir: crea un MP4 (comprimido) con el recorte, las marcas, el fondo y las opciones de abajo. El m\u00E1ster sin p\u00E9rdidas no cambia  (Enter)", "Export to share: creates a compressed MP4 with trims, annotations, backdrop and the options below. The lossless master remains unchanged  (Enter)");
+            return I18n.T("Crear un MP4 con el recorte, las marcas, el fondo y las opciones de abajo; el original no cambia  (Enter)", "Create an MP4 with trims, annotations, backdrop and options below; the original is unchanged  (Enter)");
         }
 
         int P(float v) { return (int)Math.Round(v * s); }
@@ -544,7 +550,7 @@ namespace Stackshot
             {
                 weightItems[i].On = i == w;
                 weightItems[i].Sized = sized;
-                weightItems[i].Tip = (sized ? "Tama\u00F1o: " + SizeNames[i] : "Grosor: " + WeightNames[i]) + "  (\u2212 / +)";
+                weightItems[i].Tip = (sized ? (I18n.IsSpanish ? "Tama\u00F1o: " : "Size: ") + SizeNames[i] : (I18n.IsSpanish ? "Grosor: " : "Thickness: ") + WeightNames[i]) + "  (\u2212 / +)";
             }
             undoItem.Enabled = canvas.CanUndo;
             redoItem.Enabled = canvas.CanRedo;
@@ -554,17 +560,20 @@ namespace Stackshot
             if (bgPanel.Visible && !bgPanel.Sliding) bgPanel.Invalidate();   // a slider being dragged repaints only itself
             if (Exporting) return; // the hint strip shows export progress
             Size o = canvas.OutputSize;
-            string action = !IsVideo ? "Enter copia y cierra" : ExportsGif ? "Enter crea el GIF" : IsMaster ? "Enter crea un MP4 para compartir" : "Enter exporta";
-            string left = flashText ?? (playing ? "Reproduciendo \u00B7 Espacio pausa" : canvas.HintText), right = o.Width + " \u00D7 " + o.Height + " px  \u00B7  " + action;
+            string action = !IsVideo ? I18n.T("Enter copia y cierra", "Enter copies and closes")
+                          : ExportsGif ? I18n.T("Enter crea el GIF", "Enter creates GIF")
+                          : IsMaster ? I18n.T("Enter crea un MP4 para compartir", "Enter creates shareable MP4")
+                          : I18n.T("Enter exporta", "Enter exports");
+            string left = flashText ?? (playing ? I18n.T("Reproduciendo \u00B7 Espacio pausa", "Playing \u00B7 Space pauses") : canvas.HintText), right = o.Width + " \u00D7 " + o.Height + " px  \u00B7  " + action;
             // Marks on a video are drawn over all of it: said while choosing where to put one.
-            if (IsVideo && flashText == null && !playing && !canvas.HasSelection && canvas.Tool != Tool.Crop) left += " \u00B7 se ve durante todo el v\u00EDdeo";
+            if (IsVideo && flashText == null && !playing && !canvas.HasSelection && canvas.Tool != Tool.Crop) left += I18n.T(" \u00B7 se ve durante todo el v\u00EDdeo", " \u00B7 visible throughout video");
             if (left != hint.LeftText || right != hint.RightText)
             {
                 hint.LeftText = left;
                 hint.RightText = right;
                 hint.Invalidate();
             }
-            string title = (IsVideo ? "Editar v\u00EDdeo \u00B7 " : "Editar \u00B7 ") + Path.GetFileName(path) + (Unsaved ? "  \u2022" : "");
+            string title = (IsVideo ? I18n.T("Editar v\u00EDdeo \u00B7 ", "Edit video \u00B7 ") : I18n.T("Editar \u00B7 ", "Edit \u00B7 ")) + Path.GetFileName(path) + (Unsaved ? "  \u2022" : "");
             if (title != Text) Text = title;
         }
 
@@ -747,7 +756,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Guardar: " + ex.Message);
-                Dialogs.Show(this, "No se pudo guardar: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Dialogs.Show(this, I18n.T("No se pudo guardar: ", "Could not save: ") + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
         }
@@ -781,7 +790,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Guardar: " + ex.Message);
-                Dialogs.Show(this, "No se pudo guardar: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Dialogs.Show(this, I18n.T("No se pudo guardar: ", "Could not save: ") + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
             string file = path;
@@ -837,7 +846,7 @@ namespace Stackshot
                         ShotStack.Log("Guardar: " + error.Message);
                         // Still open: it has those changes again, to try once more.
                         if (!ed.IsDisposed) { ed.dirty = true; ed.written = false; ed.UpdateUi(); }
-                        stack.Notify("No se pudo guardar la edici\u00F3n", error.Message);
+                        stack.Notify(I18n.T("No se pudo guardar la edici\u00F3n", "Could not save edit"), error.Message);
                         return;
                     }
                     if (!wrote) return;
@@ -910,7 +919,7 @@ namespace Stackshot
             string file;
             using (SaveFileDialog d = new SaveFileDialog())
             {
-                d.Title = pdf ? "Guardar como PDF" : "Guardar como";
+                d.Title = pdf ? I18n.T("Guardar como PDF", "Save as PDF") : I18n.T("Guardar como", "Save as");
                 d.Filter = "PNG|*.png|JPG|*.jpg;*.jpeg|PDF|*.pdf";
                 d.FilterIndex = kind;
                 d.AddExtension = true;
@@ -926,7 +935,7 @@ namespace Stackshot
             Bitmap b;
             try { b = canvas.Render(); }
             catch (Exception ex) { SaveFailed(ex); return; }
-            Flash("Guardando " + Path.GetFileName(file) + "\u2026", false);
+            Flash(I18n.Fmt("Guardando {0}\u2026", "Saving {0}\u2026", Path.GetFileName(file)), false);
             lock (savingLock) saving++;
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
@@ -949,7 +958,7 @@ namespace Stackshot
                         if (IsDisposed) return;
                         if (error != null) { Flash(null, false); SaveFailed(error); return; }
                         ShotStack.Log("Guardada como: " + file);
-                        Flash("Guardada: " + Path.GetFileName(file), true);
+                        Flash(I18n.Fmt("Guardada: {0}", "Saved: {0}", Path.GetFileName(file)), true);
                         if (asPdf && pdfItem != null) Feedback(pdfItem);
                     });
                 }
@@ -972,7 +981,7 @@ namespace Stackshot
         void SaveFailed(Exception ex)
         {
             ShotStack.Log("Guardar como: " + ex.Message);
-            Dialogs.Show(this, "No se pudo guardar: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            Dialogs.Show(this, I18n.T("No se pudo guardar: ", "Could not save: ") + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         // A short message in the hint strip (null: back to the usual help); timed ones fade back on their own.
@@ -1020,7 +1029,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Copiar (editor): " + ex.Message);
-                Dialogs.Show(this, "No se pudo copiar: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Dialogs.Show(this, I18n.T("No se pudo copiar: ", "Could not copy: ") + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -1030,15 +1039,15 @@ namespace Stackshot
             canvas.CommitText();
             ShotStack stack = owner ?? ShotStack.Running;
             if (stack == null) return;
-            Flash("Leyendo el texto\u2026", false);
+            Flash(I18n.T("Leyendo el texto\u2026", "Reading text\u2026"), false);
             try
             {
-                stack.CopyText(canvas.Render(), true, delegate(bool ok, string message) { if (!IsDisposed) Flash(ok ? "Texto copiado al portapapeles." : message + ".", true); });
+                stack.CopyText(canvas.Render(), true, delegate(bool ok, string message) { if (!IsDisposed) Flash(ok ? I18n.T("Texto copiado al portapapeles.", "Text copied to clipboard.") : message + ".", true); });
             }
             catch (Exception ex)
             {
                 ShotStack.Log("Copiar texto (editor): " + ex.Message);
-                Flash("No se ha podido leer el texto.", true);
+                Flash(I18n.T("No se ha podido leer el texto.", "Could not read text."), true);
             }
         }
 
@@ -1066,8 +1075,8 @@ namespace Stackshot
                 catch (Exception ex)
                 {
                     ShotStack.Log("Guardar (editor): " + ex.Message);
-                    if (!IsDisposed) Dialogs.Show(this, "No se pudo guardar: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    else if (owner != null) owner.Notify("No se pudo guardar", ex.Message);
+                    if (!IsDisposed) Dialogs.Show(this, I18n.T("No se pudo guardar: ", "Could not save: ") + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    else if (owner != null) owner.Notify(I18n.T("No se pudo guardar", "Could not save"), ex.Message);
                 }
             };
             if (Pending || InTemp) ApplyInBackground(keep);
@@ -1094,7 +1103,7 @@ namespace Stackshot
         {
             canvas.CommitText();
             try { PinWindow.Open(canvas.Render()); }
-            catch (Exception ex) { ShotStack.Log("Fijar (editor): " + ex.Message); Flash("No se pudo fijar la imagen en pantalla.", true); }
+            catch (Exception ex) { ShotStack.Log("Fijar (editor): " + ex.Message); Flash(I18n.T("No se pudo fijar la imagen en pantalla.", "Could not pin image to screen."), true); }
         }
 
         // Dragging from the button: the annotated image follows the cursor, centered.
@@ -1174,7 +1183,7 @@ namespace Stackshot
                 if (v.Failure != null)
                 {
                     if (!v.Quiet)
-                        Dialogs.Show("No se pudo abrir la grabaci\u00F3n." + (v.Failure.Length > 0 ? "\n\n" + v.Failure : "\n\nEl archivo no se puede leer ahora; vuelve a intentarlo."),
+                        Dialogs.Show(I18n.T("No se pudo abrir la grabaci\u00F3n.", "Could not open recording.") + (v.Failure.Length > 0 ? "\n\n" + v.Failure : I18n.T("\n\nEl archivo no se puede leer ahora; vuelve a intentarlo.", "\n\nThe file cannot be read right now; please try again.")),
                                      "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return null;
                 }
@@ -1195,7 +1204,7 @@ namespace Stackshot
                 e.SetupPlayer(v.Info ?? MediaInfo.Probe(ff, path));
                 if (e.IsMaster)
                 {
-                    e.Flash("M\u00E1ster sin p\u00E9rdidas: Exportar crea un MP4 para compartir; el m\u00E1ster no cambia.", true);
+                    e.Flash(I18n.T("M\u00E1ster sin p\u00E9rdidas: Exportar crea un MP4 para compartir; el m\u00E1ster no cambia.", "Lossless master: Export creates a shareable MP4; the master does not change."), true);
                     e.flashTimer.Interval = 7000;
                 }
                 return e;
@@ -1393,7 +1402,7 @@ namespace Stackshot
             double local;
             int ci = ClipSeq.Locate(clips, t, out local);
             if (play != null && ci == playClip) play.Seek(local);
-            else if (!PlayFrom(t, false)) PlayFailed("No se puede reproducir " + clips[ci].Name + ".");
+            else if (!PlayFrom(t, false)) PlayFailed(I18n.Fmt("No se puede reproducir {0}.", "Cannot play {0}.", clips[ci].Name));
         }
 
         void TogglePlay()
@@ -1509,7 +1518,7 @@ namespace Stackshot
             {
                 playing = false;
                 timeline.Playing = false;
-                Flash("No se pudo iniciar la reproducci\u00F3n.", true);
+                Flash(I18n.T("No se pudo iniciar la reproducci\u00F3n.", "Could not start playback."), true);
                 return;
             }
             pausedAt = -1;
@@ -1551,7 +1560,7 @@ namespace Stackshot
             if (!playing || play == null || play != c.Play || play.State == PlayState.Playing) return;
             double next = timeline.PlayableFrom(c.End);
             if (double.IsPositiveInfinity(next)) { PlayEnded(); return; }
-            if (!PlayFrom(next, false)) PlayFailed("No se puede reproducir el siguiente v\u00EDdeo.");
+            if (!PlayFrom(next, false)) PlayFailed(I18n.T("No se puede reproducir el siguiente v\u00EDdeo.", "Could not play the next video."));
         }
 
         void PlayEnded()
@@ -1598,13 +1607,13 @@ namespace Stackshot
                 foreach (AudioTrackInfo a in media.Audio)
                 {
                     int idx = a.Index;
-                    ToolStripMenuItem it = TrayMenu.Item(string.IsNullOrEmpty(a.Title) ? "Pista " + (idx + 1) : a.Title, null, delegate { SetTrack(idx); });
+                    ToolStripMenuItem it = TrayMenu.Item(string.IsNullOrEmpty(a.Title) ? I18n.Fmt("Pista {0}", "Track {0}", idx + 1) : a.Title, null, delegate { SetTrack(idx); });
                     it.Checked = idx == audioTrack;
                     m.Items.Add(it);
                 }
                 m.Items.Add(TrayMenu.Separator());
             }
-            string[] names = { "Silencio", "25 %", "50 %", "75 %", "100 %" };
+            string[] names = { I18n.T("Silencio", "Mute"), "25 %", "50 %", "75 %", "100 %" };
             double[] steps = { 0, 0.25, 0.5, 0.75, 1 };
             for (int i = 0; i < names.Length; i++)
             {
@@ -1645,7 +1654,7 @@ namespace Stackshot
             if (Exporting || timeline == null) return;
             using (OpenFileDialog d = new OpenFileDialog())
             {
-                d.Title = "A\u00F1adir v\u00EDdeo";
+                d.Title = I18n.T("A\u00F1adir v\u00EDdeo", "Add video");
                 d.Filter = ShotStack.VideoFilter;
                 d.Multiselect = true;
                 d.CheckFileExists = true;
@@ -1674,7 +1683,7 @@ namespace Stackshot
             if (playing) PausePlay();
             string ff = ffmpeg;
             string[] list = (string[])files.Clone();
-            Flash("A\u00F1adiendo " + (list.Length == 1 ? Path.GetFileName(list[0]) : list.Length + " v\u00EDdeos") + "\u2026", false);
+            Flash(list.Length == 1 ? I18n.Fmt("A\u00F1adiendo {0}\u2026", "Adding {0}\u2026", Path.GetFileName(list[0])) : I18n.Fmt("A\u00F1adiendo {0} v\u00EDdeos\u2026", "Adding {0} videos\u2026", list.Length), false);
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
                 List<string> bad = new List<string>();
@@ -1689,9 +1698,9 @@ namespace Stackshot
                 {
                     if (Exporting) { Flash(null, false); return; }
                     foreach (KeyValuePair<string, MediaInfo> g in good) AppendClip(g.Key, g.Value);
-                    Flash(good.Count > 0 ? "A\u00F1adido: " + (good.Count == 1 ? Path.GetFileName(good[0].Key) : good.Count + " v\u00EDdeos") : null, true);
+                    Flash(good.Count > 0 ? (good.Count == 1 ? I18n.Fmt("A\u00F1adido: {0}", "Added: {0}", Path.GetFileName(good[0].Key)) : I18n.Fmt("A\u00F1adido: {0} v\u00EDdeos", "Added: {0} videos", good.Count)) : null, true);
                     if (bad.Count > 0)
-                        Dialogs.Show(this, "No se pudo abrir como v\u00EDdeo:\n\n" + string.Join("\n", bad.ToArray()), "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        Dialogs.Show(this, I18n.T("No se pudo abrir como v\u00EDdeo:\n\n", "Could not open as video:\n\n") + string.Join("\n", bad.ToArray()), "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 });
             });
         }
@@ -1785,7 +1794,7 @@ namespace Stackshot
             List<double[]> keep = trimmed || cuts || joined ? timeline.Keep() : null;
             if (keep != null && keep.Count == 0)
             {
-                Dialogs.Show(this, "No queda ning\u00FAn tramo dentro del recorte.", "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Dialogs.Show(this, I18n.T("No queda ning\u00FAn tramo dentro del recorte.", "No segment remains within crop."), "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             double speed = timeline != null ? Timeline.SpeedValues[timeline.Speed] : 1;
@@ -1795,7 +1804,7 @@ namespace Stackshot
             // does one to fit in 16 or 25 MB.
             bool fit = !toGif && VideoExport.TargetBytes(timeline != null ? timeline.Quality : bgs.ExportQuality) > 0;
             bool options = speed != 1 || maxH > 0 || joined || fit || VideoExport.NeedsTranscode(path, toGif);
-            if (!bg && !marks && !cropped && !trimmed && !cuts && !options) { Flash("No hay nada que exportar: el v\u00EDdeo ya est\u00E1 listo para compartir tal cual.", true); return; }
+            if (!bg && !marks && !cropped && !trimmed && !cuts && !options) { Flash(I18n.T("No hay nada que exportar: el v\u00EDdeo ya est\u00E1 listo para compartir tal cual.", "Nothing to export: video is already ready to share as is."), true); return; }
             double span = (keep != null ? timeline.KeptSeconds : duration) / speed;
 
             string topPng = null;
@@ -1822,7 +1831,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Presentar: " + ex.Message);
-                Dialogs.Show(this, "No se pudo preparar el v\u00EDdeo: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Dialogs.Show(this, I18n.T("No se pudo preparar el v\u00EDdeo: ", "Could not prepare video: ") + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -1865,14 +1874,16 @@ namespace Stackshot
             {
                 CleanExportFiles();
                 ShotStack.Unreserve(exportOut);
-                Tell("No se sabe cu\u00E1nto dura este v\u00EDdeo, as\u00ED que no se puede ajustar a " + Timeline.Qualities[spec.Level] + ". Elige M\u00E1xima, Alta o Ligera en Calidad.");
+                Tell(I18n.Fmt("No se sabe cu\u00E1nto dura este v\u00EDdeo, as\u00ED que no se puede ajustar a {0}. Elige M\u00E1xima, Alta o Ligera en Calidad.",
+                              "The duration of this video is unknown, so it cannot be fit to {0}. Choose Maximum, High or Light in Quality.", Timeline.Qualities[spec.Level]));
                 return;
             }
             if (!toGif && VideoExport.TargetBytes(spec.Level) > 0 && VideoExport.TargetKbps(spec) < VideoExport.TargetMinKbps)
             {
                 CleanExportFiles();
                 ShotStack.Unreserve(exportOut);
-                Tell("Es demasiado largo para caber en " + Timeline.Qualities[spec.Level] + " con buena calidad (caben " + VideoExport.MaxLength(spec.Level, spec.HasAudio) + "). Recorta el v\u00EDdeo, s\u00FAbelo de velocidad o elige 720p o menos en Tama\u00F1o.");
+                Tell(I18n.Fmt("Es demasiado largo para caber en {0} con buena calidad (caben {1}). Recorta el v\u00EDdeo, s\u00FAbelo de velocidad o elige 720p o menos en Tama\u00F1o.",
+                              "Too long to fit into {0} with good quality (holds {1}). Crop the video, increase speed or choose 720p or lower in Size.", Timeline.Qualities[spec.Level], VideoExport.MaxLength(spec.Level, spec.HasAudio)));
                 return;
             }
             exportLog = Path.Combine(Path.GetTempPath(), "stackshot-2pass-" + Guid.NewGuid().ToString("N"));
@@ -1900,8 +1911,9 @@ namespace Stackshot
         {
             if (export == null) return;
             hint.Progress = duration > 0 ? fr : 0.5;
-            hint.LeftText = (toGif ? "Creando el GIF\u2026 " : "Creando el v\u00EDdeo\u2026 ") + (duration > 0 ? (int)Math.Round(fr * 100) + " %" : "");
-            hint.RightText = "Esc cancela";
+            hint.LeftText = (toGif ? I18n.T("Creando el GIF\u2026 ", "Creating the GIF\u2026 ") : I18n.T("Creando el v\u00EDdeo\u2026 ", "Creating the video\u2026 ")) +
+                            (duration > 0 ? (int)Math.Round(fr * 100) + (I18n.IsSpanish ? " %" : "%") : "");
+            hint.RightText = I18n.T("Esc cancela", "Esc cancels");
             hint.Invalidate();
         }
 
@@ -1963,7 +1975,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 p.Dispose();
-                Dialogs.Show(this, "No se pudo iniciar FFmpeg: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Dialogs.Show(this, I18n.T("No se pudo iniciar FFmpeg: ", "Could not start FFmpeg: ") + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
             export = p;
@@ -2017,7 +2029,7 @@ namespace Stackshot
                 try { if (File.Exists(exportOut)) File.Delete(exportOut); } catch { }
                 Unlock();
                 UpdateUi();
-                Dialogs.Show(this, "No se pudo crear el v\u00EDdeo.\n\n" + Tail(err), "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Dialogs.Show(this, I18n.T("No se pudo crear el v\u00EDdeo.\n\n", "Could not create video.\n\n") + Tail(err), "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             BeginCheck();
@@ -2040,8 +2052,8 @@ namespace Stackshot
             ShareExpect expect = exportExpect;
             checkAbort = ab;
             hint.Progress = -1;
-            hint.LeftText = "Comprobando el v\u00EDdeo\u2026";
-            hint.RightText = "Esc cancela";
+            hint.LeftText = I18n.T("Comprobando el v\u00EDdeo\u2026", "Checking video\u2026");
+            hint.RightText = I18n.T("Esc cancela", "Esc cancels");
             hint.Invalidate();
             ShotStack.Log("Presentar: comprobando " + Path.GetFileName(file));
             System.Threading.Thread t = new System.Threading.Thread(delegate()
@@ -2070,9 +2082,9 @@ namespace Stackshot
                 if (owner != null)
                 {
                     owner.AddRecording(exportOut);
-                    Flash("Exportado: " + Path.GetFileName(exportOut) + " ya est\u00E1 en la pila.", true);
+                    Flash(I18n.Fmt("Exportado: {0} ya est\u00E1 en la pila.", "Exported: {0} is now in stack.", Path.GetFileName(exportOut)), true);
                 }
-                else Flash("Exportado: " + exportOut, true);
+                else Flash(I18n.Fmt("Exportado: {0}", "Exported: {0}", exportOut), true);
                 UpdateUi();
                 return;
             }
@@ -2090,8 +2102,9 @@ namespace Stackshot
                 ShotStack.Log("Presentar: no se pudo renombrar: " + ex.Message);
             }
             UpdateUi();
-            Dialogs.Show(this, rep.Summary + "\n\nEl archivo no se ha a\u00F1adido a la pila. Queda en:\n" + kept + "\n\nEl editor sigue abierto: puedes volver a exportar.",
-                            "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            Dialogs.Show(this, rep.Summary + I18n.Fmt("\n\nEl archivo no se ha a\u00F1adido a la pila. Queda en:\n{0}\n\nEl editor sigue abierto: puedes volver a exportar.",
+                                                     "\n\nThe file was not added to stack. Stored in:\n{0}\n\nThe editor remains open: you can export again.", kept),
+                         "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         // The file being written or checked, and the work around it, are dropped.
@@ -2226,8 +2239,8 @@ namespace Stackshot
             if (Exporting)
             {
                 if (e.CloseReason == CloseReason.UserClosing &&
-                    Dialogs.Ask(this, "\u00BFCancelar la exportaci\u00F3n?\n\nEl v\u00EDdeo a medio crear se descarta.", MessageBoxIcon.Question,
-                                new string[] { "Cancelar la exportaci\u00F3n", "Seguir exportando" }, 1, 1) != 0)
+                    Dialogs.Ask(this, I18n.T("\u00BFCancelar la exportaci\u00F3n?\n\nEl v\u00EDdeo a medio crear se descarta.", "Cancel export?\n\nThe partially created video will be discarded."), MessageBoxIcon.Question,
+                                new string[] { I18n.T("Cancelar la exportaci\u00F3n", "Cancel export"), I18n.T("Seguir exportando", "Keep exporting") }, 1, 1) != 0)
                 {
                     e.Cancel = true;
                     return;
@@ -2241,14 +2254,15 @@ namespace Stackshot
             if (playing) PausePlay();
             if (IsVideo)
             {
-                int v = Dialogs.Ask(this, "\u00BFExportar la grabaci\u00F3n con los cambios?\n\nSi la descartas, los cambios se pierden; el v\u00EDdeo original no cambia.", MessageBoxIcon.Question,
-                                    new string[] { "Exportar", "Descartar cambios", "Seguir editando" }, 0, 2);
+                int v = Dialogs.Ask(this, I18n.T("\u00BFExportar la grabaci\u00F3n con los cambios?\n\nSi la descartas, los cambios se pierden; el v\u00EDdeo original no cambia.",
+                                                "Export recording with changes?\n\nIf you discard them, changes are lost; the original video does not change."), MessageBoxIcon.Question,
+                                    new string[] { I18n.T("Exportar", "Export"), I18n.T("Descartar cambios", "Discard changes"), I18n.T("Seguir editando", "Keep editing") }, 0, 2);
                 if (v == 2) e.Cancel = true;
                 else if (v == 0) { e.Cancel = true; ExportVideo(); }
                 return;
             }
-            int r = Dialogs.Ask(this, "\u00BFConservar los cambios en la captura?", MessageBoxIcon.Question,
-                                new string[] { "Conservar", "Descartar cambios", "Seguir editando" }, 0, 2);
+            int r = Dialogs.Ask(this, I18n.T("\u00BFConservar los cambios en la captura?", "Keep changes to capture?"), MessageBoxIcon.Question,
+                                new string[] { I18n.T("Conservar", "Keep"), I18n.T("Descartar cambios", "Discard changes"), I18n.T("Seguir editando", "Keep editing") }, 0, 2);
             if (r == 2 || (r == 0 && !Apply())) e.Cancel = true;
         }
 
@@ -2303,22 +2317,24 @@ namespace Stackshot
             canvas.CommitText();
             if (Exporting)
             {
-                if (Dialogs.Ask(this, "Se est\u00E1 exportando " + name + ".\n\nSi sales ahora, el v\u00EDdeo a medio crear se descarta.", MessageBoxIcon.Question,
-                                new string[] { "Cancelar y salir", "Seguir exportando" }, 1, 1) != 0) return false;
+                if (Dialogs.Ask(this, I18n.Fmt("Se est\u00E1 exportando {0}.\n\nSi sales ahora, el v\u00EDdeo a medio crear se descarta.",
+                                               "{0} is currently exporting.\n\nIf you exit now, the half-created video will be discarded.", name), MessageBoxIcon.Question,
+                                new string[] { I18n.T("Cancelar y salir", "Cancel and exit"), I18n.T("Seguir exportando", "Keep exporting") }, 1, 1) != 0) return false;
                 CancelExport();
                 return true;
             }
             if (!Unsaved) return true; // a save still finishing only needs a moment: waited for afterwards
             if (IsVideo)
             {
-                int v = Dialogs.Ask(this, "Hay cambios sin exportar en " + name + ".\n\nCon Exportar, Stackshot crea el v\u00EDdeo y no se cierra: sal de nuevo cuando termine.",
-                                    MessageBoxIcon.Question, new string[] { "Exportar", "Salir sin exportar", "Seguir editando" }, 0, 2);
+                int v = Dialogs.Ask(this, I18n.Fmt("Hay cambios sin exportar en {0}.\n\nCon Exportar, Stackshot crea el v\u00EDdeo y no se cierra: sal de nuevo cuando termine.",
+                                                   "There are unexported changes in {0}.\n\nWith Export, Stackshot creates the video and stays open: exit again when finished.", name),
+                                    MessageBoxIcon.Question, new string[] { I18n.T("Exportar", "Export"), I18n.T("Salir sin exportar", "Exit without exporting"), I18n.T("Seguir editando", "Keep editing") }, 0, 2);
                 if (v == 2) return false;
                 if (v == 0) { ExportVideo(); return false; }
                 return true;
             }
-            int r = Dialogs.Ask(this, "\u00BFGuardar los cambios en " + name + " antes de salir?", MessageBoxIcon.Question,
-                                new string[] { "Guardar", "No guardar", "Seguir editando" }, 0, 2);
+            int r = Dialogs.Ask(this, I18n.Fmt("\u00BFGuardar los cambios en {0} antes de salir?", "Save changes in {0} before exiting?", name), MessageBoxIcon.Question,
+                                new string[] { I18n.T("Guardar", "Save"), I18n.T("No guardar", "Don't save"), I18n.T("Seguir editando", "Keep editing") }, 0, 2);
             if (r == 2) return false;
             if (r == 0)
             {
@@ -2330,7 +2346,7 @@ namespace Stackshot
                     catch (Exception ex)
                     {
                         ShotStack.Log("Guardar (editor): " + ex.Message);
-                        Dialogs.Show(this, "No se pudo guardar: " + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        Dialogs.Show(this, I18n.T("No se pudo guardar: ", "Could not save: ") + ex.Message, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return false;
                     }
                 }

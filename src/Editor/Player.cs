@@ -1089,7 +1089,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Reproductor: " + ex);
-                try { Fail("Error al reproducir: " + ex.Message); } catch { }
+                try { Fail(I18n.T("Error al reproducir: ", "Playback error: ") + ex.Message); } catch { }
             }
             finally
             {
@@ -1144,7 +1144,7 @@ namespace Stackshot
             {
                 noticed = true;
                 Action<string> n = Notice;
-                if (n != null) n("Sin salida de sonido");
+                if (n != null) n(I18n.T("Sin salida de sonido", "No sound output"));
             }
             return sinkOk;
         }
@@ -1177,7 +1177,7 @@ namespace Stackshot
             }
             catch (Exception ex)
             {
-                Fail("No se pudo iniciar FFmpeg: " + ex.Message);
+                Fail(I18n.T("No se pudo iniciar FFmpeg: ", "Could not start FFmpeg: ") + ex.Message);
                 return;
             }
             lock (clockLock)
@@ -1350,7 +1350,7 @@ namespace Stackshot
                 if (v != null && primeNeedsVideo && CheckVideoFailed(v)) return;
                 StartClock();
             }
-            else if (primeWatch.Elapsed.TotalSeconds > PrimeTimeout) Fail("No se pudo reproducir: FFmpeg no responde.");
+            else if (primeWatch.Elapsed.TotalSeconds > PrimeTimeout) Fail(I18n.T("No se pudo reproducir: FFmpeg no responde.", "Could not play: FFmpeg is not responding."));
         }
 
         // A decoder that ended with an error before giving a single picture.
@@ -1362,7 +1362,7 @@ namespace Stackshot
             if (!failed) return false;
             string tail = v.Proc.Tail;
             ShotStack.Log("Reproductor: FFmpeg " + code + ": " + tail);
-            Fail("No se pudo reproducir el v\u00EDdeo." + (tail.Length > 0 ? "\n\n" + tail : ""));
+            Fail(I18n.T("No se pudo reproducir el v\u00EDdeo.", "Could not play the video.") + (tail.Length > 0 ? "\n\n" + tail : ""));
             return true;
         }
 

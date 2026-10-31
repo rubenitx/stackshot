@@ -38,7 +38,7 @@ namespace Stackshot
             if (current != null || r.IsEmpty) return;
             if (r.Width < 40 || r.Height < 40)
             {
-                if (owner != null) owner.Notify("Captura con desplazamiento", "El \u00E1rea es demasiado peque\u00F1a: elige una de al menos 40 \u00D7 40 p\u00EDxeles.");
+                if (owner != null) owner.Notify(I18n.T("Captura con desplazamiento", "Scrolling capture"), I18n.T("El \u00E1rea es demasiado peque\u00F1a: elige una de al menos 40 \u00D7 40 p\u00EDxeles.", "The area is too small: choose one of at least 40 \u00D7 40 pixels."));
                 return;
             }
             current = new ScrollSession(owner, r);
@@ -785,12 +785,12 @@ namespace Stackshot
             owner.Ui(delegate { Done(result, problem); });
         }
 
-        internal const string PartialText = "La captura se cort\u00F3 antes de terminar: se ha guardado lo capturado hasta ese momento.";
+        internal static string PartialText { get { return I18n.T("La captura se cort\u00F3 antes de terminar: se ha guardado lo capturado hasta ese momento.", "The capture stopped before finishing: what was captured so far has been saved."); } }
 
         internal static string FailureText(bool tooBig)
         {
-            return tooBig ? "No se pudo componer la imagen: es demasiado grande para la memoria disponible. Prueba con un \u00E1rea m\u00E1s estrecha o m\u00E1s corta."
-                          : "No se pudo terminar la captura. Vuelve a intentarlo.";
+            return tooBig ? I18n.T("No se pudo componer la imagen: es demasiado grande para la memoria disponible. Prueba con un \u00E1rea m\u00E1s estrecha o m\u00E1s corta.", "Could not compose the image: it is too large for available memory. Try a narrower or shorter area.")
+                          : I18n.T("No se pudo terminar la captura. Vuelve a intentarlo.", "Could not finish capture. Please try again.");
         }
 
         void Grab(IntPtr mem, IntPtr screen, IntPtr bits, int[] dst)
@@ -821,14 +821,14 @@ namespace Stackshot
             if (preview != null) preview.Close();
             if (edges != null) foreach (ScrollEdge e in edges) e.Close();
             ScrollCapture.Ended(this);
-            if (problem != null) owner.Notify("Captura con desplazamiento", problem);
+            if (problem != null) owner.Notify(I18n.T("Captura con desplazamiento", "Scrolling capture"), problem);
             if (result == null) return;
             ShotStack.Log("Captura con desplazamiento: " + result.Width + "x" + result.Height);
             bool plain = result.Height <= area.Height;
-            owner.SaveCapture(result, "Desplazamiento");
+            owner.SaveCapture(result, I18n.T("Desplazamiento", "Scrolling"));
             // Auto ended without the page moving: say why it is only one screen, and what usually helps.
             if (plain && !plainOk)
-                owner.Notify("Captura con desplazamiento", "La zona no se ha movido, as\u00ED que se ha guardado como una captura normal. Elige solo la parte que se desplaza (la lista o el texto), sin la cabecera fija.");
+                owner.Notify(I18n.T("Captura con desplazamiento", "Scrolling capture"), I18n.T("La zona no se ha movido, as\u00ED que se ha guardado como una captura normal. Elige solo la parte que se desplaza (la lista o el texto), sin la cabecera fija.", "The area did not scroll, so it was saved as a normal capture. Choose only the part that scrolls (the list or text), without the fixed header."));
         }
 
         // Synthetic wheel (SendInput) and key polling without registering hotkeys.
@@ -907,28 +907,28 @@ namespace Stackshot
 
         string State()
         {
-            if (saving) return "Componiendo\u2026";
-            if (session.EscArmed) return "Esc otra vez para descartar";
-            if (session.DoneArmed) return "No has bajado \u00B7 Listo otra vez la guarda";
-            if (session.Full) return "Altura m\u00E1xima";
-            if (session.WentUp) return "Solo hacia abajo";
-            if (session.Losing) return "M\u00E1s despacio";
+            if (saving) return I18n.T("Componiendo\u2026", "Composing\u2026");
+            if (session.EscArmed) return I18n.T("Esc otra vez para descartar", "Esc again to discard");
+            if (session.DoneArmed) return I18n.T("No has bajado \u00B7 Listo otra vez la guarda", "You haven't scrolled \u00B7 Done again saves it");
+            if (session.Full) return I18n.T("Altura m\u00E1xima", "Maximum height");
+            if (session.WentUp) return I18n.T("Solo hacia abajo", "Downward only");
+            if (session.Losing) return I18n.T("M\u00E1s despacio", "Slow down");
             // What the button under the mouse does.
-            if (hot == 0) return session.Auto ? "Pausa: paro y sigues t\u00FA con la rueda" : "Auto: bajo yo solo, poco a poco";
-            if (hot == 1) return "Listo: guarda la captura (Enter)";
-            if (hot == 2) return "Cancela sin guardar (Esc)";
-            if (session.Auto) return "Bajando solo\u2026";
-            if (session.Stuck) return "\u00BFNo baja? Pulsa Auto";
-            return "Baja con la rueda \u00B7 Enter termina";
+            if (hot == 0) return session.Auto ? I18n.T("Pausa: paro y sigues t\u00FA con la rueda", "Pause: stop and continue scrolling with wheel") : I18n.T("Auto: bajo yo solo, poco a poco", "Auto: scroll automatically");
+            if (hot == 1) return I18n.T("Listo: guarda la captura (Enter)", "Done: save capture (Enter)");
+            if (hot == 2) return I18n.T("Cancela sin guardar (Esc)", "Cancel without saving (Esc)");
+            if (session.Auto) return I18n.T("Bajando solo\u2026", "Scrolling down\u2026");
+            if (session.Stuck) return I18n.T("\u00BFNo baja? Pulsa Auto", "Not scrolling? Click Auto");
+            return I18n.T("Baja con la rueda \u00B7 Enter termina", "Scroll with wheel \u00B7 Enter to finish");
         }
 
-        // "2,5 pantallas \u00B7 2.140 px": how far it has gone, in screens of the area.
+        // "2,5 pantallas · 2.140 px": how far it has gone, in screens of the area.
         string HeightText(int h)
         {
-            if (h <= 0) return "Preparando\u2026";
+            if (h <= 0) return I18n.T("Preparando\u2026", "Preparing\u2026");
             double screens = (double)h / Math.Max(1, session.AreaHeight);
-            string sc = screens < 1.05 ? "1 pantalla" : screens.ToString("0.#", Es) + " pantallas";
-            return sc + " \u00B7 " + h.ToString("N0", Es) + " px";
+            string sc = screens < 1.05 ? I18n.T("1 pantalla", "1 screen") : screens.ToString("0.#", I18n.IsSpanish ? Es : CultureInfo.InvariantCulture) + (I18n.IsSpanish ? " pantallas" : " screens");
+            return sc + " \u00B7 " + h.ToString("N0", I18n.IsSpanish ? Es : CultureInfo.InvariantCulture) + " px";
         }
 
         // Layout in body coordinates.
@@ -996,13 +996,13 @@ namespace Stackshot
                     ai.Inflate(-0.5, -0.5);
                     dc.DrawRoundedRectangle(null, pen, ai, ai.Height / 2, ai.Height / 2);
                 }
-                Ink.Center(dc, Ink.Px(session.Auto ? "Pausa" : "Auto", Ds.Semibold, P(13), autoInk), ar);
+                Ink.Center(dc, Ink.Px(session.Auto ? I18n.T("Pausa", "Pause") : "Auto", Ds.Semibold, P(13), autoInk), ar);
 
                 // Never lighter than the accent, so the white label keeps 4.5:1.
                 System.Windows.Rect dr = R(DoneRect());
                 if (Ds.Brushes.High) doneInk = HcPaint.Button(dc, dr, dr.Height / 2, ButtonKind.Primary, true, hot == 1 ? 1 : 0, 0, 1);
                 else Ink.Round(dc, hot == 1 ? Ds.Brushes.AccentDeep : Ds.Brushes.Accent, dr, dr.Height / 2);
-                Ink.Center(dc, Ink.Px("Listo", Ds.Semibold, P(13), doneInk), dr);
+                Ink.Center(dc, Ink.Px(I18n.Done, Ds.Semibold, P(13), doneInk), dr);
 
                 System.Windows.Rect cr = R(CancelRect());
                 if (hot == 2) dc.DrawEllipse(Ds.Brush(Palette.HudHover), null, new System.Windows.Point(cr.X + cr.Width / 2, cy), cr.Width / 2, cr.Width / 2);
@@ -1113,11 +1113,11 @@ namespace Stackshot
             Glyph.Draw(dc, "down", mx + mw + P(6), body.Height / 2.0 - gs / 2 - P(3) + P(6) * e, gs, Ds.WithAlpha(white, 0.25 + 0.65 * (1 - t)), Math.Max(1.4, 1.8 * s));
 
             double tx = P(66), tw = body.Width - tx - P(14);
-            System.Windows.Media.FormattedText title = Ink.Px("Baja despacio con la rueda del rat\u00F3n", Ds.Semibold, P(13), white);
+            System.Windows.Media.FormattedText title = Ink.Px(I18n.T("Baja despacio con la rueda del rat\u00F3n", "Scroll slowly with the mouse wheel"), Ds.Semibold, P(13), white);
             title.MaxTextWidth = Math.Max(1, tw);
             title.MaxLineCount = 1;
             title.Trimming = System.Windows.TextTrimming.CharacterEllipsis;
-            System.Windows.Media.FormattedText sub = Ink.Px("O pulsa Auto y bajo yo. Cuando llegues al final, Listo o Enter.", Ds.Regular, P(11.5f), dim);
+            System.Windows.Media.FormattedText sub = Ink.Px(I18n.T("O pulsa Auto y bajo yo. Cuando llegues al final, Listo o Enter.", "Or click Auto to scroll automatically. When at the bottom, Done or Enter."), Ds.Regular, P(11.5f), dim);
             sub.MaxTextWidth = Math.Max(1, tw);
             sub.MaxLineCount = 1;
             sub.Trimming = System.Windows.TextTrimming.CharacterEllipsis;

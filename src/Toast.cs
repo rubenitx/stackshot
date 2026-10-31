@@ -59,10 +59,15 @@ namespace Stackshot
             return b.ToString();
         }
 
-        static readonly string[] ErrorStarts = { "No se pudo", "No se ha podido", "No se puede", "No se encuentra" };
+        // Spanish starts, then their English ones: a notice must be the same kind in both languages (the i18n suite checks
+        // the titles that have one).
+        static readonly string[] ErrorStarts = { "No se pudo", "No se pudieron", "No se ha podido", "No se puede", "No se encuentra", "Could not", "Cannot", "Capture not found" };
         static readonly string[] WarningStarts = { "No se han ", "Algunos atajos", "Grabando sin", "Grabaci\u00F3n detenida",
-                                                   "La grabaci\u00F3n ha ido", "El sonido ha saturado", "Captura con desplazamiento" };
-        static readonly string[] SuccessStarts = { "Texto copiado", "Grabaci\u00F3n recuperada", "Cine: sin p\u00E9rdidas", "Impr Pant ya es de Stackshot" };
+                                                   "La grabaci\u00F3n ha ido", "El sonido ha saturado", "Captura con desplazamiento",
+                                                   "Sensitive data not", "Some shortcuts", "Recording without", "Recording stopped", "Recording was choppy",
+                                                   "Audio clipped", "Scrolling capture" };
+        static readonly string[] SuccessStarts = { "Texto copiado", "Grabaci\u00F3n recuperada", "Cine: sin p\u00E9rdidas", "Impr Pant ya es de Stackshot",
+                                                   "Text copied", "Recording recovered", "Cinema: lossless", "Print Screen now belongs to Stackshot" };
 
         // The kind of a notice raised without one (Notify and NotifyPage), from its title.
         public static NoticeKind KindFor(string title)
@@ -223,12 +228,12 @@ namespace Stackshot
         {
             switch (state)
             {
-                case 1: return "sesi\u00F3n bloqueada o sin nadie delante";
+                case 1: return I18n.T("sesi\u00F3n bloqueada o sin nadie delante", "session locked or away");
                 case 2:
-                case 7: return foregroundCovers ? "aplicaci\u00F3n a pantalla completa" : null;
-                case 3: return "juego a pantalla completa";
-                case 4: return "modo presentaci\u00F3n";
-                case 6: return "tiempo de silencio de Windows";
+                case 7: return foregroundCovers ? I18n.T("aplicaci\u00F3n a pantalla completa", "full-screen application") : null;
+                case 3: return I18n.T("juego a pantalla completa", "full-screen game");
+                case 4: return I18n.T("modo presentaci\u00F3n", "presentation mode");
+                case 6: return I18n.T("tiempo de silencio de Windows", "Windows focus assist / quiet hours");
             }
             return null;
         }

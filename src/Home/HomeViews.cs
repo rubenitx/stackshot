@@ -20,7 +20,9 @@ namespace Stackshot
 {
     public partial class HomeWindow
     {
-        static readonly string[] HomeStyles = { "Minimalista", "Widgets", "Escena" };
+        static readonly string[] HomeStylesEs = { "Minimalista", "Widgets", "Escena" };
+        static readonly string[] HomeStylesEn = { "Minimal", "Widgets", "Scene" };
+        static string[] HomeStyles { get { return I18n.IsSpanish ? HomeStylesEs : HomeStylesEn; } }
         const double HomeSwitchTop = 44;          // top inset of the home content
 
         // Entrance: when Home is shown, its pieces fade and rise in turn. Rebuilds of the same view (theme, a new capture)
@@ -284,8 +286,8 @@ namespace Stackshot
 
             // The two shortcuts worth learning; one that isn't set is left out instead of reading "Sin atajo para...".
             List<string> hints = new List<string>();
-            if (Hotkeys.Split(settings.HotRegion).Count > 0) hints.Add(Hotkeys.Display(settings.HotRegion) + " para un \u00E1rea");
-            if (Hotkeys.Split(settings.HotVideo).Count > 0) hints.Add(Hotkeys.Display(settings.HotVideo) + (Recorder.Recording ? " para detener" : " para grabar"));
+            if (Hotkeys.Split(settings.HotRegion).Count > 0) hints.Add(Hotkeys.Display(settings.HotRegion) + I18n.T(" para un \u00E1rea", " for an area"));
+            if (Hotkeys.Split(settings.HotVideo).Count > 0) hints.Add(Hotkeys.Display(settings.HotVideo) + (Recorder.Recording ? I18n.T(" para detener", " to stop") : I18n.T(" para grabar", " to record")));
             if (hints.Count > 0)
             {
                 TextBlock keys = Label(string.Join("  \u00B7  ", hints.ToArray()), Ds.Regular, 12, pal.Label3, new Thickness(0, 14, 0, 0));
@@ -296,8 +298,8 @@ namespace Stackshot
 
             if (settings.MascotOn)
             {
-                MacButton chips = new MacButton("Jugar con " + settings.MascotName, ButtonKind.Plain, "play", null, 26);
-                chips.ToolTip = "P\u00EDdele algo a " + settings.MascotName;
+                MacButton chips = new MacButton(I18n.Fmt("Jugar con {0}", "Play with {0}", settings.MascotName), ButtonKind.Plain, "play", null, 26);
+                chips.ToolTip = I18n.Fmt("P\u00EDdele algo a {0}", "Ask {0} something", settings.MascotName);
                 chips.HorizontalAlignment = HorizontalAlignment.Center;
                 chips.Margin = new Thickness(0, 12, 0, 0);
                 chips.Click += delegate { CommandMenu(chips); };
@@ -308,8 +310,8 @@ namespace Stackshot
             List<FileInfo> latest = settings.ShowRecent ? Recents.Latest(settings, 4) : new List<FileInfo>();
             if (latest.Count == 0) return;
             Grid head = new Grid { Margin = new Thickness(0, 40, 0, 10), MaxWidth = 580 };
-            head.Children.Add(Label("\u00DAltimas capturas", Ds.Regular, 12.5, pal.Label2));
-            head.Children.Add(Link("Ver todas", delegate { owner.OpenFolder(); }));
+            head.Children.Add(Label(I18n.T("\u00DAltimas capturas", "Recent captures"), Ds.Regular, 12.5, pal.Label2));
+            head.Children.Add(Link(I18n.T("Ver todas", "View all"), delegate { owner.OpenFolder(); }));
             Add(head);
             HomeEnter(head, 420, 0, 8, 1);
             Grid row = (Grid)ThumbRow(latest, 4, 580, 10);
@@ -317,7 +319,9 @@ namespace Stackshot
             for (int i = 0; i < row.Children.Count; i++) HomeEnter(row.Children[i], 450 + i * 50, 0, 12, 0.97);
         }
 
-        static readonly string[] ActionShortest = { "\u00C1rea", "Repetir", "Pantalla", "Ventana", "Desplazar", "Texto", "V\u00EDdeo", "GIF", "Markdown", "Temporizador" };
+        internal static readonly string[] ActionShortestEs = { "\u00C1rea", "Repetir", "Pantalla", "Ventana", "Desplazar", "Texto", "V\u00EDdeo", "GIF", "Markdown", "Temporizador" };
+        internal static readonly string[] ActionShortestEn = { "Area", "Repeat", "Screen", "Window", "Scroll", "Text", "Video", "GIF", "Markdown", "Timer" };
+        internal static string[] ActionShortest { get { return I18n.IsSpanish ? ActionShortestEs : ActionShortestEn; } }
 
         // The capture modes in one capsule. A blue pill stays on the main mode (or Vídeo while recording); the mode under
         // the mouse or the keyboard gets a soft tint that fades in and out in place, so moving across the bar never sends
@@ -390,7 +394,7 @@ namespace Stackshot
                     int a = HomeModeIndex[i];
                     string action = Settings.Actions[a];
                     bool stop = action == "video" && Recorder.Recording;
-                    string text = stop ? "Detener" : ActionShortest[a];
+                    string text = stop ? I18n.T("Detener", "Stop") : ActionShortest[a];
                     icons[i] = stop ? "stop" : ActionIcons[a];
                     ink[i] = Ink.Text(text, Ds.Medium, 13, pal.Label);
                     white[i] = Ink.Text(text, Ds.Medium, 13, pal.OnAccent);
@@ -398,7 +402,7 @@ namespace Stackshot
                     xs[i] = x;
                     x += ws[i];
                     string combo = home.settings.HotkeysFor(action);
-                    tips[i] = (stop ? "Detener la grabaci\u00F3n" : ActionNames[a]) + (Hotkeys.Split(combo).Count > 0 ? "  (" + Hotkeys.Display(combo) + ")" : "");
+                    tips[i] = (stop ? I18n.T("Detener la grabaci\u00F3n", "Stop recording") : ActionNames[a]) + (Hotkeys.Split(combo).Count > 0 ? "  (" + Hotkeys.Display(combo) + ")" : "");
                 }
                 Width = x + Pad;
                 Height = Tall;
@@ -413,7 +417,7 @@ namespace Stackshot
                 glow.Freeze();
 
                 // Transparent cells on top take the mouse; the drawing below follows them.
-                StackPanel cells = new TapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(Pad, Pad, 0, Pad), Interactive = false, Role = Access.List, Label = "Modos de captura" };
+                StackPanel cells = new TapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(Pad, Pad, 0, Pad), Interactive = false, Role = Access.List, Label = I18n.T("Modos de captura", "Capture modes") };
                 for (int i = 0; i < count; i++)
                 {
                     int k = i;
@@ -680,7 +684,7 @@ namespace Stackshot
             string hello = MascotTalk.Greeting().Replace("\u00A1", "").TrimEnd('!');
             if (!settings.MascotOn) return Label(hello, Ds.Regular, size, color);
             DockPanel row = new DockPanel();
-            TextBlock lead = Label(hello + ", soy", Ds.Regular, size, color);
+            TextBlock lead = Label(I18n.IsSpanish ? hello + ", soy" : hello + ", I'm", Ds.Regular, size, color);
             DockPanel.SetDock(lead, Dock.Left);
             row.Children.Add(lead);
             FrameworkElement tag = HomeNameTag(Ds.Medium, size, Ds.Brushes.Label, false, room);
@@ -698,7 +702,7 @@ namespace Stackshot
             Border chip = new TapBorder
             {
                 CornerRadius = new CornerRadius(6), Padding = new Thickness(4, 0, 4, 1), Background = Brushes.Transparent, Cursor = Cursors.Hand,
-                ToolTip = "Cambiar el nombre", HorizontalAlignment = centred ? HorizontalAlignment.Center : HorizontalAlignment.Left
+                ToolTip = I18n.T("Cambiar el nombre", "Rename"), HorizontalAlignment = centred ? HorizontalAlignment.Center : HorizontalAlignment.Left
             };
             ToolTipService.SetInitialShowDelay(chip, 700);
             DockPanel row = new DockPanel();
@@ -731,7 +735,7 @@ namespace Stackshot
                 Template = HomeFieldTemplate()
             };
             slot.Children.Add(box);
-            System.Windows.Automation.AutomationProperties.SetName(box, "Nombre de la mascota");
+            System.Windows.Automation.AutomationProperties.SetName(box, I18n.T("Nombre de la mascota", "Mascot name"));
 
             bool editing = false, pressed = false;
             Action outside = null;
@@ -811,7 +815,7 @@ namespace Stackshot
             BuildWidget();
             if (!settings.MascotOn) return;
             // A direct answer to what the user just did, so it speaks even when its tips are off.
-            mascot.Celebrate("\u00A1Ahora me llamo " + v + "!");
+            mascot.Celebrate(I18n.Fmt("\u00A1Ahora me llamo {0}!", "My name is now {0}!", v));
             Wake();
         }
 
@@ -874,8 +878,8 @@ namespace Stackshot
             }
             Border over = new Border { CornerRadius = new CornerRadius(radius), Background = Ds.Brush(Ds.Argb(0.42, 0, 0, 0)), Opacity = 0 };
             StackPanel acts = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-            acts.Children.Add(PillAction("Copiar", delegate(TextBlock l) { CopyFile(path, l); }));
-            acts.Children.Add(PillAction(media ? "Abrir" : "Editar", delegate(TextBlock l) { OpenCapture(path); }));
+            acts.Children.Add(PillAction(I18n.T("Copiar", "Copy"), delegate(TextBlock l) { CopyFile(path, l); }));
+            acts.Children.Add(PillAction(media ? I18n.T("Abrir", "Open") : I18n.T("Editar", "Edit"), delegate(TextBlock l) { OpenCapture(path); }));
             over.Child = acts;
             g.Children.Add(over);
             g.MouseEnter += delegate { HomeGlide(over, OpacityProperty, 1, 140, null); };
@@ -970,15 +974,15 @@ namespace Stackshot
         void Copied(TextBlock button)
         {
             // From a menu there is no button to say it: a notice does.
-            if (button == null) owner.Notify("Copiada", "Ya puedes pegarla donde quieras.");
-            FlashLabel(button, "Copiada");
-            if (settings.MascotOn) mascot.Say("\u00A1Copiada!", 1600);
+            if (button == null) owner.Notify(I18n.T("Copiada", "Copied"), I18n.T("Ya puedes pegarla donde quieras.", "Ready to paste anywhere."));
+            FlashLabel(button, I18n.T("Copiada", "Copied"));
+            if (settings.MascotOn) mascot.Say(I18n.T("\u00A1Copiada!", "Copied!"), 1600);
             Wake();
         }
 
         void NotCopied()
         {
-            owner.Notify("No se pudo copiar", "No se ha podido leer la captura o el portapapeles est\u00E1 ocupado. Vuelve a intentarlo.");
+            owner.Notify(I18n.T("No se pudo copiar", "Could not copy"), I18n.T("No se ha podido leer la captura o el portapapeles est\u00E1 ocupado. Vuelve a intentarlo.", "Could not read capture or clipboard is busy. Please try again."));
         }
 
         // ---- Widgets: today at a glance.
@@ -990,8 +994,8 @@ namespace Stackshot
             // The title row is centred on the switch, which keeps the spot it has in the other views.
             Grid head = new Grid { Margin = new Thickness(0, HomeSwitchTop - 3, 0, 16) };
             StackPanel titles = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            titles.Children.Add(HomeMarked("Hoy", 26, 260));
-            string date = DateTime.Now.ToString("dddd, d 'de' MMMM", new System.Globalization.CultureInfo("es-ES"));
+            titles.Children.Add(HomeMarked(I18n.T("Hoy", "Today"), 26, 260));
+            string date = DateTime.Now.ToString(I18n.IsSpanish ? "dddd, d 'de' MMMM" : "dddd, MMMM d", new System.Globalization.CultureInfo(I18n.IsSpanish ? "es-ES" : "en-US"));
             titles.Children.Add(Label(char.ToUpper(date[0]) + date.Substring(1), Ds.Regular, 12.5, pal.Label2, new Thickness(12, 8, 0, 0)));
             head.Children.Add(titles);
             Add(head);
@@ -1013,7 +1017,7 @@ namespace Stackshot
                 lg.RowDefinitions.Add(new RowDefinition());
                 lg.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                 Grid t = new Grid();
-                t.Children.Add(Label("\u00DAltima captura", Ds.Semibold, 12, pal.Label));
+                t.Children.Add(Label(I18n.T("\u00DAltima captura", "Latest capture"), Ds.Semibold, 12, pal.Label));
                 TextBlock when = Label(f.LastWriteTime.ToString("HH:mm"), Ds.Regular, 12, pal.Label3);
                 when.HorizontalAlignment = HorizontalAlignment.Right;
                 t.Children.Add(when);
@@ -1024,15 +1028,15 @@ namespace Stackshot
                 Grid.SetRow(th, 1);
                 lg.Children.Add(th);
                 UniformGrid acts = new UniformGrid { Columns = 3 };
-                acts.Children.Add(WidgetButton("Copiar", true, delegate(TextBlock l) { CopyFile(f.FullName, l); }));
-                acts.Children.Add(WidgetButton(ShotStack.IsMediaFile(f.FullName) ? "Abrir" : "Editar", false, delegate(TextBlock l) { OpenCapture(f.FullName); }));
+                acts.Children.Add(WidgetButton(I18n.T("Copiar", "Copy"), true, delegate(TextBlock l) { CopyFile(f.FullName, l); }));
+                acts.Children.Add(WidgetButton(ShotStack.IsMediaFile(f.FullName) ? I18n.T("Abrir", "Open") : I18n.T("Editar", "Edit"), false, delegate(TextBlock l) { OpenCapture(f.FullName); }));
                 bool kept = SaveFolders.Inside(settings, f.DirectoryName);
-                acts.Children.Add(WidgetButton(kept ? "Mostrar" : "Guardar", false, delegate(TextBlock l)
+                acts.Children.Add(WidgetButton(kept ? I18n.T("Mostrar", "Show") : I18n.T("Guardar", "Save"), false, delegate(TextBlock l)
                 {
                     if (kept)
                     {
                         try { Process.Start(Native.Explorer, "/select,\"" + f.FullName + "\""); }
-                        catch (Exception ex) { ShotStack.Log("Mostrar: " + ex.Message); owner.Notify("No se pudo abrir la carpeta", f.DirectoryName); }
+                        catch (Exception ex) { ShotStack.Log("Mostrar: " + ex.Message); owner.Notify(I18n.T("No se pudo abrir la carpeta", "Could not open folder"), f.DirectoryName); }
                     }
                     else HomeKeep(f.FullName, l);
                 }));
@@ -1044,7 +1048,7 @@ namespace Stackshot
             {
                 StackPanel empty = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
                 empty.Children.Add(new GlyphView("photo", 34, pal.Label3, 1.5));
-                TextBlock et = Label("Aqu\u00ED ver\u00E1s tu \u00FAltima captura", Ds.Regular, 13, pal.Label2, new Thickness(0, 10, 0, 0));
+                TextBlock et = Label(I18n.T("Aqu\u00ED ver\u00E1s tu \u00FAltima captura", "Your latest capture will appear here"), Ds.Regular, 13, pal.Label2, new Thickness(0, 10, 0, 0));
                 et.HorizontalAlignment = HorizontalAlignment.Center;
                 empty.Children.Add(et);
                 last.Children.Add(empty);
@@ -1056,11 +1060,11 @@ namespace Stackshot
             Grid today = HomeTile(grid, recent ? 2 : 0, 0, recent ? 1 : 2, recent ? 1 : 2, pal.High ? null : new LinearGradientBrush(pal.Accent, Ds.Rgb(94, 92, 230), 60), false);
             Color onTile = pal.High ? pal.Label : Colors.White;
             StackPanel tp = new StackPanel();
-            tp.Children.Add(Label("Capturas hoy", Ds.Semibold, 12, onTile));
+            tp.Children.Add(Label(I18n.T("Capturas hoy", "Captures today"), Ds.Semibold, 12, onTile));
             StackPanel num = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
             num.Children.Add(Label(days[4].ToString(), Ds.Title, 40, onTile));
             int diff = days[4] - days[3];
-            if (diff != 0) num.Children.Add(Label((diff > 0 ? "+" : "") + diff + " vs ayer", Ds.Regular, 12, onTile, new Thickness(8, 18, 0, 0)));
+            if (diff != 0) num.Children.Add(Label((diff > 0 ? "+" : "") + diff + I18n.T(" vs ayer", " vs yesterday"), Ds.Regular, 12, onTile, new Thickness(8, 18, 0, 0)));
             tp.Children.Add(num);
             today.Children.Add(tp);
             int max = 1;
@@ -1109,11 +1113,11 @@ namespace Stackshot
                 mp.Children.Add(mn);
                 int left;
                 MascotParts.Progress(settings.MascotLove, out left);
-                TextBlock lv = Label("Nivel " + (MascotParts.Level(settings.MascotLove) + 1) + (left > 0 ? " \u00B7 " + left + " para subir" : ""), Ds.Regular, 11, pal.Label2);
+                TextBlock lv = Label(I18n.Fmt("Nivel {0}", "Level {0}", MascotParts.Level(settings.MascotLove) + 1) + (left > 0 ? " \u00B7 " + I18n.Fmt("{0} para subir", "{0} to level up", left) : ""), Ds.Regular, 11, pal.Label2);
                 lv.HorizontalAlignment = HorizontalAlignment.Center;
                 mp.Children.Add(lv);
                 mw.Children.Add(mp);
-                mw.ToolTip = "P\u00EDdele algo a " + settings.MascotName;
+                mw.ToolTip = I18n.Fmt("P\u00EDdele algo a {0}", "Ask {0} something", settings.MascotName);
                 // A click that only closes the name field (to confirm it) stays here.
                 mw.MouseLeftButtonUp += delegate { if (!host.IsMouseOver && !homeNameDismissed) CommandMenu(mw); };
                 Access.Clickable(mw, delegate { CommandMenu(mw); });
@@ -1125,11 +1129,11 @@ namespace Stackshot
                 GlyphView bot = new GlyphView("bot", 30, pal.Label3, 1.4);
                 bot.HorizontalAlignment = HorizontalAlignment.Center;
                 off.Children.Add(bot);
-                TextBlock t = Label("Mascota escondida", Ds.Medium, 12.5, pal.Label, new Thickness(0, 8, 0, 0));
+                TextBlock t = Label(I18n.T("Mascota escondida", "Mascot hidden"), Ds.Medium, 12.5, pal.Label, new Thickness(0, 8, 0, 0));
                 t.HorizontalAlignment = HorizontalAlignment.Center;
                 off.Children.Add(t);
                 TextBlock go = Policy.MascotForced ? Label(Policy.Managed, Ds.Regular, 11, pal.Label2, new Thickness(0, 2, 0, 0))
-                                                   : Label("Mostrar en Mascota", Ds.Regular, 11, pal.Link, new Thickness(0, 2, 0, 0));
+                                                   : Label(I18n.T("Mostrar en Mascota", "Show in Mascot"), Ds.Regular, 11, pal.Link, new Thickness(0, 2, 0, 0));
                 go.HorizontalAlignment = HorizontalAlignment.Center;
                 off.Children.Add(go);
                 mw.Children.Add(off);
@@ -1145,9 +1149,9 @@ namespace Stackshot
 
             // Recording.
             Grid rec = HomeTile(grid, 0, 2, recent ? 1 : 2, 1, null, true);
-            string[] qn = { "Est\u00E1ndar", "M\u00E1xima", "Alta", "Cine" };
+            string[] qn = I18n.IsSpanish ? new string[] { "Est\u00E1ndar", "M\u00E1xima", "Alta", "Cine" } : new string[] { "Standard", "Maximum", "High", "Cinema" };
             StackPanel rp = new StackPanel();
-            rp.Children.Add(Label("Grabar", Ds.Semibold, 12, pal.Label));
+            rp.Children.Add(Label(I18n.T("Grabar", "Record"), Ds.Semibold, 12, pal.Label));
             StackPanel rr = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 8) };
             bool recording = Recorder.Recording;
             Grid dotBox = new Grid { Width = 30, Height = 30 };
@@ -1156,9 +1160,9 @@ namespace Stackshot
             if (recording) dotBox.Children.Add(new Border { Width = 9, Height = 9, CornerRadius = new CornerRadius(2), Background = Ds.Brush(pal.High ? pal.Window : Colors.White) });
             rr.Children.Add(dotBox);
             StackPanel rq = new StackPanel { Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-            rq.Children.Add(Label(recording ? "Detener" : qn[Math.Max(0, Math.Min(3, settings.VideoQuality))], Ds.Semibold, 13, pal.Label));
-            rq.Children.Add(Label(recording ? "Grabando\u2026" : (settings.RecordSystemAudio || settings.RecordMic) ? "con sonido" : "sin sonido", Ds.Regular, 11, pal.Label2));
-            rec.ToolTip = recording ? "Detener la grabaci\u00f3n" : "Grabar v\u00eddeo";
+            rq.Children.Add(Label(recording ? I18n.T("Detener", "Stop") : qn[Math.Max(0, Math.Min(3, settings.VideoQuality))], Ds.Semibold, 13, pal.Label));
+            rq.Children.Add(Label(recording ? I18n.T("Grabando\u2026", "Recording\u2026") : (settings.RecordSystemAudio || settings.RecordMic) ? I18n.T("con sonido", "with sound") : I18n.T("sin sonido", "no sound"), Ds.Regular, 11, pal.Label2));
+            rec.ToolTip = recording ? I18n.T("Detener la grabaci\u00f3n", "Stop recording") : I18n.T("Grabar v\u00eddeo", "Record video");
             ToolTipService.SetInitialShowDelay(rec, 900);
             rr.Children.Add(rq);
             rp.Children.Add(rr);
@@ -1170,7 +1174,7 @@ namespace Stackshot
             // The save folder; its size arrives from the thread pool and is filled in place.
             Grid fold = HomeTile(grid, recent ? 1 : 2, recent ? 2 : 0, 1, 1, null, true);
             StackPanel fp = new StackPanel();
-            fp.Children.Add(Label("Carpeta", Ds.Semibold, 12, pal.Label));
+            fp.Children.Add(Label(I18n.T("Carpeta", "Folder"), Ds.Semibold, 12, pal.Label));
             TextBlock size = null;
             size = Label(Recents.Size(Recents.FolderBytes(settings, delegate { if (size != null) size.Text = Recents.Size(Recents.FolderBytes(settings, null)); })),
                          Ds.Title, 22, pal.Label, new Thickness(0, 10, 0, 6));
@@ -1195,7 +1199,7 @@ namespace Stackshot
             StackPanel tpp = new StackPanel();
             StackPanel th2 = new StackPanel { Orientation = Orientation.Horizontal };
             th2.Children.Add(new GlyphView("sparkle", 14, pal.Orange, 1.6));
-            th2.Children.Add(Label("Truco", Ds.Semibold, 12, pal.Label, new Thickness(6, 0, 0, 0)));
+            th2.Children.Add(Label(I18n.T("Truco", "Tip"), Ds.Semibold, 12, pal.Label, new Thickness(6, 0, 0, 0)));
             tpp.Children.Add(th2);
             TextBlock tt = Paragraph(MascotTalk.Tip(settings), 12.5, pal.Label2);
             tt.Margin = new Thickness(0, 8, 0, 0);
@@ -1210,13 +1214,13 @@ namespace Stackshot
         void HomeKeep(string path, TextBlock button)
         {
             if (owner.IsSaving(path)) return;
-            if (button != null) button.Text = "Guardando\u2026";
+            if (button != null) button.Text = I18n.T("Guardando\u2026", "Saving\u2026");
             owner.KeepAsync(path, delegate(string dest, string error)
             {
                 if (error != null)
                 {
-                    if (button != null) button.Text = "Guardar";
-                    owner.Notify("No se pudo guardar", error);
+                    if (button != null) button.Text = I18n.T("Guardar", "Save");
+                    owner.Notify(I18n.T("No se pudo guardar", "Could not save"), error);
                     return;
                 }
                 Recents.Forget();
@@ -1312,13 +1316,13 @@ namespace Stackshot
             string action = Settings.Actions[i];
             // While a recording runs, the video mode stops it (as in the other views).
             bool stop = action == "video" && Recorder.Recording;
-            Border b = new TapBorder { CornerRadius = new CornerRadius(12), Margin = new Thickness(3), Cursor = Cursors.Hand, BorderBrush = Ds.Brush(pal.Hairline), BorderThickness = HcPaint.Edge, ToolTip = stop ? "Detener la grabaci\u00F3n" : ActionNames[i] + (Hotkeys.Split(settings.HotkeysFor(action)).Count > 0 ? "  (" + Hotkeys.Display(settings.HotkeysFor(action)) + ")" : "") };
+            Border b = new TapBorder { CornerRadius = new CornerRadius(12), Margin = new Thickness(3), Cursor = Cursors.Hand, BorderBrush = Ds.Brush(pal.Hairline), BorderThickness = HcPaint.Edge, ToolTip = stop ? I18n.T("Detener la grabaci\u00F3n", "Stop recording") : ActionNames[i] + (Hotkeys.Split(settings.HotkeysFor(action)).Count > 0 ? "  (" + Hotkeys.Display(settings.HotkeysFor(action)) + ")" : "") };
             SolidColorBrush bg = new SolidColorBrush(pal.Control);
             b.Background = bg;
             StackPanel p = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
             p.Children.Add(new IconTile(stop ? "stop" : ActionIcons[i], 22, W(ActionColors[i, 0]), W(ActionColors[i, 1])));
             ((FrameworkElement)p.Children[0]).HorizontalAlignment = HorizontalAlignment.Center;
-            TextBlock lab = Label(stop ? "Detener" : ActionShortest[i], Ds.Semibold, 11, pal.Label, new Thickness(0, 6, 0, 0));
+            TextBlock lab = Label(stop ? I18n.T("Detener", "Stop") : ActionShortest[i], Ds.Semibold, 11, pal.Label, new Thickness(0, 6, 0, 0));
             lab.HorizontalAlignment = HorizontalAlignment.Center;
             p.Children.Add(lab);
             b.Child = p;
@@ -1404,8 +1408,8 @@ namespace Stackshot
                 host.Margin = new Thickness(left, 0, 0, bottom);
                 stage.Children.Add(host);
                 UseMascot(host);
-                MacButton play = new MacButton("Jugar con " + settings.MascotName, ButtonKind.Plain, "play", null, 26);
-                play.ToolTip = "P\u00EDdele algo a " + settings.MascotName;
+                MacButton play = new MacButton(I18n.Fmt("Jugar con {0}", "Play with {0}", settings.MascotName), ButtonKind.Plain, "play", null, 26);
+                play.ToolTip = I18n.Fmt("P\u00EDdele algo a {0}", "Ask {0} something", settings.MascotName);
                 play.Click += delegate { CommandMenu(play); };
                 play.HorizontalAlignment = HorizontalAlignment.Left;
                 play.VerticalAlignment = VerticalAlignment.Bottom;
@@ -1437,8 +1441,8 @@ namespace Stackshot
             if (latest.Count > 0)
             {
                 Grid head = new Grid { Margin = new Thickness(40, 22, 40, 10) };
-                head.Children.Add(Label("Recientes", Ds.Semibold, 13, pal.Label));
-                head.Children.Add(Link("Ver todas", delegate { owner.OpenFolder(); }));
+                head.Children.Add(Label(I18n.T("Recientes", "Recents"), Ds.Semibold, 13, pal.Label));
+                head.Children.Add(Link(I18n.T("Ver todas", "View all"), delegate { owner.OpenFolder(); }));
                 content.Children.Add(head);
                 HomeEnter(head, 400, 0, 8, 1);
                 // Full width under its heading, so the last thumbnail ends where "Ver todas" does.
@@ -1456,7 +1460,7 @@ namespace Stackshot
             Palette pal = Ds.Brushes;
             string action = Settings.Actions[i];
             bool stop = action == "video" && Recorder.Recording;
-            Border b = new TapBorder { Label = stop ? "Detener grabaci\u00F3n" : ActionShort[i], Height = 34, CornerRadius = new CornerRadius(9), Cursor = Cursors.Hand, Margin = new Thickness(0, 0, 0, 3) };
+            Border b = new TapBorder { Label = stop ? I18n.T("Detener grabaci\u00F3n", "Stop recording") : ActionShort[i], Height = 34, CornerRadius = new CornerRadius(9), Cursor = Cursors.Hand, Margin = new Thickness(0, 0, 0, 3) };
             Color rest = primary ? pal.Accent : Colors.Transparent, over = primary ? pal.AccentDeep : pal.ControlHover;
             SolidColorBrush bg = new SolidColorBrush(rest);
             b.Background = bg;
@@ -1466,7 +1470,7 @@ namespace Stackshot
             g.ColumnDefinitions.Add(new ColumnDefinition());
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             g.Children.Add(new GlyphView(stop ? "stop" : ActionIcons[i], 18, ink, 1.7));
-            TextBlock t = Label(stop ? "Detener grabaci\u00F3n" : ActionShort[i], Ds.Medium, 13, ink, new Thickness(10, 0, 0, 0));
+            TextBlock t = Label(stop ? I18n.T("Detener grabaci\u00F3n", "Stop recording") : ActionShort[i], Ds.Medium, 13, ink, new Thickness(10, 0, 0, 0));
             Grid.SetColumn(t, 1);
             g.Children.Add(t);
             string combo = settings.HotkeysFor(action);

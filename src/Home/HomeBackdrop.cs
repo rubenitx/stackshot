@@ -20,7 +20,7 @@ namespace Stackshot
         void BuildEditor()
         {
             Palette pal = Ds.Brushes;
-            Header("Fondo y editor", "Como en CleanShot X: tus capturas, listas para presentar con un fondo bonito, margen y sombra. En el editor, bot\u00F3n Fondo (o la tecla B); tambi\u00E9n para v\u00EDdeos y GIF con \u00ABPresentar\u00BB.");
+            Header(I18n.T("Fondo y editor", "Backdrop & editor"), I18n.T("Como en CleanShot X: tus capturas, listas para presentar con un fondo bonito, margen y sombra. En el editor, bot\u00F3n Fondo (o la tecla B); tambi\u00E9n para v\u00EDdeos y GIF con \u00ABPresentar\u00BB.", "Like CleanShot X: your captures ready to present with a beautiful backdrop, padding, and shadow. In the editor, use the Backdrop button (or key B); also for videos and GIFs with \u201CPresent\u201D."));
 
             Grid shell = new Grid { Height = 250, Margin = new Thickness(0, 0, 0, 26) };
             shell.Children.Add(CardShadow(16, 0.07, 14, 2, 1));
@@ -31,7 +31,7 @@ namespace Stackshot
             if (tryTimer != null && !indexing) tryTimer.Stop();
             previewImage = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(20, 18, 20, 18) };
             RenderOptions.SetBitmapScalingMode(previewImage, BitmapScalingMode.HighQuality);
-            System.Windows.Automation.AutomationProperties.SetName(previewImage, "Vista previa del fondo");
+            System.Windows.Automation.AutomationProperties.SetName(previewImage, I18n.T("Vista previa del fondo", "Backdrop preview"));
             card.Child = previewImage;
             shell.Children.Add(card);
             Add(shell);
@@ -42,11 +42,11 @@ namespace Stackshot
             bool custom = Backdrop.IsCustom(settings.BgPreset);
             Group(null,
                 new PresetRow(),
-                new ButtonRow("Tus fondos", custom ? "Est\u00E1s usando una imagen tuya. Puedes a\u00F1adir m\u00E1s o quitar esta."
-                                                   : "A\u00F1ade una foto o imagen tuya y \u00FAsala como fondo de tus capturas.",
-                              "photo", Mac.Teal, Mac.Blue, "A\u00F1adir imagen\u2026", AddBackground),
+                new ButtonRow(I18n.T("Tus fondos", "Custom backdrops"), custom ? I18n.T("Est\u00E1s usando una imagen tuya. Puedes a\u00F1adir m\u00E1s o quitar esta.", "You are using your own image. You can add more or remove this one.")
+                                                   : I18n.T("A\u00F1ade una foto o imagen tuya y \u00FAsala como fondo de tus capturas.", "Add a photo or image and use it as backdrop for your captures."),
+                              "photo", Mac.Teal, Mac.Blue, I18n.T("A\u00F1adir imagen\u2026", "Add image\u2026"), AddBackground),
                 custom
-                    ? new ButtonRow("Quitar este fondo", "Se borra la copia guardada en Stackshot; tu imagen original no se toca.", "close", Mac.Red, Mac.Orange, "Quitar",
+                    ? new ButtonRow(I18n.T("Quitar este fondo", "Remove this backdrop"), I18n.T("Se borra la copia guardada en Stackshot; tu imagen original no se toca.", "Deletes the copy saved in Stackshot; your original image is untouched."), "close", Mac.Red, Mac.Orange, I18n.T("Quitar", "Remove"),
                                     delegate
                                     {
                                         int idx = settings.BgPreset;
@@ -60,22 +60,22 @@ namespace Stackshot
                                         Rebuild();
                                     })
                     : null,
-                new ToggleRow("Abrir el editor con el fondo puesto", "Si no, se pone con el bot\u00F3n Fondo cuando quieras.", "photo", Mac.Purple, Mac.Pink,
+                new ToggleRow(I18n.T("Abrir el editor con el fondo puesto", "Open editor with backdrop enabled"), I18n.T("Si no, se pone con el bot\u00F3n Fondo cuando quieras.", "Otherwise, enable it with the Backdrop button anytime."), "photo", Mac.Purple, Mac.Pink,
                               delegate { return settings.BgAuto; }, delegate(bool v) { settings.BgAuto = v; }));
             // Values tuned with the editor's sliders fall between the presets: the nearest one shows, the row says so, and
             // clicking that one sets it exactly.
             Func<bool> padTuned = delegate { return Array.IndexOf(pads, settings.BgPadding) < 0; };
             Func<bool> radTuned = delegate { return Array.IndexOf(radii, settings.BgRadius) < 0; };
-            Group("Estilo",
-                new SegRow("Margen", null, null, D.Color.Empty, D.Color.Empty, new string[] { "Ninguno", "Peque\u00F1o", "Medio", "Grande" },
+            Group(I18n.T("Estilo", "Style"),
+                new SegRow(I18n.T("Margen", "Padding"), null, null, D.Color.Empty, D.Color.Empty, I18n.IsSpanish ? new string[] { "Ninguno", "Peque\u00F1o", "Medio", "Grande" } : new string[] { "None", "Small", "Medium", "Large" },
                            delegate { return Nearest(pads, settings.BgPadding); }, delegate(int i) { settings.BgPadding = pads[i]; StyleChanged(); })
                     { SubNow = delegate { return padTuned() ? Tuned : null; }, Loose = padTuned },
-                new SegRow("Esquinas", null, null, D.Color.Empty, D.Color.Empty, new string[] { "Rectas", "Suaves", "Redondas" },
+                new SegRow(I18n.T("Esquinas", "Corners"), null, null, D.Color.Empty, D.Color.Empty, I18n.IsSpanish ? new string[] { "Rectas", "Suaves", "Redondas" } : new string[] { "Sharp", "Soft", "Round" },
                            delegate { return Nearest(radii, settings.BgRadius); }, delegate(int i) { settings.BgRadius = radii[i]; StyleChanged(); })
                     { SubNow = delegate { return radTuned() ? Tuned : null; }, Loose = radTuned },
-                new ToggleRow("Sombra", null, null, D.Color.Empty, D.Color.Empty,
+                new ToggleRow(I18n.T("Sombra", "Shadow"), null, null, D.Color.Empty, D.Color.Empty,
                               delegate { return settings.BgShadow; }, delegate(bool v) { settings.BgShadow = v; StyleChanged(); }),
-                new SegRow("Proporci\u00F3n", null, null, D.Color.Empty, D.Color.Empty, new string[] { "Auto", "16:9", "4:3", "1:1" },
+                new SegRow(I18n.T("Proporci\u00F3n", "Aspect ratio"), null, null, D.Color.Empty, D.Color.Empty, new string[] { "Auto", "16:9", "4:3", "1:1" },
                            delegate { return Math.Max(0, Array.IndexOf(ratios, settings.BgRatio)); }, delegate(int i) { settings.BgRatio = ratios[i]; StyleChanged(); }));
             styleNote = Paragraph("", 12, pal.Label2);
             styleNote.Margin = new Thickness(8, -14, 8, 24);
@@ -83,7 +83,7 @@ namespace Stackshot
             PaintStyleNote();
         }
 
-        const string Tuned = "A tu medida, desde el editor";
+        static string Tuned { get { return I18n.T("A tu medida, desde el editor", "Custom, from editor"); } }
         TextBlock styleNote;
 
         bool DefaultStyle()
@@ -98,10 +98,10 @@ namespace Stackshot
         {
             if (styleNote == null) return;
             styleNote.Inlines.Clear();
-            styleNote.Inlines.Add(new System.Windows.Documents.Run("En el editor tienes m\u00E1s: colores lisos, la captura desenfocada, inserci\u00F3n, alineaci\u00F3n y deslizadores para el margen, la sombra y las esquinas; lo \u00FAltimo que uses se queda guardado aqu\u00ED."));
+            styleNote.Inlines.Add(new System.Windows.Documents.Run(I18n.T("En el editor tienes m\u00E1s: colores lisos, la captura desenfocada, inserci\u00F3n, alineaci\u00F3n y deslizadores para el margen, la sombra y las esquinas; lo \u00FAltimo que uses se queda guardado aqu\u00ED.", "In the editor you have more: plain colors, blurred capture, inset, alignment, and sliders for padding, shadow, and corners; what you last used is saved here.")));
             if (DefaultStyle()) return;
             styleNote.Inlines.Add(new System.Windows.Documents.Run(" "));
-            styleNote.Inlines.Add(InlineLink("Restablecer el estilo", delegate
+            styleNote.Inlines.Add(InlineLink(I18n.T("Restablecer el estilo", "Reset style"), delegate
             {
                 Settings d = new Settings();
                 settings.BgPadding = d.BgPadding;
@@ -128,13 +128,13 @@ namespace Stackshot
         {
             if (Backdrop.CustomCount >= Backdrop.MaxCustom)
             {
-                Dialogs.Show(Win32, "Ya tienes " + Backdrop.MaxCustom + " fondos propios. Quita uno para a\u00F1adir otro.", "Stackshot", WF.MessageBoxButtons.OK, WF.MessageBoxIcon.Information);
+                Dialogs.Show(Win32, I18n.Fmt("Ya tienes {0} fondos propios. Quita uno para a\u00F1adir otro.", "You already have {0} custom backdrops. Remove one to add another.", Backdrop.MaxCustom), "Stackshot", WF.MessageBoxButtons.OK, WF.MessageBoxIcon.Information);
                 return;
             }
             using (WF.OpenFileDialog d = new WF.OpenFileDialog())
             {
-                d.Title = "Elige una imagen para usar de fondo";
-                d.Filter = "Im\u00E1genes|*.png;*.jpg;*.jpeg;*.bmp;*.gif|Todos los archivos|*.*";
+                d.Title = I18n.T("Elige una imagen para usar de fondo", "Choose an image to use as backdrop");
+                d.Filter = I18n.T("Im\u00E1genes|*.png;*.jpg;*.jpeg;*.bmp;*.gif|Todos los archivos|*.*", "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif|All files|*.*");
                 if (d.ShowDialog(Win32) != WF.DialogResult.OK) return;
                 // Decoding, scaling and saving a large photo takes a moment.
                 int i;
@@ -143,7 +143,7 @@ namespace Stackshot
                 finally { Mouse.OverrideCursor = null; }
                 if (i < 0)
                 {
-                    Dialogs.Show(Win32, "No se ha podido abrir esa imagen.", "Stackshot", WF.MessageBoxButtons.OK, WF.MessageBoxIcon.Warning);
+                    Dialogs.Show(Win32, I18n.T("No se ha podido abrir esa imagen.", "Could not open that image."), "Stackshot", WF.MessageBoxButtons.OK, WF.MessageBoxIcon.Warning);
                     return;
                 }
                 swatches.Clear();
@@ -287,7 +287,7 @@ namespace Stackshot
             Border[] rings = new Border[0];
             int hover = -1;
 
-            public PresetRow() : base("Fondo", "", "photo", Mac.Brand1, Mac.Brand3) { }
+            public PresetRow() : base(I18n.T("Fondo", "Backdrop"), "", "photo", Mac.Brand1, Mac.Brand3) { }
 
             protected override FrameworkElement Control() { return null; }
 
@@ -299,7 +299,7 @@ namespace Stackshot
                 MinHeight = 0;
                 RowDefinitions.Add(new RowDefinition { Height = new GridLength(58) });
                 RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                WrapPanel wrap = new ListWrap { Margin = new Thickness(-4, -2, -4, 10), Label = "Fondos" };
+                WrapPanel wrap = new ListWrap { Margin = new Thickness(-4, -2, -4, 10), Label = I18n.T("Fondos", "Backdrops") };
                 Grid.SetRow(wrap, 1);
                 Grid.SetColumnSpan(wrap, 3);
                 rings = new Border[W.indexing ? 0 : Backdrop.Count];
@@ -323,7 +323,7 @@ namespace Stackshot
             {
                 if (hovered >= 0) return Backdrop.Name(hovered);
                 if (Selected >= 0) return Backdrop.Name(Selected);
-                return W.settings.BgKind == 1 ? "Color liso" : "La captura desenfocada";
+                return W.settings.BgKind == 1 ? I18n.T("Color liso", "Plain color") : I18n.T("La captura desenfocada", "Blurred capture");
             }
 
             FrameworkElement Cell(int i)

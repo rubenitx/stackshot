@@ -54,7 +54,7 @@ namespace Stackshot
         {
             error = null;
             string t = (typed ?? "").Trim().Trim('"').Trim();
-            if (t.Length == 0) { error = "Escribe una direcci\u00F3n web o la ruta de una carpeta o un archivo."; return null; }
+            if (t.Length == 0) { error = I18n.T("Escribe una direcci\u00F3n web o la ruta de una carpeta o un archivo.", "Type a web address or the path of a folder or file."); return null; }
             Uri u;
             if (Uri.TryCreate(t, UriKind.Absolute, out u) && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps)) return u.AbsoluteUri;
             string path = Environment.ExpandEnvironmentVariables(t);
@@ -63,11 +63,11 @@ namespace Stackshot
             {
                 if (Directory.Exists(path)) return path.EndsWith("\\") || path.EndsWith("/") ? path : path + "\\";
                 if (File.Exists(path)) return path;
-                error = "No encuentro esa carpeta o ese archivo.";
+                error = I18n.T("No encuentro esa carpeta o ese archivo.", "I cannot find that folder or file.");
                 return null;
             }
             if (t.IndexOf(' ') < 0 && t.IndexOf('.') > 0 && Uri.TryCreate("https://" + t, UriKind.Absolute, out u)) return u.AbsoluteUri;
-            error = "Escribe una direcci\u00F3n web (como intranet.empresa.es) o una ruta completa (como C:\\Proyectos).";
+            error = I18n.T("Escribe una direcci\u00F3n web (como intranet.empresa.es) o una ruta completa (como C:\\Proyectos).", "Type a web address (like intranet.company.com) or a full path (like C:\\Projects).");
             return null;
         }
 
@@ -91,11 +91,11 @@ namespace Stackshot
             string error;
             string target = LinkTarget(typed, out error);
             if (target == null) return error;
-            if (!Safe(target)) return "Esa direcci\u00F3n o ruta no se puede usar.";
+            if (!Safe(target)) return I18n.T("Esa direcci\u00F3n o ruta no se puede usar.", "That address or path cannot be used.");
             if (links == null) LoadLinks();
             foreach (QuickLink l in links)
-                if (string.Equals(l.Target, target, StringComparison.OrdinalIgnoreCase)) return "Ya lo tienes en tus accesos r\u00E1pidos: \u00AB" + l.Name + "\u00BB.";
-            if (links.Count >= MaxLinks) return "Ya tienes " + MaxLinks + " accesos: quita alguno para a\u00F1adir otro.";
+                if (string.Equals(l.Target, target, StringComparison.OrdinalIgnoreCase)) return I18n.Fmt("Ya lo tienes en tus accesos r\u00E1pidos: \u00AB{0}\u00BB.", "You already have it in your quick links: \u201C{0}\u201D.", l.Name);
+            if (links.Count >= MaxLinks) return I18n.Fmt("Ya tienes {0} accesos: quita alguno para a\u00F1adir otro.", "You already have {0} links: remove one to add another.", MaxLinks);
             name = LinkText(name);
             if (name.Length == 0) name = LinkText(LinkName(target));
             if (name.Length > 40) name = name.Substring(0, 40).Trim();
@@ -130,7 +130,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 Log("Acceso r\u00E1pido: " + ex.Message);
-                return l.Web ? "No he podido abrir el navegador." : "No he podido abrir \u00AB" + l.Name + "\u00BB: puede que ya no exista.";
+                return l.Web ? I18n.T("No he podido abrir el navegador.", "Could not open browser.") : I18n.Fmt("No he podido abrir \u00AB{0}\u00BB: puede que ya no exista.", "Could not open \u201C{0}\u201D: it may no longer exist.", l.Name);
             }
         }
 

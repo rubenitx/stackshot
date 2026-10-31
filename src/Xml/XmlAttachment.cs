@@ -16,8 +16,10 @@ namespace Stackshot
     public sealed class AttachType
     {
         public AttachKind Kind;
-        public string Ext = ".bin", Label = "tipo desconocido";
+        public string Ext = ".bin", Label;
         public bool Partial;    // typed from the first bytes only: a ZIP may still turn out to be a Word or Excel file
+
+        public AttachType() { Label = I18n.T("tipo desconocido", "unknown type"); }
 
         public bool Image { get { return Kind == AttachKind.Png || Kind == AttachKind.Jpeg || Kind == AttachKind.Gif || Kind == AttachKind.Bmp || Kind == AttachKind.Tiff; } }
         // Opened with the app Windows has for them, after asking.
@@ -112,15 +114,15 @@ namespace Stackshot
         public static byte[] Decode(string s, out string error)
         {
             error = null;
-            if (s == null) { error = "No hay ning\u00FAn adjunto."; return null; }
+            if (s == null) { error = I18n.T("No hay ning\u00FAn adjunto.", "There is no attachment."); return null; }
             int n = 0;
             for (int i = 0; i < s.Length; i++) if (!Ws(s[i])) n++;
-            if ((long)n / 4 * 3 > MaxBytes) { error = "El adjunto es demasiado grande (m\u00E1ximo " + (MaxBytes / (1024 * 1024)) + " MB)."; return null; }
+            if ((long)n / 4 * 3 > MaxBytes) { error = I18n.Fmt("El adjunto es demasiado grande (m\u00E1ximo {0} MB).", "The attachment is too large (maximum {0} MB).", (MaxBytes / (1024 * 1024))); return null; }
             char[] buf = new char[n];
             int k = 0;
             for (int i = 0; i < s.Length; i++) if (!Ws(s[i])) buf[k++] = s[i];
             try { return Convert.FromBase64CharArray(buf, 0, n); }
-            catch (FormatException) { error = "El campo no es base64 v\u00E1lido."; return null; }
+            catch (FormatException) { error = I18n.T("El campo no es base64 v\u00E1lido.", "Field is not valid base64."); return null; }
         }
 
         // The type, for the menu: cheap enough for a right click (the whole field when small, else its first bytes).
@@ -154,16 +156,16 @@ namespace Stackshot
         {
             if (b == null || b.Length == 0) return new AttachType();
             if (Starts(b, 0x25, 0x50, 0x44, 0x46, 0x2D)) return Type(AttachKind.Pdf, ".pdf", "PDF");
-            if (Starts(b, 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)) return Type(AttachKind.Png, ".png", "imagen PNG");
-            if (Starts(b, 0xFF, 0xD8, 0xFF)) return Type(AttachKind.Jpeg, ".jpg", "imagen JPEG");
-            if (Starts(b, 0x47, 0x49, 0x46, 0x38, -1, 0x61) && (b[4] == 0x37 || b[4] == 0x39)) return Type(AttachKind.Gif, ".gif", "imagen GIF");
-            if (Bmp(b)) return Type(AttachKind.Bmp, ".bmp", "imagen BMP");
-            if (Starts(b, 0x49, 0x49, 0x2A, 0x00) || Starts(b, 0x4D, 0x4D, 0x00, 0x2A)) return Type(AttachKind.Tiff, ".tif", "imagen TIFF");
-            if (Starts(b, 0x4D, 0x5A)) return Type(AttachKind.Executable, ".exe", "un ejecutable");
-            if (Starts(b, 0x4C, 0x00, 0x00, 0x00, 0x01, 0x14, 0x02, 0x00)) return Type(AttachKind.Shortcut, ".lnk", "un acceso directo");
-            if (Starts(b, 0x50, 0x4B, 0x03, 0x04) || Starts(b, 0x50, 0x4B, 0x05, 0x06)) return partial ? new AttachType { Kind = AttachKind.Zip, Ext = ".zip", Label = "ZIP u Office", Partial = true } : Zip(b);
+            if (Starts(b, 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)) return Type(AttachKind.Png, ".png", I18n.T("imagen PNG", "PNG image"));
+            if (Starts(b, 0xFF, 0xD8, 0xFF)) return Type(AttachKind.Jpeg, ".jpg", I18n.T("imagen JPEG", "JPEG image"));
+            if (Starts(b, 0x47, 0x49, 0x46, 0x38, -1, 0x61) && (b[4] == 0x37 || b[4] == 0x39)) return Type(AttachKind.Gif, ".gif", I18n.T("imagen GIF", "GIF image"));
+            if (Bmp(b)) return Type(AttachKind.Bmp, ".bmp", I18n.T("imagen BMP", "BMP image"));
+            if (Starts(b, 0x49, 0x49, 0x2A, 0x00) || Starts(b, 0x4D, 0x4D, 0x00, 0x2A)) return Type(AttachKind.Tiff, ".tif", I18n.T("imagen TIFF", "TIFF image"));
+            if (Starts(b, 0x4D, 0x5A)) return Type(AttachKind.Executable, ".exe", I18n.T("un ejecutable", "an executable"));
+            if (Starts(b, 0x4C, 0x00, 0x00, 0x00, 0x01, 0x14, 0x02, 0x00)) return Type(AttachKind.Shortcut, ".lnk", I18n.T("un acceso directo", "a shortcut"));
+            if (Starts(b, 0x50, 0x4B, 0x03, 0x04) || Starts(b, 0x50, 0x4B, 0x05, 0x06)) return partial ? new AttachType { Kind = AttachKind.Zip, Ext = ".zip", Label = I18n.T("ZIP u Office", "ZIP or Office"), Partial = true } : Zip(b);
             bool xml;
-            if (Text(b, out xml)) return xml ? Type(AttachKind.Xml, ".xml", "XML") : Type(AttachKind.Text, ".txt", "texto");
+            if (Text(b, out xml)) return xml ? Type(AttachKind.Xml, ".xml", "XML") : Type(AttachKind.Text, ".txt", I18n.T("texto", "text"));
             return new AttachType();
         }
 
@@ -196,15 +198,15 @@ namespace Stackshot
                     }
                     if (types && (word || excel || ppt))
                     {
-                        if (macros) return Type(AttachKind.OfficeMacros, word ? ".docm" : excel ? ".xlsm" : ".pptm", "un documento de Office con macros");
-                        if (word) return Type(AttachKind.Word, ".docx", "documento de Word");
-                        if (excel) return Type(AttachKind.Excel, ".xlsx", "hoja de Excel");
-                        return Type(AttachKind.PowerPoint, ".pptx", "presentaci\u00F3n de PowerPoint");
+                        if (macros) return Type(AttachKind.OfficeMacros, word ? ".docm" : excel ? ".xlsm" : ".pptm", I18n.T("un documento de Office con macros", "an Office document with macros"));
+                        if (word) return Type(AttachKind.Word, ".docx", I18n.T("documento de Word", "Word document"));
+                        if (excel) return Type(AttachKind.Excel, ".xlsx", I18n.T("hoja de Excel", "Excel spreadsheet"));
+                        return Type(AttachKind.PowerPoint, ".pptx", I18n.T("presentaci\u00F3n de PowerPoint", "PowerPoint presentation"));
                     }
                 }
             }
             catch (Exception) { }
-            return Type(AttachKind.Zip, ".zip", "un archivo ZIP");
+            return Type(AttachKind.Zip, ".zip", I18n.T("un archivo ZIP", "a ZIP file"));
         }
 
         // Text: a Unicode BOM, or no NUL and no control characters other than tab, line breaks and form feed (UTF-8 or a
@@ -364,7 +366,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Adjunto temporal: " + ex.Message);
-                error = "No he podido escribir el adjunto en la carpeta temporal.";
+                error = I18n.T("No he podido escribir el adjunto en la carpeta temporal.", "Could not write attachment to temporary folder.");
                 return null;
             }
         }

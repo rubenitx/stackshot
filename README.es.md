@@ -22,7 +22,7 @@ Para Windows 10 y 11 · Versión 2.1.0 · También como [paquete MSI](https://gi
 **Contenido:** [Tres pasos](#tres-pasos-ningún-menú) · [Novedades](#novedades-de-la-21) · [Funciones](#funciones-de-un-vistazo) · [Modos](#siete-formas-de-capturar) · [Capturar](#selecciona-captura-listo) · [Marcar](#márcala-en-segundos) · [Datos sensibles](#tápalo-antes-de-compartir) · [Desplazamiento](#captura-la-página-entera) · [Grabar](#graba-la-pantalla-con-sonido) · [Historial](#encuéntrala-por-lo-que-decía) · [XML y Markdown](#xml-y-markdown-a-otro-nivel) · [Ventana principal](#una-ventana-a-tu-manera) · [Pixel](#conoce-a-pixel-39-disfraces) · [Más](#y-mucho-más) · [Rendimiento](#ligera-rápida-privada) · [Instalación](#instalación) · [Línea de órdenes](#línea-de-órdenes-y-directivas-de-empresa) · [Atajos](#atajos-de-teclado) · [Privacidad](#privacidad-y-seguridad) · [Preguntas frecuentes](#preguntas-frecuentes) · [Compilar](#compilar-desde-el-código) · [Licencia](#licencia)
 
 > [!NOTE]
-> La interfaz de Stackshot está en español, con los nombres que se ven en esta página. Hay una traducción al inglés prevista y se aceptan contribuciones.
+> La interfaz de Stackshot está en español y en inglés: sigue el idioma de Windows y se cambia en **Ajustes › General › Apariencia › Idioma**. Las capturas de esta página muestran la interfaz en español.
 
 ## Tres pasos, ningún menú
 
@@ -649,7 +649,7 @@ Al abrir `Stackshot.exe` te ofrece instalarlo para tu usuario (sin permisos de a
 <summary><b>¿Tiene la interfaz en español?</b></summary>
 <br>
 
-Sí: la interfaz de Stackshot está en español, con los nombres que se ven en esta página. Hay una traducción al inglés prevista y se aceptan contribuciones.
+Sí, y desde la 2.3.0 también en inglés. Una instalación nueva sigue el idioma de Windows (español en un Windows en español, catalán, gallego o euskera; inglés en los demás), y **Ajustes › General › Apariencia › Idioma** lo cambia al momento (Automático, Español, English). Quien ya usaba Stackshot sigue en español mientras no elija otro. La traducción al inglés la aportó [@altmashnaveed](https://github.com/altmashnaveed).
 </details>
 
 ## Compilar desde el código

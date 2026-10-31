@@ -42,7 +42,7 @@ namespace Stackshot
                     {
                         Bitmap shot = Grabber.Grab(r);
                         start.DrawPointer(shot, r.Location);
-                        string name = "Captura";
+                        string name = I18n.T("Captura", "Capture");
                         if (window != IntPtr.Zero)
                         {
                             name = Grabber.ProcessName(window) ?? name;
@@ -54,7 +54,7 @@ namespace Stackshot
                     catch (Exception ex)
                     {
                         Log("Captura con temporizador: " + ex.Message);
-                        Notify("No se pudo capturar", "Ha fallado algo inesperado. Vuelve a intentarlo.");
+                        Notify(I18n.T("No se pudo capturar", "Could not capture"), I18n.T("Ha fallado algo inesperado. Vuelve a intentarlo.", "An unexpected error occurred. Please try again."));
                     }
                     finally { EndCapture(); }
                 });

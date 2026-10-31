@@ -26,12 +26,16 @@ namespace Stackshot
         public event Action<int, int> ClipMove;    // clip index and direction (-1 left, +1 right)
 
         // Export options, shown as segmented controls in the header.
-        public static readonly string[] Speeds = { "1\u00D7", "1,5\u00D7", "2\u00D7" };
+        static readonly string[] SpeedsEs = { "1\u00D7", "1,5\u00D7", "2\u00D7" };
+        static readonly string[] SpeedsEn = { "1\u00D7", "1.5\u00D7", "2\u00D7" };
+        public static string[] Speeds { get { return I18n.IsSpanish ? SpeedsEs : SpeedsEn; } }
         public static readonly double[] SpeedValues = { 1, 1.5, 2 };
         public static readonly string[] Sizes = { "Original", "1080p", "720p" };
         public static readonly int[] SizeValues = { 0, 1080, 720 };
         // The last two fit a size: WhatsApp's 16 MB and the 25 MB most mail takes (VideoExport.TargetBytes).
-        public static readonly string[] Qualities = { "M\u00E1xima", "Alta", "Ligera", "16 MB", "25 MB" };
+        static readonly string[] QualitiesEs = { "M\u00E1xima", "Alta", "Ligera", "16 MB", "25 MB" };
+        static readonly string[] QualitiesEn = { "Maximum", "High", "Light", "16 MB", "25 MB" };
+        public static string[] Qualities { get { return I18n.IsSpanish ? QualitiesEs : QualitiesEn; } }
         public static readonly string[] Formats = { "MP4", "GIF" };
         public int Speed, OutSize, Quality, Format;
         readonly Rectangle[][] segs = new Rectangle[4][];
@@ -144,18 +148,25 @@ namespace Stackshot
             readonly Timeline t;
             public Access(Timeline t) : base(t) { this.t = t; }
             public override AccessibleRole Role { get { return AccessibleRole.Slider; } }
-            public override string Name { get { return "L\u00EDnea de tiempo"; } }
+            public override string Name { get { return I18n.T("L\u00EDnea de tiempo", "Timeline"); } }
             public override string Value
             {
                 get
                 {
-                    string v = Clock(t.Playhead) + " de " + Clock(t.Duration);
-                    if (t.IsTrimmed) v += ", recortada de " + Clock(t.In) + " a " + Clock(t.Out);
-                    if (t.HasCuts) v += ", con tramos quitados";
+                    string v = I18n.Fmt("{0} de {1}", "{0} of {1}", Clock(t.Playhead), Clock(t.Duration));
+                    if (t.IsTrimmed) v += I18n.Fmt(", recortada de {0} a {1}", ", trimmed from {0} to {1}", Clock(t.In), Clock(t.Out));
+                    if (t.HasCuts) v += I18n.T(", con tramos quitados", ", with pieces removed");
                     return v;
                 }
             }
-            public override string Description { get { return "Flechas: fotograma a fotograma. May\u00FAs y flechas: de segundo en segundo. Inicio y Fin: principio y final del recorte."; } }
+            public override string Description
+            {
+                get
+                {
+                    return I18n.T("Flechas: fotograma a fotograma. May\u00FAs y flechas: de segundo en segundo. Inicio y Fin: principio y final del recorte.",
+                                  "Arrows: frame by frame. Shift and arrows: second by second. Home and End: start and end of the trim.");
+                }
+            }
         }
 
         public void Init(double duration)
@@ -316,7 +327,7 @@ namespace Stackshot
         public static string Clock(double t)
         {
             int m = (int)(t / 60);
-            return m + ":" + (t - m * 60).ToString("00.0", Spanish);
+            return m + ":" + (t - m * 60).ToString("00.0", I18n.IsSpanish ? Spanish : CultureInfo.InvariantCulture);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -332,8 +343,10 @@ namespace Stackshot
             Rectangle r = Strip;
             Font f = Fonts.Get(EdLook.Text, 12f * S);
             List<double[]> keep = Keep();
-            string sel = (playing ? Clock(Playhead) + "  \u00B7  " : "") + (Clips.Count > 1 ? Clips.Count + " v\u00EDdeos  \u00B7  " : "") + "Duraci\u00F3n " + Clock(Seconds(keep) / SpeedValues[Speed]) +
-                         (IsTrimmed ? "  \u00B7  de " + Clock(In) + " a " + Clock(Out) : "") + (HasCuts ? "  \u00B7  " + keep.Count + " tramos" : "");
+            string sel = (playing ? Clock(Playhead) + "  \u00B7  " : "") + (Clips.Count > 1 ? I18n.Fmt("{0} v\u00EDdeos  \u00B7  ", "{0} videos  \u00B7  ", Clips.Count) : "") +
+                         I18n.T("Duraci\u00F3n ", "Duration ") + Clock(Seconds(keep) / SpeedValues[Speed]) +
+                         (IsTrimmed ? I18n.Fmt("  \u00B7  de {0} a {1}", "  \u00B7  from {0} to {1}", Clock(In), Clock(Out)) : "") +
+                         (HasCuts ? I18n.Fmt("  \u00B7  {0} tramos", "  \u00B7  {0} pieces", keep.Count) : "");
             // Never under the options: a long trimmed clip in a narrow window ends in an ellipsis instead.
             int tx = PaintCutButtons(g, pal, r, f);
             int optionsLeft = PaintOptions(g, pal, r, f, tx);
@@ -509,20 +522,20 @@ namespace Stackshot
             ContextMenuStrip m = TrayMenu.Create();
             if (i == 0)
             {
-                ToolStripMenuItem info = TrayMenu.Item("V\u00EDdeo base: marca el tama\u00F1o y los fotogramas", null, delegate { });
+                ToolStripMenuItem info = TrayMenu.Item(I18n.T("V\u00EDdeo base: marca el tama\u00F1o y los fotogramas", "Base video: sets resolution and frame rate"), null, delegate { });
                 info.Enabled = false;
                 m.Items.Add(info);
             }
             else
             {
-                ToolStripMenuItem left = TrayMenu.Item("Mover a la izquierda", null, delegate { if (ClipMove != null) ClipMove(i, -1); });
+                ToolStripMenuItem left = TrayMenu.Item(I18n.T("Mover a la izquierda", "Move left"), null, delegate { if (ClipMove != null) ClipMove(i, -1); });
                 left.Enabled = i >= 2;
-                ToolStripMenuItem right = TrayMenu.Item("Mover a la derecha", null, delegate { if (ClipMove != null) ClipMove(i, 1); });
+                ToolStripMenuItem right = TrayMenu.Item(I18n.T("Mover a la derecha", "Move right"), null, delegate { if (ClipMove != null) ClipMove(i, 1); });
                 right.Enabled = i < Clips.Count - 1;
                 m.Items.Add(left);
                 m.Items.Add(right);
                 m.Items.Add(TrayMenu.Separator());
-                m.Items.Add(TrayMenu.Item("Quitar este v\u00EDdeo", null, delegate { if (ClipRemove != null) ClipRemove(i); }));
+                m.Items.Add(TrayMenu.Item(I18n.T("Quitar este v\u00EDdeo", "Remove this video"), null, delegate { if (ClipRemove != null) ClipRemove(i); }));
             }
             m.Closed += delegate { BeginInvoke((Action)delegate { m.Dispose(); }); };
             m.Show(PointToScreen(at));
@@ -544,7 +557,7 @@ namespace Stackshot
         {
             Font fs = Fonts.Get(EdLook.Semibold, 11.5f * S);
             const TextFormatFlags C = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
-            string[] labels = { "Dividir", CutOn ? "Recuperar" : "Quitar tramo" };
+            string[] labels = { I18n.T("Dividir", "Split"), CutOn ? I18n.T("Recuperar", "Restore") : I18n.T("Quitar tramo", "Remove piece") };
             bool[] on = { CanSplit && !playing, CanCut && !playing };
             int x = r.X, h = P(24), y = P(7);
             if (CanPlay)
@@ -577,7 +590,7 @@ namespace Stackshot
             if (CanAddClips)
             {
                 // A narrow window gets the short label.
-                string add = Width < P(1000) ? "+ V\u00EDdeo" : "A\u00F1adir v\u00EDdeo";
+                string add = Width < P(1000) ? I18n.T("+ V\u00EDdeo", "+ Video") : I18n.T("A\u00F1adir v\u00EDdeo", "Add video");
                 int w = TextKit.Measure(g, add, fs, Size.Empty, TextFormatFlags.NoPadding).Width + P(22);
                 addBtn = new Rectangle(x, y, w, h);
                 Color bg = EdLook.C(pal.Control);
@@ -599,7 +612,7 @@ namespace Stackshot
             int leftmost = r.Right;
             string[][] groups = { Speeds, Sizes, Qualities, Formats };
             int[] sel = { Speed, OutSize, Quality, Format };
-            string[] labels = { "Velocidad", "Tama\u00F1o", "Calidad", "Formato" };
+            string[] labels = { I18n.T("Velocidad", "Speed"), I18n.T("Tama\u00F1o", "Size"), I18n.T("Calidad", "Quality"), I18n.T("Formato", "Format") };
             Font fs = Fonts.Get(EdLook.Semibold, 11.5f * S), fr = Fonts.Get(EdLook.Text, 11.5f * S);
             const TextFormatFlags C = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
             int x = r.Right, h = P(24), y = P(7);

@@ -262,13 +262,13 @@ namespace Stackshot
                         o.Add(new Piece(">", Seg.Punct));
                         o.Add(new Piece(" \u2026 ", Seg.Hint));
                         o.Add(new Piece("</", Seg.Punct)); Name(o, n); o.Add(new Piece(">", Seg.Punct));
-                        o.Add(new Piece("  " + n.Kids.Count + (n.Kids.Count == 1 ? " nodo" : " nodos") + (n.Inner ? " \u00B7 XML interno" : ""), Seg.Hint));
+                        o.Add(new Piece("  " + n.Kids.Count + (n.Kids.Count == 1 ? I18n.T(" nodo", " node") : I18n.T(" nodos", " nodes")) + (n.Inner ? I18n.T(" \u00B7 XML interno", " \u00B7 inner XML") : ""), Seg.Hint));
                     }
                     else
                     {
                         o.Add(new Piece(">", Seg.Punct));
                         // XML that travels escaped in this field, shown opened (XmlDoc.ExpandInner).
-                        if (n.Inner) o.Add(new Piece("   XML interno", Seg.Hint));
+                        if (n.Inner) o.Add(new Piece(I18n.T("   XML interno", "   inner XML"), Seg.Hint));
                     }
                     break;
             }
@@ -348,9 +348,9 @@ namespace Stackshot
             count = new TextBlock { FontSize = 12, Foreground = Ds.Brush(pal.Label2), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0), IsHitTestVisible = false };
             Grid.SetColumn(count, 2);
             g.Children.Add(count);
-            prev = new DocIconButton("up", "Anterior (Mayús+Enter)", 24);
-            next = new DocIconButton("down", "Siguiente (Enter)", 24);
-            filter = new DocIconButton("filter", "Mostrar solo lo que coincide", 24) { Margin = new Thickness(2, 0, 3, 0) };
+            prev = new DocIconButton("up", I18n.T("Anterior (May\u00FAs+Enter)", "Previous (Shift+Enter)"), 24);
+            next = new DocIconButton("down", I18n.T("Siguiente (Enter)", "Next (Enter)"), 24);
+            filter = new DocIconButton("filter", I18n.T("Mostrar solo lo que coincide", "Show only matching"), 24) { Margin = new Thickness(2, 0, 3, 0) };
             prev.Click += delegate { if (Step != null) Step(-1); };
             next.Click += delegate { if (Step != null) Step(1); };
             filter.Click += delegate
@@ -389,7 +389,7 @@ namespace Stackshot
         void Sync()
         {
             bool typed = Box.Text.Trim().Length > 0;
-            count.Text = !typed ? "" : total == 0 ? "Sin resultados" : filter.On ? total.ToString("N0") : (at >= 0 ? (at + 1).ToString("N0") + " de " : "") + total.ToString("N0");
+            count.Text = !typed ? "" : total == 0 ? I18n.T("Sin resultados", "No results") : filter.On ? total.ToString("N0") : (at >= 0 ? I18n.Fmt("{0} de {1}", "{0} of {1}", (at + 1).ToString("N0"), total.ToString("N0")) : total.ToString("N0"));
             Visibility nav = typed && !filter.On ? Visibility.Visible : Visibility.Collapsed;
             prev.Visibility = next.Visibility = nav;
             prev.IsEnabled = next.IsEnabled = total > 0;
@@ -740,9 +740,9 @@ namespace Stackshot
             XRow r = list.SelectedItem as XRow;
             List<MenuEntry> m = new List<MenuEntry>();
             bool any = list.SelectedItems.Count > 0;
-            m.Add(MenuEntry.Item("Copiar", "copy", false, delegate { CopySelection(); }));
+            m.Add(MenuEntry.Item(I18n.T("Copiar", "Copy"), "copy", false, delegate { CopySelection(); }));
             m[0].Enabled = any;
-            MenuEntry path = MenuEntry.Item("Copiar ruta (XPath)", "copy", false, delegate { CopyPath(); });
+            MenuEntry path = MenuEntry.Item(I18n.T("Copiar ruta (XPath)", "Copy path (XPath)"), "copy", false, delegate { CopyPath(); });
             path.Enabled = r != null;
             m.Add(path);
             if (r != null) ValueEntries(m, r, e);
@@ -750,10 +750,10 @@ namespace Stackshot
             {
                 m.Add(MenuEntry.Line());
                 XRow sel = r;
-                m.Add(MenuEntry.Item(r.Collapsed ? "Expandir" : "Contraer", r.Collapsed ? "plus" : "minus", false, delegate { Toggle(rows.IndexOf(sel)); }));
+                m.Add(MenuEntry.Item(r.Collapsed ? I18n.T("Expandir", "Expand") : I18n.T("Contraer", "Collapse"), r.Collapsed ? "plus" : "minus", false, delegate { Toggle(rows.IndexOf(sel)); }));
             }
             m.Add(MenuEntry.Line());
-            m.Add(MenuEntry.Item("Seleccionar todo", "check", false, delegate { list.Focus(); list.SelectAll(); }));
+            m.Add(MenuEntry.Item(I18n.T("Seleccionar todo", "Select all"), "check", false, delegate { list.Focus(); list.SelectAll(); }));
             Menu(e, m);
         }
 
@@ -773,7 +773,7 @@ namespace Stackshot
         public void CopyPath()
         {
             XRow r = list.SelectedItem as XRow;
-            if (r != null) Ask(XmlDoc.XPath(r.Node), "Ruta copiada.");
+            if (r != null) Ask(XmlDoc.XPath(r.Node), I18n.T("Ruta copiada.", "Path copied."));
         }
 
         // Copies stop here: more would not fit comfortably in the clipboard (or in whatever it is pasted into).
@@ -813,7 +813,7 @@ namespace Stackshot
             bool cut;
             string t = SelectionText(out cut);
             int n = list.SelectedItems.Count;
-            if (t.Length > 0) Ask(t, cut ? "Copiado en parte: la selecci\u00F3n es demasiado grande." : n == 1 ? "Copiado." : "Copiadas " + n.ToString("N0") + " l\u00EDneas.");
+            if (t.Length > 0) Ask(t, cut ? I18n.T("Copiado en parte: la selecci\u00F3n es demasiado grande.", "Partially copied: selection is too large.") : n == 1 ? I18n.T("Copiado.", "Copied.") : I18n.Fmt("Copiadas {0} l\u00EDneas.", "{0} lines copied.", n.ToString("N0")));
         }
 
         // ---- Text positions (for moving between the tree and the editor)
@@ -883,7 +883,7 @@ namespace Stackshot
         public static BitmapSource Render(List<XRow> rows, XmlLook look, out string error)
         {
             error = null;
-            if (rows.Count == 0) { error = "No hay nada que mostrar."; return null; }
+            if (rows.Count == 0) { error = I18n.T("No hay nada que mostrar.", "Nothing to display."); return null; }
             look = look.ForExport();
             const double W = 1000;
             int n = Math.Min(rows.Count, 700);
@@ -893,7 +893,7 @@ namespace Stackshot
                 StackPanel sp = new StackPanel { Width = W };
                 for (int i = 0; i < n; i++) sp.Children.Add(new XmlRowView(ForExport(rows[i], look)));
                 if (n < rows.Count)
-                    sp.Children.Add(new TextBlock { Text = "\u2026 y " + (rows.Count - n).ToString("N0") + " l\u00EDneas m\u00E1s (contrae lo que no necesites para verlas)", Foreground = look.Hint, FontSize = 12.5, Margin = new Thickness(XmlRowView.Gutter, 8, 0, 0) });
+                    sp.Children.Add(new TextBlock { Text = I18n.Fmt("\u2026 y {0} l\u00EDneas m\u00E1s (contrae lo que no necesites para verlas)", "\u2026 and {0} more lines (collapse what you don't need to see them)", (rows.Count - n).ToString("N0")), Foreground = look.Hint, FontSize = 12.5, Margin = new Thickness(XmlRowView.Gutter, 8, 0, 0) });
                 page = new Border { Background = Ds.Brush(look.Dark ? Ds.Rgb(30, 30, 32) : Colors.White), Padding = new Thickness(28, 26, 28, 28), Width = W + 56, UseLayoutRounding = true, Child = sp };
                 TextOptions.SetTextFormattingMode(page, TextFormattingMode.Ideal);
                 TextOptions.SetTextRenderingMode(page, TextRenderingMode.Grayscale);
@@ -905,7 +905,7 @@ namespace Stackshot
             page.Arrange(new Rect(0, 0, page.DesiredSize.Width, page.DesiredSize.Height));
             page.UpdateLayout();
             int w = (int)Math.Ceiling(page.ActualWidth), h = (int)Math.Ceiling(page.ActualHeight);
-            if (h > 16000) { error = "El XML es demasiado largo para una sola imagen."; return null; }
+            if (h > 16000) { error = I18n.T("El XML es demasiado largo para una sola imagen.", "The XML is too long for a single image."); return null; }
             double scale = h * 2 <= 16000 ? 2 : 1;
             RenderTargetBitmap rtb = new RenderTargetBitmap((int)(w * scale), (int)(h * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
             rtb.Render(page);

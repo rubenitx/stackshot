@@ -34,7 +34,7 @@ namespace Stackshot
         public override string Help { get { return PartHelp; } }
         public override string Description { get { return PartHelp; } }
         public override string KeyboardShortcut { get { return PartKeys; } }
-        public override string DefaultAction { get { return Do == null ? null : PartAction ?? "Pulsar"; } }
+        public override string DefaultAction { get { return Do == null ? null : PartAction ?? I18n.T("Pulsar", "Press"); } }
 
         public override string Value
         {

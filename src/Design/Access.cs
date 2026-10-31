@@ -47,9 +47,10 @@ namespace Stackshot
         // ---- Names: "Guardar (Ctrl+S)" is read as "Guardar", with Ctrl+S as its shortcut.
 
         static readonly Regex Combo = new Regex(@"^(?:Ctrl|Alt|May\u00FAs|Shift|Win)\s*\+\s*\S", RegexOptions.Compiled);
-        static readonly Regex Single = new Regex(@"^(?:F\d{1,2}|Esc|Intro|Enter|Supr|Tab|Espacio|Inicio|Fin|Retroceso|Impr Pant|[^\s\w]|\w)$", RegexOptions.Compiled);
+        // The English key names and joining words too, for tooltips written in English.
+        static readonly Regex Single = new Regex(@"^(?:F\d{1,2}|Esc|Intro|Enter|Supr|Tab|Espacio|Inicio|Fin|Retroceso|Impr Pant|Space|Del|Home|End|Backspace|PrtScn|[^\s\w]|\w)$", RegexOptions.Compiled);
 
-        static readonly Regex Joint = new Regex(@"\s+(?:/|o|a|y)\s+", RegexOptions.Compiled);
+        static readonly Regex Joint = new Regex(@"\s+(?:/|o|a|y|or|to|and)\s+", RegexOptions.Compiled);
 
         // "Ctrl+S", "F7", "[", "Ctrl+1 a Ctrl+6", "− / +". Strict: a lone letter or digit is not a key ("Cámara (2)" is a
         // name); the app writes those keys after two spaces ("Flecha  (A)").

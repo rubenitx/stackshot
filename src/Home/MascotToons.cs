@@ -1329,6 +1329,11 @@ namespace Stackshot
         {
             if (IsPersona(kind)) return PersonaLines(kind);
             if (IsSoftFig(kind)) return PkLines(kind);
+            if (!I18n.IsSpanish)
+            {
+                string[] en = ToonLinesEn(kind);
+                if (en != null) return en;
+            }
             switch (kind)
             {
                 case KindFinn: return new string[] { "\u00A1Matem\u00E1tico!", "\u00A1Algebraico!", "\u00A1Es la hora de aventuras!", "\u00A1Vamos, Jake!", "Soy Finn, el humano." };
@@ -1359,6 +1364,43 @@ namespace Stackshot
                                                          "\u00A1Woodstock, ven!" };
                 default: return new string[] { "Yo.", "Mi primera impresi\u00F3n de vosotros\u2026 os odio.", "Los que rompen las reglas son escoria, pero los que abandonan a sus amigos son peor que escoria.",
                                                "Perd\u00F3n por el retraso: me perd\u00ED en el camino de la vida." };
+            }
+        }
+
+        // The English lines of the ones ToonLines writes itself; null for those it hands to another file (each of
+        // those answers in both languages).
+        static string[] ToonLinesEn(int kind)
+        {
+            switch (kind)
+            {
+                case KindFinn: return new string[] { "Mathematical!", "Algebraic!", "It's adventure time!", "Come on, Jake!", "I'm Finn the Human." };
+                case KindJake: return new string[] { "Adventure time!", "Dude, that was mathematical!", "Sucking at something is the first step to being sorta good at something.", "I'm Jake the Dog." };
+                case KindBmoAt: return new string[] { "Who wants to play video games?", "BMO is here!", "BMO loves you." };
+                case KindPakkun: return new string[] { "Yo.", "My nose never fails.", "Summoning me again, Kakashi?" };
+                case KindNarutoSd: return new string[] { "Dattebayo!", "I'm gonna be the next Hokage!", "I never go back on my word! That's my ninja way!", "Kage Bunshin no Jutsu!", "I could go for some ramen!" };
+                case KindSasukeSd: return new string[] { "Hmph.", "You're annoying.", "What I have is not a dream, because I will make it a reality.", "Chidori!" };
+                case KindChopper: return new string[] { "Calling me cute won't make me happy, you jerk!", "A doctor! Somebody call a doctor! \u2026Oh wait, I'm the doctor.",
+                                                        "I'm not a raccoon, I'm a reindeer!", "Cotton candy!", "I'm Tony Tony Chopper, the Straw Hats' doctor." };
+                case KindKeroSd: return new string[] { "Leave it to Kero-chan!", "I'm Cerberus, guardian beast of the seal.", "Any pudding left?", "Sakura, go get that card!",
+                                                       "Wanna play a video game?" };
+                case KindGonSd:
+                case KindKilluaSd:
+                case KindHisokaSd:
+                case KindTanjiroSd:
+                case KindNezukoSd:
+                case KindLuffySd:
+                case KindZoroSd:
+                case KindKaminaSd:
+                case KindShinSd:
+                case KindKantamSd:
+                case KindUltraSd:
+                case KindWaniSd:
+                case KindPiggySd:
+                case KindNevadoSd: return null;
+                case KindSnoopySd: return new string[] { "Time to dance!", "I need my doghouse\u2026", "Curse you, Red Baron!", "Is it suppertime yet?",
+                                                         "Woodstock, come here!" };
+                default: return new string[] { "Yo.", "My first impression of you guys\u2026 I hate you.", "Those who break the rules are scum, but those who abandon their friends are worse than scum.",
+                                               "Sorry I'm late: I got lost on the path of life." };
             }
         }
     }

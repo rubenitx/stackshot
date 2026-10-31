@@ -798,6 +798,7 @@ namespace Stackshot
         static string[] PersonaLines(int k)
         {
             if (k >= KindCapSd) return AvLines(k);
+            if (!I18n.IsSpanish) return PersonaLinesEn(k);
             switch (k)
             {
                 case KindEdwardSd: return new string[] { "\u00A1No me llames enano!", "\u00A1Soy el Alquimista de Acero!", "Para obtener algo, hay que dar algo a cambio.", "\u00A1Al, vamos!" };
@@ -816,6 +817,29 @@ namespace Stackshot
                 case KindAstroSd: return new string[] { "Houston, tenemos un problema.", "Un peque\u00F1o paso para m\u00ED\u2026", "\u00A1Rumbo a las estrellas!", "Aqu\u00ED no hay gravedad." };
                 case KindWizardSd: return new string[] { "Un mago nunca llega tarde.", "Abracadabra.", "La sabidur\u00EDa llega con los a\u00F1os.", "\u00BFD\u00F3nde habr\u00E9 dejado mi varita?" };
                 default: return new string[] { "\u00A1A salvar el d\u00EDa!", "\u00A1Que no cunda el p\u00E1nico!", "Mi superpoder: capturar la pantalla.", "\u00A1Justicia para todos!" };
+            }
+        }
+
+        static string[] PersonaLinesEn(int k)
+        {
+            switch (k)
+            {
+                case KindEdwardSd: return new string[] { "Don't call me short!", "I'm the Fullmetal Alchemist!", "To obtain something, something of equal value must be lost.", "Al, let's go!" };
+                case KindErenSd: return new string[] { "I'll wipe out every last one of them!", "Keep moving forward.", "Dedicate your hearts!", "If you don't fight, you can't win." };
+                case KindLeviSd: return new string[] { "Tch.", "This is still filthy.", "Choose whatever you'll regret the least.", "No one knows how this will turn out." };
+                case KindGojoSd: return new string[] { "Relax, I'm the strongest.", "Domain Expansion: Infinite Void.", "Worried? I'm here.", "Now this is getting fun." };
+                case KindSaitamaSd: return new string[] { "OK.", "Huh, one punch again.", "There's a sale at the supermarket today.", "I'm a hero for fun." };
+                case KindKratosSd: return new string[] { "Boy!", "Do not be soft.", "Stay calm.", "We will do this together." };
+                case KindDoomSd: return new string[] { "\u2026", "Rip and tear.", "They're afraid. And they should be.", "Until none are left." };
+                case KindSpiderSd: return new string[] { "With great power comes great responsibility.", "Your friendly neighborhood Spider-Man!", "My spider-sense is tingling!", "Thwip!" };
+                case KindBatSd: return new string[] { "I'm Batman.", "I am the night.", "Justice never rests.", "Gotham needs me." };
+                case KindFlashSd: return new string[] { "I'm the fastest man alive!", "Late\u2026 again.", "Run, Barry, run!", "Did you blink? I'm already back." };
+                case KindSuperSd: return new string[] { "Up, up and away!", "This is a job for Superman.", "Hope makes us strong.", "Is it a bird? Is it a plane?" };
+                case KindIronSd: return new string[] { "I am Iron Man.", "Genius, billionaire, playboy, philanthropist.", "JARVIS, you there?", "I love you 3000." };
+                case KindKnightSd: return new string[] { "For honor!", "En garde!", "This armor weighs a ton.", "I swear to protect this desktop." };
+                case KindAstroSd: return new string[] { "Houston, we have a problem.", "One small step for me\u2026", "To the stars!", "There's no gravity up here." };
+                case KindWizardSd: return new string[] { "A wizard is never late.", "Abracadabra.", "Wisdom comes with age.", "Now where did I leave my wand?" };
+                default: return new string[] { "Saving the day!", "Don't panic!", "My superpower: capturing the screen.", "Justice for all!" };
             }
         }
     }

@@ -19,8 +19,8 @@ namespace Stackshot
         // the window is up.
         void SensitiveSetup()
         {
-            sensitiveItem = Button("Datos sensibles", "shield", "Buscar y tapar DNI, NIE, n.\u00BA de la Seguridad Social, IBAN, tarjetas, correos y tel\u00E9fonos. Se leen en tu equipo y puedes quitar cualquier marca  (Ctrl+May\u00FAs+X)", FindSensitive, true);
-            sensitiveItem.Alt = "Buscando\u2026";
+            sensitiveItem = Button(I18n.T("Datos sensibles", "Sensitive data"), "shield", I18n.T("Buscar y tapar DNI, NIE, n.\u00BA de la Seguridad Social, IBAN, tarjetas, correos y tel\u00E9fonos. Se leen en tu equipo y puedes quitar cualquier marca  (Ctrl+May\u00FAs+X)", "Find and redact ID, SSN, card, IBAN, email and phone numbers. Read locally on your PC and any mark can be removed  (Ctrl+Shift+X)"), FindSensitive, true);
+            sensitiveItem.Alt = I18n.T("Buscando\u2026", "Searching\u2026");
             sensitiveItem.Optional = true; // Ctrl+Shift+X
             Shown += delegate { RestoreCovers(); };
             FormClosed += delegate
@@ -42,11 +42,11 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Datos sensibles (editor): " + ex.Message);
-                SensitiveSay("No se ha podido leer la imagen.");
+                SensitiveSay(I18n.T("No se ha podido leer la imagen.", "Could not read image."));
                 return;
             }
             SetSensitiveBusy(true);
-            Flash("Buscando datos sensibles\u2026", false);
+            Flash(I18n.T("Buscando datos sensibles\u2026", "Searching for sensitive data\u2026"), false);
             Thread t = new Thread(delegate()
             {
                 List<SensitiveFinding> found = null;
@@ -62,7 +62,8 @@ namespace Stackshot
                 catch (Exception ex)
                 {
                     ShotStack.Log("Datos sensibles (editor): " + ex);
-                    error = ex is OutOfMemoryException ? "No hay memoria suficiente para una imagen tan grande." : "No se ha podido leer la imagen.";
+                    error = ex is OutOfMemoryException ? I18n.T("No hay memoria suficiente para una imagen tan grande.", "Not enough memory for such a large image.")
+                                                       : I18n.T("No se ha podido leer la imagen.", "Could not read the image.");
                     found = null;
                 }
                 try { BeginInvoke((Action)delegate { SensitiveFound(found, error, origin); }); }
@@ -76,7 +77,7 @@ namespace Stackshot
                 ShotStack.Log("Datos sensibles (editor): " + ex.Message);
                 plain.Dispose();
                 SetSensitiveBusy(false);
-                SensitiveSay("No se han podido buscar los datos sensibles. Vuelve a intentarlo.");
+                SensitiveSay(I18n.T("No se han podido buscar los datos sensibles. Vuelve a intentarlo.", "Could not search for sensitive data. Try again."));
             }
         }
 
@@ -114,7 +115,7 @@ namespace Stackshot
             SetSensitiveBusy(false);
             if (found == null)
             {
-                SensitiveSay("No se han podido buscar los datos sensibles. " + (error ?? "No se ha podido leer la imagen."));
+                SensitiveSay(I18n.T("No se han podido buscar los datos sensibles. ", "Could not search for sensitive data. ") + (error ?? I18n.T("No se ha podido leer la imagen.", "Could not read image.")));
                 return;
             }
             List<Rectangle> boxes = new List<Rectangle>();
@@ -133,14 +134,28 @@ namespace Stackshot
         // What the hint strip says after a search. added: how many of found this search covered (the rest already were).
         internal static string SensitiveResult(IList<SensitiveFinding> found, int added)
         {
-            if (found.Count == 0) return "No he encontrado datos sensibles.";
-            if (added == 0) return "Los datos sensibles ya estaban tapados.";
-            int n = found.Count;
-            if (added < n)
-                return (added == 1 ? "He tapado 1 dato sensible m\u00E1s; " : "He tapado " + added + " datos sensibles m\u00E1s; ") +
-                       (n - added == 1 ? "el otro ya lo estaba." : "los otros " + (n - added) + " ya lo estaban.");
-            return (n == 1 ? "1 dato sensible tapado: " : n + " datos sensibles tapados: ") + Sensitive.Summary(found) +
-                   (n == 1 ? ". Puedes quitarlo." : ". Puedes quitar cualquiera.");
+            if (I18n.IsSpanish)
+            {
+                if (found.Count == 0) return "No he encontrado datos sensibles.";
+                if (added == 0) return "Los datos sensibles ya estaban tapados.";
+                int n = found.Count;
+                if (added < n)
+                    return (added == 1 ? "He tapado 1 dato sensible m\u00E1s; " : "He tapado " + added + " datos sensibles m\u00E1s; ") +
+                           (n - added == 1 ? "el otro ya lo estaba." : "los otros " + (n - added) + " ya lo estaban.");
+                return (n == 1 ? "1 dato sensible tapado: " : n + " datos sensibles tapados: ") + Sensitive.Summary(found) +
+                       (n == 1 ? ". Puedes quitarlo." : ". Puedes quitar cualquiera.");
+            }
+            else
+            {
+                if (found.Count == 0) return "No sensitive data found.";
+                if (added == 0) return "Sensitive data is already redacted.";
+                int n = found.Count;
+                if (added < n)
+                    return (added == 1 ? "Redacted 1 more sensitive item; " : "Redacted " + added + " more sensitive items; ") +
+                           (n - added == 1 ? "the other was already covered." : "the other " + (n - added) + " were already covered.");
+                return (n == 1 ? "1 sensitive item redacted: " : n + " sensitive items redacted: ") + Sensitive.Summary(found) +
+                       (n == 1 ? ". You can remove it." : ". You can remove any.");
+            }
         }
 
         // A longer message than Flash's usual: it stays a few seconds, unless something else is shown meanwhile.
@@ -181,7 +196,8 @@ namespace Stackshot
                     {
                         if (IsDisposed || dirty) { original.Dispose(); return; }
                         if (canvas.ShowCovers(original, boxes))
-                            SensitiveSay(boxes.Count == 1 ? "El dato sensible se tap\u00F3 al capturar: es una marca y puedes quitarla." : "Los datos sensibles se taparon al capturar: son marcas y puedes quitar cualquiera.");
+                            SensitiveSay(boxes.Count == 1 ? I18n.T("El dato sensible se tap\u00F3 al capturar: es una marca y puedes quitarla.", "Sensitive data was redacted on capture: it is a mark and you can remove it.")
+                                                          : I18n.T("Los datos sensibles se taparon al capturar: son marcas y puedes quitar cualquiera.", "Sensitive data was redacted on capture: they are marks and you can remove any."));
                     });
                 }
                 catch (Exception) { original.Dispose(); }

@@ -138,36 +138,36 @@ namespace Stackshot
             RenderOptions.SetBitmapScalingMode(logo, BitmapScalingMode.HighQuality);
             head.Children.Add(logo);
             col.Children.Add(head);
-            col.Children.Add(Text("Te damos la bienvenida", Ds.Title, compact ? 25 : 28, pal.Label, HorizontalAlignment.Center, new Thickness(0, compact ? 10 : 14, 0, 0)));
-            string key = Hotkeys.Split(settings.HotRegion).Count > 0 ? "\nPulsa " + Hotkeys.Display(settings.HotRegion) + " y listo." : "";
-            TextBlock sub = Text("Captura, marca y comparte en segundos." + key, Ds.Regular, 14, pal.Label2,
+            col.Children.Add(Text(I18n.T("Te damos la bienvenida", "Welcome to Stackshot"), Ds.Title, compact ? 25 : 28, pal.Label, HorizontalAlignment.Center, new Thickness(0, compact ? 10 : 14, 0, 0)));
+            string key = Hotkeys.Split(settings.HotRegion).Count > 0 ? (I18n.IsSpanish ? "\nPulsa " + Hotkeys.Display(settings.HotRegion) + " y listo." : "\nPress " + Hotkeys.Display(settings.HotRegion) + " to capture.") : "";
+            TextBlock sub = Text(I18n.T("Captura, marca y comparte en segundos.", "Capture, markup and share in seconds.") + key, Ds.Regular, 14, pal.Label2,
                                  HorizontalAlignment.Center, new Thickness(0, 6, 0, compact ? 18 : 24));
             sub.TextAlignment = TextAlignment.Center;
             col.Children.Add(sub);
 
             // Grouped card like macOS Settings: switches and the folder, separated by hairlines.
             StackPanel list = new StackPanel();
-            startup = AddSwitch(list, "Iniciar con Windows", "Se abre solo, en segundo plano, al encender el equipo.", wantStartup);
+            startup = AddSwitch(list, I18n.T("Iniciar con Windows", "Start with Windows"), I18n.T("Se abre solo, en segundo plano, al encender el equipo.", "Opens automatically in the background on startup."), wantStartup);
             printScreen = Installer.SnippingOwnsPrintScreen
-                ? AddSwitch(list, "Usar la tecla Impr Pant", "Windows la usa para Recortes; Stackshot se la queda solo en tu usuario.", wantPrintScreen)
+                ? AddSwitch(list, I18n.T("Usar la tecla Impr Pant", "Use Print Screen key"), I18n.T("Windows la usa para Recortes; Stackshot se la queda solo en tu usuario.", "Windows uses it for Snipping Tool; Stackshot claims it for your account."), wantPrintScreen)
                 : null;
-            sound = AddSwitch(list, "Sonido al capturar", "Un peque\u00F1o clic de c\u00E1mara.", wantSound);
-            copy = AddSwitch(list, "Copiar cada captura", "Lista para pegar con Ctrl+V nada m\u00E1s hacerla.", wantCopy);
-            saveAll = AddSwitch(list, "Guardar todas las capturas", "Van a tu carpeta al momento. Apagado, solo las que guardes t\u00FA.", wantSaveAll);
+            sound = AddSwitch(list, I18n.T("Sonido al capturar", "Shutter sound"), I18n.T("Un peque\u00F1o clic de c\u00E1mara.", "A gentle camera shutter click."), wantSound);
+            copy = AddSwitch(list, I18n.T("Copiar cada captura", "Copy every capture"), I18n.T("Lista para pegar con Ctrl+V nada m\u00E1s hacerla.", "Ready to paste with Ctrl+V right away."), wantCopy);
+            saveAll = AddSwitch(list, I18n.T("Guardar todas las capturas", "Save all captures"), I18n.T("Van a tu carpeta al momento. Apagado, solo las que guardes t\u00FA.", "Saves to folder immediately. If off, only captures you choose to keep."), wantSaveAll);
             extras = Policy.MascotForced ? null
-                   : AddSwitch(list, "Mascota y pausas saludables", "Un compa\u00F1ero en la ventana que te recuerda beber agua y descansar la vista. Se puede activar despu\u00E9s.", wantExtras);
+                   : AddSwitch(list, I18n.T("Mascota y pausas saludables", "Mascot & healthy breaks"), I18n.T("Un compa\u00F1ero en la ventana que te recuerda beber agua y descansar la vista. Se puede activar despu\u00E9s.", "A window companion that reminds you to hydrate and rest your eyes. Can be enabled later."), wantExtras);
             Grid frow = Row(list);
             StackPanel ft = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = TextPad };
-            ft.Children.Add(Text("Carpeta de capturas", Ds.Regular, 13.5, pal.Label, HorizontalAlignment.Left, new Thickness(0)));
+            ft.Children.Add(Text(I18n.T("Carpeta de capturas", "Captures folder"), Ds.Regular, 13.5, pal.Label, HorizontalAlignment.Left, new Thickness(0)));
             folderLabel = Text("", Ds.Regular, 12, pal.Label2, HorizontalAlignment.Left, new Thickness(0, 2, 0, 0));
             folderLabel.TextTrimming = TextTrimming.CharacterEllipsis;
             ft.Children.Add(folderLabel);
             frow.Children.Add(ft);
-            MacButton change = new MacButton("Cambiar\u2026", ButtonKind.Secondary);
+            MacButton change = new MacButton(I18n.T("Cambiar\u2026", "Change\u2026"), ButtonKind.Secondary);
             change.Click += PickFolder;
             Grid.SetColumn(change, 1);
             change.VerticalAlignment = VerticalAlignment.Center;
-            AutomationProperties.SetName(change, "Cambiar la carpeta de capturas");
+            AutomationProperties.SetName(change, I18n.T("Cambiar la carpeta de capturas", "Change captures folder"));
             if (Policy.FolderForced)
             {
                 change.IsEnabled = false;
@@ -180,8 +180,8 @@ namespace Stackshot
 
             // The essentials as key caps, so there's nothing else to read.
             StackPanel keys = new StackPanel();
-            string[] combos = { settings.HotRegion, settings.HotVideo, "Clic" };
-            string[] what = { "Capturar un \u00E1rea o una ventana", "Grabar la pantalla", "en la miniatura para editarla" };
+            string[] combos = { settings.HotRegion, settings.HotVideo, I18n.T("Clic", "Click") };
+            string[] what = { I18n.T("Capturar un \u00E1rea o una ventana", "Capture an area or window"), I18n.T("Grabar la pantalla", "Record the screen"), I18n.T("en la miniatura para editarla", "on thumbnail to edit it") };
             for (int i = 0; i < combos.Length; i++)
             {
                 Grid r = Row(keys);
@@ -191,7 +191,7 @@ namespace Stackshot
                 r.ColumnDefinitions[0].MinWidth = 190;
                 r.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
                 bool none = i < 2 && Hotkeys.Split(combos[i]).Count == 0;
-                FrameworkElement k = none ? (FrameworkElement)Text("Sin atajo", Ds.Regular, 13, pal.Label3, HorizontalAlignment.Left, new Thickness(0))
+                FrameworkElement k = none ? (FrameworkElement)Text(I18n.T("Sin atajo", "No shortcut"), Ds.Regular, 13, pal.Label3, HorizontalAlignment.Left, new Thickness(0))
                                           : new Keycaps(i < 2 ? Hotkeys.Display(combos[i]) : combos[i], 20);
                 k.Margin = new Thickness(0, 0, 12, 0);
                 k.HorizontalAlignment = HorizontalAlignment.Left;
@@ -219,9 +219,9 @@ namespace Stackshot
             Grid buttons = new Grid { Margin = compact ? new Thickness(32, 12, 32, 20) : new Thickness(36, 4, 36, 30) };
             // As a Windows installer: the main choice first, "not now" last, together on the right.
             StackPanel right = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            MacButton ok = new MacButton("Instalar y empezar", ButtonKind.Primary, null, null, 40);
+            MacButton ok = new MacButton(I18n.T("Instalar y empezar", "Install & get started"), ButtonKind.Primary, null, null, 40);
             ok.Click += Save;
-            MacButton cancel = new MacButton("Ahora no", ButtonKind.Secondary, null, null, 40);
+            MacButton cancel = new MacButton(I18n.T("Ahora no", "Not now"), ButtonKind.Secondary, null, null, 40);
             cancel.Margin = new Thickness(10, 0, 0, 0);
             cancel.Click += delegate { Close(); };
             right.Children.Add(ok);
@@ -296,7 +296,7 @@ namespace Stackshot
         {
             using (WF.FolderBrowserDialog d = new WF.FolderBrowserDialog())
             {
-                d.Description = "\u00BFD\u00F3nde quieres guardar las capturas que conserves?";
+                d.Description = I18n.T("\u00BFD\u00F3nde quieres guardar las capturas que conserves?", "Where would you like to save your captures?");
                 d.ShowNewFolderButton = true;
                 try { Directory.CreateDirectory(folder); d.SelectedPath = folder; } catch { }
                 if (d.ShowDialog(Win32) == WF.DialogResult.OK) { folder = d.SelectedPath; ShowFolder(); }

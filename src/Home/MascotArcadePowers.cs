@@ -25,14 +25,14 @@ namespace Stackshot
         {
             switch (kind)
             {
-                case KindPacman: return "C\u00F3mete los puntitos";
-                case KindBlinky: return "Ponte azul de miedo";
-                case KindBoo: return "T\u00E1pate la cara";
-                case KindBobomb: return "Explota (sin da\u00F1o)";
-                case KindChomp: return "Da un tir\u00F3n";
-                case KindCreeper: return "Sisea";
-                case KindRedBird: return "Al tirachinas";
-                default: return "Suelta una moneda";
+                case KindPacman: return I18n.T("C\u00F3mete los puntitos", "Eat the dots");
+                case KindBlinky: return I18n.T("Ponte azul de miedo", "Turn blue with fright");
+                case KindBoo: return I18n.T("T\u00E1pate la cara", "Hide your face");
+                case KindBobomb: return I18n.T("Explota (sin da\u00F1o)", "Explode (harmlessly)");
+                case KindChomp: return I18n.T("Da un tir\u00F3n", "Lunge");
+                case KindCreeper: return I18n.T("Sisea", "Hiss");
+                case KindRedBird: return I18n.T("Al tirachinas", "Into the slingshot");
+                default: return I18n.T("Suelta una moneda", "Drop a coin");
             }
         }
 
@@ -40,14 +40,14 @@ namespace Stackshot
         {
             switch (kind)
             {
-                case KindPacman: return "Se come una fila de puntitos y una p\u00EDldora, y un fantasma huye asustado";
-                case KindBlinky: return "Se vuelve azul, tiembla y parpadea en blanco antes de volver";
-                case KindBoo: return "Se tapa la cara con las manos y luego da un susto";
-                case KindBobomb: return "Parpadea en rojo y hace \u00ABpum\u00BB con humo";
-                case KindChomp: return "Se lanza hacia delante tirando de la cadena";
-                case KindCreeper: return "Sisea, se hincha, se pone blanco y hace \u00ABpof\u00BB";
-                case KindRedBird: return "Se tensa y sale disparado dando vueltas";
-                default: return "Da un salto y sale una moneda girando";
+                case KindPacman: return I18n.T("Se come una fila de puntitos y una p\u00EDldora, y un fantasma huye asustado", "Eats a row of dots and a power pellet, and a ghost runs off scared");
+                case KindBlinky: return I18n.T("Se vuelve azul, tiembla y parpadea en blanco antes de volver", "Turns blue, trembles and flashes white before turning back");
+                case KindBoo: return I18n.T("Se tapa la cara con las manos y luego da un susto", "Covers its face with its hands, then gives you a scare");
+                case KindBobomb: return I18n.T("Parpadea en rojo y hace \u00ABpum\u00BB con humo", "Flashes red and goes \u201Cboom\u201D in a puff of smoke");
+                case KindChomp: return I18n.T("Se lanza hacia delante tirando de la cadena", "Lunges forward, tugging at its chain");
+                case KindCreeper: return I18n.T("Sisea, se hincha, se pone blanco y hace \u00ABpof\u00BB", "Hisses, swells, turns white and goes \u201Cpoof\u201D");
+                case KindRedBird: return I18n.T("Se tensa y sale disparado dando vueltas", "Pulls back and shoots off spinning");
+                default: return I18n.T("Da un salto y sale una moneda girando", "Bumps up and a spinning coin pops out");
             }
         }
 
@@ -55,14 +55,14 @@ namespace Stackshot
         {
             switch (power)
             {
-                case PowerChomp: return "\u00A1Waka waka waka!";
-                case PowerScared: return "\u00A1Ay, que viene Pac-Man!";
-                case PowerShy: return "No me mires\u2026";
-                case PowerBoom: return "Tic, tac, tic\u2026";
-                case PowerLunge: return "\u00A1CHOMP!";
+                case PowerChomp: return I18n.T("\u00A1Waka waka waka!", "Waka waka waka!");
+                case PowerScared: return I18n.T("\u00A1Ay, que viene Pac-Man!", "Eek, here comes Pac-Man!");
+                case PowerShy: return I18n.T("No me mires\u2026", "Don't look at me\u2026");
+                case PowerBoom: return I18n.T("Tic, tac, tic\u2026", "Tick, tock, tick\u2026");
+                case PowerLunge: return I18n.T("\u00A1CHOMP!", "CHOMP!");
                 case PowerHiss: return "Sssssss\u2026";
-                case PowerSling: return "\u00A1Yaaaaa!";
-                default: return "\u00A1Ding!";
+                case PowerSling: return I18n.T("\u00A1Yaaaaa!", "Yaaaaa!");
+                default: return I18n.T("\u00A1Ding!", "Ding!");
             }
         }
 
@@ -100,6 +100,81 @@ namespace Stackshot
         }
 
         static string[] OwnLinesOf(int kind)
+        {
+            return I18n.IsSpanish ? OwnLinesEs(kind) : OwnLinesEn(kind);
+        }
+
+        static string[] OwnLinesEn(int kind)
+        {
+            switch (kind)
+            {
+                case KindNightFury: return new string[] { "Mrrr\u2026 got any fish?", "Plasma ready!" };
+                case KindLightFury: return new string[] { "Now you see me\u2026 now you don't." };
+                case KindNadder: return new string[] { "Check out these spines!" };
+                case KindNightmare: return new string[] { "I light up whenever I want!" };
+                case KindGronckle: return new string[] { "One more rock and I'm taking a nap." };
+                case KindStitch: return new string[] { "Ohana!", "Ohana means family.", "Meega nala kweesta!" };
+                case KindKirby: return new string[] { "Poyo!", "Hai!", "I'm hungry\u2026 poyo!" };
+                case KindGrogu: return new string[] { "Mmm\u2026", "A little blue cookie?" };
+                case KindEevee: return new string[] { "Vee!", "Eevee!" };
+                case KindCharmander: return new string[] { "Char!", "Charmander!" };
+                case KindPikachu: return new string[] { "Pika pika!", "Pikachu!", "Pika!" };
+                case KindBmo: return new string[] { "Who wants to play video games?", "Beep boop, I'm BMO.", "BMO says: capture!" };
+                case KindDoraemon: return new string[] { "I've got a gadget for that!", "Anyone got dorayaki?" };
+                case KindTotoro: return new string[] { "Grooaar!", "Shall we wait for the bus?" };
+                case KindBulbasaur: return new string[] { "Bulba!", "Bulbasaur!" };
+                case KindSquirtle: return new string[] { "Squirtle!", "Everybody chill out!" };
+                case KindJigglypuff: return new string[] { "Jiggly\u2026 puuuff \u266A", "Fell asleep? Then I'm drawing on your face!" };
+                case KindSnorlax: return new string[] { "Zzz\u2026", "Is it time to eat yet?", "Five more minutes\u2026" };
+                case KindGengar: return new string[] { "Gen\u2026 gar\u2026 hehehe", "I'm in your shadow." };
+                case KindMew: return new string[] { "Mew!", "Mew mew \u266A" };
+                case KindPsyduck: return new string[] { "Psy\u2026?", "My head hurts\u2026", "Psyduck?" };
+                case KindTogepi: return new string[] { "Toge toge priii!", "Togepi!" };
+                case KindMeowth: return new string[] { "Meowth, that's right!", "Is that shiny? It's mine!" };
+                case KindPiplup: return new string[] { "Piplup!", "Pip pip!" };
+                case KindMimikyu: return new string[] { "I just want a friend\u2026", "Mimiky\u2026" };
+                case KindLucario: return new string[] { "I sense your aura.", "Aura Sphere!" };
+                case KindDragonite: return new string[] { "Drago!", "Want me to fly you somewhere?" };
+                case KindDitto: return new string[] { "Ditto!", "I can be anything you want." };
+                case KindMewtwo: return new string[] { "It's what you do with your life that matters.", "I sense your mind\u2026" };
+                case KindNoFace: return new string[] { "Ah\u2026 ah\u2026" };
+                case KindCalcifer: return new string[] { "I'm a very powerful fire demon!", "Give me a log!", "Don't pour water on me\u2026" };
+                case KindKodama: return new string[] { "Clack, clack, clack\u2026" };
+                case KindYoshi: return new string[] { "Yoshi!", "Yoshi, Yoshi!" };
+                case KindPacman: return new string[] { "Waka waka!", "Waka waka waka!", "Any dots left around here?" };
+                case KindCreeper: return new string[] { "Sss\u2026", "Ssssss\u2026", "Relax, I just came for a hug." };
+                case KindCrewmate: return new string[] { "It wasn't me.", "Shall we do some tasks?", "Emergency button!", "That's very sus\u2026" };
+                case KindBlinky: return new string[] { "Booo!", "I'll get you, Pac-Man!" };
+                case KindDqSlime: return new string[] { "A wild slime appears!", "Boing, boing." };
+                case KindSnoopy: return new string[] { "Time to dance!", "I need my doghouse\u2026" };
+                case KindKitty: return new string[] { "\u266A", "Hello, friend." };
+                case KindGroot: return new string[] { "I am Groot.", "I\u2026 am\u2026 Groot." };
+                case KindRilakkuma: return new string[] { "Relax a little\u2026", "Today is a do-nothing day." };
+                case KindPusheen: return new string[] { "Prrr\u2026", "Any cookies?", "Meow \u266A" };
+                case KindPochacco: return new string[] { "Let's run!", "Wanna play ball?" };
+                case KindInvader: return new string[] { "Beep boop beep boop\u2026", "We come in peace. More or less." };
+                case KindGoomba: return new string[] { "Don't step on me!", "Grrr\u2026" };
+                case KindBoo: return new string[] { "Don't look at me\u2026", "Boo!", "I only move when you're not looking." };
+                case KindToad: return new string[] { "The princess is in another castle!", "Wahoo!" };
+                case KindMushroom: return new string[] { "Power up!", "Eat me and you'll grow." };
+                case KindBobomb: return new string[] { "Tick, tock\u2026", "Don't let me blow up!" };
+                case KindChomp: return new string[] { "Woof, woof!", "CHOMP!" };
+                case KindRedBird: return new string[] { "Those pigs!", "Into the slingshot!" };
+                case KindGreenPig: return new string[] { "Oink, oink.", "Hehehe, the eggs are ours." };
+                case KindKnight: return new string[] { "\u2026", "*tilts its head*" };
+                case KindCube: return new string[] { "The companion cube will never threaten you.", "Don't leave me behind." };
+                case KindBomberman: return new string[] { "Bombs away!", "Here I go!" };
+                case KindPooka: return new string[] { "Don't pump me up!" };
+                case KindFallGuy: return new string[] { "Yippee!", "Go for the crown!" };
+                case KindMcPig: return new string[] { "Oink.", "Got a carrot?" };
+                case KindQBlock: return new string[] { "?", "Hit me from below!" };
+                case KindMetroid: return new string[] { "Kriii\u2026" };
+                case KindWaddleDee: return new string[] { "Wadi!", "Always ready!" };
+                default: return null;
+            }
+        }
+
+        static string[] OwnLinesEs(int kind)
         {
             switch (kind)
             {
@@ -235,7 +310,7 @@ namespace Stackshot
                         squashY = 1.2;
                         jumpV -= 1.4;
                         SetMood(Mood.Happy, 1200);
-                        if (Talks) Say("\u00A1BUU!", 1400);
+                        if (Talks) Say(I18n.T("\u00A1BUU!", "BOO!"), 1400);
                     }
                     if (t > 3300) powerStart = -1;
                     return true;
@@ -258,7 +333,7 @@ namespace Stackshot
                         squashY = 0.62;
                         jumpV -= 2.0;
                         SetMood(Mood.Dizzy, 1500);
-                        if (Talks) Say("\u00A1PUM!", 1500);
+                        if (Talks) Say(I18n.T("\u00A1PUM!", "BOOM!"), 1500);
                     }
                     if (t > 3300) powerStart = -1;
                     return true;
@@ -296,7 +371,7 @@ namespace Stackshot
                         squashX = 0.8;
                         squashY = 0.85;
                         SetMood(Mood.Dizzy, 1200);
-                        if (Talks) Say("\u00A1Pof!", 1300);
+                        if (Talks) Say(I18n.T("\u00A1Pof!", "Poof!"), 1300);
                     }
                     if (t > 2800) powerStart = -1;
                     return true;

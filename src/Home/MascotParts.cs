@@ -63,7 +63,7 @@ namespace Stackshot
 
     public static partial class MascotParts
     {
-        public static readonly string[] Kinds = { "Robot", "Gato", "Conejo", "Fantasma", "Slime", "Drag\u00F3n", "Perro", "Chibi", "Ping\u00FCino", "Panda", "Zorro", "Rana", "Reno", "Le\u00F3n alado",
+        static readonly string[] KindsEs = { "Robot", "Gato", "Conejo", "Fantasma", "Slime", "Drag\u00F3n", "Perro", "Chibi", "Ping\u00FCino", "Panda", "Zorro", "Rana", "Reno", "Le\u00F3n alado",
                                                    "Furia Nocturna", "Furia Luminosa", "Nadder Mort\u00EDfero", "Pesadilla Monstruosa", "Gronckle",
                                                    "Experimento azul", "Bolita rosa", "Peque\u00F1o jedi", "Peludito", "Salamandra", "Rat\u00F3n el\u00E9ctrico",
                                                    "Consola", "Gato c\u00F3smico", "Esp\u00EDritu del bosque",
@@ -88,6 +88,32 @@ namespace Stackshot
                                                    "Dormil\u00F3n gigante", "Fantasma sonriente", "Gatito singular", "Pato con jaqueca", "Huevo con pinchos", "Gato de la moneda",
                                                    "Ping\u00FCino emperador", "Disfraz de trapo", "Guerrero del aura", "Drag\u00F3n cari\u00F1oso", "Masa que imita", "Clon gen\u00E9tico",
                                                    "Arbolito beb\u00E9", "Tit\u00E1n sonriente", "Tit\u00E1n bobalic\u00F3n" };
+        static readonly string[] KindsEn = { "Robot", "Cat", "Bunny", "Ghost", "Slime", "Dragon", "Dog", "Chibi", "Penguin", "Panda", "Fox", "Frog", "Reindeer", "Winged lion",
+                                             "Night Fury", "Light Fury", "Deadly Nadder", "Monstrous Nightmare", "Gronckle",
+                                             "Blue experiment", "Pink puffball", "Little jedi", "Fluffy", "Salamander", "Electric mouse",
+                                             "Console", "Cosmic cat", "Forest spirit",
+                                             "Seed", "Little turtle", "Singing balloon", "Sleepyhead", "Mischievous shadow", "Psychic kitten",
+                                             "Confused duck", "Little egg", "Cat with a coin", "Little penguin", "Disguised one", "Aura jackal",
+                                             "Kind dragon", "Blob", "Psychic clone", "Faceless spirit", "Fire demon", "Tree spirit",
+                                             "Green dinosaur", "Pac-Man", "Green block", "Crewmate", "Little ghost", "Blue drop",
+                                             "White puppy", "Kitty with a bow", "Little tree", "Relaxed bear", "Chubby cat", "Floppy-eared puppy",
+                                             "Invader", "Grumpy mushroom", "Shy ghost", "Little mushroom", "Mushroom", "Wind-up bomb",
+                                             "Chained ball", "Angry bird", "Green piggy", "Hollow knight", "Heart cube", "Bomber",
+                                             "Balloon with goggles", "Bean", "Blocky pig", "Mystery block", "Jellyfish", "Orange ball",
+                                             "Scientist", "Fire girl", "Duplicant", "Curly duplicant",
+                                             "Blond ninja", "Avenger ninja", "Copy ninja", "Rubber pirate", "Swordsman", "Demon slayer", "Demon sister",
+                                             "Ghost girl", "Adventure boy", "Magic dog", "Console buddy", "Tracker dog", "Orange ninja",
+                                             "Fan-crest ninja", "Masked ninja", "Doctor reindeer", "Winged guardian", "Beagle", "Rookie hunter", "Electric boy", "Prankster magician", "Haori boy", "Bamboo girl", "Straw hat pirate", "Green swordsman", "Leader in shades", "Mischievous kid", "Cotton puppy", "Robot kid", "Hero kid", "Swordsman piglet", "Crocodile kid",
+                                             "Alchemist", "Scout soldier", "Elite captain", "Blindfolded sorcerer",
+                                             "Bald hero", "Spartan warrior", "Armored soldier", "Spider hero", "Night vigilante", "Speedster", "Red-caped hero", "Armored inventor",
+                                             "Knight", "Astronaut", "Wise wizard", "Superhero",
+                                             "Super soldier", "God of thunder", "Emerald giant", "Spy", "Archer", "Warrior king", "Sorcerer supreme",
+                                             "Cosmic heroine", "Scarlet witch", "Colossal titan", "Attack titan", "Armored titan",
+                                             "Electric rodent", "Furry fox kit", "Fire lizard", "Plant bulb", "Water turtle", "Song balloon",
+                                             "Giant sleepyhead", "Grinning ghost", "Unique kitten", "Duck with a headache", "Spiky egg", "Coin cat",
+                                             "Emperor penguin", "Rag disguise", "Aura warrior", "Cuddly dragon", "Copycat blob", "Genetic clone",
+                                             "Baby tree", "Smiling titan", "Goofy titan" };
+        public static string[] Kinds { get { return I18n.IsSpanish ? KindsEs : KindsEn; } }
 
         public static readonly Color[,] Colors =
         {
@@ -169,37 +195,69 @@ namespace Stackshot
             { Color.FromArgb(255, 234, 216), Color.FromArgb(236, 194, 168) },
             { Color.FromArgb(255, 251, 226), Color.FromArgb(226, 216, 180) }
         };
-        public static readonly string[] ColorNames = { "Aurora", "Menta", "Coral", "Lavanda", "Oc\u00E9ano", "Sol", "Lima", "Grafito",
+        static readonly string[] ColorNamesEs = { "Aurora", "Menta", "Coral", "Lavanda", "Oc\u00E9ano", "Sol", "Lima", "Grafito",
                                                        "Chicle", "Calabaza", "Noche", "Nieve", "Galaxia", "Cereza", "Hielo", "Bosque", "Oro", "Melocot\u00F3n", "Canela", "Turquesa", "Ceniza", "Arcilla", "Medianoche", "Chocolate", "Miel", "Brasa", "A\u00F1il", "Salvia", "El\u00E9ctrico", "Hoja", "Agua", "Algod\u00F3n", "Petr\u00F3leo", "Morado",
                                                        "Pato", "Crema", "Azul real", "Trapo", "Naranja", "Lila", "Perla", "Sombra", "Fuego", "Musgo blanco",
                                                        "Yoshi", "Azul intenso", "Creeper", "Tripulante", "Blinky", "Blanco", "Osito", "Gris gato",
                                                        "Comecocos", "Pinky", "Inky", "Clyde", "Goomba", "Piel", "Champi\u00F1\u00F3n", "Bob-omb", "P\u00E1jaro rojo", "Cerdito",
                                                        "Capa", "Cubo", "Pooka", "Fall Guy", "Cerdo", "Bloque", "Metroid", "Waddle Dee", "Kirby", "1-Up", "Palidez", "Tostado", "Duplicante", "Piel anime", "Fantasma" };
+        static readonly string[] ColorNamesEn = { "Aurora", "Mint", "Coral", "Lavender", "Ocean", "Sun", "Lime", "Graphite",
+                                                  "Bubblegum", "Pumpkin", "Night", "Snow", "Galaxy", "Cherry", "Ice", "Forest", "Gold", "Peach", "Cinnamon", "Turquoise", "Ash", "Clay", "Midnight", "Chocolate", "Honey", "Ember", "Indigo", "Sage", "Electric", "Leaf", "Water", "Cotton", "Petrol", "Purple",
+                                                  "Duck", "Cream", "Royal blue", "Rag", "Orange", "Lilac", "Pearl", "Shadow", "Fire", "White moss",
+                                                  "Yoshi", "Deep blue", "Creeper", "Crewmate", "Blinky", "White", "Teddy", "Cat gray",
+                                                  "Pac-Man", "Pinky", "Inky", "Clyde", "Goomba", "Skin", "Mushroom", "Bob-omb", "Red bird", "Piggy",
+                                                  "Cape", "Cube", "Pooka", "Fall Guy", "Pig", "Block", "Metroid", "Waddle Dee", "Kirby", "1-Up", "Pale", "Tan", "Duplicant", "Anime skin", "Ghost" };
+        public static string[] ColorNames { get { return I18n.IsSpanish ? ColorNamesEs : ColorNamesEn; } }
 
-        public static readonly string[] EyeNames = { "Brillo", "Kawaii", "Puntitos", "Anime", "Chulo", "Estrella", "Pesta\u00F1as", "Drag\u00F3n" };
+        static readonly string[] EyeNamesEs = { "Brillo", "Kawaii", "Puntitos", "Anime", "Chulo", "Estrella", "Pesta\u00F1as", "Drag\u00F3n" };
+        static readonly string[] EyeNamesEn = { "Sparkle", "Kawaii", "Dots", "Anime", "Cool", "Star", "Lashes", "Dragon" };
+        public static string[] EyeNames { get { return I18n.IsSpanish ? EyeNamesEs : EyeNamesEn; } }
 
         public const int HatPumpkin = 4, HatSanta = 11, HatCrown = 13, HatHalo = 14;
-        public static readonly string[] HatNames = { "Ninguno", "Gorra", "Gorro de lana", "Sombrero de bruja", "Calabaza", "Cuernos",
+        static readonly string[] HatNamesEs = { "Ninguno", "Gorra", "Gorro de lana", "Sombrero de bruja", "Calabaza", "Cuernos",
                                                      "Chistera", "Fiesta", "Vaquero", "Auriculares", "Lazo", "Pap\u00E1 Noel", "Brote",
                                                      "Corona", "Aureola", "Boina", "Gorro de chef", "Flores", "Pelo rubio", "Pelo casta\u00F1o", "Pelo de punta", "Pelo blanco", "Pelo granate", "Capucha de oso", "Banda ninja", "Sombrero de paja", "Pelo negro", "Ninja rubio", "Casco de marine", "Casco de caballero", "Casco de astronauta", "Chispa",
                                                      "Pelo de punta oscuro", "Pelo magenta", "Ninja de pelo oscuro", "Pelo verde", "Pelo de llamas", "Melena negra",
                                                      "Ninja de pelo plateado", "Capucha de murci\u00E9lago", "Casco rel\u00E1mpago", "Pelo con rizo", "Casco de armadura",
                                                      "Sombrero de doctor", "Pelo azul salvaje", "Gorro de dormir",
                                                      "Pelo de Gojo", "Pelo de Killua", "Pelo de Levi", "Pelo de Shin-chan" };
-        public static readonly string[] OutfitNames = { "Nada", "Bufanda", "Pajarita", "Corbata", "Capa de vampiro", "Capa de h\u00E9roe",
+        static readonly string[] HatNamesEn = { "None", "Cap", "Beanie", "Witch hat", "Pumpkin", "Horns",
+                                                "Top hat", "Party hat", "Cowboy hat", "Headphones", "Bow", "Santa hat", "Sprout",
+                                                "Crown", "Halo", "Beret", "Chef's hat", "Flowers", "Blond hair", "Brown hair", "Spiky hair", "White hair", "Maroon hair", "Bear hood", "Ninja headband", "Straw hat", "Black hair", "Blond ninja", "Marine helmet", "Knight helmet", "Astronaut helmet", "Spark",
+                                                "Dark spiky hair", "Magenta hair", "Dark-haired ninja", "Green hair", "Flame hair", "Long black hair",
+                                                "Silver-haired ninja", "Bat cowl", "Lightning helmet", "Hair with a curl", "Armor helmet",
+                                                "Doctor's hat", "Wild blue hair", "Nightcap",
+                                                "Gojo's hair", "Killua's hair", "Levi's hair", "Shin-chan's hair" };
+        public static string[] HatNames { get { return I18n.IsSpanish ? HatNamesEs : HatNamesEn; } }
+        static readonly string[] OutfitNamesEs = { "Nada", "Bufanda", "Pajarita", "Corbata", "Capa de vampiro", "Capa de h\u00E9roe",
                                                         "Cascabel", "Cadena de oro", "Capa verde", "Abrigo rojo", "Chaleco ninja", "Kimono de lucha", "Haori a cuadros", "Mochila", "Chaleco rojo", "Camiseta roja", "Botones de consola", "Panza del bosque", "Ch\u00E1ndal naranja",
                                                         "Hombrera", "Armadura verde", "Traje espacial", "Chaqueta verde", "Camiseta morada", "Traje de buf\u00F3n",
                                                         "Cuello alto azul", "Faja verde", "Armadura blanca", "Traje amarillo", "Kimono rosa", "Chaleco verde",
                                                         "Traje ar\u00E1cnido", "Traje de murci\u00E9lago", "Traje rel\u00E1mpago", "Traje de acero", "Armadura roja",
                                                         "Pantal\u00F3n corto", "Capa roja y tatuajes" };
-        public static readonly string[] FaceNames = { "Nada", "Gafas de sol", "Gafas pixel", "Gafas redondas", "Mon\u00F3culo", "Antifaz",
+        static readonly string[] OutfitNamesEn = { "None", "Scarf", "Bow tie", "Tie", "Vampire cape", "Hero cape",
+                                                   "Bell", "Gold chain", "Green cape", "Red coat", "Ninja vest", "Martial arts gi", "Checkered haori", "Backpack", "Red vest", "Red T-shirt", "Console buttons", "Forest belly", "Orange tracksuit",
+                                                   "Shoulder pad", "Green armor", "Spacesuit", "Green jacket", "Purple T-shirt", "Jester suit",
+                                                   "Blue turtleneck", "Green sash", "White armor", "Yellow suit", "Pink kimono", "Green vest",
+                                                   "Spider suit", "Bat suit", "Lightning suit", "Steel suit", "Red armor",
+                                                   "Shorts", "Red cape and tattoos" };
+        public static string[] OutfitNames { get { return I18n.IsSpanish ? OutfitNamesEs : OutfitNamesEn; } }
+        static readonly string[] FaceNamesEs = { "Nada", "Gafas de sol", "Gafas pixel", "Gafas redondas", "Mon\u00F3culo", "Antifaz",
                                                       "Parche pirata", "Bigote", "Venda", "Cejas gordas", "Mofletes rojos", "Marcas de bigote", "Tatuaje y barba", "Barba de mago", "Terminal",
                                                       "Estrella y l\u00E1grima", "Bozal de bamb\u00FA", "M\u00E1scara ninja", "M\u00E1scara ar\u00E1cnida", "Nariz azul", "Gafas triangulares" };
-        public static readonly string[] Personalities = { "Alegre", "Tranquilo", "Gamberro" };
+        static readonly string[] FaceNamesEn = { "None", "Sunglasses", "Pixel shades", "Round glasses", "Monocle", "Eye mask",
+                                                 "Pirate eye patch", "Mustache", "Blindfold", "Bushy eyebrows", "Rosy cheeks", "Whisker marks", "Tattoo and beard", "Wizard beard", "Terminal",
+                                                 "Star and teardrop", "Bamboo muzzle", "Ninja mask", "Spider mask", "Blue nose", "Triangle shades" };
+        public static string[] FaceNames { get { return I18n.IsSpanish ? FaceNamesEs : FaceNamesEn; } }
+        static readonly string[] PersonalitiesEs = { "Alegre", "Tranquilo", "Gamberro" };
+        static readonly string[] PersonalitiesEn = { "Cheerful", "Calm", "Mischievous" };
+        public static string[] Personalities { get { return I18n.IsSpanish ? PersonalitiesEs : PersonalitiesEn; } }
 
         // ---- Friendship: one point per capture. A few items unlock along the way, like companions that grow with you.
         static readonly int[] LevelAt = { 0, 10, 30, 75, 150, 300 };
-        public static readonly string[] LevelNames = { "Reci\u00E9n llegados", "Colegas", "Amigos", "Mejores amigos", "Inseparables", "Leyenda" };
+        static readonly string[] LevelNamesEs = { "Reci\u00E9n llegados", "Colegas", "Amigos", "Mejores amigos", "Inseparables", "Leyenda" };
+        static readonly string[] LevelNamesEn = { "Newcomers", "Buddies", "Friends", "Best Friends", "Inseparable", "Legend" };
+        public static string[] LevelNames { get { return I18n.IsSpanish ? LevelNamesEs : LevelNamesEn; } }
 
         public static int Level(int love)
         {
@@ -223,7 +281,9 @@ namespace Stackshot
         public static int UnlockLove(int level) { return LevelAt[Math.Max(0, Math.Min(LevelAt.Length - 1, level))]; }
 
         // Ready-made looks: kind, color, eyes, hat, outfit, face.
-        public static readonly string[] StyleNames = { "Cl\u00E1sico", "Halloween", "Chulo", "Cute", "Vampiro", "Dragoncito", "Pirata", "Chef", "Vaquero", "Doctor", "Brujita", "M\u00FAsico", "Invierno", "Enamorado", "Fiestero", "Aventurero", "Primavera", "Campe\u00F3n" };
+        static readonly string[] StyleNamesEs = { "Cl\u00E1sico", "Halloween", "Chulo", "Cute", "Vampiro", "Dragoncito", "Pirata", "Chef", "Vaquero", "Doctor", "Brujita", "M\u00FAsico", "Invierno", "Enamorado", "Fiestero", "Aventurero", "Primavera", "Campe\u00F3n" };
+        static readonly string[] StyleNamesEn = { "Classic", "Halloween", "Cool", "Cute", "Vampire", "Little Dragon", "Pirate", "Chef", "Cowboy", "Doctor", "Little Witch", "Musician", "Winter", "In Love", "Party Goer", "Adventurer", "Spring", "Champion" };
+        public static string[] StyleNames { get { return I18n.IsSpanish ? StyleNamesEs : StyleNamesEn; } }
         static readonly int[,] Styles =
         {
             { 0, 0, 0, 0, 0, 0, 0 },

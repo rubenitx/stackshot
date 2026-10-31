@@ -760,6 +760,7 @@ namespace Stackshot
 
         static string[] AvLines(int k)
         {
+            if (!I18n.IsSpanish) return AvLinesEn(k);
             switch (k)
             {
                 case KindCapSd: return new string[] { "\u00A1Vengadores, reun\u00EDos!", "Puedo seguir as\u00ED todo el d\u00EDa.", "No me gustan los abusones.", "\u00A1Ese lenguaje!" };
@@ -776,6 +777,27 @@ namespace Stackshot
                 case KindBoboTitanSd: return new string[] { "\u00BFEh?", "Uaaah\u2026", "\u00BFHas visto a Eren?", "Mmm\u2026 \u00BFqu\u00E9 estaba haciendo?" };
                 case KindAttackSd: return new string[] { "\u00A1RAAAAAH!", "\u00A1Os exterminar\u00E9!", "Sigue avanzando.", "Luchar\u00E9." };
                 default: return new string[] { "\u2026", "\u00A1Embestida!", "Soy un guerrero.", "No hay vuelta atr\u00E1s." };
+            }
+        }
+
+        static string[] AvLinesEn(int k)
+        {
+            switch (k)
+            {
+                case KindCapSd: return new string[] { "Avengers, assemble!", "I can do this all day.", "I don't like bullies.", "Language!" };
+                case KindThorSd: return new string[] { "For Asgard!", "I am the god of thunder.", "Another!", "Bring me Thanos!" };
+                case KindHulkSd: return new string[] { "Hulk smash!", "GRRRR!", "That's my secret: I'm always angry.", "Hulk is hungry." };
+                case KindWidowSd: return new string[] { "I've got red in my ledger, and I'd like to wipe it out.", "I'm not one to give up.", "Black Widow, in position.", "You needed me? Here I am." };
+                case KindHawkSd: return new string[] { "I never miss.", "I've got an arrow for that.", "The city is flying and I've got a bow.", "Hawkeye, in position." };
+                case KindPantherSd: return new string[] { "Wakanda forever!", "I am the king of Wakanda.", "In times of crisis, the wise build bridges.", "It's not the first time I've been left for dead." };
+                case KindStrangeSd: return new string[] { "Dormammu, I've come to bargain.", "One in fourteen million.", "Time is relative.", "Sorcerer Supreme, at your service." };
+                case KindCarolSd: return new string[] { "Higher, further, faster!", "I have nothing to prove to you.", "I'm Carol Danvers.", "Need a hand? I'm here." };
+                case KindWandaSd: return new string[] { "This is what I want.", "You can't control me.", "I'm the Scarlet Witch.", "Chaos magic." };
+                case KindColossalSd: return new string[] { "\u2026", "GROOOAAAR!", "Fsssshhh\u2026", "The Wall won't protect you anymore." };
+                case KindSmileTitanSd: return new string[] { "Hello\u2026 hehehe.", "Hungry? I am.", "What a nice day for a walk.", "*smiles nonstop*" };
+                case KindBoboTitanSd: return new string[] { "Huh?", "Uaaah\u2026", "Have you seen Eren?", "Hmm\u2026 what was I doing?" };
+                case KindAttackSd: return new string[] { "RAAAAAH!", "I'll wipe you all out!", "Keep moving forward.", "I'll fight." };
+                default: return new string[] { "\u2026", "Charge!", "I am a warrior.", "There's no turning back." };
             }
         }
 

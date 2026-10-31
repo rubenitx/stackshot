@@ -161,7 +161,7 @@ namespace Stackshot
                 SetMood(Mood.Dizzy, 2600);
                 spinV = 900;
                 for (int i = 0; i < 6; i++) Spawn('s', 0, -0.32, 0.6);
-                Say("\u00A1Qu\u00E9 mareo! \u00BFPor qu\u00E9 hay tres ratones?", 2600);
+                Say(I18n.T("\u00A1Qu\u00E9 mareo! \u00BFPor qu\u00E9 hay tres ratones?", "So dizzy! Why are there three mice?"), 2600);
                 return;
             }
             switch (rnd.Next(6))

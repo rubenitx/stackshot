@@ -63,7 +63,28 @@ namespace Stackshot
 
         public static string Name(int i)
         {
-            return presets[Clamp(i)].Name;
+            int idx = Clamp(i);
+            string n = presets[idx].Name;
+            if (I18n.IsSpanish) return n;
+            switch (idx)
+            {
+                case 0: return "Stackshot";
+                case 1: return "Sunset";
+                case 2: return "Mint";
+                case 3: return "Ocean";
+                case 4: return "Peach";
+                case 5: return "Lavender";
+                case 6: return "Rose";
+                case 7: return "Aurora";
+                case 8: return "Night";
+                case 9: return "Graphite";
+                case 10: return "Light";
+                case 11: return "Dark";
+                case 12: return "Your desktop";
+            }
+            if (n != null && n.StartsWith("Tu imagen "))
+                return "Your image " + n.Substring("Tu imagen ".Length);
+            return n;
         }
 
         static int Clamp(int i) { return Math.Max(0, Math.Min(presets.Length - 1, i)); }

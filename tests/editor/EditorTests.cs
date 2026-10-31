@@ -39,6 +39,7 @@ namespace Stackshot.Tests
             ffmpeg = Path.Combine(Environment.GetEnvironmentVariable("LOCALAPPDATA"), "Stackshot", "ffmpeg", "ffmpeg.exe");
             workRoot = Path.Combine(Path.GetTempPath(), "stackshot-editor-tests", "work");
             Settings.ReadOnly = true;
+            I18n.Apply("es");   // the suites check the Spanish texts, whatever language this Windows is in
             // Never the real temp folder of the app.
             AtomicFile.WatchedFolder = Path.Combine(workRoot, "watched-none");
             Directory.CreateDirectory(workRoot);

@@ -197,7 +197,7 @@ namespace Stackshot
         public static string Display(string combos)
         {
             List<string> parts = Split(combos);
-            if (parts.Count == 0) return "Sin atajo";
+            if (parts.Count == 0) return I18n.T("Sin atajo", "No shortcut");
             return DisplayOne(parts[0]);
         }
 
@@ -214,7 +214,7 @@ namespace Stackshot
             List<string> s = new List<string>();
             if (win) s.Add("Win");
             if (ctrl) s.Add("Ctrl");
-            if (shift) s.Add("May\u00FAs");
+            if (shift) s.Add(I18n.IsSpanish ? "May\u00FAs" : "Shift");
             if (alt) s.Add("Alt");
             if (key != Keys.None) s.Add(KeyName(key));
             return string.Join(" + ", s.ToArray());
@@ -229,55 +229,111 @@ namespace Stackshot
         // The name printed on the key, as on a Spanish keyboard; punctuation as the current layout prints it.
         public static string KeyName(Keys key)
         {
-            switch (key)
+            if (I18n.IsSpanish)
             {
-                case Keys.PrintScreen: return "Impr Pant";
-                case Keys.Escape: return "Esc";
-                case Keys.Space: return "Espacio";
-                case Keys.Return: return "Intro";
-                case Keys.Back: return "Retroceso";
-                case Keys.Tab: return "Tab";
-                case Keys.Delete: return "Supr";
-                case Keys.Insert: return "Insert";
-                case Keys.Home: return "Inicio";
-                case Keys.End: return "Fin";
-                case Keys.PageUp: return "Re P\u00E1g";
-                case Keys.PageDown: return "Av P\u00E1g";
-                case Keys.Left: return "\u2190";
-                case Keys.Right: return "\u2192";
-                case Keys.Up: return "\u2191";
-                case Keys.Down: return "\u2193";
-                case Keys.Pause: case Keys.Cancel: return "Pausa";  // Ctrl + Pausa arrives as Cancel
-                case Keys.Scroll: return "Bloq Despl";
-                case Keys.Capital: return "Bloq May\u00FAs";
-                case Keys.NumLock: return "Bloq Num";
-                case Keys.Apps: return "Men\u00FA";
-                case Keys.Clear: return "Num 5";
-                case Keys.Multiply: return "Num *";
-                case Keys.Add: return "Num +";
-                case Keys.Subtract: return "Num -";
-                case Keys.Divide: return "Num /";
-                case Keys.Decimal: return "Num .";
-                case Keys.Separator: return "Num ,";
-                case Keys.VolumeMute: return "Silenciar";
-                case Keys.VolumeDown: return "Bajar volumen";
-                case Keys.VolumeUp: return "Subir volumen";
-                case Keys.MediaPlayPause: return "Reproducir";
-                case Keys.MediaNextTrack: return "Siguiente";
-                case Keys.MediaPreviousTrack: return "Anterior";
-                case Keys.MediaStop: return "Detener";
-                case Keys.BrowserBack: return "Atr\u00E1s";
-                case Keys.BrowserForward: return "Adelante";
-                case Keys.BrowserRefresh: return "Actualizar";
-                case Keys.BrowserStop: return "Detener carga";
-                case Keys.BrowserSearch: return "Buscar";
-                case Keys.BrowserFavorites: return "Favoritos";
-                case Keys.BrowserHome: return "Inicio web";
-                case Keys.LaunchMail: return "Correo";
-                case Keys.LaunchApplication1: return "Aplicaci\u00F3n 1";
-                case Keys.LaunchApplication2: return "Calculadora";
-                case Keys.SelectMedia: return "Multimedia";
-                case Keys.Sleep: return "Suspender";
+                switch (key)
+                {
+                    case Keys.PrintScreen: return "Impr Pant";
+                    case Keys.Escape: return "Esc";
+                    case Keys.Space: return "Espacio";
+                    case Keys.Return: return "Intro";
+                    case Keys.Back: return "Retroceso";
+                    case Keys.Tab: return "Tab";
+                    case Keys.Delete: return "Supr";
+                    case Keys.Insert: return "Insert";
+                    case Keys.Home: return "Inicio";
+                    case Keys.End: return "Fin";
+                    case Keys.PageUp: return "Re P\u00E1g";
+                    case Keys.PageDown: return "Av P\u00E1g";
+                    case Keys.Left: return "\u2190";
+                    case Keys.Right: return "\u2192";
+                    case Keys.Up: return "\u2191";
+                    case Keys.Down: return "\u2193";
+                    case Keys.Pause: case Keys.Cancel: return "Pausa";  // Ctrl + Pausa arrives as Cancel
+                    case Keys.Scroll: return "Bloq Despl";
+                    case Keys.Capital: return "Bloq May\u00FAs";
+                    case Keys.NumLock: return "Bloq Num";
+                    case Keys.Apps: return "Men\u00FA";
+                    case Keys.Clear: return "Num 5";
+                    case Keys.Multiply: return "Num *";
+                    case Keys.Add: return "Num +";
+                    case Keys.Subtract: return "Num -";
+                    case Keys.Divide: return "Num /";
+                    case Keys.Decimal: return "Num .";
+                    case Keys.Separator: return "Num ,";
+                    case Keys.VolumeMute: return "Silenciar";
+                    case Keys.VolumeDown: return "Bajar volumen";
+                    case Keys.VolumeUp: return "Subir volumen";
+                    case Keys.MediaPlayPause: return "Reproducir";
+                    case Keys.MediaNextTrack: return "Siguiente";
+                    case Keys.MediaPreviousTrack: return "Anterior";
+                    case Keys.MediaStop: return "Detener";
+                    case Keys.BrowserBack: return "Atr\u00E1s";
+                    case Keys.BrowserForward: return "Adelante";
+                    case Keys.BrowserRefresh: return "Actualizar";
+                    case Keys.BrowserStop: return "Detener carga";
+                    case Keys.BrowserSearch: return "Buscar";
+                    case Keys.BrowserFavorites: return "Favoritos";
+                    case Keys.BrowserHome: return "Inicio web";
+                    case Keys.LaunchMail: return "Correo";
+                    case Keys.LaunchApplication1: return "Aplicaci\u00F3n 1";
+                    case Keys.LaunchApplication2: return "Calculadora";
+                    case Keys.SelectMedia: return "Multimedia";
+                    case Keys.Sleep: return "Suspender";
+                }
+            }
+            else
+            {
+                switch (key)
+                {
+                    case Keys.PrintScreen: return "PrtScn";
+                    case Keys.Escape: return "Esc";
+                    case Keys.Space: return "Space";
+                    case Keys.Return: return "Enter";
+                    case Keys.Back: return "Backspace";
+                    case Keys.Tab: return "Tab";
+                    case Keys.Delete: return "Del";
+                    case Keys.Insert: return "Insert";
+                    case Keys.Home: return "Home";
+                    case Keys.End: return "End";
+                    case Keys.PageUp: return "Page Up";
+                    case Keys.PageDown: return "Page Down";
+                    case Keys.Left: return "\u2190";
+                    case Keys.Right: return "\u2192";
+                    case Keys.Up: return "\u2191";
+                    case Keys.Down: return "\u2193";
+                    case Keys.Pause: case Keys.Cancel: return "Pause";
+                    case Keys.Scroll: return "Scroll Lock";
+                    case Keys.Capital: return "Caps Lock";
+                    case Keys.NumLock: return "Num Lock";
+                    case Keys.Apps: return "Menu";
+                    case Keys.Clear: return "Num 5";
+                    case Keys.Multiply: return "Num *";
+                    case Keys.Add: return "Num +";
+                    case Keys.Subtract: return "Num -";
+                    case Keys.Divide: return "Num /";
+                    case Keys.Decimal: return "Num .";
+                    case Keys.Separator: return "Num ,";
+                    case Keys.VolumeMute: return "Mute";
+                    case Keys.VolumeDown: return "Volume Down";
+                    case Keys.VolumeUp: return "Volume Up";
+                    case Keys.MediaPlayPause: return "Play/Pause";
+                    case Keys.MediaNextTrack: return "Next Track";
+                    case Keys.MediaPreviousTrack: return "Previous Track";
+                    case Keys.MediaStop: return "Stop";
+                    case Keys.BrowserBack: return "Back";
+                    case Keys.BrowserForward: return "Forward";
+                    case Keys.BrowserRefresh: return "Refresh";
+                    case Keys.BrowserStop: return "Stop loading";
+                    case Keys.BrowserSearch: return "Search";
+                    case Keys.BrowserFavorites: return "Favorites";
+                    case Keys.BrowserHome: return "Browser Home";
+                    case Keys.LaunchMail: return "Mail";
+                    case Keys.LaunchApplication1: return "App 1";
+                    case Keys.LaunchApplication2: return "Calculator";
+                    case Keys.SelectMedia: return "Media";
+                    case Keys.Sleep: return "Sleep";
+                }
             }
             if (key >= Keys.D0 && key <= Keys.D9) return ((char)('0' + (key - Keys.D0))).ToString();
             if (key >= Keys.NumPad0 && key <= Keys.NumPad9) return "Num " + (char)('0' + (key - Keys.NumPad0));
@@ -315,7 +371,7 @@ namespace Stackshot
                 case Keys.Oem6: return "]";
                 case Keys.Oem7: return "'";
                 case Keys.Oem102: return "<";
-                case Keys.OemClear: return "Borrar";
+                case Keys.OemClear: return I18n.T("Borrar", "Clear");
             }
             return null;
         }
@@ -333,60 +389,60 @@ namespace Stackshot
         public static string Problem(Keys key, Keys modifiers, bool win)
         {
             bool ctrl = (modifiers & Keys.Control) != 0, shift = (modifiers & Keys.Shift) != 0, alt = (modifiers & Keys.Alt) != 0;
-            if (key == Keys.Capital || key == Keys.NumLock) return KeyName(key) + " no sirve de atajo";
+            if (key == Keys.Capital || key == Keys.NumLock) return I18n.Fmt("{0} no sirve de atajo", "{0} cannot be a shortcut", KeyName(key));
             if (!win)
             {
                 string what = null;
                 // Tab switches windows with Alt and tabs with Ctrl, backwards with Shift too. Only the part that does it is
                 // named: the whole combination would not fit the field.
-                if (key == Keys.Tab && (ctrl || alt)) return alt ? "Alt + Tab cambia de ventana" : "Ctrl + Tab cambia de pesta\u00F1a";
+                if (key == Keys.Tab && (ctrl || alt)) return alt ? I18n.T("Alt + Tab cambia de ventana", "Alt + Tab switches windows") : I18n.T("Ctrl + Tab cambia de pesta\u00F1a", "Ctrl + Tab switches tabs");
                 if (ctrl && !shift && !alt)
                 {
                     switch (key)
                     {
-                        case Keys.A: what = "Seleccionar todo"; break;
-                        case Keys.C: case Keys.Insert: what = "Copiar"; break;
-                        case Keys.V: what = "Pegar"; break;
-                        case Keys.X: what = "Cortar"; break;
-                        case Keys.Z: what = "Deshacer"; break;
-                        case Keys.Y: what = "Rehacer"; break;
-                        case Keys.S: what = "Guardar"; break;
-                        case Keys.F: what = "Buscar"; break;
-                        case Keys.P: what = "Imprimir"; break;
-                        case Keys.N: what = "Nuevo"; break;
-                        case Keys.O: what = "Abrir"; break;
-                        case Keys.W: what = "Cerrar"; break;
-                        case Keys.T: what = "Nueva pesta\u00F1a"; break;
+                        case Keys.A: what = I18n.T("Seleccionar todo", "Select all"); break;
+                        case Keys.C: case Keys.Insert: what = I18n.Copy; break;
+                        case Keys.V: what = I18n.T("Pegar", "Paste"); break;
+                        case Keys.X: what = I18n.T("Cortar", "Cut"); break;
+                        case Keys.Z: what = I18n.T("Deshacer", "Undo"); break;
+                        case Keys.Y: what = I18n.T("Rehacer", "Redo"); break;
+                        case Keys.S: what = I18n.Save; break;
+                        case Keys.F: what = I18n.T("Buscar", "Find"); break;
+                        case Keys.P: what = I18n.T("Imprimir", "Print"); break;
+                        case Keys.N: what = I18n.T("Nuevo", "New"); break;
+                        case Keys.O: what = I18n.Open; break;
+                        case Keys.W: what = I18n.Close; break;
+                        case Keys.T: what = I18n.T("Nueva pesta\u00F1a", "New tab"); break;
                     }
                 }
                 else if (shift && !ctrl && !alt)
                 {
-                    if (key == Keys.Insert) what = "Pegar";
-                    else if (key == Keys.Delete) what = "Cortar";
-                    else if (key == Keys.F10) what = "Men\u00FA contextual";
+                    if (key == Keys.Insert) what = I18n.T("Pegar", "Paste");
+                    else if (key == Keys.Delete) what = I18n.T("Cortar", "Cut");
+                    else if (key == Keys.F10) what = I18n.T("Men\u00FA contextual", "Context menu");
                 }
                 else if (alt && !ctrl && !shift)
                 {
                     switch (key)
                     {
-                        case Keys.F4: what = "Cerrar ventana"; break;
-                        case Keys.Space: what = "Men\u00FA de ventana"; break;
-                        case Keys.Left: what = "Atr\u00E1s"; break;
-                        case Keys.Right: what = "Adelante"; break;
+                        case Keys.F4: what = I18n.T("Cerrar ventana", "Close window"); break;
+                        case Keys.Space: what = I18n.T("Men\u00FA de ventana", "Window menu"); break;
+                        case Keys.Left: what = I18n.T("Atr\u00E1s", "Back"); break;
+                        case Keys.Right: what = I18n.T("Adelante", "Forward"); break;
                     }
                 }
-                if (what != null) return Joined(ctrl, shift, alt, false, key) + " ya es " + what;
+                if (what != null) return I18n.Fmt("{0} ya es {1}", "{0} is already {1}", Joined(ctrl, shift, alt, false, key), what);
             }
             // Shift alone is not enough: Shift + a letter is just a capital letter.
-            if (!ctrl && !alt && !win && !StandsAlone(key)) return "Comb\u00EDnala con Ctrl o Alt";
+            if (!ctrl && !alt && !win && !StandsAlone(key)) return I18n.T("Comb\u00EDnala con Ctrl o Alt", "Combine with Ctrl or Alt");
             if (!win)
             {
-                if (!alt && Typing(key)) return "Se usa al escribir: prueba otra";
+                if (!alt && Typing(key)) return I18n.T("Se usa al escribir: prueba otra", "Used while typing: try another");
                 // On layouts with AltGr (Spanish among them) Ctrl + Alt + a key types a character such as @ or #.
                 if (ctrl && alt)
                 {
                     string ch = AltGrChar(key, shift);
-                    if (ch != null) return "As\u00ED escribes \u00AB" + ch + "\u00BB: prueba otra";
+                    if (ch != null) return I18n.Fmt("As\u00ED escribes \u00AB{0}\u00BB: prueba otra", "This types \u201C{0}\u201D: try another", ch);
                 }
             }
             return null;

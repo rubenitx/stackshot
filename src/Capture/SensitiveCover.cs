@@ -98,9 +98,9 @@ namespace Stackshot
         public static string Note(CoverOutcome r)
         {
             if (r == null) return null;
-            if (r.Error != null) return "Sin revisar";
+            if (r.Error != null) return I18n.T("Sin revisar", "Unchecked");
             int n = r.Found.Count;
-            return n == 0 ? null : n == 1 ? "1 dato tapado" : n + " datos tapados";
+            return n == 0 ? null : n == 1 ? I18n.T("1 dato tapado", "1 piece of data redacted") : (I18n.IsSpanish ? n + " datos tapados" : n + " items redacted");
         }
 
         // Same pixels, a pixel fully transparent in both counting as the same whatever its colour.
@@ -240,7 +240,7 @@ namespace Stackshot
                     CoverStore.DropStale(Path);
                     string error;
                     List<Ocr.Word> words = Ocr.ReadWords(Shot, out error);
-                    if (words == null) r.Error = error ?? "No se ha podido leer la imagen.";
+                    if (words == null) r.Error = error ?? I18n.T("No se ha podido leer la imagen.", "Could not read the image.");
                     else
                     {
                         r.Found = Sensitive.Find(words, Shot.Size);
@@ -256,7 +256,8 @@ namespace Stackshot
                 catch (Exception ex)
                 {
                     ShotStack.Log("Datos sensibles: " + ex);
-                    r.Error = ex is OutOfMemoryException ? "No hay memoria suficiente para revisar una imagen tan grande." : "No se ha podido revisar la imagen.";
+                    r.Error = ex is OutOfMemoryException ? I18n.T("No hay memoria suficiente para revisar una imagen tan grande.", "Not enough memory to check such a large image.")
+                                                         : I18n.T("No se ha podido revisar la imagen.", "Could not check the image.");
                 }
                 try { r.Preview = ShotStack.Preview(Shot, 600); }
                 catch (Exception ex) { ShotStack.Log("Datos sensibles, miniatura: " + ex.Message); }
@@ -288,7 +289,7 @@ namespace Stackshot
                 if (!answered && Done != null)
                 {
                     if (r.Copy != null) { r.Copy.Dispose(); r.Copy = null; }
-                    if (r.Error == null) r.Error = "No se ha podido revisar la imagen.";
+                    if (r.Error == null) r.Error = I18n.T("No se ha podido revisar la imagen.", "Could not check the image.");
                     try { Done(r); }
                     catch (Exception again) { ShotStack.Log("Datos sensibles: " + again.Message); }
                 }

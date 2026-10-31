@@ -18,26 +18,47 @@ namespace Stackshot
         // What it may do on its own (settings bits).
         public const int AloneSmall = 1, AloneDance = 2, AloneProps = 4, AloneLook = 8, AloneAll = 15;
 
-        public static readonly string[] Names =
+        static readonly string[] NamesEs =
         {
             "Ponte a jugar", "Haz malabares", "Baila", "Duerme", "Salta", "Gira", "Saluda", "Voltereta", "Reverencia", "Anima",
             "Dame cari\u00F1o", "Haz burbujas", "Tom\u00E1te un caf\u00E9", "Lee un rato", "Juega a la consola", "Haz una foto", "Est\u00EDrate",
             "Bebe agua", "Descansa la vista", "Estira las piernas", "Respira conmigo"
         };
+        static readonly string[] NamesEn =
+        {
+            "Play", "Juggle", "Dance", "Sleep", "Jump", "Twirl", "Wave", "Flip", "Bow", "Cheer",
+            "Send love", "Blow bubbles", "Have a coffee", "Read a bit", "Play games", "Take photo", "Stretch",
+            "Drink water", "Rest eyes", "Stretch legs", "Breathe with me"
+        };
+        public static string[] Names { get { return I18n.IsSpanish ? NamesEs : NamesEn; } }
 
-        public static readonly string[] Short =
+        static readonly string[] ShortEs =
         {
             "Jugar", "Malabares", "Baila", "Duerme", "Salta", "Gira", "Saluda", "Voltereta", "Reverencia", "Anima", "Cari\u00F1o", "Burbujas", "Caf\u00E9", "Leer", "Consola", "Foto", "Estirar",
             "Agua", "Vista", "Piernas", "Respirar"
         };
+        static readonly string[] ShortEn =
+        {
+            "Play", "Juggle", "Dance", "Sleep", "Jump", "Twirl", "Wave", "Flip", "Bow", "Cheer", "Love", "Bubbles", "Coffee", "Read", "Games", "Photo", "Stretch",
+            "Water", "Eyes", "Legs", "Breathe"
+        };
+        public static string[] Short { get { return I18n.IsSpanish ? ShortEs : ShortEn; } }
 
-        public static readonly string[] Hints =
+        static readonly string[] HintsEs =
         {
             "Elige un juego al azar", "Tres bolas en el aire", "Mueve el esqueleto", "Bosteza y se echa a dormir", "Tres saltos seguidos", "Una pirueta completa",
             "Te saluda con la mano", "Un salto mortal hacia atr\u00E1s", "Una reverencia muy educada", "Confeti para celebrarlo", "Se llena de corazones",
             "Soplan pompas de jab\u00F3n", "Una pausa con aroma", "Un cap\u00EDtulo tranquilo", "Una partidita r\u00E1pida", "Sonr\u00EDe, que sale el p\u00E1jaro", "Un buen estir\u00F3n",
             "Un vaso de agua, sorbo a sorbo", "Mira a lo lejos 20 segundos", "Ocho sentadillas contigo", "Seis respiraciones lentas"
         };
+        static readonly string[] HintsEn =
+        {
+            "Picks a random activity", "Three balls in the air", "Move to the rhythm", "Yawns and goes to sleep", "Three jumps in a row", "A full 360 twirl",
+            "Waves hello with its hand", "A backflip", "A polite bow", "Confetti celebration", "Fills with hearts",
+            "Blows soap bubbles", "A coffee break", "A quiet reading chapter", "A quick gaming session", "Smile for the camera", "A good back stretch",
+            "A glass of water, sip by sip", "Look into distance for 20 seconds", "Eight squats with you", "Six slow deep breaths"
+        };
+        public static string[] Hints { get { return I18n.IsSpanish ? HintsEs : HintsEn; } }
 
         public static readonly string[] Glyphs =
         {
@@ -72,8 +93,11 @@ namespace Stackshot
 
     public static partial class MascotParts
     {
-        public static readonly string[] AccessoryNames = { "Ninguno", "Gafas de coraz\u00F3n", "Gafas 3D", "Gafas de aviador", "Bufanda a rayas", "Collar de flores",
+        static readonly string[] AccessoryNamesEs = { "Ninguno", "Gafas de coraz\u00F3n", "Gafas 3D", "Gafas de aviador", "Bufanda a rayas", "Collar de flores",
                                                            "Orejeras", "Mariposa", "Medalla de oro", "Estrellas en las mejillas", "Pecas", "Flor de Abigail" };
+        static readonly string[] AccessoryNamesEn = { "None", "Heart glasses", "3D glasses", "Aviator glasses", "Striped scarf", "Flower necklace",
+                                                           "Earmuffs", "Butterfly", "Gold medal", "Cheek stars", "Freckles", "Abigail's flower" };
+        public static string[] AccessoryNames { get { return I18n.IsSpanish ? AccessoryNamesEs : AccessoryNamesEn; } }
         public const int AccFlower = 11;
 
         static readonly Color[] Petals =

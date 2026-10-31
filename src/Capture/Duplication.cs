@@ -293,11 +293,11 @@ namespace Stackshot
                         Dx.Release(ref output);
                     }
                     if (!used) { Dx.Release(ref ad); continue; }
-                    if (adapter != IntPtr.Zero) { Dx.Release(ref ad); return "monitores en dos tarjetas gr\u00E1ficas"; }
+                    if (adapter != IntPtr.Zero) { Dx.Release(ref ad); return I18n.T("monitores en dos tarjetas gr\u00E1ficas", "monitors on two graphics cards"); }
                     adapter = ad;
                 }
-                if (outputs.Count == 0 || adapter == IntPtr.Zero) return "sin monitores";
-                foreach (Output o in outputs) if (o.Out1 == IntPtr.Zero) return "DXGI 1.2 no disponible";
+                if (outputs.Count == 0 || adapter == IntPtr.Zero) return I18n.T("sin monitores", "no monitors");
+                foreach (Output o in outputs) if (o.Out1 == IntPtr.Zero) return I18n.T("DXGI 1.2 no disponible", "DXGI 1.2 not available");
                 int level;
                 // VIDEO_SUPPORT enables the color converter; some drivers refuse it, so try without.
                 int hr = Dx.D3D11CreateDevice(adapter, 0, IntPtr.Zero, 0x20 | 0x800, IntPtr.Zero, 0, 7, out device, out level, out context);
@@ -406,8 +406,8 @@ namespace Stackshot
             Dx.DuplDesc dd;
             Dx.Fn<Dx.DuplDescFn>(dupl, 7)(dupl, out dd);
             if (o.Had && (dd.Width != o.Desktop.Width || dd.Height != o.Desktop.Height || dd.Rotation > 1)) GeometryChanged = true;
-            if (dd.Rotation > 1) { Dx.Release(ref dupl); return "monitor girado"; }
-            if (dd.Format != Dx.Bgra && dd.Format != Dx.BgraSrgb) { Dx.Release(ref dupl); return "formato " + dd.Format; }
+            if (dd.Rotation > 1) { Dx.Release(ref dupl); return I18n.T("monitor girado", "rotated monitor"); }
+            if (dd.Format != Dx.Bgra && dd.Format != Dx.BgraSrgb) { Dx.Release(ref dupl); return I18n.T("formato ", "format ") + dd.Format; }
             o.SystemMemory = dd.InSystemMemory != 0;
             o.Dupl = dupl;
             o.Had = true;

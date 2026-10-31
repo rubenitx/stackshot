@@ -883,8 +883,13 @@ namespace Stackshot
 
         // ---- Words for the user
 
-        static readonly string[] One = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjeta", "correo", "tel\u00E9fono" };
-        static readonly string[] Many = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjetas", "correos", "tel\u00E9fonos" };
+        static readonly string[] OneEs = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjeta", "correo", "tel\u00E9fono" };
+        static readonly string[] OneEn = { "ID (DNI)", "Foreigner ID (NIE)", "Social Security no.", "IBAN", "card", "email", "phone" };
+        static string[] One { get { return I18n.IsSpanish ? OneEs : OneEn; } }
+
+        static readonly string[] ManyEs = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjetas", "correos", "tel\u00E9fonos" };
+        static readonly string[] ManyEn = { "IDs (DNI)", "Foreigner IDs (NIE)", "Social Security nos.", "IBANs", "cards", "emails", "phones" };
+        static string[] Many { get { return I18n.IsSpanish ? ManyEs : ManyEn; } }
 
         public static string Name(SensitiveKind k, int n) { return n == 1 ? One[(int)k] : Many[(int)k]; }
 

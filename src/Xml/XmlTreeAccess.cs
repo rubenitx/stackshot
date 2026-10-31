@@ -37,9 +37,9 @@ namespace Stackshot
             DiffRow d = item as DiffRow;
             if (d == null) return null;
             DiffKind k = d.Mark;
-            if (k == DiffKind.Added) b.Append("A\u00F1adido: ");
-            else if (k == DiffKind.Removed) b.Append("Quitado: ");
-            else if (k == DiffKind.Changed) b.Append("Cambiado: ");
+            if (k == DiffKind.Added) b.Append(I18n.T("A\u00F1adido: ", "Added: "));
+            else if (k == DiffKind.Removed) b.Append(I18n.T("Quitado: ", "Removed: "));
+            else if (k == DiffKind.Changed) b.Append(I18n.T("Cambiado: ", "Changed: "));
             foreach (DiffPiece p in DiffRows.Pieces(d, false)) b.Append(p.Text);
             return b.ToString().Trim();
         }
@@ -71,7 +71,7 @@ namespace Stackshot
             {
                 string n = base.GetNameCore();
                 if (!string.IsNullOrEmpty(n)) return n;
-                return list.Parent is XmlDiffView ? "Diferencias entre los dos XML" : "\u00C1rbol del XML";
+                return list.Parent is XmlDiffView ? I18n.T("Diferencias entre los dos XML", "Differences between the two XML files") : I18n.T("\u00C1rbol del XML", "XML tree");
             }
         }
 

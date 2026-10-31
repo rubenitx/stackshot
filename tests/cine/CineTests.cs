@@ -41,6 +41,7 @@ namespace Stackshot.Tests
             // Per process: two runs at the same time must not delete each other's files.
             workRoot = Path.Combine(Path.GetTempPath(), "stackshot-cine-tests", "work-" + Process.GetCurrentProcess().Id);
             Settings.ReadOnly = true;
+            I18n.Apply("es");   // the suites check the Spanish texts, whatever language this Windows is in
             Directory.CreateDirectory(workRoot);
 
             List<string> suites = args.Length > 0 ? new List<string>(args) : new List<string>(defaultSuites);

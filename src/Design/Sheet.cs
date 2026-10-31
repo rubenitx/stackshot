@@ -108,8 +108,8 @@ namespace Stackshot
         void AddCaptions()
         {
             captions.Children.Clear();
-            captions.Children.Add(new CaptionButton("minus", false, "Minimizar", delegate { WindowState = WindowState.Minimized; }));
-            captions.Children.Add(new CaptionButton("close", true, "Cerrar", delegate { Close(); }));
+            captions.Children.Add(new CaptionButton("minus", false, I18n.T("Minimizar", "Minimize"), delegate { WindowState = WindowState.Minimized; }));
+            captions.Children.Add(new CaptionButton("close", true, I18n.Close, delegate { Close(); }));
             if (hwnd != IntPtr.Zero && !IsActive) DimCaptions(true);
         }
 
@@ -144,6 +144,13 @@ namespace Stackshot
                 AutomationProperties.SetName(this, tip);
                 WindowChrome.SetIsHitTestVisibleInChrome(this, true);
                 Paint();
+            }
+
+            public void SetIcon(string icon, string tip)
+            {
+                glyph.Icon = icon;
+                ToolTip = tip;
+                AutomationProperties.SetName(this, tip);
             }
 
             public bool Inactive { set { if (inactive == value) return; inactive = value; Paint(); } }

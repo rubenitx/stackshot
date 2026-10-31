@@ -124,7 +124,7 @@ namespace Stackshot
             if (ManagedByMsi) return; // the MSI handles this
             string exe = Settings.InstalledExe;
             // A shortcut the shell refuses (a locked-down profile) is logged, never a reason for the install to fail.
-            try { CreateShortcut(MenuLink, exe, "Stackshot: capturas de pantalla, v\u00EDdeo y GIF", ""); }
+            try { CreateShortcut(MenuLink, exe, I18n.T("Stackshot: capturas de pantalla, v\u00EDdeo y GIF", "Stackshot: screenshots, video and GIF"), ""); }
             catch (Exception ex) { ShotStack.Log("Acceso directo del men\u00FA Inicio: " + ex.Message); }
             SetStartup(startup);
             try
@@ -379,15 +379,16 @@ namespace Stackshot
             }
             Settings s = Settings.Load();
             long recovered = WorkFiles.Bytes(ShotStack.RecoveredDir);
-            string keepNote = recovered > 0 ? "\n\nLas grabaciones recuperadas (" + Recents.Size(recovered) + ") se quedan en " + ShotStack.RecoveredDir + "." : "";
-            if (!quiet && MessageBox.Show("\u00BFDesinstalar Stackshot?\n\nLas capturas que hayas guardado en " + s.SaveFolder + " no se borran." + keepNote,
+            string keepNote = recovered > 0 ? I18n.Fmt("\n\nLas grabaciones recuperadas ({0}) se quedan en {1}.", "\n\nRecovered recordings ({0}) remain in {1}.", Recents.Size(recovered), ShotStack.RecoveredDir) : "";
+            if (!quiet && MessageBox.Show(I18n.Fmt("\u00BFDesinstalar Stackshot?\n\nLas capturas que hayas guardado en {0} no se borran.{1}", "Uninstall Stackshot?\n\nCaptures saved in {0} will not be deleted.{1}", s.SaveFolder, keepNote),
                                           "Stackshot", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             QuitRunning();
             if (Running)
             {
                 // The user kept it open (unsaved changes) or it is still saving: nothing is removed under it.
                 ShotStack.Log("Desinstalar: Stackshot sigue abierto");
-                if (!quiet) MessageBox.Show("Stackshot sigue abierto: hay cambios sin guardar o una grabaci\u00F3n guard\u00E1ndose.\n\nCi\u00E9rralo y vuelve a desinstalar.",
+                if (!quiet) MessageBox.Show(I18n.T("Stackshot sigue abierto: hay cambios sin guardar o una grabaci\u00F3n guard\u00E1ndose.\n\nCi\u00E9rralo y vuelve a desinstalar.",
+                                                   "Stackshot is still open: there are unsaved changes or a recording is being saved.\n\nClose it and uninstall again."),
                                             "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
@@ -400,9 +401,9 @@ namespace Stackshot
             bool keptRecovered = DeleteData(Settings.DataDir, s.SaveFolder);
             RemoveInstallDir();
             if (quiet) return;
-            string done = "Stackshot se ha desinstalado. \u00A1Gracias por probarlo!";
-            if (printBack) done += "\n\nLa tecla Impr Pant vuelve a abrir Recortes de Windows.";
-            if (keptRecovered) done += "\n\nLas grabaciones recuperadas siguen en " + ShotStack.RecoveredDir + ".";
+            string done = I18n.T("Stackshot se ha desinstalado. \u00A1Gracias por probarlo!", "Stackshot has been uninstalled. Thank you for trying it!");
+            if (printBack) done += I18n.T("\n\nLa tecla Impr Pant vuelve a abrir Recortes de Windows.", "\n\nThe Print Screen key opens Windows Snipping Tool again.");
+            if (keptRecovered) done += I18n.Fmt("\n\nLas grabaciones recuperadas siguen en {0}.", "\n\nRecovered recordings remain in {0}.", ShotStack.RecoveredDir);
             MessageBox.Show(done, "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 

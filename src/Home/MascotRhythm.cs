@@ -27,21 +27,21 @@ namespace Stackshot
             {
                 Remember(MascotCmd.Coffee);
                 Run(MascotCmd.Coffee, false);
-                if (Talks && Chatter > 0) Say(rnd.NextDouble() < 0.5 ? "Un cafecito para empezar." : "\u00A1Buenos d\u00EDas! Primero, caf\u00E9.", 2600);
+                if (Talks && Chatter > 0) Say(rnd.NextDouble() < 0.5 ? I18n.T("Un cafecito para empezar.", "A little coffee to get going.") : I18n.T("\u00A1Buenos d\u00EDas! Primero, caf\u00E9.", "Good morning! Coffee first."), 2600);
                 return true;
             }
             if ((h >= 22 || h < 6) && (Alone & MascotCmd.AloneSmall) != 0 && lastAlone != AloneWink && rnd.NextDouble() < 0.35)
             {
                 Remember(AloneWink);
                 SetMood(Mood.Yawn, 1500);
-                if (Talks && Chatter > 0 && rnd.NextDouble() < 0.4) Say("Qu\u00E9 tarde es ya\u2026", 2400);
+                if (Talks && Chatter > 0 && rnd.NextDouble() < 0.4) Say(I18n.T("Qu\u00E9 tarde es ya\u2026", "It's getting so late\u2026"), 2400);
                 return true;
             }
             if (d.DayOfWeek == DayOfWeek.Friday && h >= 15 && h < 21 && (Alone & MascotCmd.AloneSmall) != 0 && lastAlone != MascotCmd.Cheer && rnd.NextDouble() < 0.15)
             {
                 Remember(MascotCmd.Cheer);
                 Run(MascotCmd.Cheer, false);
-                if (Talks && Chatter > 0) Say("\u00A1Viernes!", 2200);
+                if (Talks && Chatter > 0) Say(I18n.T("\u00A1Viernes!", "Friday!"), 2200);
                 return true;
             }
             return false;

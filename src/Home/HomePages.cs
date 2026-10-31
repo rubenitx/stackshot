@@ -15,8 +15,13 @@ namespace Stackshot
 {
     public partial class HomeWindow
     {
-        static readonly string[] ActionNames = { "Capturar un \u00E1rea", "Repetir la \u00FAltima \u00E1rea", "Capturar la pantalla", "Capturar la ventana activa", "Captura con desplazamiento", "Copiar texto de la pantalla", "Grabar v\u00EDdeo", "Grabar GIF", "Ver y ordenar Markdown", "Capturar con temporizador" };
-        static readonly string[] ActionShort = { "Un \u00E1rea", "La \u00FAltima \u00E1rea", "Pantalla completa", "Una ventana", "Con desplazamiento", "Copiar texto", "V\u00EDdeo", "GIF animado", "Markdown", "Con temporizador" };
+        internal static readonly string[] ActionNamesEs = { "Capturar un \u00E1rea", "Repetir la \u00FAltima \u00E1rea", "Capturar la pantalla", "Capturar la ventana activa", "Captura con desplazamiento", "Copiar texto de la pantalla", "Grabar v\u00EDdeo", "Grabar GIF", "Ver y ordenar Markdown", "Capturar con temporizador" };
+        internal static readonly string[] ActionNamesEn = { "Capture an area", "Repeat last area", "Capture full screen", "Capture active window", "Scrolling capture", "Copy screen text", "Record video", "Record GIF", "View and sort Markdown", "Timed capture" };
+        internal static string[] ActionNames { get { return I18n.IsSpanish ? ActionNamesEs : ActionNamesEn; } }
+
+        internal static readonly string[] ActionShortEs = { "Un \u00E1rea", "La \u00FAltima \u00E1rea", "Pantalla completa", "Una ventana", "Con desplazamiento", "Copiar texto", "V\u00EDdeo", "GIF animado", "Markdown", "Con temporizador" };
+        internal static readonly string[] ActionShortEn = { "An area", "Last area", "Full screen", "A window", "Scrolling", "Copy text", "Video", "Animated GIF", "Markdown", "With timer" };
+        internal static string[] ActionShort { get { return I18n.IsSpanish ? ActionShortEs : ActionShortEn; } }
         static readonly string[] ActionIcons = { "area", "update", "screen", "window", "scroll", "textscan", "video", "gif", "markdown", "clock" };
         static readonly D.Color[,] ActionColors =
         {
@@ -32,7 +37,9 @@ namespace Stackshot
             { D.Color.FromArgb(255, 159, 10), D.Color.FromArgb(235, 100, 20) }
         };
         static readonly D.Color Gray1 = D.Color.FromArgb(152, 152, 157), Gray2 = D.Color.FromArgb(110, 110, 115);
-        static readonly string[] ProfileNames = { "Rendimiento", "Equilibrado", "Completo" };
+        static readonly string[] ProfileNamesEs = { "Rendimiento", "Equilibrado", "Completo" };
+        static readonly string[] ProfileNamesEn = { "Performance", "Balanced", "Full" };
+        static string[] ProfileNames { get { return I18n.IsSpanish ? ProfileNamesEs : ProfileNamesEn; } }
 
         string keysMoved;   // one-off note after a combo moved from one action to another
 
@@ -177,25 +184,47 @@ namespace Stackshot
 
             protected abstract FrameworkElement Control();
 
+            public bool Stacked;
+
             public virtual void Build()
             {
                 Children.Clear();
                 ColumnDefinitions.Clear();
+                RowDefinitions.Clear();
                 Palette pal = Ds.Brushes;
                 string sub = CurrentSub();
-                MinHeight = sub != null ? 58 : 48;
+                MinHeight = sub != null ? (Stacked ? 84 : 58) : 48;
                 Margin = new Thickness(14, 0, 14, 0);
                 ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 ColumnDefinitions.Add(new ColumnDefinition());
                 ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                if (Stacked)
+                {
+                    RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                    RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                }
                 if (Icon != null)
                 {
                     IconTile t = new IconTile(Icon, 28, HomeWindow.W(C1), HomeWindow.W(C2));
-                    t.Margin = new Thickness(0, 0, 12, 0);
+                    if (Stacked)
+                    {
+                        t.Margin = new Thickness(0, 10, 12, 0);
+                        t.VerticalAlignment = VerticalAlignment.Top;
+                        Grid.SetRow(t, 0);
+                    }
+                    else
+                    {
+                        t.Margin = new Thickness(0, 0, 12, 0);
+                    }
                     Children.Add(t);
                 }
-                StackPanel text = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 9, 14, 9) };
+                StackPanel text = new StackPanel { VerticalAlignment = Stacked ? VerticalAlignment.Top : VerticalAlignment.Center, Margin = new Thickness(0, 9, Stacked ? 0 : 14, Stacked ? 4 : 9) };
                 Grid.SetColumn(text, 1);
+                if (Stacked)
+                {
+                    Grid.SetRow(text, 0);
+                    Grid.SetColumnSpan(text, 2);
+                }
                 // A contrast theme shows a row that does not apply in GrayText instead of fading it.
                 greyed = pal.High && When != null && !When();
                 TextBlock title = Label(Title, Ds.Regular, 13.5, greyed ? pal.Label3 : pal.Label);
@@ -214,8 +243,19 @@ namespace Stackshot
                 FrameworkElement c = Control();
                 if (c != null)
                 {
-                    c.VerticalAlignment = VerticalAlignment.Center;
-                    Grid.SetColumn(c, 2);
+                    if (Stacked)
+                    {
+                        Grid.SetRow(c, 1);
+                        Grid.SetColumn(c, 1);
+                        Grid.SetColumnSpan(c, 2);
+                        c.HorizontalAlignment = HorizontalAlignment.Right;
+                        c.Margin = new Thickness(0, 2, 0, 12);
+                    }
+                    else
+                    {
+                        c.VerticalAlignment = VerticalAlignment.Center;
+                        Grid.SetColumn(c, 2);
+                    }
                     Children.Add(c);
                     AccessRow(this, sub);
                 }
@@ -240,7 +280,7 @@ namespace Stackshot
                     string sub = CurrentSub();
                     SubText.Text = sub ?? "";
                     SubText.Visibility = sub != null ? Visibility.Visible : Visibility.Collapsed;
-                    MinHeight = sub != null ? 58 : 48;
+                    MinHeight = sub != null ? (Stacked ? 84 : 58) : 48;
                     AccessRow(this, sub);
                 }
             }
@@ -363,7 +403,7 @@ namespace Stackshot
                         foreach (string c in Hotkeys.Split(W.settings.HotkeysFor(Settings.Actions[i])))
                             if (Hotkeys.Same(c, taken)) { other = ActionNames[i]; break; }
                     }
-                    Sub = Hotkeys.DisplayOne(taken) + (other != null ? " tambi\u00E9n es de \u00AB" + other + "\u00BB" : " lo est\u00E1 usando otro programa");
+                    Sub = Hotkeys.DisplayOne(taken) + (other != null ? I18n.Fmt(" tambi\u00E9n es de \u00AB{0}\u00BB", " is also used by \u201C{0}\u201D", other) : I18n.T(" lo est\u00E1 usando otro programa", " is being used by another program"));
                 }
                 base.Build();
                 if (taken != null && SubText != null) SubText.Foreground = Ds.Brush(Ds.Brushes.Warn);
@@ -386,7 +426,7 @@ namespace Stackshot
                     field.BorderBrush = Ds.Brush(pal.Hairline);
                     field.Background = Ds.Brush(pal.Control);
                     List<string> combos = Hotkeys.Split(W.settings.HotkeysFor(action));
-                    if (combos.Count == 0) field.Child = Center(Label("Sin atajo", Ds.Regular, 12.5, pal.Label3));
+                    if (combos.Count == 0) field.Child = Center(Label(I18n.T("Sin atajo", "No shortcut"), Ds.Regular, 12.5, pal.Label3));
                     else
                     {
                         Grid g = new Grid();
@@ -399,10 +439,10 @@ namespace Stackshot
                         // Extra combos written in the settings file are kept; say so, and list them on hover.
                         if (combos.Count > 1)
                         {
-                            g.Children.Add(Label("y " + (combos.Count - 1) + " m\u00E1s", Ds.Regular, 11.5, pal.Label2, new Thickness(11, 0, 8, 0)));
+                            g.Children.Add(Label(I18n.Fmt("y {0} m\u00E1s", "and {0} more", combos.Count - 1), Ds.Regular, 11.5, pal.Label2, new Thickness(11, 0, 8, 0)));
                             List<string> more = new List<string>();
                             for (int i = 1; i < combos.Count; i++) more.Add(Hotkeys.DisplayOne(combos[i]));
-                            field.ToolTip = "Tambi\u00E9n: " + string.Join(", ", more.ToArray());
+                            field.ToolTip = I18n.Fmt("Tambi\u00E9n: {0}", "Also: {0}", string.Join(", ", more.ToArray()));
                         }
                         field.Child = g;
                     }
@@ -460,7 +500,7 @@ namespace Stackshot
                     return;
                 }
                 field.ToolTip = null;
-                if (m == ModifierKeys.None) { field.Child = Center(Label("Pulsa la combinaci\u00F3n\u2026", Ds.Semibold, 12.5, pal.Link)); return; }
+                if (m == ModifierKeys.None) { field.Child = Center(Label(I18n.T("Pulsa la combinaci\u00F3n\u2026", "Press the combination\u2026"), Ds.Semibold, 12.5, pal.Link)); return; }
                 string held = Hotkeys.DisplayMods((m & ModifierKeys.Control) != 0, (m & ModifierKeys.Shift) != 0, (m & ModifierKeys.Alt) != 0, (m & ModifierKeys.Windows) != 0);
                 FrameworkElement k = Fit(new Keycaps(held + " + \u2026", 20), HorizontalAlignment.Center);
                 k.Margin = new Thickness(6, 0, 6, 0);
@@ -556,8 +596,11 @@ namespace Stackshot
                         List<string> others = Hotkeys.Split(w.settings.HotkeysFor(a));
                         if (others.RemoveAll(delegate(string o) { return Hotkeys.Same(o, combo); }) == 0) continue;
                         w.settings.SetHotkeys(a, string.Join(", ", others.ToArray()));
-                        w.keysMoved = Hotkeys.DisplayOne(combo) + " era de \u00AB" + ActionNames[i] + "\u00BB" +
-                                      (others.Count == 0 ? ", que se ha quedado sin atajo." : "; ahora es de \u00AB" + Title + "\u00BB.");
+                        w.keysMoved = I18n.IsSpanish
+                            ? (Hotkeys.DisplayOne(combo) + " era de \u00AB" + ActionNames[i] + "\u00BB" +
+                               (others.Count == 0 ? ", que se ha quedado sin atajo." : "; ahora es de \u00AB" + Title + "\u00BB."))
+                            : (Hotkeys.DisplayOne(combo) + " was assigned to \u201C" + ActionNames[i] + "\u201D" +
+                               (others.Count == 0 ? ", which now has no shortcut." : "; it now belongs to \u201C" + Title + "\u201D."));
                     }
                 }
                 w.settings.SetHotkeys(action, string.Join(", ", list.ToArray()));
@@ -566,8 +609,9 @@ namespace Stackshot
                 if (Hotkeys.Same(combo, "PrintScreen") && Installer.SnippingOwnsPrintScreen)
                 {
                     Installer.FreePrintScreen();
-                    w.owner.Notify("Impr Pant ya es de Stackshot",
-                                   "Windows la ten\u00EDa reservada para Recortes; ya est\u00E1 liberada en tu usuario. Si a\u00FAn se abre Recortes, cierra sesi\u00F3n y vuelve a entrar.");
+                    w.owner.Notify(I18n.T("Impr Pant ya es de Stackshot", "Print Screen now belongs to Stackshot"),
+                                   I18n.T("Windows la ten\u00EDa reservada para Recortes; ya est\u00E1 liberada en tu usuario. Si a\u00FAn se abre Recortes, cierra sesi\u00F3n y vuelve a entrar.",
+                                          "Windows had reserved it for Snipping Tool; it is now freed for your user. If Snipping Tool still opens, sign out and back in."));
                 }
                 Stop(w);
                 w.Rebuild();
@@ -576,7 +620,7 @@ namespace Stackshot
 
         public class FolderRow : Row
         {
-            public FolderRow() : base("", "Donde van las capturas que guardas.", "folder", D.Color.FromArgb(90, 200, 250), D.Color.FromArgb(0, 122, 255)) { }
+            public FolderRow() : base("", I18n.T("Donde van las capturas que guardas.", "Where your saved captures go."), "folder", D.Color.FromArgb(90, 200, 250), D.Color.FromArgb(0, 122, 255)) { }
             public override void Build()
             {
                 Title = ShortPath(W.settings.SaveFolder);
@@ -587,15 +631,15 @@ namespace Stackshot
             protected override FrameworkElement Control()
             {
                 StackPanel p = new StackPanel { Orientation = Orientation.Horizontal };
-                MacButton open = new MacButton("Abrir", ButtonKind.Secondary);
+                MacButton open = new MacButton(I18n.T("Abrir", "Open"), ButtonKind.Secondary);
                 open.Click += delegate { W.owner.OpenFolder(); };
-                MacButton change = new MacButton("Cambiar\u2026", ButtonKind.Secondary);
+                MacButton change = new MacButton(I18n.T("Cambiar\u2026", "Change\u2026"), ButtonKind.Secondary);
                 change.Margin = new Thickness(8, 0, 0, 0);
                 change.Click += delegate
                 {
                     using (WF.FolderBrowserDialog d = new WF.FolderBrowserDialog())
                     {
-                        d.Description = "\u00BFD\u00F3nde quieres guardar las capturas que conserves?";
+                        d.Description = I18n.T("\u00BFD\u00F3nde quieres guardar las capturas que conserves?", "Where do you want to save your captures?");
                         d.ShowNewFolderButton = true;
                         try { Directory.CreateDirectory(W.settings.SaveFolder); d.SelectedPath = W.settings.SaveFolder; } catch { }
                         if (d.ShowDialog(W.Win32) == WF.DialogResult.OK) { W.settings.SaveFolder = d.SelectedPath; W.Changed(); Build(); }
@@ -626,24 +670,25 @@ namespace Stackshot
         {
             if (items.Count == 0) return "";
             if (items.Count == 1) return items[0];
-            return string.Join(", ", items.GetRange(0, items.Count - 1).ToArray()) + " y " + items[items.Count - 1];
+            return string.Join(", ", items.GetRange(0, items.Count - 1).ToArray()) + (I18n.IsSpanish ? " y " : " and ") + items[items.Count - 1];
         }
 
         // ---- Atajos
 
         void BuildKeys()
         {
-            Header("Atajos", "Haz clic en un atajo y pulsa la combinaci\u00F3n que quieras, con Ctrl, Alt, May\u00FAs o Win. Supr lo quita y Esc cancela.");
+            Header(I18n.T("Atajos", "Shortcuts"), I18n.T("Haz clic en un atajo y pulsa la combinaci\u00F3n que quieras, con Ctrl, Alt, May\u00FAs o Win. Supr lo quita y Esc cancela.", "Click a shortcut and press the combination you want, with Ctrl, Alt, Shift or Win. Del removes it and Esc cancels."));
             if (PrintScreenToSnipping())
-                Group(null, new ButtonRow("Impr Pant abre Recortes de Windows", "Para que capture con Stackshot hay que liberarla. Solo cambia en tu usuario.",
-                                          "keyboard", Mac.Orange, Mac.Red, "Liberar", FreePrintScreen));
+                Group(null, new ButtonRow(I18n.T("Impr Pant abre Recortes de Windows", "Print Screen opens Windows Snipping Tool"),
+                                          I18n.T("Para que capture con Stackshot hay que liberarla. Solo cambia en tu usuario.", "To capture with Stackshot it must be freed. Only changes for your user account."),
+                                          "keyboard", Mac.Orange, Mac.Red, I18n.T("Liberar", "Free key"), FreePrintScreen));
             Row[] rows = new Row[Settings.Actions.Length];
             for (int i = 0; i < rows.Length; i++) rows[i] = new HotkeyRow(Settings.Actions[i], i);
             Group(null, rows);
             if (keysMoved != null) { Note(keysMoved); keysMoved = null; }
-            Note("Si otro programa (Recortes, ShareX, Lightshot\u2026) ya usa alguno, aparecer\u00E1 marcado en naranja y Stackshot te avisar\u00E1 junto al reloj.");
+            Note(I18n.T("Si otro programa (Recortes, ShareX, Lightshot\u2026) ya usa alguno, aparecer\u00E1 marcado en naranja y Stackshot te avisar\u00E1 junto al reloj.", "If another program (Snipping Tool, ShareX, Lightshot\u2026) already uses one, it will be marked in orange and Stackshot will notify you."));
             if (!DefaultHotkeys())
-                NoteLink("", "Restaurar los atajos de serie", delegate
+                NoteLink("", I18n.T("Restaurar los atajos de serie", "Restore default shortcuts"), delegate
                 {
                     CancelListening();
                     Settings d = new Settings();
@@ -681,8 +726,9 @@ namespace Stackshot
             Installer.FreePrintScreen();
             owner.ResumeHotkeys();
             Rebuild();
-            owner.Notify("Impr Pant ya es de Stackshot",
-                         "Windows la ten\u00EDa reservada para Recortes; ya est\u00E1 liberada en tu usuario. Si a\u00FAn se abre Recortes, cierra sesi\u00F3n y vuelve a entrar.");
+            owner.Notify(I18n.T("Impr Pant ya es de Stackshot", "Print Screen now belongs to Stackshot"),
+                         I18n.T("Windows la ten\u00EDa reservada para Recortes; ya est\u00E1 liberada en tu usuario. Si a\u00FAn se abre Recortes, cierra sesi\u00F3n y vuelve a entrar.",
+                                "Windows had reserved it for Snipping Tool; it is now freed for your user. If Snipping Tool still opens, sign out and back in."));
         }
 
         // ---- General
@@ -716,12 +762,12 @@ namespace Stackshot
             profileNote.Inlines.Clear();
             if (changed.Count == 0)
             {
-                profileNote.Inlines.Add(new System.Windows.Documents.Run("Un perfil solo cambia unos pocos ajustes de golpe; despu\u00E9s puedes retocar cualquiera."));
+                profileNote.Inlines.Add(new System.Windows.Documents.Run(I18n.T("Un perfil solo cambia unos pocos ajustes de golpe; despu\u00E9s puedes retocar cualquiera.", "A profile only changes a few settings at once; you can tweak any of them later.")));
                 return;
             }
             // "Respecto a este perfil": most people never chose it, it came selected.
-            profileNote.Inlines.Add(new System.Windows.Documents.Run("Has cambiado " + Listed(changed) + " respecto a este perfil. "));
-            profileNote.Inlines.Add(InlineLink("Volver a aplicar \u00AB" + ProfileNames[p] + "\u00BB", delegate
+            profileNote.Inlines.Add(new System.Windows.Documents.Run(I18n.Fmt("Has cambiado {0} respecto a este perfil. ", "You changed {0} relative to this profile. ", Listed(changed))));
+            profileNote.Inlines.Add(InlineLink(I18n.Fmt("Volver a aplicar \u00AB{0}\u00BB", "Reapply \u201C{0}\u201D", ProfileNames[p]), delegate
             {
                 ApplyProfile(p);
                 Changed();
@@ -733,107 +779,125 @@ namespace Stackshot
         List<string> ProfileChanges(int p)
         {
             List<string> l = new List<string>();
-            if (settings.ShowIntro != (p > 0)) l.Add("la animaci\u00F3n al abrir");
-            if (settings.MascotTalks != (p > 0) && !Policy.MascotForced) l.Add("los saludos de la mascota");
-            if (settings.MascotDesktop != (p == 2) && !Policy.MascotForced) l.Add("la mascota en el escritorio");
-            if (p == 0 && settings.WellToasts) l.Add("los avisos de pausas");
-            if (p == 0 && settings.HealthTalk) l.Add("los comentarios de actividad");
+            if (settings.ShowIntro != (p > 0)) l.Add(I18n.T("la animaci\u00F3n al abrir", "the launch animation"));
+            if (settings.MascotTalks != (p > 0) && !Policy.MascotForced) l.Add(I18n.T("los saludos de la mascota", "mascot greetings"));
+            if (settings.MascotDesktop != (p == 2) && !Policy.MascotForced) l.Add(I18n.T("la mascota en el escritorio", "mascot on desktop"));
+            if (p == 0 && settings.WellToasts) l.Add(I18n.T("los avisos de pausas", "break reminders"));
+            if (p == 0 && settings.HealthTalk) l.Add(I18n.T("los comentarios de actividad", "activity comments"));
             return l;
         }
 
         void BuildGeneral()
         {
-            Header("General", "C\u00F3mo arranca Stackshot y qu\u00E9 hace cada vez que capturas.");
-            string[] pdesc =
+            Header(I18n.T("General", "General"), I18n.T("C\u00F3mo arranca Stackshot y qu\u00E9 hace cada vez que capturas.", "How Stackshot starts and behaves when you capture."));
+            string[] pdesc = I18n.IsSpanish ? new string[]
             {
                 "Lo justo para capturar: sin mascota (ni en la ventana ni en el escritorio, y sin gastar nada en ella), sin animaci\u00F3n al abrir y sin avisos por fuera. Ideal para equipos justos.",
                 "El equilibrio de siempre: animaciones suaves y la mascota solo dentro de Stackshot.",
                 "Todo activado: la mascota tambi\u00E9n paseando por el escritorio, sus saludos y los avisos de salud."
+            } : new string[]
+            {
+                "Essentials only: no mascot (not in window or desktop, 0% CPU footprint), no launch intro, no popups outside. Great for lightweight PCs.",
+                "The classic balance: smooth animations and mascot stays inside Stackshot.",
+                "Everything enabled: mascot roaming the desktop, greetings and wellness reminders."
             };
             // Choosing a profile moves the switches it touches on this page too (no rebuild: the choice keeps sliding).
-            Group("Perfil",
-                new SegRow("Perfil r\u00E1pido", null, "gear", Gray1, Gray2, ProfileNames,
+            Group(I18n.T("Perfil", "Profile"),
+                new SegRow(I18n.T("Perfil r\u00E1pido", "Quick profile"), null, "gear", Gray1, Gray2, ProfileNames,
                            delegate { return settings.Profile; }, delegate(int i) { ApplyProfile(i); })
                     { SubNow = delegate { return pdesc[Math.Max(0, Math.Min(2, settings.Profile))]; } });
             profileNote = Paragraph("", 12, Ds.Brushes.Label2);
             profileNote.Margin = new Thickness(8, -14, 8, 24);
             Add(profileNote);
             PaintProfileNote();
-            Group("Apariencia",
-                new SegRow("Tema", "Claro u oscuro, o el mismo que tenga Windows en cada momento.", "sparkle", Mac.Indigo, Mac.Blue,
-                           new string[] { "Como Windows", "Claro", "Oscuro" },
+            Group(I18n.T("Apariencia", "Appearance"),
+                new SegRow(I18n.T("Idioma", "Language"),
+                           I18n.T("El idioma de la interfaz (autom\u00E1tico seg\u00FAn Windows, espa\u00F1ol o ingl\u00E9s).", "Interface language (automatic based on Windows, Spanish or English)."),
+                           "globe", Mac.Teal, Mac.Blue,
+                           new string[] { I18n.T("Autom\u00E1tico", "Auto"), "Espa\u00F1ol", "English" },
+                           delegate { return settings.Language == "es" ? 1 : settings.Language == "en" ? 2 : 0; },
+                           delegate(int i) {
+                               string lang = i == 1 ? "es" : i == 2 ? "en" : "auto";
+                               settings.Language = lang;
+                               settings.LanguageOffered = true;   // chosen by hand: nothing left to offer
+                               settings.Save();
+                               I18n.Apply(lang);
+                           }),
+                new SegRow(I18n.T("Tema", "Theme"), I18n.T("Claro u oscuro, o el mismo que tenga Windows en cada momento.", "Light, dark, or follow Windows mode."), "sparkle", Mac.Indigo, Mac.Blue,
+                           new string[] { I18n.T("Como Windows", "Follow Windows"), I18n.T("Claro", "Light"), I18n.T("Oscuro", "Dark") },
                            delegate { return settings.Appearance; }, delegate(int i) { settings.Appearance = i; }),
-                new SegRow("Vista de Inicio", "C\u00F3mo se ve la p\u00E1gina principal.", "home", Mac.Blue, Mac.Indigo,
+                new SegRow(I18n.T("Vista de Inicio", "Home view"), I18n.T("C\u00F3mo se ve la p\u00E1gina principal.", "How the main home view is displayed."), "home", Mac.Blue, Mac.Indigo,
                            HomeStyles, delegate { return settings.HomeStyle; }, delegate(int i) { settings.HomeStyle = i; }));
-            Group("Arranque",
-                new ToggleRow("Iniciar con Windows", "Arranca en segundo plano al encender el equipo.", "power", Mac.Green, D.Color.FromArgb(0, 160, 90),
+            Group(I18n.T("Arranque", "Startup"),
+                new ToggleRow(I18n.T("Iniciar con Windows", "Launch with Windows"), I18n.T("Arranca en segundo plano al encender el equipo.", "Starts in background when your PC boots."), "power", Mac.Green, D.Color.FromArgb(0, 160, 90),
                               delegate { return Installer.StartupEnabled; }, delegate(bool v) { Installer.SetStartup(v); }),
-                new ToggleRow("Seguir en la bandeja al cerrar", "Al cerrar esta ventana, Stackshot sigue funcionando junto al reloj.", "stack", Mac.Blue, Mac.Indigo,
+                new ToggleRow(I18n.T("Seguir en la bandeja al cerrar", "Keep in tray when closed"), I18n.T("Al cerrar esta ventana, Stackshot sigue funcionando junto al reloj.", "Closing this window keeps Stackshot running in the tray."), "stack", Mac.Blue, Mac.Indigo,
                               delegate { return settings.CloseToTray; }, delegate(bool v) { settings.CloseToTray = v; }),
-                new ToggleRow("Animaci\u00F3n al abrir", "La bienvenida con el logo cuando abres Stackshot.", "sparkle", Mac.Purple, Mac.Indigo,
+                new ToggleRow(I18n.T("Animaci\u00F3n al abrir", "Launch animation"), I18n.T("La bienvenida con el logo cuando abres Stackshot.", "Logo animation when Stackshot launches."), "sparkle", Mac.Purple, Mac.Indigo,
                               delegate { return settings.ShowIntro; }, delegate(bool v) { settings.ShowIntro = v; }));
-            Group("Actualizaciones", UpdateRows());
-            Group("Archivos",
-                new ToggleRow("Abrir .md con Stackshot", null, "markdown", Mac.Indigo, Mac.Purple,
+            Group(I18n.T("Actualizaciones", "Updates"), UpdateRows());
+            Group(I18n.T("Archivos", "Files"),
+                new ToggleRow(I18n.T("Abrir .md con Stackshot", "Open .md files with Stackshot"), null, "markdown", Mac.Indigo, Mac.Purple,
                               delegate { return FileAssoc.Registered(FileAssoc.Markdown); }, delegate(bool v) { SetAssoc(FileAssoc.Markdown, v); })
                     { SubNow = delegate { return AssocNote(FileAssoc.Markdown, ".md"); } },
-                new ToggleRow("Abrir .xml con Stackshot", null, "doc", Mac.Teal, Mac.Blue,
+                new ToggleRow(I18n.T("Abrir .xml con Stackshot", "Open .xml files with Stackshot"), null, "doc", Mac.Teal, Mac.Blue,
                               delegate { return FileAssoc.Registered(FileAssoc.Xml); }, delegate(bool v) { SetAssoc(FileAssoc.Xml, v); })
                     { SubNow = delegate { return AssocNote(FileAssoc.Xml, ".xml"); } },
-                new ToggleRow("Abrir .mkv con Stackshot", null, "video", D.Color.FromArgb(64, 156, 255), D.Color.FromArgb(10, 110, 230),
+                new ToggleRow(I18n.T("Abrir .mkv con Stackshot", "Open .mkv files with Stackshot"), null, "video", D.Color.FromArgb(64, 156, 255), D.Color.FromArgb(10, 110, 230),
                               delegate { return FileAssoc.Registered(FileAssoc.Video); }, delegate(bool v) { SetAssoc(FileAssoc.Video, v); })
                     { SubNow = delegate { return AssocNote(FileAssoc.Video, ".mkv"); } },
-                new ButtonRow("Aplicaciones predeterminadas de Windows", "Ah\u00ED eliges qu\u00E9 programa abre cada tipo de archivo; Stackshot nunca lo cambia por su cuenta.", "gear", Gray1, Gray2, "Abrir", FileAssoc.OpenDefaultApps));
+                new ButtonRow(I18n.T("Aplicaciones predeterminadas de Windows", "Windows default apps"), I18n.T("Ah\u00ED eliges qu\u00E9 programa abre cada tipo de archivo; Stackshot nunca lo cambia por su cuenta.", "Choose which program opens each file type; Stackshot never changes it on its own."), "gear", Gray1, Gray2, I18n.T("Abrir", "Open"), FileAssoc.OpenDefaultApps));
             // Shown only while there is something in it: recordings saved from a crash or a failed final pass.
             ButtonRow recovered = null;
             long recoveredBytes = WorkFiles.Bytes(ShotStack.RecoveredDir);
             if (recoveredBytes > 0)
-                recovered = new ButtonRow("Grabaciones recuperadas", Recents.Size(recoveredBytes) + " de grabaciones que no llegaron a terminar. Stackshot nunca las borra: \u00E1brelas, gu\u00E1rdalas o b\u00F3rralas t\u00FA.",
-                                          "folder", Mac.Orange, Mac.Red, "Abrir", OpenRecovered);
+                recovered = new ButtonRow(I18n.T("Grabaciones recuperadas", "Recovered recordings"), Recents.Size(recoveredBytes) + I18n.T(" de grabaciones que no llegaron a terminar. Stackshot nunca las borra: \u00E1brelas, gu\u00E1rdalas o b\u00F3rralas t\u00FA.", " of recordings that did not finish. Stackshot never deletes them."),
+                                          "folder", Mac.Orange, Mac.Red, I18n.T("Abrir", "Open"), OpenRecovered);
             ButtonRow print = null;
             if (PrintScreenToSnipping())
-                print = new ButtonRow("Usar la tecla Impr Pant", "Ahora la usa Recortes de Windows. Se cambia solo en tu usuario.", "keyboard", Mac.Orange, Mac.Red, "Usar", FreePrintScreen);
-            Group("Recientes",
-                new ToggleRow("Mostrar capturas recientes en Inicio", "Desact\u00EDvalo y Inicio no muestra ni carga miniaturas.", "photo", Mac.Blue, Mac.Indigo,
+                print = new ButtonRow(I18n.T("Usar la tecla Impr Pant", "Use Print Screen key"), I18n.T("Ahora la usa Recortes de Windows. Se cambia solo en tu usuario.", "Currently used by Windows Snipping Tool. Only changes for your user account."), "keyboard", Mac.Orange, Mac.Red, I18n.T("Usar", "Use"), FreePrintScreen);
+            Group(I18n.T("Recientes", "Recents"),
+                new ToggleRow(I18n.T("Mostrar capturas recientes en Inicio", "Show recent captures on Home"), I18n.T("Desact\u00EDvalo y Inicio no muestra ni carga miniaturas.", "Disable to hide thumbnails on Home."), "photo", Mac.Blue, Mac.Indigo,
                               delegate { return settings.ShowRecent; }, delegate(bool v) { settings.ShowRecent = v; Recents.Forget(); }),
-                new ToggleRow("Buscar por el texto de las capturas", "Stackshot lee el texto de cada captura en tu equipo para que el Historial la encuentre por lo que pon\u00EDa.", "search", Mac.Indigo, Mac.Blue,
+                new ToggleRow(PolicyTitles.Search, I18n.T("Stackshot lee el texto de cada captura en tu equipo para que el Historial la encuentre por lo que pon\u00EDa.", "Reads text in captures locally so History can find them by content."), "search", Mac.Indigo, Mac.Blue,
                               delegate { return settings.HistorySearch; }, delegate(bool v) { settings.HistorySearch = v; HistoryIndex.Apply(settings); }),
                 HistoryIndexRowIfAny(),
-                new SegRow("Guardar las temporales", "Cu\u00E1nto duran las capturas que no guardas en tu carpeta.", "stack", Mac.Teal, Mac.Blue, new string[] { "1 hora", "Al cerrar", "1 d\u00EDa", "7 d\u00EDas", "30 d\u00EDas" },
+                new SegRow(I18n.T("Guardar las temporales", "Temporary captures retention"), I18n.T("Cu\u00E1nto duran las capturas que no guardas en tu carpeta.", "How long unsaved captures remain."), "stack", Mac.Teal, Mac.Blue,
+                           I18n.IsSpanish ? new string[] { "1 hora", "Al cerrar", "1 d\u00EDa", "7 d\u00EDas", "30 d\u00EDas" } : new string[] { "1 hour", "On close", "1 day", "7 days", "30 days" },
                            delegate { return settings.TempKeep; }, delegate(int i) { settings.TempKeep = i; owner.Sweep(); }),
-                new ButtonRow("Borrar recientes", "Quita las capturas temporales; las de tu carpeta no se tocan.", "trash", Mac.Red, Mac.Orange, "Borrar", ClearRecent),
+                new ButtonRow(I18n.T("Borrar recientes", "Clear recents"), I18n.T("Quita las capturas temporales; las de tu carpeta no se tocan.", "Removes temporary captures; saved files are untouched."), "trash", Mac.Red, Mac.Orange, I18n.T("Borrar", "Clear"), ClearRecent),
                 recovered);
-            Group("Al capturar",
-                new SegRow("Despu\u00E9s de seleccionar un \u00E1rea", "Directo la env\u00EDa a la pila; Ajustar antes te deja moverla y redimensionarla viendo c\u00F3mo quedar\u00E1, y la capturas con Enter; con opciones adem\u00E1s eliges captura, v\u00EDdeo, GIF o desplazamiento.", "area", Mac.Blue, Mac.Indigo,
-                           new string[] { "Directo a la pila", "Ajustar antes", "Mostrar opciones" },
+            Group(I18n.T("Al capturar", "When capturing"),
+                new SegRow(I18n.T("Despu\u00E9s de seleccionar un \u00E1rea", "After selecting an area"), I18n.T("Directo la env\u00EDa a la pila; Ajustar antes te deja moverla y redimensionarla viendo c\u00F3mo quedar\u00E1, y la capturas con Enter; con opciones adem\u00E1s eliges captura, v\u00EDdeo, GIF o desplazamiento.", "Direct adds to stack; Adjust first lets you reposition/resize before Enter; Show options lets you pick capture, video, GIF or scroll."), "area", Mac.Blue, Mac.Indigo,
+                           new string[] { I18n.T("Directo a la pila", "Direct to stack"), I18n.T("Ajustar antes", "Adjust before capture"), I18n.T("Mostrar opciones", "Show options") },
                            delegate { return settings.AllInOne ? 2 : settings.AdjustFirst ? 1 : 0; },
-                           delegate(int i) { settings.AllInOne = i == 2; settings.AdjustFirst = i == 1; }),
-                new ToggleRow("Sonido de c\u00E1mara", "Un clic suave cada vez que capturas.", "sound", Mac.Pink, Mac.Red,
+                           delegate(int i) { settings.AllInOne = i == 2; settings.AdjustFirst = i == 1; }) { Stacked = true },
+                new ToggleRow(I18n.T("Sonido de c\u00E1mara", "Shutter sound"), I18n.T("Un clic suave cada vez que capturas.", "A gentle camera shutter sound on capture."), "sound", Mac.Pink, Mac.Red,
                               delegate { return settings.Sound; }, delegate(bool v) { settings.Sound = v; if (v) Shutter.Play(); }),
-                new ToggleRow("Copiar cada captura", "Lista para pegar con Ctrl+V nada m\u00E1s hacerla; los v\u00EDdeos y GIF, como archivo.", "copy", Mac.Teal, Mac.Blue,
+                new ToggleRow(I18n.T("Copiar cada captura", "Copy every capture"), I18n.T("Lista para pegar con Ctrl+V nada m\u00E1s hacerla; los v\u00EDdeos y GIF, como archivo.", "Ready to paste immediately with Ctrl+V; videos and GIFs as files."), "copy", Mac.Teal, Mac.Blue,
                               delegate { return settings.CopyToClipboard; }, delegate(bool v) { settings.CopyToClipboard = v; }),
-                new SegRow("Esconder las miniaturas", "Si no las usas, se apartan al borde y solo asoma un trocito; al pasar el rat\u00F3n por encima vuelven.", "stack", Mac.Purple, Mac.Indigo,
-                           new string[] { "No", "A los 3 s", "A los 5 s", "A los 10 s" },
+                new SegRow(I18n.T("Esconder las miniaturas", "Auto-hide thumbnails"), I18n.T("Si no las usas, se apartan al borde y solo asoma un trocito; al pasar el rat\u00F3n por encima vuelven.", "When unused, tuck thumbnails into screen edge until hovered."), "stack", Mac.Purple, Mac.Indigo,
+                           new string[] { I18n.T("No", "Never"), I18n.T("A los 3 s", "After 3 s"), I18n.T("A los 5 s", "After 5 s"), I18n.T("A los 10 s", "After 10 s") },
                            delegate { int i = Array.IndexOf(Settings.TuckSeconds, settings.StackTuck); return i < 0 ? 2 : i; },
                            delegate(int i) { settings.StackTuck = Settings.TuckSeconds[Math.Max(0, Math.Min(Settings.TuckSeconds.Length - 1, i))]; owner.Untuck(); }),
-                new SegRow("Captura con temporizador", "Eliges el \u00E1rea y cuenta atr\u00E1s antes de capturar: da tiempo a abrir un men\u00FA o un aviso. Esc la cancela.", "clock", Mac.Orange, Mac.Red,
+                new SegRow(I18n.T("Captura con temporizador", "Countdown timer"), I18n.T("Eliges el \u00E1rea y cuenta atr\u00E1s antes de capturar: da tiempo a abrir un men\u00FA o un aviso. Esc la cancela.", "Select area and counts down before capture: gives time to open menus. Esc cancels."), "clock", Mac.Orange, Mac.Red,
                            new string[] { "3 s", "5 s", "10 s" },
                            delegate { return settings.CaptureDelay == 10 ? 2 : settings.CaptureDelay == 5 ? 1 : 0; },
                            delegate(int i) { settings.CaptureDelay = i == 2 ? 10 : i == 1 ? 5 : 3; }),
-                new ToggleRow("Seguir al rat\u00F3n entre pantallas", "Con varias pantallas, las miniaturas van a la del rat\u00F3n.", "screen", Mac.Indigo, Mac.Purple,
+                new ToggleRow(I18n.T("Seguir al rat\u00F3n entre pantallas", "Follow cursor across monitors"), I18n.T("Con varias pantallas, las miniaturas van a la del rat\u00F3n.", "On multi-monitor setups, thumbnails appear on the active screen."), "screen", Mac.Indigo, Mac.Purple,
                               delegate { return settings.FollowMouse; }, delegate(bool v) { settings.FollowMouse = v; }),
-                new ToggleRow("Incluir el puntero", "El puntero del rat\u00F3n aparece en la captura, donde estaba al empezarla.", "cursor", Mac.Blue, Mac.Indigo,
+                new ToggleRow(I18n.T("Incluir el puntero", "Include mouse cursor"), I18n.T("El puntero del rat\u00F3n aparece en la captura, donde estaba al empezarla.", "The mouse cursor is captured where it was when capture started."), "cursor", Mac.Blue, Mac.Indigo,
                               delegate { return settings.CaptureCursor; }, delegate(bool v) { settings.CaptureCursor = v; }),
                 print);
-            Group("Datos sensibles",
-                new ToggleRow("Tapar los datos sensibles al capturar", "DNI, NIE, n\u00FAmero de la Seguridad Social, IBAN, tarjetas, correos y tel\u00E9fonos se tapan solos en cada captura. Se leen en tu equipo; nada sale de \u00E9l.", "redact!", Mac.Red, Mac.Orange,
+            Group(I18n.T("Datos sensibles", "Sensitive data"),
+                new ToggleRow(PolicyTitles.Sensitive, I18n.T("DNI, NIE, n\u00FAmero de la Seguridad Social, IBAN, tarjetas, correos y tel\u00E9fonos se tapan solos en cada captura. Se leen en tu equipo; nada sale de \u00E9l.", "National IDs, Social Security numbers, IBANs, cards, emails and phone numbers are covered automatically in every capture. They are read on your computer; nothing leaves it."), "redact!", Mac.Red, Mac.Orange,
                               delegate { return settings.SensitiveAuto; }, delegate(bool v) { settings.SensitiveAuto = v; }));
-            Note("Apagado, decides t\u00FA: en el editor, \u00ABDatos sensibles\u00BB los tapa con marcas que puedes quitar.");
-            Group("Capturas guardadas",
-                new ToggleRow("Guardar todas las capturas", "Cada captura y grabaci\u00F3n va tambi\u00E9n a tu carpeta. Apagado, solo las que guardas con Guardar.", "folder", Mac.Blue, Mac.Teal,
+            Note(I18n.T("Apagado, decides t\u00FA: en el editor, \u00ABDatos sensibles\u00BB los tapa con marcas que puedes quitar.", "When off, you decide: in the editor, \u201CSensitive data\u201D covers them with marks you can remove."));
+            Group(I18n.T("Capturas guardadas", "Saved captures"),
+                new ToggleRow(I18n.T("Guardar todas las capturas", "Automatically save all captures"), I18n.T("Cada captura y grabaci\u00F3n va tambi\u00E9n a tu carpeta. Apagado, solo las que guardas con Guardar.", "Every capture and recording is saved to your folder. When off, only those manually kept."), "folder", Mac.Blue, Mac.Teal,
                               delegate { return settings.SaveAll; }, delegate(bool v) { settings.SaveAll = v; }),
                 new FolderRow(), new NameTemplateRow(), SubfolderRow());
-            Note("Lo que no est\u00E1 en tu carpeta se borra solo seg\u00FAn lo elegido en Recientes (nunca mientras tenga miniatura o est\u00E9 en el editor).");
+            Note(I18n.T("Lo que no est\u00E1 en tu carpeta se borra solo seg\u00FAn lo elegido en Recientes (nunca mientras tenga miniatura o est\u00E9 en el editor).", "Files not in your save folder are deleted automatically based on Recents retention (never while shown as thumbnail or in editor)."));
             BuildAdvanced();
         }
 
@@ -841,23 +905,24 @@ namespace Stackshot
         void BuildAdvanced()
         {
             if (!XmlWatch.Offered(settings)) return;
-            Group("Avanzado",
-                new ToggleRow("Abrir los XML nuevos de una carpeta", null, "doc", Mac.Teal, Mac.Blue,
+            Group(I18n.T("Avanzado", "Advanced"),
+                new ToggleRow(I18n.T("Abrir los XML nuevos de una carpeta", "Open new XML files from a folder"), null, "doc", Mac.Teal, Mac.Blue,
                               delegate { return settings.XmlWatch; }, delegate(bool v) { settings.XmlWatch = v; })
                     { SubNow = XmlWatchNote },
                 new XmlFolderRow { When = delegate { return settings.XmlWatch; } });
-            Note("Pensado para programas que dejan cada mensaje SOAP como un archivo XML en una carpeta. En el visor, [ y ] pasan al XML anterior o al siguiente, y \u00ABM\u00E1s opciones\u00BB lista los \u00FAltimos que han llegado.");
+            Note(I18n.T("Pensado para programas que dejan cada mensaje SOAP como un archivo XML en una carpeta. En el visor, [ y ] pasan al XML anterior o al siguiente, y \u00ABM\u00E1s opciones\u00BB lista los \u00FAltimos que han llegado.",
+                        "Designed for programs that save SOAP messages as XML files in a folder. In the viewer, [ and ] navigate between XML files, and \u201CMore options\u201D lists the latest ones that arrived."));
         }
 
         string XmlWatchNote()
         {
-            if (!settings.XmlWatch) return "Cada XML que aparezca en esa carpeta se abre solo en el visor de Stackshot, delante de todo.";
+            if (!settings.XmlWatch) return I18n.T("Cada XML que aparezca en esa carpeta se abre solo en el visor de Stackshot, delante de todo.", "Every XML file appearing in that folder opens automatically in the Stackshot viewer.");
             string dir = XmlWatch.FolderFor(settings);
-            if (dir == null) return "Elige abajo la carpeta que vigilar.";
+            if (dir == null) return I18n.T("Elige abajo la carpeta que vigilar.", "Choose the folder to monitor below.");
             bool exists = false;
             try { exists = Directory.Exists(dir); } catch { }
-            if (!exists) return "La carpeta no existe todav\u00EDa; Stackshot la vuelve a buscar cada minuto.";
-            return "Activo: los XML nuevos se abren solos en el visor, delante de todo.";
+            if (!exists) return I18n.T("La carpeta no existe todav\u00EDa; Stackshot la vuelve a buscar cada minuto.", "Folder does not exist yet; Stackshot checks again every minute.");
+            return I18n.T("Activo: los XML nuevos se abren solos en el visor, delante de todo.", "Active: new XML files open automatically in the viewer.");
         }
 
         // The folder whose new XML files open in the viewer: the organization's, or the one chosen here.
@@ -867,8 +932,8 @@ namespace Stackshot
             public override void Build()
             {
                 string dir = XmlWatch.FolderFor(W.settings);
-                Title = dir != null ? ShortPath(dir) : "Ninguna carpeta";
-                Sub = XmlWatch.Preset() != null ? Policy.Managed + "." : dir != null ? "Carpeta elegida por ti." : "Elige la carpeta donde aparecen los XML.";
+                Title = dir != null ? ShortPath(dir) : I18n.T("Ninguna carpeta", "No folder");
+                Sub = XmlWatch.Preset() != null ? Policy.Managed + "." : dir != null ? I18n.T("Carpeta elegida por ti.", "Folder chosen by you.") : I18n.T("Elige la carpeta donde aparecen los XML.", "Choose the folder where XML files appear.");
                 base.Build();
                 if (dir != null) ToolTip = dir;
                 ToolTipService.SetInitialShowDelay(this, 700);
@@ -877,12 +942,12 @@ namespace Stackshot
             {
                 StackPanel p = new StackPanel { Orientation = Orientation.Horizontal };
                 if (XmlWatch.Preset() != null) return p;
-                MacButton change = new MacButton(XmlWatch.FolderFor(W.settings) != null ? "Cambiar\u2026" : "Elegir\u2026", ButtonKind.Secondary);
+                MacButton change = new MacButton(XmlWatch.FolderFor(W.settings) != null ? I18n.T("Cambiar\u2026", "Change\u2026") : I18n.T("Elegir\u2026", "Choose\u2026"), ButtonKind.Secondary);
                 change.Click += delegate
                 {
                     using (WF.FolderBrowserDialog d = new WF.FolderBrowserDialog())
                     {
-                        d.Description = "\u00BFQu\u00E9 carpeta vigilo? Cada XML nuevo que aparezca en ella se abrir\u00E1 en el visor.";
+                        d.Description = I18n.T("\u00BFQu\u00E9 carpeta vigilo? Cada XML nuevo que aparezca en ella se abrir\u00E1 en el visor.", "Which folder to monitor? Every new XML appearing in it opens in viewer.");
                         d.ShowNewFolderButton = false;
                         try { string cur = XmlWatch.FolderFor(W.settings); if (cur != null && Directory.Exists(cur)) d.SelectedPath = cur; } catch { }
                         if (d.ShowDialog(W.Win32) != WF.DialogResult.OK) return;
@@ -904,19 +969,19 @@ namespace Stackshot
             if (!FileAssoc.Enable(k)) return;
             if (FileAssoc.IsDefault(k)) return;
             string ext = k.Exts[0];
-            DocAlert.Ask(this, "Stackshot ya aparece entre las aplicaciones que pueden abrir " + ext + ".",
-                         "Elige Stackshot para " + ext + " en la ventana de Windows que se abre ahora: Windows pide que esa decisi\u00F3n la tomes t\u00FA.",
-                         new string[] { "Abrir esa ventana" }, 0, 0);
+            DocAlert.Ask(this, I18n.Fmt("Stackshot ya aparece entre las aplicaciones que pueden abrir {0}.", "Stackshot now appears among the apps that can open {0}.", ext),
+                         I18n.Fmt("Elige Stackshot para {0} en la ventana de Windows que se abre ahora: Windows pide que esa decisi\u00F3n la tomes t\u00FA.", "Choose Stackshot for {0} in the Windows window that opens now: Windows asks you to make that choice yourself.", ext),
+                         new string[] { I18n.T("Abrir esa ventana", "Open that window") }, 0, 0);
             FileAssoc.OpenDefaultApps();
         }
 
         static string AssocNote(AssocKind k, string ext)
         {
             if (!FileAssoc.Registered(k))
-                return k == FileAssoc.Video ? "Doble clic en un " + ext + " (los m\u00E1sters Cine, que el reproductor de Windows no abre) y se ve en el reproductor de Stackshot, a tama\u00F1o real."
-                                            : "Doble clic en un " + ext + " y se abre en el visor de Stackshot.";
-            if (FileAssoc.IsDefault(k)) return "Stackshot es la aplicaci\u00F3n predeterminada para " + ext + ".";
-            return "Registrado, pero Windows abre los " + ext + " con otra aplicaci\u00F3n. Elige Stackshot en Aplicaciones predeterminadas.";
+                return k == FileAssoc.Video ? I18n.Fmt("Doble clic en un {0} (los m\u00E1sters Cine, que el reproductor de Windows no abre) y se ve en el reproductor de Stackshot, a tama\u00F1o real.", "Double-click a {0} (Cinema masters that Windows Media Player won't open) to view in Stackshot player at actual size.", ext)
+                                            : I18n.Fmt("Doble clic en un {0} y se abre en el visor de Stackshot.", "Double-click a {0} to open it in the Stackshot viewer.", ext);
+            if (FileAssoc.IsDefault(k)) return I18n.Fmt("Stackshot es la aplicaci\u00F3n predeterminada para {0}.", "Stackshot is the default app for {0}.", ext);
+            return I18n.Fmt("Registrado, pero Windows abre los {0} con otra aplicaci\u00F3n. Elige Stackshot en Aplicaciones predeterminadas.", "Registered, but Windows opens {0} with another app. Choose Stackshot in Default Apps.", ext);
         }
 
         static void OpenRecovered()
@@ -925,17 +990,21 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Recuperadas: " + ex.Message);
-                if (ShotStack.Running != null) ShotStack.Running.Notify("No se pudo abrir la carpeta", ShotStack.RecoveredDir);
+                if (ShotStack.Running != null) ShotStack.Running.Notify(I18n.T("No se pudo abrir la carpeta", "Could not open folder"), ShotStack.RecoveredDir);
             }
         }
 
         void ClearRecent()
         {
-            if (DocAlert.Ask(this, "\u00BFBorrar las capturas temporales?", "Las guardadas en tu carpeta no se tocan.", new string[] { "Borrar", "Cancelar" }, 0, 1) != 0) return;
+            if (DocAlert.Ask(this, I18n.T("\u00BFBorrar las capturas temporales?", "Delete temporary captures?"),
+                             I18n.T("Las guardadas en tu carpeta no se tocan.", "Saved captures in your folder will not be touched."),
+                             new string[] { I18n.T("Borrar", "Delete"), I18n.T("Cancelar", "Cancel") }, 0, 1) != 0) return;
             owner.ClearTemp();
             HistoryIndex.RequestScan();
             Rebuild();
-            owner.Notify("Recientes borradas", "Se han borrado las capturas temporales. Las de tu carpeta siguen ah\u00ED.");
+            owner.Notify(I18n.T("Recientes borradas", "Recent captures cleared"),
+                         I18n.T("Se han borrado las capturas temporales. Las de tu carpeta siguen ah\u00ED.",
+                                "Temporary captures have been deleted. Those in your folder remain."));
         }
 
         // Looking for updates, and installing them on their own (which needs the looking, and an installed copy that is
@@ -943,17 +1012,17 @@ namespace Stackshot
         Row[] UpdateRows()
         {
             bool msi = Installer.ManagedByMsi, installed = Installer.RunningInstalled;
-            ToggleRow auto = new ToggleRow("Instalar actualizaciones autom\u00E1ticamente",
-                                           "Se descargan, se comprueba su firma y se instalan solas cuando no est\u00E9s usando el equipo.",
+            ToggleRow auto = new ToggleRow(PolicyTitles.Auto,
+                                           I18n.T("Se descargan, se comprueba su firma y se instalan solas cuando no est\u00E9s usando el equipo.", "Downloaded, signature verified and installed automatically when your PC is idle."),
                                            "save", Mac.Green, D.Color.FromArgb(0, 160, 90),
                                            delegate { return settings.AutoUpdate; }, delegate(bool v) { settings.AutoUpdate = v; Updater.SettingsChanged(); });
             auto.When = delegate { return !msi && installed && settings.CheckUpdates; };
-            auto.WhenOff = msi ? "En este equipo las instala inform\u00E1tica: Stackshot solo te avisar\u00E1 de cada versi\u00F3n nueva."
-                         : !installed ? "Solo con Stackshot instalado; esta copia no puede instalarse sola."
-                         : "Necesita \u00ABBuscar actualizaciones\u00BB: sin buscarlas no puede instalarlas.";
+            auto.WhenOff = msi ? I18n.T("En este equipo las instala inform\u00E1tica: Stackshot solo te avisar\u00E1 de cada versi\u00F3n nueva.", "Managed by IT on this PC: Stackshot will only notify you of new versions.")
+                         : !installed ? I18n.T("Solo con Stackshot instalado; esta copia no puede instalarse sola.", "Only with Stackshot installed; portable copy cannot self-install.")
+                         : I18n.T("Necesita \u00ABBuscar actualizaciones\u00BB: sin buscarlas no puede instalarlas.", "Requires \u201CCheck for updates\u201D: cannot install without checking.");
             return new Row[]
             {
-                new ToggleRow("Buscar actualizaciones", "Al abrir Stackshot y cada 3 horas pregunta a GitHub si hay una versi\u00F3n nueva. No env\u00EDa nada tuyo.", "update", Mac.Teal, Mac.Blue,
+                new ToggleRow(PolicyTitles.Checks, I18n.T("Al abrir Stackshot y cada 3 horas pregunta a GitHub si hay una versi\u00F3n nueva. No env\u00EDa nada tuyo.", "Checks GitHub for new versions on launch and every 3 hours. Does not send any personal data."), "update", Mac.Teal, Mac.Blue,
                               delegate { return settings.CheckUpdates; }, delegate(bool v) { settings.CheckUpdates = v; Updater.SettingsChanged(); }),
                 auto
             };
@@ -963,18 +1032,18 @@ namespace Stackshot
 
         void BuildMascotSettings()
         {
-            Header("Ajustes de la mascota", "Su forma de ser, qu\u00E9 te dice y si te acompa\u00F1a tambi\u00E9n por el escritorio.");
+            Header(I18n.T("Ajustes de la mascota", "Mascot settings"), I18n.T("Su forma de ser, qu\u00E9 te dice y si te acompa\u00F1a tambi\u00E9n por el escritorio.", "Personality, dialogue, and roaming the desktop."));
             Func<bool> shown = delegate { return settings.MascotOn; };
-            Group("Car\u00E1cter",
-                new ToggleRow("Mostrar la mascota", "En Inicio y abajo en la barra lateral.", "bot", Mac.Blue, Mac.Purple,
+            Group(I18n.T("Car\u00E1cter", "Character"),
+                new ToggleRow(PolicyTitles.Mascot, I18n.T("En Inicio y abajo en la barra lateral.", "On Home and at the bottom of the sidebar."), "bot", Mac.Blue, Mac.Purple,
                               delegate { return settings.MascotOn; },
                               delegate(bool v)
                               {
                                   settings.MascotOn = v;
-                                  if (v) { mascot.PopIn(); if (settings.MascotTalks) mascot.Greet("\u00A1He vuelto!"); }
+                                  if (v) { mascot.PopIn(); if (settings.MascotTalks) mascot.Greet(I18n.T("\u00A1He vuelto!", "I'm back!")); }
                                   owner.MascotChanged();
                               }),
-                new SegRow("Personalidad", "Lo que dice y c\u00F3mo se mueve.", "bot", Mac.Green, D.Color.FromArgb(0, 160, 90), MascotParts.Personalities,
+                new SegRow(I18n.T("Personalidad", "Personality"), I18n.T("Lo que dice y c\u00F3mo se mueve.", "What it says and how it moves."), "bot", Mac.Green, D.Color.FromArgb(0, 160, 90), MascotParts.Personalities,
                            delegate { return settings.MascotPersonality; },
                            delegate(int i)
                            {
@@ -983,9 +1052,9 @@ namespace Stackshot
                                LookChanged(l, null);
                                if (settings.MascotTalks) mascot.Say(MascotTalk.Hello(settings), 3000);
                            }) { When = shown },
-                new ToggleRow("Saludos y consejos", "De vez en cuando te cuenta trucos de Stackshot.", "sparkle", Mac.Orange, Mac.Pink,
+                new ToggleRow(PolicyTitles.Greetings, I18n.T("De vez en cuando te cuenta trucos de Stackshot.", "Occasionally shares tips and tricks about Stackshot."), "sparkle", Mac.Orange, Mac.Pink,
                               delegate { return settings.MascotTalks; }, delegate(bool v) { settings.MascotTalks = v; if (!v) mascot.Bubble = null; }) { When = shown },
-                new ToggleRow("Disfraz de temporada", "Sin gorro, se pone la calabaza en Halloween y el de Pap\u00E1 Noel en Navidad.", "sparkle", Mac.Orange, Mac.Red,
+                new ToggleRow(I18n.T("Disfraz de temporada", "Seasonal costume"), I18n.T("Sin gorro, se pone la calabaza en Halloween y el de Pap\u00E1 Noel en Navidad.", "Without a hat, wears a pumpkin on Halloween and Santa hat at Christmas."), "sparkle", Mac.Orange, Mac.Red,
                               delegate { return settings.MascotSeasonal; },
                               delegate(bool v) { MascotLook l = MascotLook.From(settings); l.Seasonal = v; LookChanged(l, null); }) { When = shown });
             // Each part on its own: one that fails is noted and the rest of the page (the desktop switch included) still shows.
@@ -994,20 +1063,23 @@ namespace Stackshot
             Section("concentraci\u00F3n", BuildFocus);
             Section("salud", BuildHealth);
             Section("asistente", BuildAssist);
-            Group("En el escritorio",
-                new ToggleRow("Mascota en el escritorio", "Pasea junto a la barra de tareas, te mira, juega y se echa la siesta.", "screen", Mac.Indigo, Mac.Purple,
+            Group(I18n.T("En el escritorio", "On desktop"),
+                new ToggleRow(PolicyTitles.Desktop, I18n.T("Pasea junto a la barra de tareas, te mira, juega y se echa la siesta.", "Walks along taskbar, looks around, plays and naps."), "screen", Mac.Indigo, Mac.Purple,
                               delegate { return settings.MascotDesktop; }, delegate(bool v) { settings.MascotDesktop = v; owner.MascotChanged(); })
                     {
                         // Completo's alone: below it the switch is off and says where to get it (the profile is never changed here).
                         When = delegate { return settings.MascotOn && settings.Profile == 2; },
-                        WhenOff = settings.Profile != 2 ? "Solo con el perfil Completo (en General \u203A Perfil)." : "Activa antes \u00ABMostrar la mascota\u00BB."
+                        WhenOff = settings.Profile != 2 ? I18n.T("Solo con el perfil Completo (en General \u203A Perfil).", "Only with Full profile (in General \u203A Profile).") : I18n.T("Activa antes \u00ABMostrar la mascota\u00BB.", "Enable \u201CShow mascot\u201D first.")
                     },
-                new ToggleRow("Sube a las ventanas", "De vez en cuando salta a la ventana que tienes delante y pasea por encima. Si la mueves, viaja con ella.", "window", Mac.Teal, Mac.Blue,
+                new ToggleRow(I18n.T("Sube a las ventanas", "Climb on windows"), I18n.T("De vez en cuando salta a la ventana que tienes delante y pasea por encima. Si la mueves, viaja con ella.", "Occasionally jumps onto active window and walks on top. Moves along with it."), "window", Mac.Teal, Mac.Blue,
                               delegate { return settings.MascotClimb; }, delegate(bool v) { settings.MascotClimb = v; owner.MascotChanged(); })
                     { When = delegate { return settings.MascotOn && settings.MascotDesktop; } });
-            Note("En el escritorio consume algo m\u00E1s: unos 10 MB de memoria y en torno al 1 % de CPU mientras se mueve (casi nada cuando duerme). " +
+            Note(I18n.T("En el escritorio consume algo m\u00E1s: unos 10 MB de memoria y en torno al 1 % de CPU mientras se mueve (casi nada cuando duerme). " +
                  "Se esconde sola con juegos o presentaciones a pantalla completa y nunca sale en tus capturas ni al compartir pantalla. " +
-                 "Un clic abre su men\u00FA y varios seguidos le hacen cosquillas; puedes arrastrarla a donde quieras.");
+                 "Un clic abre su men\u00FA y varios seguidos le hacen cosquillas; puedes arrastrarla a donde quieras.",
+                 "On the desktop it consumes slightly more: ~10 MB RAM and ~1% CPU while moving (almost none while sleeping). " +
+                 "Automatically hides during full-screen games or presentations, and never appears in screenshots or screen shares. " +
+                 "Click to open menu, rapid clicks to tickle; drag anywhere you like."));
         }
 
         // Called after any look change: the live mascot, the desktop pet and every preview follow.

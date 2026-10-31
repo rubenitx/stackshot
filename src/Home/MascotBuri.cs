@@ -162,6 +162,9 @@ namespace Stackshot
 
         static string[] BuriLines()
         {
+            if (!I18n.IsSpanish)
+                return new string[] { "I'm Buriburizaemon, the savior!", "En garde!", "Oink, oink.", "Got anything to eat?",
+                                      "I always side with whoever's strongest." };
             return new string[] { "\u00A1Soy el Cerdito Valiente, el salvador!", "\u00A1En guardia!", "Oink, oink.", "\u00BFHay algo de comer?",
                                   "Yo siempre me pongo del lado del m\u00E1s fuerte." };
         }

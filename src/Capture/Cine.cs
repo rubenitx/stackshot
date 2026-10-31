@@ -39,6 +39,16 @@ namespace Stackshot
         const string Comment = "Stackshot Cine: v\u00EDdeo H.264 RGB sin p\u00E9rdidas y sonido PCM de 32 bits";
         const string AudioIn = " -f f32le -sample_rate 48000 -ch_layout stereo -i ";
 
+        // The track titles stay in the file as they are (container metadata); this is how they read on screen.
+        public static string TrackName(string title)
+        {
+            if (I18n.IsSpanish || title == null) return title;
+            if (title == TitleMix) return "Mix (computer + microphone)";
+            if (title == TitleSystem) return "Computer sound (original)";
+            if (title == TitleMic) return "Microphone (original)";
+            return title;
+        }
+
         public static int Gop(int fpsNum, int fpsDen)
         {
             return Math.Max(2, (int)Math.Round(2.0 * fpsNum / fpsDen));
@@ -251,23 +261,26 @@ namespace Stackshot
             fps = s.CineFps == 30 ? 30 : 60;
             if (!EncoderAvailable(ffmpeg))
             {
-                Dialogs.Show("Esta versi\u00F3n de FFmpeg no incluye el codificador sin p\u00E9rdidas (libx264rgb), que la calidad Cine necesita.\n\n" +
-                                "Actual\u00EDzalo desde los ajustes de Stackshot o elige otra calidad.", "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Dialogs.Show(I18n.T("Esta versi\u00F3n de FFmpeg no incluye el codificador sin p\u00E9rdidas (libx264rgb), que la calidad Cine necesita.\n\nActual\u00EDzalo desde los ajustes de Stackshot o elige otra calidad.",
+                                    "This version of FFmpeg does not include the lossless encoder (libx264rgb), required for Cinema quality.\n\nUpdate it from Stackshot settings or choose another quality."),
+                             "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
             long free = FreeBytes(Settings.TempDir);
             if (free >= 0 && free < MinFreeBytes)
             {
-                Dialogs.Show("No hay espacio suficiente en el disco para grabar sin p\u00E9rdidas: quedan " + (free / 1048576.0 / 1024).ToString("0.0", CultureInfo.InvariantCulture) +
-                                " GB y hacen falta al menos " + (MinFreeBytes >> 30) + " GB (un minuto ocupa desde unos MB hasta varios GB seg\u00FAn el movimiento).",
-                                "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Dialogs.Show(I18n.Fmt("No hay espacio suficiente en el disco para grabar sin p\u00E9rdidas: quedan {0} GB y hacen falta al menos {1} GB (un minuto ocupa desde unos MB hasta varios GB seg\u00FAn el movimiento).",
+                                      "Not enough disk space for lossless recording: {0} GB left, need at least {1} GB (a minute takes from several MBs up to multiple GBs depending on motion).",
+                                      (free / 1048576.0 / 1024).ToString("0.0", CultureInfo.InvariantCulture), (MinFreeBytes >> 30)),
+                             "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return false;
             }
             if (fps == 60 && (long)r.Width * r.Height * 60 > RealtimePixelRate)
             {
-                DialogResult d = Dialogs.Show("El \u00E1rea de " + r.Width + " \u00D7 " + r.Height + " es demasiado grande para codificar sin p\u00E9rdidas a 60 fps en la mayor\u00EDa de los equipos.\n\n" +
-                                                 "S\u00ED: grabar a 30 fps, sin p\u00E9rdidas.\nNo: probar a 60 fps (si el equipo no puede seguir, la grabaci\u00F3n se detiene y se conserva lo grabado).\nCancelar: no grabar.",
-                                                 "Stackshot", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                DialogResult d = Dialogs.Show(I18n.Fmt("El \u00E1rea de {0} \u00D7 {1} es demasiado grande para codificar sin p\u00E9rdidas a 60 fps en la mayor\u00EDa de los equipos.\n\nS\u00ED: grabar a 30 fps, sin p\u00E9rdidas.\nNo: probar a 60 fps (si el equipo no puede seguir, la grabaci\u00F3n se detiene y se conserva lo grabado).\nCancelar: no grabar.",
+                                                       "The area of {0} \u00D7 {1} is too large to encode losslessly at 60 fps on most computers.\n\nYes: record at 30 fps, lossless.\nNo: try at 60 fps (if the PC cannot keep up, recording stops and saved portion is kept).\nCancel: do not record.",
+                                                       r.Width, r.Height),
+                                              "Stackshot", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
                 if (d == DialogResult.Cancel) return false;
                 fps = d == DialogResult.Yes ? 30 : 60;
             }
@@ -657,14 +670,14 @@ namespace Stackshot
                         string t;
                         lock (err) t = err.ToString().Trim();
                         TryDelete(outPath);
-                        return t.Length > 0 ? LastLines(t, 300) : "FFmpeg termin\u00F3 con el c\u00F3digo " + code + ".";
+                        return t.Length > 0 ? LastLines(t, 300) : I18n.Fmt("FFmpeg termin\u00F3 con el c\u00F3digo {0}.", "FFmpeg exited with code {0}.", code);
                     }
                 }
             }
             catch (Exception ex) { return ex.Message; }
             try
             {
-                if (!File.Exists(outPath) || new FileInfo(outPath).Length == 0) return "FFmpeg no cre\u00F3 el archivo.";
+                if (!File.Exists(outPath) || new FileInfo(outPath).Length == 0) return I18n.T("FFmpeg no cre\u00F3 el archivo.", "FFmpeg did not create the file.");
             }
             catch (Exception ex) { return ex.Message; }
             if (progress != null) progress(1);
@@ -734,12 +747,12 @@ namespace Stackshot
                 if (progress != null) progress(0.02);
                 if (!watch.Cancelled && !watch.Stalled) DecodeVideo(ffmpeg, master, expect, v, progress, watch);
                 if (!watch.Cancelled && !watch.Stalled) DecodeAudio(ffmpeg, master, expect, v, progress, watch);
-                if (watch.Cancelled) Add(v, "Comprobaci\u00F3n", false, "Cancelada antes de terminar.");
-                else if (watch.Stalled) Add(v, "Comprobaci\u00F3n", false, PassWatch.StalledText);
+                if (watch.Cancelled) Add(v, I18n.T("Comprobaci\u00F3n", "Check"), false, I18n.T("Cancelada antes de terminar.", "Cancelled before finishing."));
+                else if (watch.Stalled) Add(v, I18n.T("Comprobaci\u00F3n", "Check"), false, PassWatch.StalledText);
             }
             catch (Exception ex)
             {
-                Add(v, "Comprobaci\u00F3n", false, "No se pudo completar: " + ex.Message);
+                Add(v, I18n.T("Comprobaci\u00F3n", "Check"), false, I18n.T("No se pudo completar: ", "Could not finish: ") + ex.Message);
             }
             bool all = v.Checks.Count > 0;
             foreach (CineCheck c in v.Checks) if (!c.Passed) all = false;
@@ -786,14 +799,15 @@ namespace Stackshot
                 if (!packets.TryGetValue((int)stream, out l)) packets[(int)stream] = l = new List<long[]>();
                 l.Add(new long[] { pts, dur });
             }, watch, out stderr);
-            Add(v, "Lectura del archivo", code == 0, code == 0 ? "FFmpeg lo lee entero sin errores." : "FFmpeg termin\u00F3 con el c\u00F3digo " + code + ".");
+            Add(v, I18n.T("Lectura del archivo", "Reading the file"), code == 0, code == 0 ? I18n.T("FFmpeg lo lee entero sin errores.", "FFmpeg reads all of it without errors.")
+                                                                                       : I18n.Fmt("FFmpeg termin\u00F3 con el c\u00F3digo {0}.", "FFmpeg exited with code {0}.", code));
 
             int inStart = stderr.IndexOf("Input #0,", StringComparison.Ordinal);
             int inEnd = stderr.IndexOf("Output #0,", StringComparison.Ordinal);
             string input = inStart < 0 ? "" : (inEnd > inStart ? stderr.Substring(inStart, inEnd - inStart) : stderr.Substring(inStart));
             bool mkv = input.StartsWith("Input #0, matroska,webm", StringComparison.Ordinal);
             v.Container = mkv ? "Matroska" : null;
-            Add(v, "Contenedor", mkv, mkv ? "Matroska (.mkv)." : "No es un archivo Matroska.");
+            Add(v, I18n.T("Contenedor", "Container"), mkv, mkv ? "Matroska (.mkv)." : I18n.T("No es un archivo Matroska.", "Not a Matroska file."));
 
             List<string> videos = new List<string>(), audios = new List<string>();
             foreach (Match m in Regex.Matches(input, @"^\s*Stream #0:\d+[^\r\n]*?: (Video|Audio): ([^\r\n]*)", RegexOptions.Multiline))
@@ -809,22 +823,27 @@ namespace Stackshot
             v.PixelFormat = pix ? "gbrp" : null;
             Match fr = Regex.Match(vline, @"([0-9.]+) fps");
             v.FrameRate = fr.Success ? fr.Groups[1].Value + " fps" : null;
-            Add(v, "V\u00EDdeo H.264 RGB", one && profile && pix && size,
-                one ? (profile ? "Perfil High 4:4:4 Predictive" : "El perfil no es High 4:4:4 Predictive") + ", " + (pix ? "RGB completo (gbrp)" : "no es RGB completo") + ", " +
-                      (size ? expect.Width + " \u00D7 " + expect.Height : "tama\u00F1o distinto del grabado") + "."
-                    : "Se esperaba un \u00FAnico flujo de v\u00EDdeo y hay " + videos.Count + ".");
+            Add(v, I18n.T("V\u00EDdeo H.264 RGB", "H.264 RGB video"), one && profile && pix && size,
+                one ? (profile ? I18n.T("Perfil High 4:4:4 Predictive", "High 4:4:4 Predictive profile") : I18n.T("El perfil no es High 4:4:4 Predictive", "The profile is not High 4:4:4 Predictive")) + ", " +
+                      (pix ? I18n.T("RGB completo (gbrp)", "full RGB (gbrp)") : I18n.T("no es RGB completo", "not full RGB")) + ", " +
+                      (size ? expect.Width + " \u00D7 " + expect.Height : I18n.T("tama\u00F1o distinto del grabado", "size differs from the recording")) + "."
+                    : I18n.Fmt("Se esperaba un \u00FAnico flujo de v\u00EDdeo y hay {0}.", "Expected a single video stream and there are {0}.", videos.Count));
 
             bool audioOk = audios.Count == expect.Audio.Count;
             foreach (string a in audios) if (!a.StartsWith("pcm_f32le", StringComparison.Ordinal) || !a.Contains("48000 Hz") || !a.Contains("stereo")) audioOk = false;
             if (expect.Audio.Count > 0 || audios.Count > 0)
-                Add(v, "Pistas de sonido", audioOk, audioOk ? audios.Count + (audios.Count == 1 ? " pista" : " pistas") + " PCM de 32 bits, 48 kHz, est\u00E9reo."
-                                                         : "Se esperaban " + expect.Audio.Count + " pistas PCM de 32 bits a 48 kHz est\u00E9reo y hay " + audios.Count + " (o con otro formato).");
+                Add(v, I18n.T("Pistas de sonido", "Sound tracks"), audioOk,
+                    audioOk ? (I18n.IsSpanish ? audios.Count + (audios.Count == 1 ? " pista" : " pistas") + " PCM de 32 bits, 48 kHz, est\u00E9reo."
+                                              : audios.Count + (audios.Count == 1 ? " track" : " tracks") + " of 32-bit PCM, 48 kHz, stereo.")
+                            : I18n.Fmt("Se esperaban {0} pistas PCM de 32 bits a 48 kHz est\u00E9reo y hay {1} (o con otro formato).",
+                                       "Expected {0} tracks of 32-bit PCM at 48 kHz stereo and there are {1} (or in another format).", expect.Audio.Count, audios.Count));
 
             // Stream 0 is the video and 1.. the sound, in the order of the file.
             List<long[]> vp;
             packets.TryGetValue(0, out vp);
             long count = vp == null ? 0 : vp.Count;
-            Add(v, "N\u00FAmero de fotogramas", count == expect.FrameHashes.Count, count + " en el archivo, " + expect.FrameHashes.Count + " enviados al codificador.");
+            Add(v, I18n.T("N\u00FAmero de fotogramas", "Frame count"), count == expect.FrameHashes.Count,
+                I18n.Fmt("{0} en el archivo, {1} enviados al codificador.", "{0} in the file, {1} sent to the encoder.", count, expect.FrameHashes.Count));
 
             double t0 = tb.ContainsKey(0) ? tb[0] : 0.001;
             string timing = null;
@@ -833,13 +852,18 @@ namespace Stackshot
                 double step = expect.FpsDen / (double)expect.FpsNum;
                 for (int i = 0; i < vp.Count; i++)
                 {
-                    if (i > 0 && vp[i][0] <= vp[i - 1][0]) { timing = "El fotograma " + i + " no es posterior al anterior."; break; }
+                    if (i > 0 && vp[i][0] <= vp[i - 1][0]) { timing = I18n.Fmt("El fotograma {0} no es posterior al anterior.", "Frame {0} does not come after the one before.", i); break; }
                     double off = Math.Abs(vp[i][0] * t0 - i * step);
-                    if (off > 0.001 + t0 + 1e-9) { timing = "El fotograma " + i + " est\u00E1 " + (off * 1000).ToString("0.0", CultureInfo.InvariantCulture) + " ms fuera de su instante."; break; }
+                    if (off > 0.001 + t0 + 1e-9)
+                    {
+                        timing = I18n.Fmt("El fotograma {0} est\u00E1 {1} ms fuera de su instante.", "Frame {0} is {1} ms off its time.", i, (off * 1000).ToString("0.0", CultureInfo.InvariantCulture));
+                        break;
+                    }
                 }
             }
-            else timing = "El archivo no tiene lista de fotogramas.";
-            Add(v, "Tiempos de los fotogramas", timing == null, timing ?? "Cada fotograma en su instante (a menos de 1 ms), siempre hacia delante.");
+            else timing = I18n.T("El archivo no tiene lista de fotogramas.", "The file has no frame list.");
+            Add(v, I18n.T("Tiempos de los fotogramas", "Frame timing"), timing == null,
+                timing ?? I18n.T("Cada fotograma en su instante (a menos de 1 ms), siempre hacia delante.", "Every frame at its time (within 1 ms), always moving forward."));
             if (vp != null && vp.Count > 0) v.Seconds = (vp[vp.Count - 1][0] * t0) + expect.FpsDen / (double)expect.FpsNum;
 
             for (int k = 0; k < expect.Audio.Count; k++)
@@ -852,7 +876,10 @@ namespace Stackshot
                 double want = t.Frames / (double)AudioCapture.Rate;
                 double got = has && ap.Count > 0 ? (ap[ap.Count - 1][0] - ap[0][0] + ap[ap.Count - 1][1]) * tb[k + 1] : 0;
                 bool ok = has && ap.Count > 0 && Math.Abs(got - want) <= 0.001 + 2 * tb[k + 1];
-                Add(v, "Duraci\u00F3n del sonido: " + t.Title, ok, has ? got.ToString("0.000", CultureInfo.InvariantCulture) + " s en el archivo, " + want.ToString("0.000", CultureInfo.InvariantCulture) + " s grabados." : "No hay paquetes de esta pista.");
+                Add(v, I18n.T("Duraci\u00F3n del sonido: ", "Sound duration: ") + Cine.TrackName(t.Title), ok,
+                    has ? I18n.Fmt("{0} s en el archivo, {1} s grabados.", "{0} s in the file, {1} s recorded.",
+                                   got.ToString("0.000", CultureInfo.InvariantCulture), want.ToString("0.000", CultureInfo.InvariantCulture))
+                        : I18n.T("No hay paquetes de esta pista.", "This track has no packets."));
             }
         }
 
@@ -915,11 +942,11 @@ namespace Stackshot
             if (first < 0 && decoded != total) v.FirstMismatch = Math.Min(decoded, total);
             bool ok = matched == total && decoded == total && code == 0;
             string detail;
-            if (ok) detail = matched + " de " + total + " fotogramas id\u00E9nticos (cada p\u00EDxel).";
-            else if (first >= 0) detail = "El fotograma " + first + " no coincide; " + matched + " de " + total + " id\u00E9nticos.";
-            else if (decoded != total) detail = "Se han decodificado " + decoded + " fotogramas y se grabaron " + total + ".";
-            else detail = "FFmpeg termin\u00F3 con el c\u00F3digo " + code + ".";
-            Add(v, "Fotogramas id\u00E9nticos a los capturados", ok, detail);
+            if (ok) detail = I18n.Fmt("{0} de {1} fotogramas id\u00E9nticos (cada p\u00EDxel).", "{0} of {1} frames identical (every pixel).", matched, total);
+            else if (first >= 0) detail = I18n.Fmt("El fotograma {0} no coincide; {1} de {2} id\u00E9nticos.", "Frame {0} does not match; {1} of {2} identical.", first, matched, total);
+            else if (decoded != total) detail = I18n.Fmt("Se han decodificado {0} fotogramas y se grabaron {1}.", "{0} frames were decoded and {1} were recorded.", decoded, total);
+            else detail = I18n.Fmt("FFmpeg termin\u00F3 con el c\u00F3digo {0}.", "FFmpeg exited with code {0}.", code);
+            Add(v, I18n.T("Fotogramas id\u00E9nticos a los capturados", "Frames identical to the captured ones"), ok, detail);
         }
 
         // Each audio track as the decoder gives it: its length, and for the originals the bits themselves.
@@ -953,12 +980,15 @@ namespace Stackshot
                     finally { End(p); watch.Detach(p); }
                 }
                 long want = t.Frames * 8;
-                Add(v, "Longitud del sonido: " + t.Title, bytes == want && code == 0,
-                    bytes == want ? t.Frames + " muestras, las grabadas." : bytes / 8 + " muestras en el archivo y " + t.Frames + " grabadas.");
+                Add(v, I18n.T("Longitud del sonido: ", "Sound length: ") + Cine.TrackName(t.Title), bytes == want && code == 0,
+                    bytes == want ? I18n.Fmt("{0} muestras, las grabadas.", "{0} samples, as recorded.", t.Frames)
+                                  : I18n.Fmt("{0} muestras en el archivo y {1} grabadas.", "{0} samples in the file and {1} recorded.", bytes / 8, t.Frames));
                 if (t.Original)
                 {
                     bool same = string.Equals(hash, t.Sha256, StringComparison.OrdinalIgnoreCase);
-                    Add(v, "Sonido original id\u00E9ntico: " + t.Title, same, same ? "Los bits son exactamente los grabados (SHA-256)." : "Los bits no coinciden con lo grabado.");
+                    Add(v, I18n.T("Sonido original id\u00E9ntico: ", "Original sound identical: ") + Cine.TrackName(t.Title), same,
+                        same ? I18n.T("Los bits son exactamente los grabados (SHA-256).", "The bits are exactly the recorded ones (SHA-256).")
+                             : I18n.T("Los bits no coinciden con lo grabado.", "The bits do not match the recording."));
                 }
                 if (progress != null) progress(0.8 + 0.2 * (k + 1) / (double)Math.Max(1, expect.Audio.Count));
             }
@@ -1071,6 +1101,7 @@ namespace Stackshot
 
         public string Summary()
         {
+            if (!I18n.IsSpanish) return SummaryEn();
             StringBuilder sb = new StringBuilder();
             double fps = FpsDen > 0 ? FpsNum / (double)FpsDen : 0;
             sb.AppendLine("Cine: " + Width + " \u00D7 " + Height + " a " + N(fps, "0.##") + " fps, " + N(RecordSeconds, "0.0") + " s, " + FramesWritten + " fotogramas.");
@@ -1096,6 +1127,37 @@ namespace Stackshot
             else
             {
                 sb.AppendLine("Comprobaci\u00F3n: HA FALLADO.");
+                foreach (CineCheck c in Verification.Checks) if (!c.Passed) sb.AppendLine("- " + c.Name + ": " + c.Detail);
+            }
+            return sb.ToString().TrimEnd();
+        }
+
+        string SummaryEn()
+        {
+            StringBuilder sb = new StringBuilder();
+            double fps = FpsDen > 0 ? FpsNum / (double)FpsDen : 0;
+            sb.AppendLine("Cinema: " + Width + " \u00D7 " + Height + " at " + N(fps, "0.##") + " fps, " + N(RecordSeconds, "0.0") + " s, " + FramesWritten + " frames.");
+            if (!string.IsNullOrEmpty(File)) sb.AppendLine("File: " + System.IO.Path.GetFileName(File) + (FileBytes > 0 ? " (" + N(FileBytes / 1048576.0, "0.0") + " MB)" : ""));
+            if (StopReason != null) sb.AppendLine("The recording stopped early: " + StopReason + ". What was recorded up to then has been saved.");
+            if (Pauses > 0) sb.AppendLine("- Paused " + (Pauses == 1 ? "once" : Pauses + " times") + ": what happened during " + (Pauses == 1 ? "the pause" : "the pauses") + " is not in the file.");
+            if (OverlayFrames > 0) sb.AppendLine("- " + (OverlayFrames == 1 ? "1 frame has" : OverlayFrames + " frames have") + " clicks or pressed keys drawn on them (Recording > Clicks and keys).");
+            if (HistoryMisses > 0) sb.AppendLine("- " + HistoryMisses + " frames may have taken the wrong screen image (the computer was too slow).");
+            if (FramesRepeatedFailed > 0) sb.AppendLine("- " + FramesRepeatedFailed + " frames repeat the one before because the screen could not be read.");
+            if (FramesBlack > 0) sb.AppendLine("- " + FramesBlack + " black frames at the start because the screen could not be read.");
+            if (Discarded > 0) sb.AppendLine("- " + Discarded + " captured frames were never written.");
+            if (LostEvents > 0) sb.AppendLine("- Screen capture was interrupted " + LostEvents + (LostEvents == 1 ? " time" : " times") + " (" + N(LostMs, "0") + " ms with no new image).");
+            if (Protected > 0) sb.AppendLine("- In " + Protected + " images Windows hid protected windows or windows excluded from capture on that screen (Stackshot's too); any inside the area is missing or black.");
+            if (Gdi) sb.AppendLine("- The fallback capture (GDI) was used: it does not see hardware-accelerated content.");
+            if (Hdr) sb.AppendLine("- The screen is in HDR: Windows hands over the image converted to SDR.");
+            if (RefreshHz > 0 && fps > 0 && RefreshHz > fps * 1.02) sb.AppendLine("- The monitor runs at " + N(RefreshHz, "0.#") + " Hz and recording is at " + N(fps, "0.##") + " fps: " + ImagesUnused + " screen images are not in any frame.");
+            if (AudioNotes != null) foreach (string a in AudioNotes) sb.AppendLine("- " + a);
+            if (!string.IsNullOrEmpty(Error)) sb.AppendLine("The master was not created: " + Error.Replace("\r", "").Replace("\n\n", " ").Replace("\n", " "));
+            if (!string.IsNullOrEmpty(Rescued)) sb.AppendLine("What was recorded is in: " + Rescued);
+            if (Verification == null) sb.AppendLine("Check: not done.");
+            else if (Verification.Passed) sb.AppendLine("Check: passed, " + Verification.FramesMatched + " frames identical to the ones sent to the encoder.");
+            else
+            {
+                sb.AppendLine("Check: FAILED.");
                 foreach (CineCheck c in Verification.Checks) if (!c.Passed) sb.AppendLine("- " + c.Name + ": " + c.Detail);
             }
             return sb.ToString().TrimEnd();

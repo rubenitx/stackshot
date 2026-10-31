@@ -55,9 +55,9 @@ namespace Stackshot
                 if (w.message != null) NewPart(into, w.message, AccessibleRole.StaticText, System.Drawing.Rectangle.Empty).PartState = AccessibleStates.ReadOnly;
                 System.Drawing.Rectangle bar = w.bar, vol = w.vol;
                 if (w.info == null || !w.info.CanPlay || bar.IsEmpty) return;
-                PartAccessible seek = NewPart(into, "Posici\u00F3n", AccessibleRole.Slider, w.seek);
-                seek.PartValue = PlayerKit.Clock(w.Pos) + " de " + PlayerKit.Clock(w.Duration);
-                seek.PartKeys = "Izquierda / Derecha";
+                PartAccessible seek = NewPart(into, I18n.T("Posici\u00F3n", "Position"), AccessibleRole.Slider, w.seek);
+                seek.PartValue = I18n.Fmt("{0} de {1}", "{0} of {1}", PlayerKit.Clock(w.Pos), PlayerKit.Clock(w.Duration));
+                seek.PartKeys = I18n.T("Izquierda / Derecha", "Left / Right");
                 seek.SetValue = delegate(string v) { double t; if (AccessTime(v, out t)) w.SeekTo(Math.Max(0, Math.Min(w.Duration, t))); };
                 foreach (Btn x in w.btns)
                 {
@@ -69,14 +69,14 @@ namespace Stackshot
                     p.PartState = StateOf(true, on, false);
                     p.PartKeys = Access.Shortcut(x.Tip);
                     if (x.Text != null && x.Text != name) p.PartHelp = x.Text;
-                    p.PartAction = "Pulsar";
+                    p.PartAction = I18n.T("Pulsar", "Press");
                     string id = x.Id;
                     p.Do = delegate { w.Act(id); };
                     if (x.Id == "mute" && !vol.IsEmpty)
                     {
-                        PartAccessible v = NewPart(into, "Volumen", AccessibleRole.Slider, w.vol);
-                        v.PartValue = Math.Round(w.volume * 100).ToString(CultureInfo.CurrentCulture) + " %";
-                        v.PartKeys = "Arriba / Abajo";
+                        PartAccessible v = NewPart(into, I18n.T("Volumen", "Volume"), AccessibleRole.Slider, w.vol);
+                        v.PartValue = Math.Round(w.volume * 100).ToString(CultureInfo.CurrentCulture) + (I18n.IsSpanish ? " %" : "%");
+                        v.PartKeys = I18n.T("Arriba / Abajo", "Up / Down");
                         v.SetValue = delegate(string s)
                         {
                             double n;

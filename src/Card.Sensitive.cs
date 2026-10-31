@@ -21,7 +21,7 @@ namespace Stackshot
         public bool StillChecking()
         {
             if (!CoverJob.IsChecking(FilePath)) return false;
-            if (!IsDisposed) Flash("Revisando datos\u2026", true);
+            if (!IsDisposed) Flash(I18n.T("Revisando datos\u2026", "Checking data\u2026"), true);
             return true;
         }
 

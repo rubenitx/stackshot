@@ -20,7 +20,7 @@ namespace Stackshot
 
         MenuEntry PdfEntry()
         {
-            MenuEntry e = MenuEntry.Item(pdfBusy ? "Exportando PDF\u2026" : "Exportar PDF\u2026", "doc", false, delegate { ExportPdf(); });
+            MenuEntry e = MenuEntry.Item(pdfBusy ? I18n.T("Exportando PDF\u2026", "Exporting PDF\u2026") : I18n.T("Exportar PDF\u2026", "Export PDF\u2026"), "doc", false, delegate { ExportPdf(); });
             e.Enabled = !pdfBusy;
             return e;
         }
@@ -29,7 +29,7 @@ namespace Stackshot
         internal bool ExportPdf()
         {
             if (xml || Current() == null) return false;
-            if (pdfBusy) { Say("Ya estoy exportando un PDF\u2026", false); return false; }
+            if (pdfBusy) { Say(I18n.T("Ya estoy exportando un PDF\u2026", "Already exporting a PDF\u2026"), false); return false; }
             string baseName = name != null ? System.IO.Path.GetFileNameWithoutExtension(name) : Safe(MarkdownTools.Title(text) ?? "");
             if (baseName.Length == 0) baseName = "documento";
             string target = null;
@@ -41,8 +41,8 @@ namespace Stackshot
                 {
                     using (System.Windows.Forms.SaveFileDialog d = new System.Windows.Forms.SaveFileDialog())
                     {
-                        d.Title = "Exportar PDF";
-                        d.Filter = "Documento PDF|*.pdf|Todos los archivos|*.*";
+                        d.Title = I18n.T("Exportar PDF", "Export PDF");
+                        d.Filter = I18n.T("Documento PDF|*.pdf|Todos los archivos|*.*", "PDF document|*.pdf|All files|*.*");
                         d.FileName = baseName + ".pdf";
                         d.DefaultExt = "pdf";
                         d.AddExtension = true;
@@ -51,7 +51,7 @@ namespace Stackshot
                         if (d.ShowDialog(Win32) == System.Windows.Forms.DialogResult.OK) target = d.FileName;
                     }
                 }
-                catch (Exception ex) { ShotStack.Log("Exportar PDF: " + ex.Message); Say("No he podido abrir el di\u00E1logo de guardar.", true); }
+                catch (Exception ex) { ShotStack.Log("Exportar PDF: " + ex.Message); Say(I18n.T("No he podido abrir el di\u00E1logo de guardar.", "Could not open save dialog."), true); }
             }
             if (target == null) return false;
             string snap = text, dir = DocumentFolder(), title = MarkdownTools.Title(text) ?? baseName, path = target;
@@ -61,7 +61,7 @@ namespace Stackshot
             pdfPages = 0;
             pdfError = null;
             if (!pdfHooked) { pdfHooked = true; Closed += delegate { pdfStop = true; }; }
-            SayLasting("Exportando PDF\u2026");
+            SayLasting(I18n.T("Exportando PDF\u2026", "Exporting PDF\u2026"));
             Thread t = new Thread(delegate()
             {
                 int pages = 0;
@@ -71,7 +71,7 @@ namespace Stackshot
                 {
                     pages = MdPdf.Export(snap, dir, path, title, delegate(int n)
                     {
-                        try { Dispatcher.BeginInvoke(new Action(delegate { if (my == pdfToken && pdfBusy) SayLasting("Exportando PDF\u2026 p\u00E1gina " + n); })); }
+                        try { Dispatcher.BeginInvoke(new Action(delegate { if (my == pdfToken && pdfBusy) SayLasting(I18n.Fmt("Exportando PDF\u2026 p\u00E1gina {0}", "Exporting PDF\u2026 page {0}", n)); })); }
                         catch (Exception) { }
                     }, delegate { return pdfStop; });
                 }
@@ -79,7 +79,7 @@ namespace Stackshot
                 catch (Exception ex)
                 {
                     ShotStack.Log("Exportar PDF: " + ex);
-                    err = ex is UnauthorizedAccessException || ex is System.IO.IOException ? "No he podido guardar el PDF: " + ex.Message : "No he podido exportar el PDF.";
+                    err = ex is UnauthorizedAccessException || ex is System.IO.IOException ? I18n.T("No he podido guardar el PDF: ", "Could not save PDF: ") + ex.Message : I18n.T("No he podido exportar el PDF.", "Could not export PDF.");
                 }
                 finally
                 {
@@ -108,15 +108,15 @@ namespace Stackshot
         {
             if (my != pdfToken) return;
             pdfBusy = false;
-            if (pages < 0) { pdfError = "Cancelado."; return; }
+            if (pages < 0) { pdfError = I18n.T("Cancelado.", "Cancelled."); return; }
             if (err != null || pages <= 0)
             {
-                pdfError = err ?? "No he podido exportar el PDF.";
+                pdfError = err ?? I18n.T("No he podido exportar el PDF.", "Could not export PDF.");
                 Say(pdfError, true);
                 return;
             }
             pdfPages = pages;
-            Say("PDF exportado: " + System.IO.Path.GetFileName(path) + " (" + pages.ToString("N0") + (pages == 1 ? " p\u00E1gina" : " p\u00E1ginas") + ").", false);
+            Say(I18n.Fmt(pages == 1 ? "PDF exportado: {0} ({1} p\u00E1gina)." : "PDF exportado: {0} ({1} p\u00E1ginas).", pages == 1 ? "PDF exported: {0} ({1} page)." : "PDF exported: {0} ({1} pages).", System.IO.Path.GetFileName(path), pages.ToString("N0")), false);
         }
     }
 }

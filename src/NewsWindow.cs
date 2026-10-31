@@ -43,7 +43,7 @@ namespace Stackshot
         {
             this.upcoming = upcoming;
             this.since = since;
-            Title = "Novedades";
+            Title = I18n.T("Novedades", "What's new");
             Width = 540;
             SizeToContent = SizeToContent.Height;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -90,10 +90,10 @@ namespace Stackshot
             StackPanel head = new StackPanel { Orientation = Orientation.Horizontal };
             head.Children.Add(new IconTile("sparkle", 40, Ds.Rgb(255, 204, 0), Ds.Rgb(255, 149, 0)));
             StackPanel titles = new StackPanel { Margin = new Thickness(14, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-            titles.Children.Add(Text("Novedades de Stackshot " + version, Ds.Title, 20, pal.Label, new Thickness(0)));
-            string sub = r != null ? "La versi\u00F3n nueva: esto es lo que trae."
-                       : groups != null ? "Todo lo nuevo desde la versi\u00F3n que ten\u00EDas."
-                       : "Lo que trae la versi\u00F3n que tienes.";
+            titles.Children.Add(Text(I18n.Fmt("Novedades de Stackshot {0}", "What's new in Stackshot {0}", version), Ds.Title, 20, pal.Label, new Thickness(0)));
+            string sub = r != null ? I18n.T("La versi\u00F3n nueva: esto es lo que trae.", "The new version: here is what's new.")
+                       : groups != null ? I18n.T("Todo lo nuevo desde la versi\u00F3n que ten\u00EDas.", "Everything new since the version you had.")
+                       : I18n.T("Lo que trae la versi\u00F3n que tienes.", "What's new in your current version.");
             titles.Children.Add(Text(sub, Ds.Regular, 12.5, pal.Label2, new Thickness(0, 2, 0, 0)));
             head.Children.Add(titles);
             page.Children.Add(head);
@@ -102,23 +102,23 @@ namespace Stackshot
             if (groups != null)
                 for (int g = 0; g < groups.Count; g++)
                 {
-                    list.Children.Add(Text("En la " + groups[g].Key, Ds.Semibold, 12.5, pal.Label2, new Thickness(0, g == 0 ? 0 : 6, 0, 10)));
+                    list.Children.Add(Text(I18n.Fmt("En la {0}", "In {0}", groups[g].Key), Ds.Semibold, 12.5, pal.Label2, new Thickness(0, g == 0 ? 0 : 6, 0, 10)));
                     AddItems(list, groups[g].Value, pal);
                 }
-            else if (items.Count == 0) list.Children.Add(Para("Esta versi\u00F3n no trae notas.", pal.Label3, new Thickness(0)));
+            else if (items.Count == 0) list.Children.Add(Para(I18n.T("Esta versi\u00F3n no trae notas.", "This version has no release notes."), pal.Label3, new Thickness(0)));
             else AddItems(list, items, pal);
             ScrollViewer sv = new ScrollViewer { MaxHeight = 470, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = list, Margin = new Thickness(0, 22, 0, 0), Resources = HomeWindow.ScrollStyle(), Focusable = false };
             page.Children.Add(sv);
 
             StackPanel buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
-            MacButton close = new MacButton(r != null ? "Ahora no" : "Cerrar", r != null ? ButtonKind.Secondary : ButtonKind.Primary, null, null, 32);
+            MacButton close = new MacButton(r != null ? I18n.T("Ahora no", "Not now") : I18n.Close, r != null ? ButtonKind.Secondary : ButtonKind.Primary, null, null, 32);
             close.Click += delegate { Close(); };
             buttons.Children.Add(close);
             if (r != null)
             {
                 // The same as the notice's button: download, verify and install here, or the release page when it can't.
                 bool working = Updater.Doing == Updater.Step.Downloading || Updater.Doing == Updater.Step.Verifying || Updater.Doing == Updater.Step.Installing;
-                string label = working ? "Actualizando\u2026" : !Updater.CanInstall ? "Ver la versi\u00F3n" : Updater.IsReady ? "Instalar ahora" : "Descargar e instalar";
+                string label = working ? I18n.T("Actualizando\u2026", "Updating\u2026") : !Updater.CanInstall ? I18n.T("Ver la versi\u00F3n", "View version") : Updater.IsReady ? I18n.T("Instalar ahora", "Install now") : I18n.T("Descargar e instalar", "Download and install");
                 MacButton get = new MacButton(label, ButtonKind.Primary, Updater.CanInstall ? "update" : "open", null, 32) { IsEnabled = !working };
                 get.Click += delegate
                 {

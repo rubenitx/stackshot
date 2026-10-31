@@ -632,7 +632,7 @@ namespace Stackshot
         public string LeftText = "", RightText = "";
         public double Progress = -1;   // 0-1: progress bar on top (video export); -1 = hidden
         public float S = 1f;
-        public const string HandleText = "Arr\u00E1strame";
+        public static string HandleText { get { return I18n.T("Arr\u00E1strame", "Drag me"); } }
         // The drag handle: shown when something listens; fired once the mouse has moved far enough while pressed on it.
         public event Action DragOut;
         // Where the handle is centred (in this strip's coordinates); the middle of the strip if not set.
@@ -722,7 +722,7 @@ namespace Stackshot
             handleHot = on;
             Cursor = on ? Cursors.Hand : Cursors.Default;
             Rectangle r = HandleRect;
-            if (on) EdTip.Schedule(this, r, "Arr\u00E1strala al chat, a un correo o a otra aplicaci\u00F3n", true);
+            if (on) EdTip.Schedule(this, r, I18n.T("Arr\u00E1strala al chat, a un correo o a otra aplicaci\u00F3n", "Drag it into a chat, an email or another app"), true);
             else EdTip.Cancel();
             Invalidate(Rectangle.Inflate(r, 2, 2));
         }

@@ -33,7 +33,9 @@ namespace Stackshot
             Color.FromArgb(255, 59, 48), Color.FromArgb(255, 204, 0), Color.FromArgb(52, 199, 89),
             Color.FromArgb(10, 132, 255), Color.White
         };
-        public static readonly string[] PaletteNames = { "Rojo", "Amarillo", "Verde", "Azul", "Blanco" };
+        static readonly string[] PaletteNamesEs = { "Rojo", "Amarillo", "Verde", "Azul", "Blanco" };
+        static readonly string[] PaletteNamesEn = { "Red", "Yellow", "Green", "Blue", "White" };
+        public static string[] PaletteNames { get { return I18n.IsSpanish ? PaletteNamesEs : PaletteNamesEn; } }
         public static string IconFont = "Segoe Fluent Icons";
 
         public static void Init()

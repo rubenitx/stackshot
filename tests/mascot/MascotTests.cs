@@ -27,6 +27,7 @@ namespace Stackshot.Tests
         static int Main(string[] args)
         {
             Settings.ReadOnly = true;
+            I18n.Apply("es");   // the suites check the Spanish texts, whatever language this Windows is in
             List<string> suites = args.Length > 0 ? new List<string>(args) : new List<string>(defaultSuites);
             foreach (string s in suites)
             {

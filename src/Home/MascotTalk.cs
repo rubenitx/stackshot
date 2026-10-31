@@ -33,12 +33,23 @@ namespace Stackshot
         public static string Greeting()
         {
             int h = DateTime.Now.Hour;
-            return h < 6 ? "\u00A1Buenas noches!" : h < 14 ? "\u00A1Buenos d\u00EDas!" : h < 21 ? "\u00A1Buenas tardes!" : "\u00A1Buenas noches!";
+            if (I18n.IsSpanish)
+                return h < 6 ? "\u00A1Buenas noches!" : h < 14 ? "\u00A1Buenos d\u00EDas!" : h < 21 ? "\u00A1Buenas tardes!" : "\u00A1Buenas noches!";
+            return h < 6 ? "Good evening!" : h < 12 ? "Good morning!" : h < 18 ? "Good afternoon!" : "Good evening!";
         }
 
         public static string Hello(Settings s)
         {
             string g = Greeting();
+            if (!I18n.IsSpanish)
+            {
+                switch (s.MascotPersonality)
+                {
+                    case 1: return g + Pick(new string[] { " Here I am, nice and calm.", " No rush, you know where to find me.", " All quiet over here." });
+                    case 2: return g + Pick(new string[] { " Who are we capturing today?", " About time you showed up.", " What's the plan today, boss?" });
+                    default: return g + Pick(new string[] { " What are we capturing?", " Ready for a great shot?", " So great to see you!" });
+                }
+            }
             switch (s.MascotPersonality)
             {
                 case 1: return g + Pick(new string[] { " Aqu\u00ED estoy, tranquilo.", " Sin prisa, ya sabes d\u00F3nde encontrarme.", " Todo en calma por aqu\u00ED." });
@@ -59,6 +70,24 @@ namespace Stackshot
             string own = Own(s, 0.5);
             if (own != null) return new string[] { own };
             string key = Hotkeys.Display(s.HotRegion);
+            if (!I18n.IsSpanish)
+            {
+                switch (s.MascotPersonality)
+                {
+                    case 1:
+                        return new string[] { Pick(new string[] { "Mmm\u2026 hello.", "Take it easy, there's time.", "Breathe. Capture. Repeat.", "Press " + key + " whenever you want.",
+                                                                  "A little poke, how nice.", "Still here, no rush.", "Everything at its own pace.", "Feels good to be here." }) };
+                    case 2:
+                        return new string[] { Pick(new string[] { "Hey! I'm not a button!", "You again?", "Poke me again and I'll start dancing.",
+                                                                  "I take the coolest captures, just so you know.", "Press " + key + " and stop tickling me.",
+                                                                  "Careful, I bite (a little bit).", "Bored? It shows.", "You owe me a capture.",
+                                                                  "I'm an artist, not a toy.", "You really are annoying\u2026 I like it." }) };
+                    default:
+                        return new string[] { Pick(new string[] { "Hey, that tickles!", "Shall we take a capture?", "Press " + key + " and I'll handle it.",
+                                                                  "Smile! Well\u2026 I'm already smiling.", "Beep boop. Beep.", "I love it when you curve the arrows.",
+                                                                  "Hello, hello!", "Again! Again!", "Hehehe, stop, stop.", "What a great day for capturing!" }) };
+                }
+            }
             switch (s.MascotPersonality)
             {
                 case 1:
@@ -78,6 +107,32 @@ namespace Stackshot
 
         public static string Tip(Settings s)
         {
+            if (!I18n.IsSpanish)
+            {
+                string[] tipsEn =
+                {
+                    "Drag a thumbnail to any chat to paste it.",
+                    "In the editor, drag the blue handle on an arrow to curve it.",
+                    "Scroll over the stack with the mouse wheel to see previous captures.",
+                    "When capturing, clicking a window captures it completely.",
+                    "In the editor, Enter copies and closes.",
+                    Hotkeys.Split(s.HotScroll).Count > 0 ? Hotkeys.Display(s.HotScroll) + " captures a whole page by scrolling it."
+                                                         : "Scrolling capture takes a whole page; you can assign a shortcut in Shortcuts.",
+                    Hotkeys.Split(s.HotText).Count > 0 ? Hotkeys.Display(s.HotText) + " copies text from anywhere on the screen, without saving a capture."
+                                                       : "Copy screen text grabs text from anywhere; you can assign a shortcut in Shortcuts.",
+                    Hotkeys.Split(s.HotRepeat).Count > 0 ? Hotkeys.Display(s.HotRepeat) + " captures the last area again, without selecting it."
+                                                         : "\u201CRepeat area\u201D in the tray recaptures the last area; you can assign a shortcut in Shortcuts.",
+                    "The Backdrop button in the editor gets your captures ready for presentation.",
+                    "To cover private data, use Redact in the editor: a solid cover cannot be undone.",
+                    "In the Mascot section you can change my hat, clothes and even species.",
+                    "If you enable me on the desktop, I'll keep you company near the taskbar.",
+                    "You can record your screen as video right from my menu.",
+                    "If you drag me, you can place me on top of any window.",
+                    "A quick double click on me and I'll do tricks.",
+                    "Captures save automatically: view them via Open my captures."
+                };
+                return Pick(tipsEn);
+            }
             string[] tips =
             {
                 "Arrastra una miniatura a cualquier chat para pegarla.",
@@ -106,6 +161,13 @@ namespace Stackshot
 
         public static string Celebrate(Settings s)
         {
+            if (!I18n.IsSpanish)
+            {
+                return By(s.MascotPersonality,
+                    new string[] { "Great shot!", "Click! Looking sharp.", "Saving this one.", "Great eye!", "Perfect!", "Another one for the collection!" },
+                    new string[] { "Nice capture.", "Saved to my memory.", "Very nice.", "That one has great light.", "All in place.", "Nicely framed." },
+                    new string[] { "Boom!", "Now that is art!", "Straight to the museum!", "And I don't even charge royalties.", "That one deserves a frame.", "See? Told you so." });
+            }
             return By(s.MascotPersonality,
                 new string[] { "\u00A1Buena captura!", "\u00A1Clic! Ha quedado genial.", "Esa me la guardo.", "\u00A1Qu\u00E9 buen ojo!", "\u00A1Perfecta!", "\u00A1Otra para la colecci\u00F3n!" },
                 new string[] { "Bonita captura.", "Guardada en mi memoria.", "Muy bien.", "Esa tiene buena luz.", "Todo en su sitio.", "Bien encuadrada." },
@@ -120,6 +182,28 @@ namespace Stackshot
             if (r < 0.18) return Tip(s);
             string own = Own(s, 0.35);
             if (own != null) return own;
+            if (!I18n.IsSpanish)
+            {
+                if (r < 0.38)
+                {
+                    if (h >= 7 && h < 11) return By(s.MascotPersonality, new string[] { "Morning coffee time!", "Great time to start strong.", "Let's get this day going!" },
+                        new string[] { "A quiet morning.", "Starting slowly is starting best.", "One day at a time." },
+                        new string[] { "Had breakfast yet or what?", "Those eyes say \"needs coffee\".", "Early hours, early memes." });
+                    if (h >= 13 && h < 16) return By(s.MascotPersonality, new string[] { "Had lunch yet?", "Nap time is getting close.", "Ready for the afternoon!" },
+                        new string[] { "A short walk after eating.", "After-lunch break is sacred.", "Feeling sleepy\u2026" },
+                        new string[] { "Where's my share of the food?", "After eating, not even bots are productive.", "Watch out for that food coma, boss." });
+                    if (h >= 19 || h < 6) return By(s.MascotPersonality, new string[] { "Still working? Keep going!", "Almost done for the day.", "Look what time it is!" },
+                        new string[] { "It's getting late. Get some rest.", "Eyes get tired too.", "Tomorrow is another day." },
+                        new string[] { "Don't you have a home or something?", "Even I don't work at these hours.", "This counts as overtime." });
+                }
+                return By(s.MascotPersonality,
+                    new string[] { "Hello! Still here.", "Need a capture?", "Going for a stroll.", "What a great day for capturing!", "Show me what you're working on?",
+                                   "I'm right here if you need me.", "Beep boop, all systems go.", "Quick capture?", "Nice desktop you got there.", "I can record a video if you want." },
+                    new string[] { "So peaceful\u2026", "Still here.", "Short walk and I'll be back.", "All quiet.", "It's nice here.", "No rush, no pause.",
+                                   "Enjoying the quiet.", "Take a deep breath.", "Good moments don't make noise." },
+                    new string[] { "Working or looking at memes?", "I'm bored\u2026 let's capture something?", "Careful, I'm watching you.", "Is that your best desktop setup?", "You owe me a capture.",
+                                   "I'm not saying anything, but\u2026", "You have way too many tabs open.", "I've seen that window before.", "If you ignore me, I'll do weird things.", "Feeling photogenic today." });
+            }
             if (r < 0.38)
             {
                 if (h >= 7 && h < 11) return By(s.MascotPersonality, new string[] { "\u00A1Ese caf\u00E9 de la ma\u00F1ana!", "Buen momento para empezar fuerte.", "\u00A1Arrancamos el d\u00EDa!" },
@@ -145,6 +229,32 @@ namespace Stackshot
         public static string ForAct(int personality, int act)
         {
             if (rnd.NextDouble() < 0.45) return null;
+            if (!I18n.IsSpanish)
+            {
+                switch (act)
+                {
+                    case MascotProps.Coffee:
+                        return By(personality, new string[] { "Coffee time!", "Coffee break.", "Mmm, smells so good." }, new string[] { "A quiet coffee.", "Sip by sip.", "What an aroma." }, new string[] { "Don't even think about asking.", "Coffee for me, not for you.", "My fifth one today." });
+                    case MascotProps.Juggle:
+                        return By(personality, new string[] { "Look, look!", "Three at once!", "No hands! Well, with hands." }, new string[] { "Just a bit of practice.", "Rhythm is what counts.", "Focus." }, new string[] { "Bet you can't do this!", "Admission isn't free, you know.", "Careful, might drop one." });
+                    case MascotProps.Console:
+                        return By(personality, new string[] { "A bit of gaming!", "New high score!", "Quick match." }, new string[] { "Just one level.", "Casual gaming.", "No rush, infinite lives." }, new string[] { "Don't talk to me, I'm winning.", "Fourth life!", "This isn't work, this is culture." });
+                    case MascotProps.Stretch:
+                        return By(personality, new string[] { "Time to stretch!", "Phew, feels so good.", "Crack, crack!" }, new string[] { "Stretching is resting too.", "Aaah\u2026", "A little movement." }, new string[] { "Even bots get stiff.", "Look at that flexibility.", "All that sitting down\u2026" });
+                    case MascotProps.Read:
+                        return By(personality, new string[] { "What a great book!", "Just one chapter.", "Look at that ending!" }, new string[] { "A good book and silence.", "Chapter by chapter.", "Reading for a bit." }, new string[] { "No spoilers.", "Shhh, reaching the climax.", "Better than your desktop." });
+                    case MascotProps.Water:
+                        return By(personality, new string[] { "Fresh water!", "Cheers to you!", "Gulp, gulp, gulp." }, new string[] { "A little water does wonders.", "Sip by sip.", "Hydration is self-care." }, new string[] { "Water, the drink of champions.", "Cheers? You too.", "No coffee or soda: just water." });
+                    case MascotProps.EyeRest:
+                        return By(personality, new string[] { "Everything looks so far away!", "Gazing at the horizon.", "Way over there!" }, new string[] { "Eyes need rest too.", "Looking far away relaxes.", "Calm for the sight." }, new string[] { "I spy\u2026 something distant.", "Your screen can wait.", "Look, a bird. Or not." });
+                    case MascotProps.Legs:
+                        return By(personality, new string[] { "Up and down!", "One, two!", "Let's go, legs!" }, new string[] { "Slowly, no rush.", "Moving your legs feels good.", "Up\u2026 and down." }, new string[] { "Better than the gym.", "Don't copy me, you'll get tired.", "Look at these legs!" });
+                    case MascotProps.Breathe:
+                        return By(personality, new string[] { "Breathe with me.", "In\u2026 and out.", "Breathing feels amazing!" }, new string[] { "Breathe in\u2026 release.", "Everything at its pace.", "A moment of calm." }, new string[] { "Breathing is free, enjoy it.", "Even a bot needs air.", "Deep breath, I won't charge." });
+                    default:
+                        return By(personality, new string[] { "Smile!", "Cheese!", "Click!" }, new string[] { "A nice memory.", "Perfect lighting.", "Hold still a second." }, new string[] { "I look better.", "Frame-worthy.", "Say cheese." });
+                }
+            }
             switch (act)
             {
                 case MascotProps.Coffee:
@@ -174,6 +284,33 @@ namespace Stackshot
 
         public static string Remind(Settings s, int kind, int minutes)
         {
+            if (!I18n.IsSpanish)
+            {
+                string tEn = minutes >= 60 ? (minutes % 60 == 0 ? (minutes / 60 == 1 ? "an hour" : minutes / 60 + " hours") : "an hour and a half") : minutes + " minutes";
+                switch (kind)
+                {
+                    case WellKind.Water:
+                        return By(s.MascotPersonality,
+                            new string[] { "Time to drink water! It's been " + tEn + " without a sip.", "A glass of water? I'll have one with you.", "Fresh water! Your body will thank you." },
+                            new string[] { "A little water will do you good.", "You've been working for " + tEn + ". Shall we drink water?", "A glass of water and we continue." },
+                            new string[] { "Water? Ring a bell? It's been " + tEn + ".", "If you don't drink it, I will.", "Plants that aren't watered dry out." });
+                    case WellKind.Eyes:
+                        return By(s.MascotPersonality,
+                            new string[] { "Rest your eyes! Look at something far away for 20 seconds.", "Your eyes have been glued to the screen for " + tEn + ". Look away?", "20-20-20 rule: look 20 feet away for 20 seconds." },
+                            new string[] { "Give your eyes a break: gaze into the distance for a moment.", "20 seconds looking far away. No rush.", "Your eyes deserve a pause." },
+                            new string[] { "That screen isn't going anywhere. Look out the window.", "Blink, you're forgetting.", "Your eyes are begging for a vacation. Twenty seconds." });
+                    case WellKind.Move:
+                        return By(s.MascotPersonality,
+                            new string[] { "Up! You've been in that chair for " + tEn + ". Let's stretch those legs!", "Time to move! Stand up for a moment.", "Short walk? Your legs are asking for it." },
+                            new string[] { "Stand up and stretch your body a bit.", "A minute on your feet feels wonderful.", "You've been sitting for " + tEn + ". Move around a bit." },
+                            new string[] { "Your chair is going to charge rent.", "If you don't stand up, I'll start dancing.", "Are you glued to that chair? Up!" });
+                    default:
+                        return By(s.MascotPersonality,
+                            new string[] { "Shall we breathe together for a minute?", "A breathing break will feel great.", "Six slow breaths and you're good as new." },
+                            new string[] { "Take a deep breath with me for a moment.", "A minute of calm: let's breathe.", "Breathe in, let go. Simple as that." },
+                            new string[] { "Breathe, I can see the stress.", "One minute without emails. Breathe.", "Even bots breathe. Well, almost." });
+                }
+            }
             string t = minutes >= 60 ? (minutes % 60 == 0 ? (minutes / 60 == 1 ? "una hora" : minutes / 60 + " horas") : "hora y media") : minutes + " minutos";
             switch (kind)
             {
@@ -202,6 +339,11 @@ namespace Stackshot
 
         public static string WellDone(Settings s, int kind, int today)
         {
+            if (!I18n.IsSpanish)
+            {
+                return By(s.MascotPersonality, new string[] { "Awesome! ", "Great job! ", "That's what I like! " }, new string[] { "Well done. ", "Perfect. ", "Very nice. " },
+                          new string[] { "Look at that discipline. ", "Not bad at all. ", "Bravo. " }) + WellCount(kind, today, s.WaterGoal);
+            }
             return By(s.MascotPersonality, new string[] { "\u00A1Genial! ", "\u00A1Muy bien! ", "\u00A1As\u00ED me gusta! " }, new string[] { "Bien hecho. ", "Perfecto. ", "Qu\u00E9 bien. " },
                       new string[] { "Mira t\u00FA qu\u00E9 disciplina. ", "No est\u00E1 mal. ", "Ole. " }) + WellCount(kind, today, s.WaterGoal);
         }
@@ -212,6 +354,16 @@ namespace Stackshot
         // waterGoal: the glasses a day aimed at (0 none), said with the water count.
         public static string WellCount(int kind, int today, int waterGoal)
         {
+            if (!I18n.IsSpanish)
+            {
+                if (kind == WellKind.Water && waterGoal > 0)
+                    return today >= waterGoal ? (today == waterGoal ? "Water goal reached: " + waterGoal + " glasses!" : today + " glasses today: goal achieved!")
+                         : today == 1 ? "Your first glass today (out of " + waterGoal + ")." : today + " of " + waterGoal + " glasses today.";
+                return kind == WellKind.Water ? (today == 1 ? "Your first glass today." : today + " glasses today.")
+                     : kind == WellKind.Eyes ? (today == 1 ? "First eye rest today." : today + " eye rests today.")
+                     : kind == WellKind.Move ? (today == 1 ? "First movement break today." : today + " movement breaks today.")
+                     : (today == 1 ? "First breathing session today." : today + " breathing sessions today.");
+            }
             if (kind == WellKind.Water && waterGoal > 0)
                 return today >= waterGoal ? (today == waterGoal ? "\u00A1Objetivo de agua cumplido: " + waterGoal + " vasos!" : "Ya van " + today + " vasos hoy: objetivo cumplido.")
                      : today == 1 ? "Tu primer vaso de hoy (de " + waterGoal + ")." : "Ya van " + today + " de " + waterGoal + " vasos hoy.";
@@ -224,6 +376,12 @@ namespace Stackshot
         // Answers to "Recu\u00E9rdamelo en 10 min" and "Hoy no": they always say what was decided, chatty or not.
         public static string WellLater(Settings s)
         {
+            if (!I18n.IsSpanish)
+            {
+                if (!s.MascotTalks) return "I'll remind you in 10 minutes.";
+                return By(s.MascotPersonality, new string[] { "Got it! I'll remind you in 10 minutes.", "Alright! Reminding you in 10 minutes." }, new string[] { "No problem: I'll notify you in 10 minutes.", "I'll remind you in 10 minutes." },
+                          new string[] { "Fine, 10 minutes and you can't escape.", "I'll be back in 10 minutes, okay?" });
+            }
             if (!s.MascotTalks) return "Te lo recuerdo en 10 minutos.";
             return By(s.MascotPersonality, new string[] { "\u00A1Vale! Te aviso en 10 minutos.", "\u00A1De acuerdo! En 10 minutos te lo recuerdo." }, new string[] { "Sin problema: en 10 minutos te aviso.", "Te lo recuerdo en 10 minutos." },
                       new string[] { "Vale, 10 minutos y no te escapas.", "En 10 minutos vuelvo, \u00BFeh?" });
@@ -231,6 +389,13 @@ namespace Stackshot
 
         public static string WellToday(Settings s, int kind)
         {
+            if (!I18n.IsSpanish)
+            {
+                string whatEn = kind == WellKind.Water ? "water reminders" : kind == WellKind.Eyes ? "eye rest reminders" : kind == WellKind.Move ? "movement breaks" : "breathing breaks";
+                if (!s.MascotTalks) return "No more " + whatEn + " today.";
+                return By(s.MascotPersonality, new string[] { "Got it! No more " + whatEn + " today." }, new string[] { "Alright, no more " + whatEn + " for today." },
+                          new string[] { "Fine, you're off the hook for " + whatEn + " today." });
+            }
             string what = kind == WellKind.Water ? "lo del agua" : kind == WellKind.Eyes ? "lo de la vista" : kind == WellKind.Move ? "lo de moverte" : "lo de respirar";
             if (!s.MascotTalks) return "Hoy no te recuerdo m\u00E1s " + what + ".";
             return By(s.MascotPersonality, new string[] { "\u00A1Vale! Hoy no te recuerdo m\u00E1s " + what + "." }, new string[] { "De acuerdo, por hoy no te recuerdo m\u00E1s " + what + "." },
@@ -240,6 +405,26 @@ namespace Stackshot
         // What it says when told to do something (-1: woken up on request).
         public static string ForCmd(int personality, int cmd)
         {
+            if (!I18n.IsSpanish)
+            {
+                switch (cmd)
+                {
+                    case -1: return By(personality, new string[] { "I'm awake!", "Good morning again!" }, new string[] { "Mmm\u2026 coming.", "Just another minute and I'm up." }, new string[] { "Hey! I was having a great dream.", "Already? Come on." });
+                    case MascotCmd.Play: return By(personality, new string[] { "Let's play!", "Yeees, let's play!", "I was so hoping for this!" }, new string[] { "A little playtime, sure.", "Let's play, no rush." }, new string[] { "Now you'll see!", "I challenge you to see who lasts longer." });
+                    case MascotCmd.Juggle: return By(personality, new string[] { "Look, look!", "Three balls! Here I go!" }, new string[] { "With rhythm and steady pace.", "Let's see if I don't drop any." }, new string[] { "I can do this with my eyes closed.", "Don't look away, they're flying." });
+                    case MascotCmd.Dance: return By(personality, new string[] { "Music, maestro!", "Let's dance!" }, new string[] { "A gentle dance.", "Moving the bones slowly." }, new string[] { "Check out these moves.", "Watch out, Fred Astaire." });
+                    case MascotCmd.Sleep: return By(personality, new string[] { "Aaah\u2026 see you later.", "Good night!" }, new string[] { "So sleepy\u2026 zzz.", "Closing my eyes for a bit." }, new string[] { "Wake me up if there's churros.", "Don't you dare touch me." });
+                    case MascotCmd.Jump: return By(personality, new string[] { "Hop, hop, hop!", "Up!" }, new string[] { "Just a little hop.", "Hop. Hop. Hop." }, new string[] { "Higher? Watch this!", "Easy peasy." });
+                    case MascotCmd.Twirl: return By(personality, new string[] { "Weee!", "Ta-da!" }, new string[] { "A little twirl.", "Spinning gently." }, new string[] { "And not even dizzy!", "Applause, please." });
+                    case MascotCmd.Wave: return By(personality, new string[] { "Hello, hello!", "Hi there!" }, new string[] { "Hello, how's it going.", "A calm greeting." }, new string[] { "Yeah, I see you.", "What's up, boss?" });
+                    case MascotCmd.Flip: return By(personality, new string[] { "Somersault!", "Backflip!" }, new string[] { "Here goes, carefully.", "A gentle somersault." }, new string[] { "Can your mouse do that?", "Ten out of ten." });
+                    case MascotCmd.Bow: return By(personality, new string[] { "Thank you so much, thank you!", "The audience loves me!" }, new string[] { "With all due respect.", "A polite gesture." }, new string[] { "Line up for autographs.", "Thank you, it's all me." });
+                    case MascotCmd.Cheer: return By(personality, new string[] { "Hooray!", "Party time!", "You did it!" }, new string[] { "Very well done.", "Good reason to smile." }, new string[] { "That's it! More confetti!", "Blow the horn!" });
+                    case MascotCmd.Love: return By(personality, new string[] { "I love you so much!", "How sweet!" }, new string[] { "How wonderful.", "Thank you for being here." }, new string[] { "Okay, maybe a little.", "Don't tell anyone." });
+                    case MascotCmd.Bubbles: return By(personality, new string[] { "Bubbles!", "Look how they shine!" }, new string[] { "Bubbles and quiet.", "So relaxing." }, new string[] { "Don't pop them.", "This one is the biggest." });
+                    default: return null;
+                }
+            }
             switch (cmd)
             {
                 case -1: return By(personality, new string[] { "\u00A1Ya estoy despierto!", "\u00A1Buenos d\u00EDas otra vez!" }, new string[] { "Mmm\u2026 ya voy.", "Un ratito m\u00E1s y me levanto." }, new string[] { "\u00A1Eh! Estaba so\u00F1ando algo genial.", "\u00BFYa? Qu\u00E9 pesado." });
@@ -262,27 +447,45 @@ namespace Stackshot
         // Reactions to being moved around.
         public static string Fall(Settings s)
         {
+            if (!I18n.IsSpanish)
+            {
+                return By(s.MascotPersonality, new string[] { "Aaaah!", "Careful!", "I'm falling!", "Help!" }, new string[] { "Oh dear\u2026", "Uh-oh, uh-oh.", "Here we go." }, new string[] { "They took the floor away!", "This is your fault!", "My stuff!" });
+            }
             return By(s.MascotPersonality, new string[] { "\u00A1Aaaah!", "\u00A1Cuidado!", "\u00A1Que me caigo!", "\u00A1Socorro!" }, new string[] { "Vaya\u2026", "Ay, ay, ay.", "Qu\u00E9 remedio." }, new string[] { "\u00A1Me han quitado el suelo!", "\u00A1Esto es culpa tuya!", "\u00A1Mis cosas!" });
         }
 
         public static string Drag(Settings s)
         {
+            if (!I18n.IsSpanish)
+            {
+                return By(s.MascotPersonality, new string[] { "Whoooa!", "Here we go!", "What a view!", "Weee!" }, new string[] { "Gently, please.", "Alright, alright.", "Nice and slow." }, new string[] { "Hey, hands off!", "Where are you taking me?", "I'm delicate, you know?" });
+            }
             return By(s.MascotPersonality, new string[] { "\u00A1Uoooh!", "\u00A1Vamos all\u00E1!", "\u00A1Qu\u00E9 vistas!", "\u00A1Wiii!" }, new string[] { "Con suavidad, por favor.", "Bien, bien.", "Despacito." }, new string[] { "\u00A1Eh, sin manos!", "\u00BFA d\u00F3nde me llevas?", "Soy delicado, \u00BFeh?" });
         }
 
         public static string Land(Settings s)
         {
+            if (!I18n.IsSpanish)
+            {
+                return By(s.MascotPersonality, new string[] { "Perfect landing!", "Ta-da!", "Three-point landing!" }, new string[] { "Better here.", "Solid ground again.", "Everything in place." }, new string[] { "Ten out of ten.", "Totally had that under control.", "Not a scratch." });
+            }
             return By(s.MascotPersonality, new string[] { "\u00A1Aterrizaje perfecto!", "\u00A1Ta-ch\u00E1n!", "\u00A1Tres puntos!" }, new string[] { "Mejor aqu\u00ED.", "Firme otra vez.", "Todo en su sitio." }, new string[] { "Diez de diez.", "Eso lo tengo controlado.", "Ni un rasgu\u00F1o." });
         }
 
         public static string Climb(Settings s)
         {
+            if (!I18n.IsSpanish)
+            {
+                return By(s.MascotPersonality, new string[] { "Hop!", "You can see everything from here!", "Up!" }, new string[] { "Good spot for thinking.", "A nice rest here.", "What a view." }, new string[] { "Now I'm the king of the window.", "Such a mess down there.", "This window is mine." });
+            }
             return By(s.MascotPersonality, new string[] { "\u00A1Hop!", "\u00A1Desde aqu\u00ED se ve todo!", "\u00A1Arriba!" }, new string[] { "Buen sitio para pensar.", "Un descansito aqu\u00ED.", "Qu\u00E9 vistas." }, new string[] { "Ahora soy el rey de la ventana.", "Qu\u00E9 desorden hay aqu\u00ED abajo.", "Esta ventana es m\u00EDa." });
         }
 
         public static string LevelUp(Settings s, int level)
         {
-            return "\u00A1Ya somos " + MascotParts.LevelNames[level].ToLowerInvariant() + "!";
+            return I18n.IsSpanish
+                ? "\u00A1Ya somos " + MascotParts.LevelNames[level].ToLowerInvariant() + "!"
+                : "We are now " + MascotParts.LevelNames[level].ToLowerInvariant() + "!";
         }
     }
 }

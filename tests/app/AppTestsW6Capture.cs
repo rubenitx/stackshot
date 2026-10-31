@@ -618,20 +618,28 @@ namespace Stackshot.Tests
             return f.GetValue(o);
         }
 
+        // A table of HomeWindow, kept as a field or (when it follows the language) as a property.
+        static string[] Strings(string name)
+        {
+            FieldInfo f = typeof(HomeWindow).GetField(name, PrivStatic);
+            if (f != null) return (string[])f.GetValue(null);
+            PropertyInfo p = typeof(HomeWindow).GetProperty(name, PrivStatic);
+            return p == null ? null : (string[])p.GetValue(null, null);
+        }
+
         static void ArraysStayAligned()
         {
             foreach (string name in new string[] { "ActionNames", "ActionShort", "ActionIcons", "ActionShortest" })
             {
-                FieldInfo f = typeof(HomeWindow).GetField(name, PrivStatic);
-                Check(f != null, "no " + name);
-                string[] a = (string[])f.GetValue(null);
+                string[] a = Strings(name);
+                Check(a != null, "no " + name);
                 Eq(Settings.Actions.Length, a.Length, name + " length");
             }
             D.Color[,] colors = (D.Color[,])typeof(HomeWindow).GetField("ActionColors", PrivStatic).GetValue(null);
             Eq(Settings.Actions.Length, colors.GetLength(0), "ActionColors length");
             string[] icons = (string[])typeof(HomeWindow).GetField("ActionIcons", PrivStatic).GetValue(null);
             foreach (string icon in icons) Check(Glyph.Has(icon), "no glyph " + icon);
-            string[] names = (string[])typeof(HomeWindow).GetField("ActionNames", PrivStatic).GetValue(null);
+            string[] names = Strings("ActionNames");
             Eq("Repetir la \u00FAltima \u00E1rea", names[Array.IndexOf(Settings.Actions, "repeat")], "name of the action");
             Eq("Capturar un \u00E1rea", names[Array.IndexOf(Settings.Actions, "region")], "the area keeps its name");
             int[] home = (int[])typeof(HomeWindow).GetField("HomeModeIndex", PrivStatic).GetValue(null);

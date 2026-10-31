@@ -20,7 +20,7 @@ namespace Stackshot
 {
     public static class Ocr
     {
-        public const string Unavailable = "Este Windows no tiene el reconocimiento de texto (OCR) instalado.";
+        public static string Unavailable { get { return I18n.T("Este Windows no tiene el reconocimiento de texto (OCR) instalado.", "This Windows does not have text recognition (OCR) installed."); } }
         public const int MaxSide = 10000;     // OcrEngine.MaxImageDimension on Windows 10 and 11
         const int Margin = 20;                // around each piece, in the prepared image
         // Tall images are read in pieces this high (source pixels), overlapping: Windows' engine misses lines on big
@@ -46,7 +46,8 @@ namespace Stackshot
                 catch (Exception ex)
                 {
                     ShotStack.Log("OCR: " + ex.Message);
-                    done(null, ex is OutOfMemoryException ? "No hay memoria suficiente para leer una imagen tan grande." : "No se ha podido leer la imagen.");
+                    done(null, ex is OutOfMemoryException ? I18n.T("No hay memoria suficiente para leer una imagen tan grande.", "Not enough memory to read such a large image.")
+                                                          : I18n.T("No se ha podido leer la imagen.", "Could not read the image."));
                     return;
                 }
             }
@@ -83,7 +84,7 @@ namespace Stackshot
         static string Failure(Exception ex)
         {
             return ex is TypeLoadException || ex is FileNotFoundException || ex is System.Runtime.InteropServices.COMException && ((System.Runtime.InteropServices.COMException)ex).ErrorCode == unchecked((int)0x80040154)
-                ? Unavailable : "No se ha podido leer el texto: " + ex.Message;
+                ? Unavailable : I18n.T("No se ha podido leer el texto: ", "Could not read the text: ") + ex.Message;
         }
 
         // A word read from an image: Box is where it is in the image given (pixels), Upright the same box where the text
@@ -553,7 +554,8 @@ namespace Stackshot
                 int cut = char.IsHighSurrogate(flat[87]) ? 87 : 88;
                 flat = flat.Substring(0, cut).TrimEnd() + "\u2026";
             }
-            return (n == 1 ? "1 l\u00EDnea" : n + " l\u00EDneas") + ": \u00AB" + flat + "\u00BB";
+            string count = I18n.IsSpanish ? (n == 1 ? "1 l\u00EDnea" : n + " l\u00EDneas") : (n == 1 ? "1 line" : n + " lines");
+            return I18n.IsSpanish ? count + ": \u00AB" + flat + "\u00BB" : count + ": \u201C" + flat + "\u201D";
         }
     }
 }

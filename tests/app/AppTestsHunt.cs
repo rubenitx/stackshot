@@ -54,7 +54,7 @@ namespace Stackshot.Tests
             v["BgAuto"] = true; v["BgPreset"] = 7; v["BgPadding"] = 33; v["BgRadius"] = 12; v["BgShadow"] = false; v["BgRatio"] = "4:3";
             v["BgKind"] = 1; v["BgColor"] = 0x12AB34; v["BgBlur"] = 2; v["BgShadowSize"] = 77; v["BgInset"] = 15; v["BgBalance"] = true; v["BgAlign"] = 6; v["BgStyles"] = "1,0,1223476,2,33,12,0,77,15,1,6,4:3;0,3,16777215,0,50,40,1,50,0,0,4,auto";
             v["Appearance"] = 2; v["AllInOne"] = true; v["AdjustFirst"] = true; v["ShowRecent"] = false; v["TempKeep"] = 4; v["HomeStyle"] = 2;
-            v["CloseToTray"] = false; v["Profile"] = 0; v["ShowIntro"] = false;
+            v["CloseToTray"] = false; v["Profile"] = 0; v["ShowIntro"] = false; v["Language"] = "en"; v["LanguageOffered"] = true;
             v["MascotOn"] = false; v["MascotName"] = "\u00D1u Pixel"; v["MascotColor"] = 5; v["MascotTalks"] = false;
             v["MascotKind"] = 3; v["MascotHat"] = 4; v["MascotOutfit"] = 2; v["MascotFace"] = 1; v["MascotEyes"] = 1;
             v["MascotPersonality"] = 1; v["MascotSeasonal"] = false; v["MascotDesktop"] = true; v["MascotClimb"] = false;

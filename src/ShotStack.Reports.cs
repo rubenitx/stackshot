@@ -49,8 +49,8 @@ namespace Stackshot
                     List<string> changes = ReportHistory.Changes(ReportHistory.Load(), got);
                     ReportHistory.Record(got, false);
                     if (changes.Count == 0) return;
-                    string title = changes.Count == 1 ? "Novedades en tu reporte" : "Novedades en " + changes.Count + " de tus reportes";
-                    Notify(title, string.Join(". ", changes.ToArray()) + ".", NoticeKind.Info, "Ver mis reportes", delegate { if (!exiting) ReportWindow.OpenMine(); });
+                    string title = changes.Count == 1 ? I18n.T("Novedades en tu reporte", "Updates on your report") : I18n.Fmt("Novedades en {0} de tus reportes", "Updates on {0} of your reports", changes.Count);
+                    Notify(title, string.Join(". ", changes.ToArray()) + ".", NoticeKind.Info, I18n.T("Ver mis reportes", "View my reports"), delegate { if (!exiting) ReportWindow.OpenMine(); });
                 });
             });
         }

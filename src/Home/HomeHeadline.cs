@@ -32,7 +32,7 @@ namespace Stackshot
         // and its ants march a moment.
         FrameworkElement HomeTitle(double size, double fit, double delay)
         {
-            HomePick t = new HomePick("\u00BFQu\u00E9 ", "capturamos?", size, fit);
+            HomePick t = I18n.IsSpanish ? new HomePick("\u00BFQu\u00E9 ", "capturamos?", size, fit) : new HomePick("What to ", "capture?", size, fit);
             homeEnter.Add(delegate { t.Enter(delay); });
             return t;
         }

@@ -269,7 +269,7 @@ namespace Stackshot
             }
         }
 
-        public const string TooLong = "El documento es demasiado largo para una sola imagen.";
+        public static string TooLong { get { return I18n.T("El documento es demasiado largo para una sola imagen.", "The document is too long for a single image."); } }
 
         // The document as a picture on the window color, 2x when it fits.
         public static BitmapSource Render(string text, out string error)

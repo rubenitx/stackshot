@@ -17,7 +17,15 @@ namespace Stackshot
         public const int MaxLength = 120;   // characters before the extension
 
         // The tokens Ajustes offers, in its order.
-        public static readonly string[] Tokens = { "{tipo}", "{fecha}", "{hora}", "{app}", "{ventana}", "{a\u00F1o}", "{mes}", "{dia}", "{n}" };
+        public static string[] Tokens
+        {
+            get
+            {
+                return I18n.IsSpanish
+                    ? new string[] { "{tipo}", "{fecha}", "{hora}", "{app}", "{ventana}", "{a\u00F1o}", "{mes}", "{dia}", "{n}" }
+                    : new string[] { "{type}", "{date}", "{time}", "{app}", "{window}", "{year}", "{month}", "{day}", "{n}" };
+            }
+        }
 
         static readonly string[] Devices = { "CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$",
                                              "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM\u00B9", "COM\u00B2", "COM\u00B3",
@@ -33,16 +41,31 @@ namespace Stackshot
             public DateTime When = DateTime.Now;
         }
 
-        // Empty or the default (however it is spaced around): today's names.
+        // The default as Ajustes shows it, in the interface's language; both spellings are the default.
+        public const string DefaultEnglish = "{type} {date} {time}";
+        public static string DefaultShown { get { return I18n.IsSpanish ? Settings.DefaultNameTemplate : DefaultEnglish; } }
+
+        // Empty or the default (however it is spaced around, in either language): today's names.
         public static bool IsDefault(string template)
         {
-            return template == null || template.Trim().Length == 0 || template.Trim() == Settings.DefaultNameTemplate;
+            if (template == null || template.Trim().Length == 0) return true;
+            string t = template.Trim();
+            return t == Settings.DefaultNameTemplate || t == DefaultEnglish;
         }
 
         // True when the template has that token ("{n}"), in any case.
         public static bool Uses(string template, string token)
         {
-            return !IsDefault(template) && template.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0;
+            if (IsDefault(template)) return false;
+            if (template.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (token == "{hora}" && template.IndexOf("{time}", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (token == "{fecha}" && template.IndexOf("{date}", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (token == "{tipo}" && template.IndexOf("{type}", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (token == "{ventana}" && template.IndexOf("{window}", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (token == "{a\u00F1o}" && template.IndexOf("{year}", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (token == "{mes}" && template.IndexOf("{month}", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if ((token == "{dia}" || token == "{d\u00EDa}") && template.IndexOf("{day}", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            return false;
         }
 
         public static bool UsesCounter(string template) { return Uses(template, "{n}"); }
@@ -100,16 +123,16 @@ namespace Stackshot
         {
             switch (name.ToLowerInvariant())
             {
-                case "tipo":
+                case "tipo": case "type":
                     string type = Type(v.Type);
                     return type.Length == 40 && char.IsHighSurrogate(type[39]) ? type.Substring(0, 39) : type;
-                case "fecha": return v.When.ToString("yyyy-MM-dd");
-                case "hora": return v.When.ToString("HH.mm.ss");
+                case "fecha": case "date": return v.When.ToString("yyyy-MM-dd");
+                case "hora": case "time": return v.When.ToString("HH.mm.ss");
                 case "app": return v.App ?? "";
-                case "ventana": return v.Window ?? "";
-                case "a\u00F1o": return v.When.ToString("yyyy");
-                case "mes": return v.When.ToString("MM");
-                case "dia": case "d\u00EDa": return v.When.ToString("dd");
+                case "ventana": case "window": return v.Window ?? "";
+                case "a\u00F1o": case "year": return v.When.ToString("yyyy");
+                case "mes": case "month": return v.When.ToString("MM");
+                case "dia": case "d\u00EDa": case "day": return v.When.ToString("dd");
                 case "n": return counter;
                 default: return null;
             }
@@ -186,9 +209,9 @@ namespace Stackshot
         public static string Example(string template, DateTime when)
         {
             Values v = new Values();
-            v.Type = "Captura";
+            v.Type = I18n.T("Captura", "Capture");
             v.App = "EXCEL";
-            v.Window = "Informe de ventas.xlsx - Excel";
+            v.Window = I18n.T("Informe de ventas.xlsx - Excel", "Sales Report.xlsx - Excel");
             v.When = when;
             return Format(template, v, 1);
         }

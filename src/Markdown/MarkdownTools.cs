@@ -26,13 +26,13 @@ namespace Stackshot
         // Null when the text can be shown; otherwise a friendly reason.
         public static string Validate(string text)
         {
-            if (text == null || text.Trim().Length == 0) return "Est\u00E1 vac\u00EDo: no hay nada que mostrar.";
-            if (text.Length > MaxBytes) return "Es demasiado grande (m\u00E1ximo 2 MB de texto).";
+            if (text == null || text.Trim().Length == 0) return I18n.T("Est\u00E1 vac\u00EDo: no hay nada que mostrar.", "It's empty: there is nothing to show.");
+            if (text.Length > MaxBytes) return I18n.T("Es demasiado grande (m\u00E1ximo 2 MB de texto).", "It's too big (maximum 2 MB of text).");
             int bad = 0;
             foreach (char c in text)
                 if (c == '\0' || (c < 32 && c != '\n' && c != '\r' && c != '\t' && c != '\f') || c == '\uFFFD') bad++;
-            if (bad > 0 && bad * 100L > text.Length) return "No parece texto: tiene contenido binario.";
-            if (text.IndexOf('\0') >= 0) return "No parece texto: tiene contenido binario.";
+            if (bad > 0 && bad * 100L > text.Length) return I18n.T("No parece texto: tiene contenido binario.", "This doesn't look like text: it has binary content.");
+            if (text.IndexOf('\0') >= 0) return I18n.T("No parece texto: tiene contenido binario.", "This doesn't look like text: it has binary content.");
             return null;
         }
 
@@ -270,21 +270,21 @@ namespace Stackshot
                 }
                 else if (scheme == "vscode-remote" && auth.StartsWith("wsl+", StringComparison.OrdinalIgnoreCase)) { remote = auth.Substring(4); s = path; }
                 else if (scheme == "vscode-file" || scheme == "vscode-userdata") s = path;
-                else { error = "No puedo abrir un archivo remoto (" + auth + "): " + spec; return null; }
+                else { error = I18n.Fmt("No puedo abrir un archivo remoto ({0}): {1}", "Cannot open a remote file ({0}): {1}", auth, spec); return null; }
             }
             s = StripLine(s);
             if (Regex.IsMatch(s, @"^/[A-Za-z]:[\\/]")) s = s.Substring(1);
             if (DriveRx.IsMatch(s) || s.StartsWith(@"\\", StringComparison.Ordinal)) return s.Replace('/', '\\');
-            if (!s.StartsWith("/", StringComparison.Ordinal) && !s.StartsWith("~/", StringComparison.Ordinal)) { error = "No reconozco esta ruta: " + spec; return null; }
+            if (!s.StartsWith("/", StringComparison.Ordinal) && !s.StartsWith("~/", StringComparison.Ordinal)) { error = I18n.Fmt("No reconozco esta ruta: {0}", "Cannot recognize this path: {0}", spec); return null; }
             Match mnt = Regex.Match(s, @"^/mnt/([A-Za-z])(/.*)?$");
             if (mnt.Success && remote == null) return mnt.Groups[1].Value.ToUpperInvariant() + ":" + (mnt.Groups[2].Success ? mnt.Groups[2].Value : "/").Replace('/', '\\');
             string d = remote ?? DefaultDistro();
-            if (d == null) { error = "No encuentro WSL para abrir: " + spec; return null; }
+            if (d == null) { error = I18n.Fmt("No encuentro WSL para abrir: {0}", "Cannot find WSL to open: {0}", spec); return null; }
             string root = WslRoot(d);
             if (s.StartsWith("~/", StringComparison.Ordinal))
             {
                 string home = WslHome(root);
-                if (home == null) { error = "No encuentro la carpeta personal de WSL para abrir: " + spec; return null; }
+                if (home == null) { error = I18n.Fmt("No encuentro la carpeta personal de WSL para abrir: {0}", "Cannot find the WSL home folder to open: {0}", spec); return null; }
                 return home + s.Substring(1).Replace('/', '\\');
             }
             return root + s.Replace('/', '\\');
@@ -300,7 +300,7 @@ namespace Stackshot
         {
             path = null;
             error = null;
-            if (specs.Count == 0) { error = "No hay ning\u00FAn archivo."; return null; }
+            if (specs.Count == 0) { error = I18n.T("No hay ning\u00FAn archivo.", "There is no file."); return null; }
             string pick = specs[0];
             foreach (string s in specs) if (MdExtRx.IsMatch(s)) { pick = s; break; }
             path = ToLocal(pick, out error);
@@ -311,7 +311,7 @@ namespace Stackshot
         public static DocFile LoadDoc(List<string> specs, out string error)
         {
             error = null;
-            if (specs.Count == 0) { error = "No hay ning\u00FAn archivo."; return null; }
+            if (specs.Count == 0) { error = I18n.T("No hay ning\u00FAn archivo.", "There is no file."); return null; }
             string pick = specs[0];
             foreach (string s in specs) if (MdExtRx.IsMatch(s)) { pick = s; break; }
             string path = ToLocal(pick, out error);
@@ -780,7 +780,7 @@ namespace Stackshot
             if (skip == 1) { min = 6; for (int k = 1; k < lvl.Count; k++) min = Math.Min(min, lvl[k]); }
             if (skip == 1 && titles.Count == 1) return null;
             List<string> toc = new List<string>();
-            toc.Add("## \u00CDndice");
+            toc.Add(I18n.T("## \u00CDndice", "## Contents"));
             toc.Add("");
             Dictionary<string, int> seen = new Dictionary<string, int>();
             for (int k = 0; k < titles.Count; k++)

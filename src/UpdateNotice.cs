@@ -100,25 +100,25 @@ namespace Stackshot
             if (state == "work")
             {
                 if (Updater.Doing == Updater.Step.Installing)
-                    return Updater.Held ? "En cuanto termine de guardarse la grabaci\u00F3n, Stackshot se cerrar\u00E1 y volver\u00E1 a abrirse."
-                                        : "Stackshot se cerrar\u00E1 y volver\u00E1 a abrirse en unos segundos.";
-                if (Updater.Doing == Updater.Step.Verifying) return "Suma SHA-256 y firma digital.";
-                return Updater.Fraction < 0 ? "Conectando con GitHub\u2026" : (int)Math.Round(Updater.Fraction * 100) + " %  \u00B7  despu\u00E9s se comprueba su firma";
+                    return Updater.Held ? I18n.T("En cuanto termine de guardarse la grabaci\u00F3n, Stackshot se cerrar\u00E1 y volver\u00E1 a abrirse.", "As soon as the recording finishes saving, Stackshot will close and reopen.")
+                                        : I18n.T("Stackshot se cerrar\u00E1 y volver\u00E1 a abrirse en unos segundos.", "Stackshot will close and reopen in a few seconds.");
+                if (Updater.Doing == Updater.Step.Verifying) return I18n.T("Suma SHA-256 y firma digital.", "SHA-256 hash and digital signature.");
+                return Updater.Fraction < 0 ? I18n.T("Conectando con GitHub\u2026", "Connecting to GitHub\u2026") : string.Format("{0} %  \u00B7  {1}", (int)Math.Round(Updater.Fraction * 100), I18n.T("despu\u00E9s se comprueba su firma", "signature checked afterwards"));
             }
             if (state == "error") return Updater.Problem ?? "";
             // What it brings comes first (the button "Novedades" has the rest).
-            string brings = release.News.Count > 0 ? "Novedades: " + News.Headline(release.News, 2) + ".\n" : "";
-            if (Updater.IsReady && Updater.CanInstall) return brings + "Ya est\u00E1 descargada y verificada. Al instalarla, Stackshot se cerrar\u00E1 y volver\u00E1 a abrirse.";
-            if (Updater.CanInstall) return brings + "\u00BFQuieres descargarla? Se comprueba su firma y se instala en unos segundos.";
-            if (Installer.ManagedByMsi) return brings + "En este equipo las actualizaciones las instala inform\u00E1tica. \u00BFQuieres ver la nueva versi\u00F3n?";
-            return brings + "\u00BFQuieres descargarla? Esta versi\u00F3n se descarga desde su p\u00E1gina de GitHub.";
+            string brings = release.News.Count > 0 ? I18n.Fmt("Novedades: {0}.\n", "What's new: {0}.\n", News.Headline(release.News, 2)) : "";
+            if (Updater.IsReady && Updater.CanInstall) return brings + I18n.T("Ya est\u00E1 descargada y verificada. Al instalarla, Stackshot se cerrar\u00E1 y volver\u00E1 a abrirse.", "Already downloaded and verified. Upon installing, Stackshot will close and reopen.");
+            if (Updater.CanInstall) return brings + I18n.T("\u00BFQuieres descargarla? Se comprueba su firma y se instala en unos segundos.", "Do you want to download it? Its signature will be verified and it installs in seconds.");
+            if (Installer.ManagedByMsi) return brings + I18n.T("En este equipo las actualizaciones las instala inform\u00E1tica. \u00BFQuieres ver la nueva versi\u00F3n?", "On this machine updates are managed by IT. Would you like to view the new version?");
+            return brings + I18n.T("\u00BFQuieres descargarla? Esta versi\u00F3n se descarga desde su p\u00E1gina de GitHub.", "Do you want to download it? This version is downloaded from its GitHub page.");
         }
 
         bool HasNews { get { return release.News.Count > 0 || release.Notes.Count > 0; } }
 
         M.FormattedText LinkText(bool over)
         {
-            M.FormattedText t = Ink.Px("Ver todas las novedades \u203A", Ds.Medium, F(12.5), Ds.Brushes.Link);
+            M.FormattedText t = Ink.Px(I18n.T("Ver todas las novedades \u203A", "See what's new \u203A"), Ds.Medium, F(12.5), Ds.Brushes.Link);
             if (over) t.SetTextDecorations(W.TextDecorations.Underline);
             return t;
         }
@@ -159,28 +159,28 @@ namespace Stackshot
             bar = false;
             if (state == "work")
             {
-                title = Updater.Doing == Updater.Step.Downloading ? "Descargando Stackshot " + v
-                      : Updater.Doing == Updater.Step.Verifying ? "Comprobando la descarga\u2026" : "Instalando Stackshot " + v;
+                title = Updater.Doing == Updater.Step.Downloading ? I18n.Fmt("Descargando Stackshot {0}", "Downloading Stackshot {0}", v)
+                      : Updater.Doing == Updater.Step.Verifying ? I18n.T("Comprobando la descarga\u2026", "Verifying download\u2026") : I18n.Fmt("Instalando Stackshot {0}", "Installing Stackshot {0}", v);
                 bar = Updater.Doing != Updater.Step.Installing;
-                if (Updater.Doing != Updater.Step.Installing) secondaryLabel = "Ocultar";
+                if (Updater.Doing != Updater.Step.Installing) secondaryLabel = I18n.T("Ocultar", "Hide");
             }
             else if (state == "error")
             {
-                title = "No se pudo actualizar a la " + v;
-                primaryLabel = Updater.CanInstall ? "Reintentar" : "Ver la versi\u00F3n";
-                secondaryLabel = "Cerrar";
+                title = I18n.Fmt("No se pudo actualizar a la {0}", "Could not update to {0}", v);
+                primaryLabel = Updater.CanInstall ? I18n.T("Reintentar", "Retry") : I18n.T("Ver la versi\u00F3n", "View version");
+                secondaryLabel = I18n.Close;
             }
             else if (Updater.IsReady && Updater.CanInstall)
             {
-                title = "Stackshot " + v + " lista para instalar";
-                primaryLabel = "Instalar ahora";
-                secondaryLabel = "Ahora no";
+                title = I18n.Fmt("Stackshot {0} lista para instalar", "Stackshot {0} ready to install", v);
+                primaryLabel = I18n.T("Instalar ahora", "Install now");
+                secondaryLabel = I18n.T("Ahora no", "Not now");
             }
             else
             {
-                title = "Stackshot " + v + " disponible";
-                primaryLabel = Updater.CanInstall ? "Descargar e instalar" : "Ver la versi\u00F3n";
-                secondaryLabel = "Ahora no";
+                title = I18n.Fmt("Stackshot {0} disponible", "Stackshot {0} available", v);
+                primaryLabel = Updater.CanInstall ? I18n.T("Descargar e instalar", "Download and install") : I18n.T("Ver la versi\u00F3n", "View version");
+                secondaryLabel = I18n.T("Ahora no", "Not now");
             }
             double bottom = F(Inset) - F(1) + TitleText(TextWidth).Height + F(2) + BodyText(TextWidth).Height;
             news = Rectangle.Empty;

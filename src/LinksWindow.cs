@@ -33,7 +33,7 @@ namespace Stackshot
         LinksWindow(ShotStack owner)
         {
             this.owner = owner;
-            Title = "Accesos r\u00E1pidos";
+            Title = I18n.T("Accesos r\u00E1pidos", "Quick links");
             Width = 480;
             SizeToContent = SizeToContent.Height;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -69,28 +69,28 @@ namespace Stackshot
 
             StackPanel head = new StackPanel { Orientation = Orientation.Horizontal };
             head.Children.Add(new IconTile("open", 36, Ds.Rgb(124, 92, 255), Ds.Rgb(10, 132, 255)));
-            head.Children.Add(QuickWindow.Text("Accesos r\u00E1pidos", Ds.Title, 18, pal.Label, new Thickness(12, 0, 0, 0)));
+            head.Children.Add(QuickWindow.Text(I18n.T("Accesos r\u00E1pidos", "Quick links"), Ds.Title, 18, pal.Label, new Thickness(12, 0, 0, 0)));
             page.Children.Add(head);
-            TextBlock about = QuickWindow.Text("Webs, carpetas, archivos o programas que quieras tener a mano: salen en el men\u00FA de la mascota y te los abre con un clic.",
+            TextBlock about = QuickWindow.Text(I18n.T("Webs, carpetas, archivos o programas que quieras tener a mano: salen en el men\u00FA de la mascota y te los abre con un clic.", "Websites, folders, files or programs you want handy: they appear in the mascot's menu and open with a click."),
                                                Ds.Regular, 12.5, pal.Label2, new Thickness(0, 12, 0, 0));
             about.TextWrapping = TextWrapping.Wrap;
             page.Children.Add(about);
 
             List<QuickLink> list = owner.Links;
             bool full = list.Count >= ShotStack.MaxLinks;
-            targetBox = QuickWindow.Field(target, false, 0, "Direcci\u00F3n web o ruta");
-            Border tf = QuickWindow.Frame(targetBox, "https://\u2026 o C:\\Carpeta\\archivo");
+            targetBox = QuickWindow.Field(target, false, 0, I18n.T("Direcci\u00F3n web o ruta", "Web address or path"));
+            Border tf = QuickWindow.Frame(targetBox, I18n.T("https://\u2026 o C:\\Carpeta\\archivo", "https://\u2026 or C:\\Folder\\file"));
             tf.Margin = new Thickness(0, 16, 0, 0);
             page.Children.Add(tf);
-            nameBox = QuickWindow.Field(name, false, 0, "Nombre");
-            Border nf = QuickWindow.Frame(nameBox, "Nombre (opcional)");
+            nameBox = QuickWindow.Field(name, false, 0, I18n.T("Nombre", "Name"));
+            Border nf = QuickWindow.Frame(nameBox, I18n.T("Nombre (opcional)", "Name (optional)"));
             nf.Margin = new Thickness(0, 8, 0, 0);
             page.Children.Add(nf);
 
             StackPanel pick = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
-            MacButton folder = new MacButton("Elegir carpeta\u2026", ButtonKind.Plain, "folder", null, 28) { Margin = new Thickness(0, 0, 6, 0) };
+            MacButton folder = new MacButton(I18n.T("Elegir carpeta\u2026", "Choose folder\u2026"), ButtonKind.Plain, "folder", null, 28) { Margin = new Thickness(0, 0, 6, 0) };
             folder.Click += PickFolder;
-            MacButton file = new MacButton("Elegir archivo o programa\u2026", ButtonKind.Plain, "doc", null, 28);
+            MacButton file = new MacButton(I18n.T("Elegir archivo o programa\u2026", "Choose file or program\u2026"), ButtonKind.Plain, "doc", null, 28);
             file.Click += PickFile;
             pick.Children.Add(folder);
             pick.Children.Add(file);
@@ -102,9 +102,9 @@ namespace Stackshot
             page.Children.Add(error);
 
             StackPanel buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 14, 0, 0) };
-            MacButton close = new MacButton("Cerrar", ButtonKind.Secondary, null, null, 32) { Margin = new Thickness(8, 0, 0, 0) };
+            MacButton close = new MacButton(I18n.Close, ButtonKind.Secondary, null, null, 32) { Margin = new Thickness(8, 0, 0, 0) };
             close.Click += delegate { Close(); };
-            MacButton add = new MacButton("A\u00F1adir", ButtonKind.Primary, "plus", null, 32);
+            MacButton add = new MacButton(I18n.T("A\u00F1adir", "Add"), ButtonKind.Primary, "plus", null, 32);
             add.Click += AddOne;
             add.IsEnabled = !full;
             buttons.Children.Add(add);
@@ -112,7 +112,7 @@ namespace Stackshot
             page.Children.Add(buttons);
 
             if (list.Count == 0) return;
-            page.Children.Add(QuickWindow.Text("Tus accesos (" + list.Count + " de " + ShotStack.MaxLinks + ")", Ds.Semibold, 12.5, pal.Label, new Thickness(0, 20, 0, 4)));
+            page.Children.Add(QuickWindow.Text(I18n.Fmt("Tus accesos ({0} de {1})", "Your links ({0} of {1})", list.Count, ShotStack.MaxLinks), Ds.Semibold, 12.5, pal.Label, new Thickness(0, 20, 0, 4)));
             foreach (QuickLink l in list)
             {
                 QuickLink it = l;
@@ -132,7 +132,7 @@ namespace Stackshot
                 where.TextTrimming = TextTrimming.CharacterEllipsis;
                 txt.Children.Add(where);
                 // A click on it opens it, as from the mascot's menu.
-                TapBorder row = new TapBorder { Background = Brushes.Transparent, Cursor = Cursors.Hand, Label = "Abrir " + l.Name, ToolTip = "Abrir " + l.Target, Child = txt, CornerRadius = new CornerRadius(6) };
+                TapBorder row = new TapBorder { Background = Brushes.Transparent, Cursor = Cursors.Hand, Label = I18n.Fmt("Abrir {0}", "Open {0}", l.Name), ToolTip = I18n.Fmt("Abrir {0}", "Open {0}", l.Target), Child = txt, CornerRadius = new CornerRadius(6) };
                 Action go = delegate
                 {
                     string why = owner.OpenLink(it);
@@ -144,7 +144,7 @@ namespace Stackshot
                 Access.Clickable(row, go);
                 Grid.SetColumn(row, 1);
                 g.Children.Add(row);
-                TapBorder x = new TapBorder { Width = 22, Height = 22, CornerRadius = new CornerRadius(11), Background = Brushes.Transparent, Cursor = Cursors.Hand, Label = "Quitar " + l.Name, ToolTip = "Quitar" };
+                TapBorder x = new TapBorder { Width = 22, Height = 22, CornerRadius = new CornerRadius(11), Background = Brushes.Transparent, Cursor = Cursors.Hand, Label = I18n.Fmt("Quitar {0}", "Remove {0}", l.Name), ToolTip = I18n.T("Quitar", "Remove") };
                 x.Child = new GlyphView("close", 11, pal.Label2, 1.8) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                 Action drop = delegate { Keep(); owner.RemoveLink(it); Build(); };
                 x.MouseLeftButtonUp += delegate { drop(); };
@@ -161,7 +161,7 @@ namespace Stackshot
             string why = owner.AddLink(name, target);
             if (why != null) { Say(why); return; }
             List<QuickLink> list = owner.Links;
-            owner.Told("\u00A1Listo! \u00AB" + list[list.Count - 1].Name + "\u00BB ya est\u00E1 en mi men\u00FA.");
+            owner.Told(I18n.Fmt("\u00A1Listo! \u00AB{0}\u00BB ya est\u00E1 en mi men\u00FA.", "Done! \u201C{0}\u201D is now in my menu.", list[list.Count - 1].Name));
             name = target = "";
             Build();
             if (targetBox != null) targetBox.Focus();
@@ -169,13 +169,13 @@ namespace Stackshot
 
         void PickFolder()
         {
-            using (WF.FolderBrowserDialog d = new WF.FolderBrowserDialog { Description = "Elige la carpeta que quieres tener a mano", ShowNewFolderButton = false })
+            using (WF.FolderBrowserDialog d = new WF.FolderBrowserDialog { Description = I18n.T("Elige la carpeta que quieres tener a mano", "Choose the folder you want to have handy"), ShowNewFolderButton = false })
                 if (d.ShowDialog() == WF.DialogResult.OK) Picked(d.SelectedPath);
         }
 
         void PickFile()
         {
-            using (WF.OpenFileDialog d = new WF.OpenFileDialog { Title = "Elige el archivo o el programa", Filter = "Todos los archivos|*.*", DereferenceLinks = false })
+            using (WF.OpenFileDialog d = new WF.OpenFileDialog { Title = I18n.T("Elige el archivo o el programa", "Choose the file or program"), Filter = I18n.T("Todos los archivos|*.*", "All files|*.*"), DereferenceLinks = false })
                 if (d.ShowDialog() == WF.DialogResult.OK) Picked(d.FileName);
         }
 

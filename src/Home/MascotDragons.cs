@@ -44,11 +44,11 @@ namespace Stackshot
         {
             switch (kind)
             {
-                case KindNightFury: return "Dispara plasma";
-                case KindLightFury: return "Plasma o camuflaje";
-                case KindNadder: return "P\u00FAas o fuego";
-                case KindNightmare: return "Pr\u00E9ndete fuego";
-                case KindGronckle: return "C\u00F3mete una roca";
+                case KindNightFury: return I18n.T("Dispara plasma", "Fire plasma");
+                case KindLightFury: return I18n.T("Plasma o camuflaje", "Plasma or camouflage");
+                case KindNadder: return I18n.T("P\u00FAas o fuego", "Spines or fire");
+                case KindNightmare: return I18n.T("Pr\u00E9ndete fuego", "Burst into flames");
+                case KindGronckle: return I18n.T("C\u00F3mete una roca", "Eat a rock");
                 default: return TributePowerName(kind);
             }
         }
@@ -57,11 +57,11 @@ namespace Stackshot
         {
             switch (kind)
             {
-                case KindNightFury: return "Un disparo de plasma azul";
-                case KindLightFury: return "Plasma, o se vuelve invisible un momento";
-                case KindNadder: return "Lanza p\u00FAas de la cola o escupe fuego de magnesio";
-                case KindNightmare: return "Se cubre de llamas y se apaga";
-                case KindGronckle: return "Se come una roca y escupe lava";
+                case KindNightFury: return I18n.T("Un disparo de plasma azul", "A blue plasma blast");
+                case KindLightFury: return I18n.T("Plasma, o se vuelve invisible un momento", "Plasma, or turns invisible for a moment");
+                case KindNadder: return I18n.T("Lanza p\u00FAas de la cola o escupe fuego de magnesio", "Throws tail spines or spits magnesium fire");
+                case KindNightmare: return I18n.T("Se cubre de llamas y se apaga", "Covers itself in flames, then puts them out");
+                case KindGronckle: return I18n.T("Se come una roca y escupe lava", "Eats a rock and spits lava");
                 default: return TributePowerHint(kind);
             }
         }
@@ -70,12 +70,12 @@ namespace Stackshot
         {
             switch (power)
             {
-                case PowerPlasma: return "\u00A1Disparo de plasma!";
-                case PowerVanish: return "\u00BFMe ves? \u00BFY ahora?";
-                case PowerSpines: return "\u00A1P\u00FAas al aire!";
-                case PowerMagnesium: return "\u00A1Fuego de magnesio!";
-                case PowerFire: return "\u00A1Me enciendo!";
-                case PowerLava: return "\u00D1am, una roca\u2026 \u00A1y lava!";
+                case PowerPlasma: return I18n.T("\u00A1Disparo de plasma!", "Plasma blast!");
+                case PowerVanish: return I18n.T("\u00BFMe ves? \u00BFY ahora?", "See me? How about now?");
+                case PowerSpines: return I18n.T("\u00A1P\u00FAas al aire!", "Spines away!");
+                case PowerMagnesium: return I18n.T("\u00A1Fuego de magnesio!", "Magnesium fire!");
+                case PowerFire: return I18n.T("\u00A1Me enciendo!", "I'm on fire!");
+                case PowerLava: return I18n.T("\u00D1am, una roca\u2026 \u00A1y lava!", "Yum, a rock\u2026 and lava!");
                 default: return TributePowerLine(power);
             }
         }

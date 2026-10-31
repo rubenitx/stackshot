@@ -732,7 +732,10 @@ namespace Stackshot
         }
 
         // Floating zoom control at the bottom right: out, percentage (click: actual size), in, and fit.
-        static readonly string[] PillTips = { "Alejar  (Ctrl+\u2212)", "Tama\u00F1o real  (Ctrl+1)", "Acercar  (Ctrl++)", "Ajustar a la ventana  (Ctrl+0)" };
+        static readonly string[] PillTipsEs = { "Alejar  (Ctrl+\u2212)", "Tama\u00F1o real  (Ctrl+1)", "Acercar  (Ctrl++)", "Ajustar a la ventana  (Ctrl+0)" };
+        static readonly string[] PillTipsEn = { "Zoom out  (Ctrl+\u2212)", "Actual size  (Ctrl+1)", "Zoom in  (Ctrl++)", "Fit to window  (Ctrl+0)" };
+        static string[] PillTips { get { return I18n.IsSpanish ? PillTipsEs : PillTipsEn; } }
+        static string PillFitText { get { return I18n.T("Ajustar", "Fit"); } }
         int pillHot = -1, pillDown = -1;
 
         public const float PillRoom = 58;
@@ -742,12 +745,17 @@ namespace Stackshot
         Font PillFont { get { return Fonts.Get(EdLook.Text, 12 * Ui); } }
 
         // 0 minus, 1 percentage, 2 plus, 3 fit; the last rectangle is the whole capsule.
-        int pillFitW = -1; // "Ajustar" measured once: the pill is hit-tested on every mouse move
+        int pillFitW = -1;
+        bool pillFitLang = true;
 
         Rectangle[] PillParts()
         {
             int h = Pu(30), bw = Pu(30), pw = Pu(50);
-            if (pillFitW < 0) pillFitW = TextKit.Measure("Ajustar", PillFont, Size.Empty, TextFormatFlags.NoPadding).Width;
+            if (pillFitW < 0 || pillFitLang != I18n.IsSpanish)
+            {
+                pillFitLang = I18n.IsSpanish;
+                pillFitW = TextKit.Measure(PillFitText, PillFont, Size.Empty, TextFormatFlags.NoPadding).Width;
+            }
             int fw = pillFitW + Pu(26);
             int w = Pu(3) + bw + pw + bw + Pu(5) + fw + Pu(3);
             Rectangle all = new Rectangle(Width - Pu(16) - w, Height - Pu(16) - h, w, h);
@@ -809,7 +817,7 @@ namespace Stackshot
             TextFormatFlags center = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding;
             TextKit.Draw(g, (int)Math.Round(k * 100) + " %", Fonts.Get(EdLook.Semibold, 12 * Ui), r[1], EdLook.C(Palette.HudLabel), center);
             using (SolidBrush b = new SolidBrush(EdLook.C(Palette.HudLine))) g.FillRectangle(b, r[3].X - Pu(3), all.Y + Pu(8), Math.Max(1, Pu(1)), all.Height - Pu(16));
-            TextKit.Draw(g, "Ajustar", PillFont, r[3], EdLook.C(Zoomed ? Palette.HudLabel : Palette.HudLabel2), center);
+            TextKit.Draw(g, PillFitText, PillFont, r[3], EdLook.C(Zoomed ? Palette.HudLabel : Palette.HudLabel2), center);
         }
 
         void SetPillHot(int part)
@@ -1608,28 +1616,28 @@ namespace Stackshot
         {
             get
             {
-                if (box != null) return "Escribe y pulsa Enter \u00B7 May\u00FAs+Enter a\u00F1ade una l\u00EDnea \u00B7 Esc cancela";
+                if (box != null) return I18n.T("Escribe y pulsa Enter \u00B7 May\u00FAs+Enter a\u00F1ade una l\u00EDnea \u00B7 Esc cancela", "Type and press Enter \u00B7 Shift+Enter adds a line \u00B7 Esc cancels");
                 if (selected != null)
                 {
-                    if (selected.Kind == Tool.Spotlight) return "Foco seleccionado: arr\u00E1stralo por el borde o tira de sus puntos \u00B7 Supr lo quita \u00B7 Ctrl+D a\u00F1ade otro";
-                    string how = Shape.IsLinear(selected.Kind) ? "arr\u00E1strala; tira del punto azul del medio para curvarla"
-                               : selected.Kind == Tool.Text ? "arr\u00E1strala; doble clic cambia el texto"
-                               : Handles(selected).Length > 0 ? "arr\u00E1strala o tira de sus puntos" : "arr\u00E1strala para moverla";
-                    return "Marca seleccionada: " + how + " \u00B7 Supr la borra \u00B7 Ctrl+D la duplica \u00B7 el color y el grosor se le aplican";
+                    if (selected.Kind == Tool.Spotlight) return I18n.T("Foco seleccionado: arr\u00E1stralo por el borde o tira de sus puntos \u00B7 Supr lo quita \u00B7 Ctrl+D a\u00F1ade otro", "Spotlight selected: drag by border or pull points \u00B7 Del removes \u00B7 Ctrl+D adds another");
+                    string how = Shape.IsLinear(selected.Kind) ? I18n.T("arr\u00E1strala; tira del punto azul del medio para curvarla", "drag it; pull the blue midpoint to curve")
+                               : selected.Kind == Tool.Text ? I18n.T("arr\u00E1strala; doble clic cambia el texto", "drag it; double-click edits text")
+                               : Handles(selected).Length > 0 ? I18n.T("arr\u00E1strala o tira de sus puntos", "drag it or pull points") : I18n.T("arr\u00E1strala para moverla", "drag to move");
+                    return I18n.Fmt("Marca seleccionada: {0} \u00B7 Supr la borra \u00B7 Ctrl+D la duplica \u00B7 el color y el grosor se le aplican", "Selected mark: {0} \u00B7 Del deletes \u00B7 Ctrl+D duplicates \u00B7 color and thickness apply", how);
                 }
                 switch (Tool)
                 {
-                    case Tool.Arrow: return "Arrastra para dibujar una flecha \u00B7 May\u00FAs la deja recta \u00B7 despu\u00E9s, tira del punto azul del medio para curvarla";
-                    case Tool.Line: return "Arrastra para dibujar una l\u00EDnea \u00B7 May\u00FAs la deja recta o a 45\u00B0 \u00B7 despu\u00E9s, tira del punto azul del medio para curvarla";
-                    case Tool.Spotlight: return "Arrastra sobre lo importante: el resto se oscurece \u00B7 puedes poner varios focos";
-                    case Tool.Rect: return "Arrastra para enmarcar \u00B7 May\u00FAs hace un cuadrado \u00B7 pincha una marca para moverla";
-                    case Tool.Ellipse: return "Arrastra para rodear \u00B7 May\u00FAs hace un c\u00EDrculo";
-                    case Tool.Text: return "Haz clic donde quieras escribir";
-                    case Tool.Counter: return "Cada clic pone el siguiente n\u00FAmero: 1, 2, 3\u2026";
-                    case Tool.Highlight: return "Arrastra sobre lo que quieras resaltar";
-                    case Tool.Pixelate: return "Arrastra sobre lo que quieras pixelar \u00b7 para contrase\u00f1as o datos sensibles, mejor Tapar (X)";
-                    case Tool.Redact: return "Arrastra sobre lo que quieras tapar: un bloque s\u00f3lido que borra de verdad lo de debajo";
-                    default: return "Arrastra el \u00E1rea que quieres conservar \u00B7 Ctrl+Z lo deshace";
+                    case Tool.Arrow: return I18n.T("Arrastra para dibujar una flecha \u00B7 May\u00FAs la deja recta \u00B7 despu\u00E9s, tira del punto azul del medio para curvarla", "Drag to draw an arrow \u00B7 Shift draws straight \u00B7 then drag the blue midpoint to curve");
+                    case Tool.Line: return I18n.T("Arrastra para dibujar una l\u00EDnea \u00B7 May\u00FAs la deja recta o a 45\u00B0 \u00B7 despu\u00E9s, tira del punto azul del medio para curvarla", "Drag to draw a line \u00B7 Shift snaps to straight or 45\u00B0 \u00B7 then drag the blue midpoint to curve");
+                    case Tool.Spotlight: return I18n.T("Arrastra sobre lo importante: el resto se oscurece \u00B7 puedes poner varios focos", "Drag over what matters: the rest is dimmed \u00B7 you can add multiple spotlights");
+                    case Tool.Rect: return I18n.T("Arrastra para enmarcar \u00B7 May\u00FAs hace un cuadrado \u00B7 pincha una marca para moverla", "Drag to frame \u00B7 Shift makes a square \u00B7 click a mark to move it");
+                    case Tool.Ellipse: return I18n.T("Arrastra para rodear \u00B7 May\u00FAs hace un c\u00EDrculo", "Drag to circle \u00B7 Shift makes a circle");
+                    case Tool.Text: return I18n.T("Haz clic donde quieras escribir", "Click where you want to type");
+                    case Tool.Counter: return I18n.T("Cada clic pone el siguiente n\u00FAmero: 1, 2, 3\u2026", "Each click adds the next number: 1, 2, 3\u2026");
+                    case Tool.Highlight: return I18n.T("Arrastra sobre lo que quieras resaltar", "Drag over what you want to highlight");
+                    case Tool.Pixelate: return I18n.T("Arrastra sobre lo que quieras pixelar \u00b7 para contrase\u00f1as o datos sensibles, mejor Tapar (X)", "Drag over what you want to pixelate \u00b7 for passwords or sensitive data, use Redact (X)");
+                    case Tool.Redact: return I18n.T("Arrastra sobre lo que quieras tapar: un bloque s\u00f3lido que borra de verdad lo de debajo", "Drag over what you want to redact: a solid block that permanently erases what is underneath");
+                    default: return I18n.T("Arrastra el \u00E1rea que quieres conservar \u00B7 Ctrl+Z lo deshace", "Drag the area you want to keep \u00B7 Ctrl+Z undoes");
                 }
             }
         }
@@ -1716,7 +1724,7 @@ namespace Stackshot
         {
             if (box == null) return;
             Rectangle before = BoxLabelRect();
-            string t = box.Text.Length > 0 ? box.Text : "Escribe aqu\u00ED";
+            string t = box.Text.Length > 0 ? box.Text : I18n.T("Escribe aqu\u00ED", "Type here");
             if (t.EndsWith("\n")) t += " "; // a new, still empty line counts too
             // Measured on a DC like the box's own: TextRenderer's default measuring DC comes out about 10% wider.
             if (measureDc == null) measureDc = Graphics.FromImage(new Bitmap(1, 1));

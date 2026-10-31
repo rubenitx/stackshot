@@ -46,7 +46,7 @@ namespace Stackshot
             Ui(delegate
             {
                 Card c = Find(path);
-                if (c != null) c.CoverNote("Revisando datos\u2026");
+                if (c != null) c.CoverNote(I18n.T("Revisando datos\u2026", "Checking data\u2026"));
             });
             job.Start();
             return true;
@@ -83,7 +83,7 @@ namespace Stackshot
             if (r.Error != null && !coverErrorTold)
             {
                 coverErrorTold = true;
-                Notify("No se han revisado los datos sensibles", r.Error + (wantCopy ? " La captura no se ha copiado al portapapeles: c\u00F3piala t\u00FA si no tiene datos sensibles." : ""));
+                Notify(I18n.T("No se han revisado los datos sensibles", "Sensitive data not reviewed"), r.Error + (wantCopy ? I18n.T(" La captura no se ha copiado al portapapeles: c\u00F3piala t\u00FA si no tiene datos sensibles.", " The capture was not copied to clipboard: copy it manually if it contains no sensitive data.") : ""));
             }
             // Captures deleted meanwhile (by hand, or swept) take their originals with them now, not at the next sweep.
             PruneOriginals();
@@ -94,9 +94,9 @@ namespace Stackshot
             if (Find(path) == null)
             {
                 DropUnsaved(path);
-                Notify("No se pudo guardar la captura", Explain(ex, path));
+                Notify(I18n.T("No se pudo guardar la captura", "Could not save capture"), Explain(ex, path));
             }
-            else Notify("No se pudo guardar la captura", Explain(ex, path) + " La miniatura sigue en la pila: puedes copiarla o guardarla en tu carpeta.");
+            else Notify(I18n.T("No se pudo guardar la captura", "Could not save capture"), Explain(ex, path) + I18n.T(" La miniatura sigue en la pila: puedes copiarla o guardarla en tu carpeta.", " The thumbnail remains in the stack: you can copy it or save it to your folder."));
         }
 
         // How long a worker that needs a capture's file waits for its check (a tall scrolling capture takes a while).

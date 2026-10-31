@@ -18,13 +18,14 @@ namespace Stackshot.Tests
         static string work;
         static readonly string[] defaultSuites = { "quit", "orphans", "keep", "explain", "clipboard", "uninstall", "pin", "posters",
                                                        "hunt-settings", "hunt-updater", "hunt-recents", "hunt-ffmpeg", "hunt-tracked", "hunt-setup", "hunt-ui", "text", "xmlwatch",
-                                                       "w6capture", "w6sensitive", "w6history", "w6cli", "w6search", "w6a11y", "w6toast", "w6contrast", "w6e2e", "w6home", "scroll", "backdrop", "news" };
+                                                       "w6capture", "w6sensitive", "w6history", "w6cli", "w6search", "w6a11y", "w6toast", "w6contrast", "w6e2e", "w6home", "scroll", "backdrop", "news", "i18n" };
 
         [STAThread]
         static int Main(string[] args)
         {
             Settings.ReadOnly = true;
             ShotStack.LogPath = null;
+            I18n.Apply("es");
             work = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(work);
             List<string> suites = args.Length > 0 ? new List<string>(args) : new List<string>(defaultSuites);
@@ -73,6 +74,7 @@ namespace Stackshot.Tests
                 case "scroll": AppTestsScroll.Suite(); break;
                 case "backdrop": AppTestsBackdrop.Suite(); break;
                 case "news": AppTestsNews.Suite(); break;
+                case "i18n": I18nSuite(); break;
                 default: Test(name, "unknown suite", delegate { throw new TestFailed("no such suite"); }); break;
             }
         }
@@ -877,6 +879,40 @@ namespace Stackshot.Tests
                 }
                 finally { ShotStack.PosterDir = before; }
             });
+        }
+
+        static void I18nSuite()
+        {
+            Test("i18n", "switching languages and dynamic updates", delegate
+            {
+                try
+                {
+                    I18n.Apply("en");
+                    Check(!I18n.IsSpanish, "en mode is not spanish");
+                    Check(I18n.T("Captura", "Capture") == "Capture", "en text");
+                    Check(I18n.Copy == "Copy", "en copy");
+                    Check(I18n.Cancel == "Cancel", "en cancel");
+                    Check(I18n.Fmt("{0} archivos", "{0} files", 5) == "5 files", "en fmt");
+                    Check(Hotkeys.KeyName(System.Windows.Forms.Keys.Space) == "Space", "en space key");
+                    Check(WellKind.Names[0] == "Drink water", "en wellkind");
+                    Check(HistoryIndex.GroupNames[0] == "Today", "en history group");
+
+                    I18n.Apply("es");
+                    Check(I18n.IsSpanish, "es mode is spanish");
+                    Check(I18n.T("Captura", "Capture") == "Captura", "es text");
+                    Check(I18n.Copy == "Copiar", "es copy");
+                    Check(I18n.Cancel == "Cancelar", "es cancel");
+                    Check(I18n.Fmt("{0} archivos", "{0} files", 5) == "5 archivos", "es fmt");
+                    Check(Hotkeys.KeyName(System.Windows.Forms.Keys.Space) == "Espacio", "es space key");
+                    Check(WellKind.Names[0] == "Beber agua", "es wellkind");
+                    Check(HistoryIndex.GroupNames[0] == "Hoy", "es history group");
+                }
+                finally
+                {
+                    I18n.Apply("es");
+                }
+            });
+            AppTestsI18n.Suite();
         }
     }
 }

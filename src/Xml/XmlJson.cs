@@ -33,10 +33,10 @@ namespace Stackshot
         public static string Convert(XItem n, int max, out string error)
         {
             error = null;
-            if (n == null) { error = "No hay nada seleccionado."; return null; }
+            if (n == null) { error = I18n.T("No hay nada seleccionado.", "Nothing selected."); return null; }
             StringBuilder sb = new StringBuilder();
             if (n.Kind == XKind.Text || n.Kind == XKind.CData) { Str(sb, Clean(n.Value)); return sb.ToString(); }
-            if (n.Kind != XKind.Element) { error = "Solo los elementos y el texto se pueden copiar como JSON."; return null; }
+            if (n.Kind != XKind.Element) { error = I18n.T("Solo los elementos y el texto se pueden copiar como JSON.", "Only elements and text can be copied as JSON."); return null; }
             sb.Append("{\n").Append(Pad(1));
             Str(sb, n.Name);
             sb.Append(": ");
@@ -44,7 +44,7 @@ namespace Stackshot
             Emit(sb, n, 1, st);
             while (st.Count > 0)
             {
-                if (sb.Length > max) { error = "Es demasiado grande para copiarlo como JSON."; return null; }
+                if (sb.Length > max) { error = I18n.T("Es demasiado grande para copiarlo como JSON.", "Too large to copy as JSON."); return null; }
                 Frame f = st.Peek();
                 if (f.Group >= f.Groups.Count)
                 {
@@ -74,7 +74,7 @@ namespace Stackshot
                 Emit(sb, x, f.Depth + 2, st);
             }
             sb.Append("\n}");
-            if (sb.Length > max) { error = "Es demasiado grande para copiarlo como JSON."; return null; }
+            if (sb.Length > max) { error = I18n.T("Es demasiado grande para copiarlo como JSON.", "Too large to copy as JSON."); return null; }
             return sb.ToString();
         }
 

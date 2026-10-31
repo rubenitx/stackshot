@@ -21,7 +21,9 @@ namespace Stackshot
     {
         const double LW = 980, LH = 660, Side = 236, Bar = 52;
         static readonly string[] PageIds = { "home", "history", "keys", "general", "editor", "record", "mascot", "about" };
-        static readonly string[] PageNames = { "Inicio", "Historial", "Atajos", "General", "Fondo y editor", "Grabaci\u00F3n", "Mascota", "Acerca de" };
+        static readonly string[] PageNamesEs = { "Inicio", "Historial", "Atajos", "General", "Fondo y editor", "Grabaci\u00F3n", "Mascota", "Acerca de" };
+        static readonly string[] PageNamesEn = { "Home", "History", "Shortcuts", "General", "Backdrop & editor", "Recording", "Mascot", "About" };
+        static string[] PageNames { get { return I18n.IsSpanish ? PageNamesEs : PageNamesEn; } }
         static readonly string[] PageIcons = { "home", "history", "keyboard", "gear", "photo", "video", "bot", "info" };
         static readonly D.Color[] PageColors = { D.Color.FromArgb(10, 132, 255), D.Color.FromArgb(94, 92, 230), D.Color.FromArgb(142, 142, 147), D.Color.FromArgb(142, 142, 147),
                                                  D.Color.FromArgb(175, 82, 222), D.Color.FromArgb(255, 59, 48), D.Color.FromArgb(255, 149, 0),
@@ -75,6 +77,7 @@ namespace Stackshot
             timer.Tick += Tick;
             owner.Captured += OnCaptured;
             Updater.Changed += OnUpdaterChanged;
+            I18n.Changed += OnLanguageChanged;
             Closing += delegate(object o, System.ComponentModel.CancelEventArgs e)
             {
                 if (ShuttingDown) return;
@@ -86,6 +89,7 @@ namespace Stackshot
                 timer.Stop();
                 owner.Captured -= OnCaptured;
                 Updater.Changed -= OnUpdaterChanged;
+                I18n.Changed -= OnLanguageChanged;
             };
             IsVisibleChanged += delegate { VisibilityChanged(); };
             StateChanged += delegate { VisibilityChanged(); };
@@ -96,6 +100,12 @@ namespace Stackshot
             PreviewKeyUp += OnKeyUp;
             PreviewMouseDown += OnMouseBack;
             Build();
+        }
+
+        void OnLanguageChanged()
+        {
+            // As for a theme change: the sidebar (version, search box) is built once, so it is built again with the page.
+            Dispatcher.BeginInvoke((Action)delegate { BuildSidebar(); Build(); });
         }
 
         void Center()
@@ -195,6 +205,7 @@ namespace Stackshot
 
         void BuildSidebar()
         {
+            ((TapPanel)navList).Label = I18n.T("Secciones", "Sections");
             sidebar.Children.Clear();
             sidebar.RowDefinitions.Clear();
             sidebar.RowDefinitions.Add(new RowDefinition { Height = new GridLength(78 + SearchBand) });
@@ -207,7 +218,7 @@ namespace Stackshot
             brand.Children.Add(BrandMark());
             StackPanel names = new StackPanel { Margin = new Thickness(10, -1, 0, 0) };
             names.Children.Add(Label("Stackshot", Ds.Title, 15, Ds.Brushes.Label));
-            names.Children.Add(Label("Versi\u00F3n " + Installer.MyVersion.ToString(3), Ds.Regular, 11.5, Ds.Brushes.Label3));
+            names.Children.Add(Label(I18n.Fmt("Versi\u00F3n {0}", "Version {0}", Installer.MyVersion.ToString(3)), Ds.Regular, 11.5, Ds.Brushes.Label3));
             brand.Children.Add(names);
             sidebar.Children.Add(brand);
             sidebar.Children.Add(SearchField());
@@ -460,7 +471,7 @@ namespace Stackshot
             pane.Background = Ds.Brush(Ds.Brushes.Window);
             toolbarTitle.Foreground = Ds.Brush(Ds.Brushes.Label);
             int pi = Array.IndexOf(PageIds, page == "mascotset" ? "mascot" : page);
-            toolbarTitle.Text = page == "mascotset" ? "Ajustes de la mascota" : PageNames[Math.Max(0, pi)];
+            toolbarTitle.Text = page == "mascotset" ? I18n.T("Ajustes de la mascota", "Mascot settings") : PageNames[Math.Max(0, pi)];
             BuildToolbar();
             if (navRows.Count == 0) RefreshNav();
             else UpdateNav(IsVisible);
@@ -630,7 +641,7 @@ namespace Stackshot
             if (sideStatusMini && dot.ToArgb() == Mac.Green.ToArgb())
             {
                 int lv = MascotParts.Level(Math.Max(0, settings.MascotLove));
-                sideStatus.Child = Label("Nivel " + (lv + 1) + " \u00B7 " + MascotParts.LevelNames[lv], Ds.Regular, 11.5, Ds.Brushes.Label2);
+                sideStatus.Child = Label(I18n.T("Nivel ", "Level ") + (lv + 1) + " \u00B7 " + MascotParts.LevelNames[lv], Ds.Regular, 11.5, Ds.Brushes.Label2);
             }
             else
             {
@@ -649,7 +660,7 @@ namespace Stackshot
             sideMeter.ColumnDefinitions[0].Width = new GridLength(Math.Max(0.0001, prog), GridUnitType.Star);
             sideMeter.ColumnDefinitions[1].Width = new GridLength(Math.Max(0.0001, 1 - prog), GridUnitType.Star);
             FrameworkElement info = sideMeter.Parent as FrameworkElement;
-            if (info != null) info.ToolTip = left > 0 ? left + (left == 1 ? " captura" : " capturas") + " para el nivel " + (lv + 2) : "Nivel m\u00E1ximo";
+            if (info != null) info.ToolTip = left > 0 ? (I18n.IsSpanish ? (left + (left == 1 ? " captura" : " capturas") + " para el nivel " + (lv + 2)) : (left + (left == 1 ? " capture" : " captures") + " to level " + (lv + 2))) : I18n.T("Nivel m\u00E1ximo", "Maximum level");
         }
 
         // A soft radial glow of one colour that reaches zero at its radius.
@@ -676,7 +687,7 @@ namespace Stackshot
             card.Padding = new Thickness(10);
             StackPanel st = new StackPanel();
 
-            Grid area = new TapGrid { Height = 66, Cursor = Cursors.Hand, Background = Brushes.Transparent, Label = "Capturar un \u00E1rea" };
+            Grid area = new TapGrid { Height = 66, Cursor = Cursors.Hand, Background = Brushes.Transparent, Label = I18n.T("Capturar un \u00E1rea", "Capture an area") };
             Color restTint = Ds.WithAlpha(pal.Accent, pal.High ? 0 : pal.Dark ? 0.13 : 0.07), overTint = Ds.WithAlpha(pal.Accent, pal.High ? 0 : pal.Dark ? 0.22 : 0.13);
             SolidColorBrush tint = new SolidColorBrush(restTint);
             System.Windows.Shapes.Rectangle marquee = new System.Windows.Shapes.Rectangle
@@ -692,7 +703,7 @@ namespace Stackshot
                     area.Children.Add(new Border { Width = 7, Height = 7, CornerRadius = new CornerRadius(3.5), Background = Brushes.White, BorderBrush = Ds.Brush(pal.Accent),
                                                    BorderThickness = new Thickness(1.5), HorizontalAlignment = ha, VerticalAlignment = va, IsHitTestVisible = false });
             StackPanel txt = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
-            TextBlock title = Label("Capturar un \u00E1rea", Ds.Semibold, 13, pal.Label);
+            TextBlock title = Label(I18n.T("Capturar un \u00E1rea", "Capture an area"), Ds.Semibold, 13, pal.Label);
             title.HorizontalAlignment = HorizontalAlignment.Center;
             txt.Children.Add(title);
             if (Hotkeys.Split(settings.HotRegion).Count > 0)
@@ -720,7 +731,7 @@ namespace Stackshot
                 still();
             };
             area.IsVisibleChanged += delegate { if (!area.IsVisible) still(); };
-            area.ToolTip = "Capturar un \u00E1rea de la pantalla";
+            area.ToolTip = I18n.T("Capturar un \u00E1rea de la pantalla", "Capture an area of the screen");
             ToolTipService.SetInitialShowDelay(area, 900);
             Press(area, delegate { still(); RunAction("region"); });
             st.Children.Add(area);
@@ -751,7 +762,7 @@ namespace Stackshot
                                        BorderBrush = Ds.Brush(pal.Hairline), BorderThickness = HcPaint.Edge };
             b.Child = new GlyphView(on ? "stop!" : "record!", on ? 13 : 15, pal.Red, 1.6);
             string combo = settings.HotVideo;
-            b.ToolTip = (on ? "Detener la grabaci\u00F3n" : "Grabar v\u00EDdeo") + (Hotkeys.Split(combo).Count > 0 ? "  (" + Hotkeys.Display(combo) + ")" : "");
+            b.ToolTip = (on ? I18n.T("Detener la grabaci\u00F3n", "Stop recording") : I18n.T("Grabar v\u00EDdeo", "Record video")) + (Hotkeys.Split(combo).Count > 0 ? "  (" + Hotkeys.Display(combo) + ")" : "");
             b.MouseEnter += delegate { bg.Color = over; };
             b.MouseLeave += delegate { bg.Color = rest; };
             Press(b, delegate { RunAction("video"); });
@@ -774,12 +785,12 @@ namespace Stackshot
         // Current app status (sidebar and hero).
         string Status(out D.Color dot)
         {
-            if (Recorder.Recording) { dot = Mac.Red; return "Grabando\u2026"; }
-            if (ScrollCapture.Active) { dot = Mac.Blue; return "Capturando con desplazamiento"; }
-            if (Updater.Available != null) { dot = Mac.Blue; return "Versi\u00F3n " + Updater.Available.Version.ToString(3) + " disponible"; }
-            if (settings.MascotOn && mascot.Sleeping) { dot = Mac.Text3; return "Echando una siesta"; }
+            if (Recorder.Recording) { dot = Mac.Red; return I18n.T("Grabando\u2026", "Recording\u2026"); }
+            if (ScrollCapture.Active) { dot = Mac.Blue; return I18n.T("Capturando con desplazamiento", "Scrolling capture"); }
+            if (Updater.Available != null) { dot = Mac.Blue; return I18n.Fmt("Versi\u00F3n {0} disponible", "Version {0} available", Updater.Available.Version.ToString(3)); }
+            if (settings.MascotOn && mascot.Sleeping) { dot = Mac.Text3; return I18n.T("Echando una siesta", "Taking a nap"); }
             dot = Mac.Green;
-            return "Listo para capturar";
+            return I18n.T("Listo para capturar", "Ready to capture");
         }
 
         // ---- Mascot and the frame clock
@@ -843,7 +854,7 @@ namespace Stackshot
                     if (settings.MascotOn)
                     {
                         mascot.PopIn();
-                        if (settings.MascotTalks) mascot.Greet(MascotTalk.Greeting() + " Soy " + settings.MascotName + ". \u00BFQu\u00E9 capturamos?");
+                        if (settings.MascotTalks) mascot.Greet(MascotTalk.Greeting() + (I18n.IsSpanish ? " Soy " : " I'm ") + settings.MascotName + (I18n.IsSpanish ? ". \u00BFQu\u00E9 capturamos?" : ". What to capture?"));
                     }
                 }
                 if (intro.Done(now)) EndIntro();
@@ -943,7 +954,7 @@ namespace Stackshot
             if (settings.MascotOn)
             {
                 mascot.PopIn();
-                if (settings.MascotTalks) mascot.Greet(MascotTalk.Greeting() + " Soy " + settings.MascotName + ".");
+                if (settings.MascotTalks) mascot.Greet(MascotTalk.Greeting() + (I18n.IsSpanish ? " Soy " : " I'm ") + settings.MascotName + ".");
             }
             Wake();
         }
@@ -1211,7 +1222,7 @@ namespace Stackshot
         // Still in a window and in charge of the mascot.
         public bool Live { get { return attached && PresentationSource.FromVisual(this) != null; } }
 
-        protected override System.Windows.Automation.Peers.AutomationPeer OnCreateAutomationPeer() { return new ActionPeer(this, delegate { Action h = Poked; if (h != null) h(); }, "Mascota"); }
+        protected override System.Windows.Automation.Peers.AutomationPeer OnCreateAutomationPeer() { return new ActionPeer(this, delegate { Action h = Poked; if (h != null) h(); }, I18n.T("Mascota", "Mascot")); }
 
         // The bubble lives outside the slot. A slot pulled up with a negative margin (the sidebar card) would otherwise be
         // clipped to its own box by layout and the bubble would never show.

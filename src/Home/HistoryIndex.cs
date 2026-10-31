@@ -91,7 +91,9 @@ namespace Stackshot
         const string FileName = "indice.gz";
         static readonly string[] Images = { ".png", ".jpg", ".jpeg" };
         static readonly string[] Kinds = { ".png", ".jpg", ".jpeg", ".gif", ".mp4", ".mkv" };
-        public static readonly string[] GroupNames = { "Hoy", "Ayer", "Esta semana", "Este mes", "Anteriores" };
+        static readonly string[] GroupNamesEs = { "Hoy", "Ayer", "Esta semana", "Este mes", "Anteriores" };
+        static readonly string[] GroupNamesEn = { "Today", "Yesterday", "This week", "This month", "Earlier" };
+        public static string[] GroupNames { get { return I18n.IsSpanish ? GroupNamesEs : GroupNamesEn; } }
 
         public static string Dir = System.IO.Path.Combine(Settings.DataDir, "historial");   // tests point both elsewhere
         public static string TempFolder = Settings.TempDir;

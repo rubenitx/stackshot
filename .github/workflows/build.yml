@@ -31,14 +31,15 @@ jobs:
           .\tests\cine\run-tests.ps1 regression hash args pool audio
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
-      # More suites that need no screen, FFmpeg or network: stitching, settings, policies, command line, folder watch and
-      # editor arguments. Reported on every build but not yet blocking, until they have proved steady on CI runners.
+      # More suites that need no screen, FFmpeg or network: stitching, settings, policies, command line, folder watch,
+      # languages (the English audit: no Spanish left on any page) and editor arguments. Reported on every build but not
+      # yet blocking, until they have proved steady on CI runners.
       - name: Pruebas ampliadas (informativas)
         continue-on-error: true
         shell: powershell
         run: |
           $failed = 0
-          .\tests\app\run-tests.ps1 scroll explain hunt-settings w6cli xmlwatch
+          .\tests\app\run-tests.ps1 scroll explain hunt-settings w6cli xmlwatch i18n
           $failed += $LASTEXITCODE
           .\tests\editor\run-tests.ps1 args atomic
           $failed += $LASTEXITCODE

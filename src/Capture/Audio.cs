@@ -112,13 +112,13 @@ namespace Stackshot
         // Active microphones: id and name.
         public static List<KeyValuePair<string, string>> Microphones()
         {
-            return Endpoints(Capture, "Micr\u00F3fono");
+            return Endpoints(Capture, I18n.T("Micr\u00F3fono", "Microphone"));
         }
 
         // Active outputs (speakers, headphones, screens with sound): id and name.
         public static List<KeyValuePair<string, string>> Outputs()
         {
-            return Endpoints(Render, "Salida de sonido");
+            return Endpoints(Render, I18n.T("Salida de sonido", "Sound output"));
         }
 
         static List<KeyValuePair<string, string>> Endpoints(int flow, string fallback)
@@ -286,7 +286,7 @@ namespace Stackshot
             // switching to hands-free, say) never leaves an orphan file behind.
             lock (gate)
             {
-                if (!answered && Error == null) Error = "El dispositivo de sonido no responde.";
+                if (!answered && Error == null) Error = I18n.T("El dispositivo de sonido no responde.", "The audio device is not responding.");
                 if (Error != null) stopping = true;
             }
             if (Error != null) thread.Join(2000);
@@ -424,7 +424,7 @@ namespace Stackshot
                 ShotStack.Log("Sonido (" + (Computer ? "equipo" : "micr\u00F3fono") + "): el dispositivo elegido no est\u00E1 conectado, se usa el de Windows");
             }
             if (hr < 0) hr = enumerator.GetDefaultAudioEndpoint(Computer ? AudioDevices.Render : AudioDevices.Capture, AudioDevices.Console, out dev);
-            if (hr < 0) return hr == NotFound ? (Computer ? "No hay ninguna salida de sonido." : "No hay ning\u00FAn micr\u00F3fono conectado.") : "No se encuentra el dispositivo (0x" + hr.ToString("X8") + ").";
+            if (hr < 0) return hr == NotFound ? (Computer ? I18n.T("No hay ninguna salida de sonido.", "There is no sound output.") : I18n.T("No hay ning\u00FAn micr\u00F3fono conectado.", "There is no microphone connected.")) : I18n.Fmt("No se encuentra el dispositivo (0x{0}).", "Device not found (0x{0}).", hr.ToString("X8"));
             try
             {
                 dev.GetId(out openId);
@@ -475,9 +475,10 @@ namespace Stackshot
         string Denied(int hr)
         {
             if (hr == AccessDenied)
-                return Computer ? "Windows no deja grabar el sonido del equipo." :
-                       "Windows no deja usar el micr\u00F3fono. Act\u00EDvalo en Configuraci\u00F3n > Privacidad y seguridad > Micr\u00F3fono (\u00ABPermitir que las aplicaciones de escritorio accedan al micr\u00F3fono\u00BB).";
-            return "El dispositivo de sonido no se puede usar (0x" + hr.ToString("X8") + ").";
+                return Computer ? I18n.T("Windows no deja grabar el sonido del equipo.", "Windows does not allow recording computer audio.") :
+                       I18n.T("Windows no deja usar el micr\u00F3fono. Act\u00EDvalo en Configuraci\u00F3n > Privacidad y seguridad > Micr\u00F3fono (\u00ABPermitir que las aplicaciones de escritorio accedan al micr\u00F3fono\u00BB).",
+                              "Windows does not allow using the microphone. Enable it in Settings > Privacy & security > Microphone (\u201CLet desktop apps access your microphone\u201D).");
+            return I18n.Fmt("El dispositivo de sonido no se puede usar (0x{0}).", "The audio device cannot be used (0x{0}).", hr.ToString("X8"));
         }
 
         // Loopback only delivers packets while something plays. A silent stream on the same device keeps them coming, so

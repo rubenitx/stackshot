@@ -42,7 +42,7 @@ namespace Stackshot
             monitor = new MicMonitor(device);
             if (withButton)
             {
-                button = new MacButton("Probar micr\u00F3fono", ButtonKind.Secondary, "mic", null, 28);
+                button = new MacButton(I18n.T("Probar micr\u00F3fono", "Test microphone"), ButtonKind.Secondary, "mic", null, 28);
                 button.HorizontalAlignment = HorizontalAlignment.Left;
                 button.Click += delegate { On = !on; Notify(); };
                 Children.Add(button);
@@ -59,8 +59,8 @@ namespace Stackshot
             note.Visibility = Visibility.Collapsed;
             Grid.SetColumnSpan(note, 2);
             row.Children.Add(note);
-            System.Windows.Automation.AutomationProperties.SetName(bar, "Nivel del micr\u00F3fono");
-            hint.Text = "Saturando";
+            System.Windows.Automation.AutomationProperties.SetName(bar, I18n.T("Nivel del micr\u00F3fono", "Microphone level"));
+            hint.Text = I18n.T("Saturando", "Clipping");
             hint.Margin = new Thickness(10, 0, 0, 0);
             hint.VerticalAlignment = VerticalAlignment.Center;
             hint.Visibility = Visibility.Hidden;
@@ -128,11 +128,11 @@ namespace Stackshot
         {
             switch (state)
             {
-                case MicState.Opening: return sinceMs >= OpeningMs ? "Abriendo el micr\u00F3fono\u2026" : null;
-                case MicState.NoDevice: return "No hay micr\u00F3fono";
-                case MicState.NotResponding: return "El micr\u00F3fono no responde";
-                case MicState.Denied: return "Windows no deja usar el micr\u00F3fono";
-                case MicState.Recording: return "Se est\u00E1 grabando";
+                case MicState.Opening: return sinceMs >= OpeningMs ? I18n.T("Abriendo el micr\u00F3fono\u2026", "Opening microphone\u2026") : null;
+                case MicState.NoDevice: return I18n.T("No hay micr\u00F3fono", "No microphone");
+                case MicState.NotResponding: return I18n.T("El micr\u00F3fono no responde", "Microphone not responding");
+                case MicState.Denied: return I18n.T("Windows no deja usar el micr\u00F3fono", "Windows blocked microphone access");
+                case MicState.Recording: return I18n.T("Se est\u00E1 grabando", "Currently recording");
             }
             return null;
         }
@@ -153,7 +153,7 @@ namespace Stackshot
         void ShowOn()
         {
             if (button == null) return;
-            button.Label = on ? "Dejar de probar" : "Probar micr\u00F3fono";
+            button.Label = on ? I18n.T("Dejar de probar", "Stop testing") : I18n.T("Probar micr\u00F3fono", "Test microphone");
             row.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -247,7 +247,7 @@ namespace Stackshot
             Visibility hv = clip ? Visibility.Visible : Visibility.Hidden;
             if (hint.Visibility != hv) hint.Visibility = hv;
             string name = monitor.DeviceName;
-            SetBarTip(live && name.Length > 0 ? "Micr\u00F3fono: " + name : null);
+            SetBarTip(live && name.Length > 0 ? I18n.T("Micr\u00F3fono: ", "Microphone: ") + name : null);
             int ms = monitor.Running ? TickMs : IdleTickMs;
             if (Math.Abs(timer.Interval.TotalMilliseconds - ms) > 0.5) timer.Interval = TimeSpan.FromMilliseconds(ms);
         }
@@ -259,8 +259,8 @@ namespace Stackshot
             note.Text = text ?? "";
             note.Visibility = text == null ? Visibility.Collapsed : Visibility.Visible;
             bar.Visibility = text == null ? Visibility.Visible : Visibility.Hidden;
-            if (st == MicState.Denied) note.ToolTip = "Act\u00EDvalo en Configuraci\u00F3n > Privacidad y seguridad > Micr\u00F3fono.";
-            else if (st == MicState.Recording) note.ToolTip = "Mientras grabas, el nivel de cada sonido sale en la barra de grabaci\u00F3n.";
+            if (st == MicState.Denied) note.ToolTip = I18n.T("Act\u00EDvalo en Configuraci\u00F3n > Privacidad y seguridad > Micr\u00F3fono.", "Enable it in Settings > Privacy & security > Microphone.");
+            else if (st == MicState.Recording) note.ToolTip = I18n.T("Mientras grabas, el nivel de cada sonido sale en la barra de grabaci\u00F3n.", "While recording, audio levels are shown on the recording bar.");
             else note.ToolTip = text;
         }
 

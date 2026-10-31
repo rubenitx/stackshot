@@ -30,7 +30,7 @@ namespace Stackshot
         // A name shown as text that turns into a field when clicked: Space or Enter open the field too.
         static void AccessNameEdit(Border view, TextBox box, Action begin)
         {
-            AutomationProperties.SetName(box, "Nombre de la mascota");
+            AutomationProperties.SetName(box, I18n.T("Nombre de la mascota", "Mascot name"));
             Access.Clickable(view, begin);
         }
 
@@ -157,7 +157,7 @@ namespace Stackshot
             }
 
             protected override double RingRadius { get { return 9; } }
-            internal override string AccessName { get { return "Categor\u00EDas"; } }
+            internal override string AccessName { get { return I18n.T("Categor\u00EDas", "Categories"); } }
             internal override AutomationControlType AccessType { get { return AutomationControlType.Tab; } }
             internal override object AccessPattern(PatternInterface p) { return Access.StripPattern(this, p); }
             internal override List<AutomationPeer> AccessChildren() { return Access.StripItems(this); }

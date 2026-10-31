@@ -40,7 +40,7 @@ namespace Stackshot
         {
             this.owner = owner;
             this.note = note;
-            Title = note ? "Apuntar" : "Recordatorio";
+            Title = note ? I18n.T("Apuntar", "Take note") : I18n.T("Recordatorio", "Reminder");
             Width = 460;
             SizeToContent = SizeToContent.Height;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -77,10 +77,10 @@ namespace Stackshot
 
             StackPanel head = new StackPanel { Orientation = Orientation.Horizontal };
             head.Children.Add(note ? new IconTile("memo", 36, Ds.Rgb(255, 214, 10), Ds.Rgb(255, 159, 10)) : new IconTile("clock", 36, Ds.Rgb(90, 200, 250), Ds.Rgb(0, 122, 255)));
-            head.Children.Add(Text(note ? "\u00BFQu\u00E9 apunto?" : "\u00BFQu\u00E9 te recuerdo?", Ds.Title, 18, pal.Label, new Thickness(12, 0, 0, 0)));
+            head.Children.Add(Text(note ? I18n.T("\u00BFQu\u00E9 apunto?", "What should I note?") : I18n.T("\u00BFQu\u00E9 te recuerdo?", "What should I remind you of?"), Ds.Title, 18, pal.Label, new Thickness(12, 0, 0, 0)));
             page.Children.Add(head);
 
-            string hint = note ? "Lo que quieras apuntar" : "Por ejemplo: llamar a Laura";
+            string hint = note ? I18n.T("Lo que quieras apuntar", "Whatever you want to note") : I18n.T("Por ejemplo: llamar a Laura", "For example: call Laura");
             box = Field(text, note, note ? 90 : 0, hint);
             Border frame = Frame(box, hint);
             frame.Margin = new Thickness(0, 16, 0, 0);
@@ -104,27 +104,27 @@ namespace Stackshot
                     int p = Math.Max(0, Math.Min(after.Length, ed.SelStart));
                     b.Select(p, Math.Max(0, Math.Min(after.Length - p, ed.SelLength)));
                 };
-                page.Children.Add(Text("Empieza una l\u00EDnea con \u00AB- [ ] \u00BB para una lista de tareas.", Ds.Regular, 11.5, pal.Label3, new Thickness(2, 6, 0, 0)));
+                page.Children.Add(Text(I18n.T("Empieza una l\u00EDnea con \u00AB- [ ] \u00BB para una lista de tareas.", "Start a line with \u201C- [ ] \u201D for a task list."), Ds.Regular, 11.5, pal.Label3, new Thickness(2, 6, 0, 0)));
             }
 
             if (!note)
             {
-                page.Children.Add(Text("\u00BFCu\u00E1ndo?", Ds.Semibold, 12.5, pal.Label, new Thickness(0, 16, 0, 6)));
+                page.Children.Add(Text(I18n.T("\u00BFCu\u00E1ndo?", "When?"), Ds.Semibold, 12.5, pal.Label, new Thickness(0, 16, 0, 6)));
                 // Short labels across the whole width; the line below says exactly when.
-                MacSegmented seg = new MacSegmented(new string[] { "10 min", "30 min", "1 h", "2 h", "Ma\u00F1ana", "A las\u2026" }, when);
+                MacSegmented seg = new MacSegmented(new string[] { "10 min", "30 min", "1 h", "2 h", I18n.T("Ma\u00F1ana", "Tomorrow"), I18n.T("A las\u2026", "At\u2026") }, when);
                 seg.ClearValue(WidthProperty);
                 seg.HorizontalAlignment = HorizontalAlignment.Stretch;
                 seg.Changed += delegate(int i) { Keep(); when = i; Build(); if (i == 5 && time != null) { time.Focus(); time.SelectAll(); } };
                 page.Children.Add(seg);
-                if (when < 5) page.Children.Add(Text("Te lo recuerdo " + ShotStack.WhenText(Preset()) + ".", Ds.Regular, 12, pal.Label2, new Thickness(2, 8, 0, 0)));
+                if (when < 5) page.Children.Add(Text(I18n.Fmt("Te lo recuerdo {0}.", "I'll remind you {0}.", ShotStack.WhenText(Preset())), Ds.Regular, 12, pal.Label2, new Thickness(2, 8, 0, 0)));
                 if (when == 5)
                 {
                     StackPanel row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0) };
-                    row.Children.Add(Text("Hora", Ds.Regular, 13, pal.Label2, new Thickness(0, 0, 10, 0)));
-                    time = Field(at, false, 0, "Hora");
+                    row.Children.Add(Text(I18n.T("Hora", "Time"), Ds.Regular, 13, pal.Label2, new Thickness(0, 0, 10, 0)));
+                    time = Field(at, false, 0, I18n.T("Hora", "Time"));
                     time.Width = 70;
                     row.Children.Add(Frame(time, null));
-                    row.Children.Add(Text("(por ejemplo 16:30)", Ds.Regular, 12, pal.Label3, new Thickness(10, 0, 0, 0)));
+                    row.Children.Add(Text(I18n.T("(por ejemplo 16:30)", "(for example 16:30)"), Ds.Regular, 12, pal.Label3, new Thickness(10, 0, 0, 0)));
                     page.Children.Add(row);
                 }
                 else time = null;
@@ -133,7 +133,7 @@ namespace Stackshot
                 List<Reminder> list = owner.Reminders;
                 if (list.Count > 0)
                 {
-                    page.Children.Add(Text("Pendientes", Ds.Semibold, 12.5, pal.Label, new Thickness(0, 18, 0, 4)));
+                    page.Children.Add(Text(I18n.T("Pendientes", "Pending"), Ds.Semibold, 12.5, pal.Label, new Thickness(0, 18, 0, 4)));
                     foreach (Reminder r in list)
                     {
                         Reminder it = r;
@@ -143,7 +143,7 @@ namespace Stackshot
                         TextBlock t = Text(ShotStack.WhenText(r.DueUtc.ToLocalTime()) + "  \u00B7  " + r.Text, Ds.Regular, 12.5, pal.Label2, new Thickness(0));
                         t.TextTrimming = TextTrimming.CharacterEllipsis;
                         g.Children.Add(t);
-                        TapBorder x = new TapBorder { Width = 22, Height = 22, CornerRadius = new CornerRadius(11), Background = Brushes.Transparent, Cursor = Cursors.Hand, Label = "Quitar este recordatorio", ToolTip = "Quitar" };
+                        TapBorder x = new TapBorder { Width = 22, Height = 22, CornerRadius = new CornerRadius(11), Background = Brushes.Transparent, Cursor = Cursors.Hand, Label = I18n.T("Quitar este recordatorio", "Remove this reminder"), ToolTip = I18n.T("Quitar", "Remove") };
                         x.Child = new GlyphView("close", 11, pal.Label2, 1.8) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                         Action drop = delegate { Keep(); owner.RemoveReminder(it); Build(); };
                         x.MouseLeftButtonUp += delegate { drop(); };
@@ -160,7 +160,7 @@ namespace Stackshot
                 List<ShotStack.Note> last = owner.LastNotes(5);
                 if (last.Count > 0)
                 {
-                    page.Children.Add(Text("\u00DAltimas notas", Ds.Semibold, 12.5, pal.Label, new Thickness(0, 18, 0, 4)));
+                    page.Children.Add(Text(I18n.T("\u00DAltimas notas", "Recent notes"), Ds.Semibold, 12.5, pal.Label, new Thickness(0, 18, 0, 4)));
                     foreach (ShotStack.Note n in last)
                     {
                         ShotStack.Note it = n;
@@ -170,24 +170,24 @@ namespace Stackshot
                         {
                             Width = 18, Height = 18, CornerRadius = new CornerRadius(9), Cursor = Cursors.Hand, Margin = new Thickness(0, 0, 10, 0),
                             Background = n.Done ? Ds.Brush(pal.Green) : Brushes.Transparent, BorderThickness = new Thickness(n.Done ? 0 : 1.5),
-                            BorderBrush = Ds.Brush(pal.Label3), Label = n.Done ? "Marcar como pendiente" : "Marcar como hecha",
-                            ToolTip = n.Done ? "Marcar como pendiente" : "Marcar como hecha", VerticalAlignment = VerticalAlignment.Center
+                            BorderBrush = Ds.Brush(pal.Label3), Label = n.Done ? I18n.T("Marcar como pendiente", "Mark as pending") : I18n.T("Marcar como hecha", "Mark as done"),
+                            ToolTip = n.Done ? I18n.T("Marcar como pendiente", "Mark as pending") : I18n.T("Marcar como hecha", "Mark as done"), VerticalAlignment = VerticalAlignment.Center
                         };
                         if (n.Done) tick.Child = new GlyphView("check", 11, pal.High ? pal.Window : Colors.White, 2) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-                        Action flip = delegate { Keep(); if (!owner.NoteDone(it, !it.Done)) Say("Esa nota ha cambiado en Notas.md: \u00E1brela para verla."); else Build(); };
+                        Action flip = delegate { Keep(); if (!owner.NoteDone(it, !it.Done)) Say(I18n.T("Esa nota ha cambiado en Notas.md: \u00E1brela para verla.", "That note changed in Notas.md: open it to see it.")); else Build(); };
                         tick.MouseLeftButtonUp += delegate { flip(); };
                         Access.Clickable(tick, flip);
                         DockPanel.SetDock(tick, Dock.Left);
                         row.Children.Add(tick);
-                        TapBorder x = new TapBorder { Width = 22, Height = 22, CornerRadius = new CornerRadius(11), Background = Brushes.Transparent, Cursor = Cursors.Hand, Label = "Borrar esta nota", ToolTip = "Borrar", Margin = new Thickness(8, 0, 0, 0) };
+                        TapBorder x = new TapBorder { Width = 22, Height = 22, CornerRadius = new CornerRadius(11), Background = Brushes.Transparent, Cursor = Cursors.Hand, Label = I18n.T("Borrar esta nota", "Delete this note"), ToolTip = I18n.T("Borrar", "Delete"), Margin = new Thickness(8, 0, 0, 0) };
                         x.Child = new GlyphView("close", 11, pal.Label2, 1.8) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-                        Action drop = delegate { Keep(); if (!owner.DeleteNote(it)) Say("Esa nota ha cambiado en Notas.md: \u00E1brela para verla."); else Build(); };
+                        Action drop = delegate { Keep(); if (!owner.DeleteNote(it)) Say(I18n.T("Esa nota ha cambiado en Notas.md: \u00E1brela para verla.", "That note changed in Notas.md: open it to see it.")); else Build(); };
                         x.MouseLeftButtonUp += delegate { drop(); };
                         Access.Clickable(x, drop);
                         DockPanel.SetDock(x, Dock.Right);
                         row.Children.Add(x);
                         bool pinned = StickyNotes.IsPinned(it.Key);
-                        string pinLabel = pinned ? "Quitar del escritorio" : "Fijar en el escritorio";
+                        string pinLabel = pinned ? I18n.T("Quitar del escritorio", "Unpin from desktop") : I18n.T("Fijar en el escritorio", "Pin to desktop");
                         TapBorder pin = new TapBorder { Width = 22, Height = 22, CornerRadius = new CornerRadius(11), Background = Brushes.Transparent, Cursor = Cursors.Hand, Label = pinLabel, ToolTip = pinLabel, Margin = new Thickness(6, 0, 0, 0) };
                         pin.Child = new GlyphView("pin", 11, pinned ? pal.Accent : pal.Label2, 1.8) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                         Action togglePin = delegate
@@ -211,7 +211,7 @@ namespace Stackshot
                         page.Children.Add(row);
                     }
                 }
-                TextBlock see = Text(last.Count > 0 ? "Ver todas (Notas.md, en tu carpeta de capturas)" : "Ver mis notas (Notas.md, en tu carpeta de capturas)", Ds.Regular, 12.5, pal.Link, new Thickness(0, 10, 0, 0));
+                TextBlock see = Text(last.Count > 0 ? I18n.T("Ver todas (Notas.md, en tu carpeta de capturas)", "View all (Notas.md, in your captures folder)") : I18n.T("Ver mis notas (Notas.md, en tu carpeta de capturas)", "View my notes (Notas.md, in your captures folder)"), Ds.Regular, 12.5, pal.Link, new Thickness(0, 10, 0, 0));
                 see.Cursor = Cursors.Hand;
                 see.HorizontalAlignment = HorizontalAlignment.Left;
                 see.MouseLeftButtonUp += delegate { owner.OpenNotes(); };
@@ -223,14 +223,14 @@ namespace Stackshot
             page.Children.Add(error);
 
             StackPanel buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 18, 0, 0) };
-            MacButton cancel = new MacButton("Cancelar", ButtonKind.Secondary, null, null, 32) { Margin = new Thickness(8, 0, 0, 0) };
+            MacButton cancel = new MacButton(I18n.Cancel, ButtonKind.Secondary, null, null, 32) { Margin = new Thickness(8, 0, 0, 0) };
             cancel.Click += delegate { Close(); };
-            MacButton save = new MacButton(note ? "Apuntar" : "Recu\u00E9rdamelo", ButtonKind.Primary, note ? "check" : "clock", note ? "Ctrl+Intro" : null, 32);
+            MacButton save = new MacButton(note ? I18n.T("Apuntar", "Take note") : I18n.T("Recu\u00E9rdamelo", "Remind me"), ButtonKind.Primary, note ? "check" : "clock", note ? I18n.T("Ctrl+Intro", "Ctrl+Enter") : null, 32);
             save.Click += Save;
             buttons.Children.Add(save);
             if (note)
             {
-                MacButton savePin = new MacButton("Guardar y fijar", ButtonKind.Secondary, "pin", null, 32) { Margin = new Thickness(8, 0, 0, 0) };
+                MacButton savePin = new MacButton(I18n.T("Guardar y fijar", "Save and pin"), ButtonKind.Secondary, "pin", null, 32) { Margin = new Thickness(8, 0, 0, 0) };
                 savePin.Click += SavePin;
                 buttons.Children.Add(savePin);
             }
@@ -241,7 +241,7 @@ namespace Stackshot
         void Save()
         {
             Keep();
-            if (text.Trim().Length == 0) { Say(note ? "Escribe lo que quieres apuntar." : "Escribe qu\u00E9 te recuerdo."); return; }
+            if (text.Trim().Length == 0) { Say(note ? I18n.T("Escribe lo que quieres apuntar.", "Type what you want to note.") : I18n.T("Escribe qu\u00E9 te recuerdo.", "Type what I should remind you of.")); return; }
             if (note)
             {
                 if (SaveNote()) Close();
@@ -253,7 +253,7 @@ namespace Stackshot
             {
                 DateTime t;
                 if (!DateTime.TryParseExact(at.Trim().Replace('.', ':'), new string[] { "H:mm", "HH:mm", "H" }, CultureInfo.InvariantCulture, DateTimeStyles.None, out t))
-                { Say("Escribe la hora como 16:30."); return; }
+                { Say(I18n.T("Escribe la hora como 16:30.", "Type the time like 16:30.")); return; }
                 due = DateTime.Today.Add(t.TimeOfDay);
                 // A time already gone today means tomorrow.
                 if (due <= DateTime.Now) due = due.AddDays(1);
@@ -265,7 +265,7 @@ namespace Stackshot
         bool SaveNote()
         {
             if (!owner.AddNote(text)) return false;
-            owner.Told("Apuntado en tus notas.");
+            owner.Told(I18n.T("Apuntado en tus notas.", "Added to your notes."));
             return true;
         }
 
@@ -281,7 +281,7 @@ namespace Stackshot
         void SavePin()
         {
             Keep();
-            if (text.Trim().Length == 0) { Say("Escribe lo que quieres apuntar."); return; }
+            if (text.Trim().Length == 0) { Say(I18n.T("Escribe lo que quieres apuntar.", "Type what you want to note.")); return; }
             if (!SaveNote()) return;
             List<ShotStack.Note> newest = owner.LastNotes(1);
             if (newest.Count > 0) StickyNotes.Pin(owner, newest[0]);

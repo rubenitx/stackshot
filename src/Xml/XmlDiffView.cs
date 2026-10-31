@@ -150,7 +150,7 @@ namespace Stackshot
             }
         }
 
-        static string Hidden(int n) { return "\u22EF " + n.ToString("N0") + (n == 1 ? " nodo sin cambios" : " nodos sin cambios"); }
+        static string Hidden(int n) { return "\u22EF " + n.ToString("N0") + (n == 1 ? I18n.T(" nodo sin cambios", " unchanged node") : I18n.T(" nodos sin cambios", " unchanged nodes")); }
 
         public static List<DiffPiece> Pieces(DiffRow r, bool full)
         {
@@ -213,12 +213,12 @@ namespace Stackshot
                         o.Add(new DiffPiece(">", Seg.Punct, 0));
                         o.Add(new DiffPiece(" \u2026 ", Seg.Hint, 0));
                         o.Add(new DiffPiece("</", Seg.Punct, 0)); Name(o, n); o.Add(new DiffPiece(">", Seg.Punct, 0));
-                        o.Add(new DiffPiece("  " + d.Kids.Count.ToString("N0") + (d.Kids.Count == 1 ? " nodo" : " nodos") + (n.Inner ? " \u00B7 XML interno" : ""), Seg.Hint, 0));
+                        o.Add(new DiffPiece("  " + d.Kids.Count.ToString("N0") + (d.Kids.Count == 1 ? I18n.T(" nodo", " node") : I18n.T(" nodos", " nodes")) + (n.Inner ? I18n.T(" \u00B7 XML interno", " \u00B7 inner XML") : ""), Seg.Hint, 0));
                     }
                     else
                     {
                         o.Add(new DiffPiece(">", Seg.Punct, 0));
-                        if (n.Inner) o.Add(new DiffPiece("   XML interno", Seg.Hint, 0));
+                        if (n.Inner) o.Add(new DiffPiece(I18n.T("   XML interno", "   inner XML"), Seg.Hint, 0));
                     }
                     break;
                 default:
@@ -413,8 +413,8 @@ namespace Stackshot
 
             StackPanel e = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, MaxWidth = 460, Margin = new Thickness(28), IsHitTestVisible = false };
             e.Children.Add(new GlyphView("check", 30, pal.Green) { HorizontalAlignment = HorizontalAlignment.Center });
-            e.Children.Add(new TextBlock { Text = "Los dos XML son iguales", FontFamily = Ds.Display, FontWeight = FontWeights.SemiBold, FontSize = 17, Foreground = Ds.Brush(pal.Label), Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
-            e.Children.Add(new TextBlock { Text = "No cuentan los espacios en blanco, el orden de los atributos ni los prefijos de los espacios de nombres.", FontSize = 12.5, Foreground = Ds.Brush(pal.Label2), TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 8, 0, 0) });
+            e.Children.Add(new TextBlock { Text = I18n.T("Los dos XML son iguales", "The two XML files are the same"), FontFamily = Ds.Display, FontWeight = FontWeights.SemiBold, FontSize = 17, Foreground = Ds.Brush(pal.Label), Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+            e.Children.Add(new TextBlock { Text = I18n.T("No cuentan los espacios en blanco, el orden de los atributos ni los prefijos de los espacios de nombres.", "Whitespace, attribute order and namespace prefixes don't count."), FontSize = 12.5, Foreground = Ds.Brush(pal.Label2), TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 8, 0, 0) });
             empty = e;
             Children.Add(empty);
 
@@ -626,12 +626,12 @@ namespace Stackshot
             e.Handled = true;
             if (Menu == null) return;
             List<MenuEntry> m = new List<MenuEntry>();
-            MenuEntry copy = MenuEntry.Item("Copiar", "copy", false, delegate { CopySelection(); });
+            MenuEntry copy = MenuEntry.Item(I18n.T("Copiar", "Copy"), "copy", false, delegate { CopySelection(); });
             copy.Enabled = list.SelectedItems.Count > 0;
             m.Add(copy);
             m.Add(MenuEntry.Line());
-            MenuEntry next = MenuEntry.Item("Siguiente diferencia   F7", "down", false, delegate { Step(1); });
-            MenuEntry prev = MenuEntry.Item("Diferencia anterior   May\u00FAs+F7", "up", false, delegate { Step(-1); });
+            MenuEntry next = MenuEntry.Item(I18n.T("Siguiente diferencia   F7", "Next difference   F7"), "down", false, delegate { Step(1); });
+            MenuEntry prev = MenuEntry.Item(I18n.T("Diferencia anterior   May\u00FAs+F7", "Previous difference   Shift+F7"), "up", false, delegate { Step(-1); });
             next.Enabled = prev.Enabled = result.Stops.Count > 0;
             m.Add(next);
             m.Add(prev);
@@ -640,10 +640,10 @@ namespace Stackshot
             {
                 m.Add(MenuEntry.Line());
                 DiffRow sel = r;
-                m.Add(MenuEntry.Item(r.Collapsed ? "Expandir" : "Contraer", r.Collapsed ? "plus" : "minus", false, delegate { Toggle(rows.IndexOf(sel)); }));
+                m.Add(MenuEntry.Item(r.Collapsed ? I18n.T("Expandir", "Expand") : I18n.T("Contraer", "Collapse"), r.Collapsed ? "plus" : "minus", false, delegate { Toggle(rows.IndexOf(sel)); }));
             }
             m.Add(MenuEntry.Line());
-            m.Add(MenuEntry.Item("Seleccionar todo", "check", false, delegate { list.Focus(); list.SelectAll(); }));
+            m.Add(MenuEntry.Item(I18n.T("Seleccionar todo", "Select all"), "check", false, delegate { list.Focus(); list.SelectAll(); }));
             Menu(e, m);
         }
 
@@ -677,7 +677,7 @@ namespace Stackshot
         {
             string t = SelectionText();
             int n = list.SelectedItems.Count;
-            if (t.Length > 0 && CopyRequest != null) CopyRequest(t, n == 1 ? "Copiado." : "Copiadas " + n.ToString("N0") + " l\u00EDneas.");
+            if (t.Length > 0 && CopyRequest != null) CopyRequest(t, n == 1 ? I18n.T("Copiado.", "Copied.") : I18n.Fmt("Copiadas {0} l\u00EDneas.", "{0} lines copied.", n.ToString("N0")));
         }
 
         // ---- Picture
@@ -686,7 +686,7 @@ namespace Stackshot
         public static BitmapSource Render(List<DiffRow> rows, XmlDiffLook look, out string error)
         {
             error = null;
-            if (rows.Count == 0) { error = "No hay diferencias que mostrar."; return null; }
+            if (rows.Count == 0) { error = I18n.T("No hay diferencias que mostrar.", "No differences to display."); return null; }
             look = new XmlDiffLook(Palette.Export());   // the colours exports have always had, whatever the theme
             const double W = 1000;
             int n = Math.Min(rows.Count, 700);
@@ -700,7 +700,7 @@ namespace Stackshot
                     sp.Children.Add(new DiffRowView(new DiffRow { Node = r.Node, Depth = r.Depth, Gap = r.Gap, Close = r.Close, Collapsed = r.Collapsed, Look = look }));
                 }
                 if (n < rows.Count)
-                    sp.Children.Add(new TextBlock { Text = "\u2026 y " + (rows.Count - n).ToString("N0") + " l\u00EDneas m\u00E1s", Foreground = look.Syntax.Hint, FontSize = 12.5, Margin = new Thickness(XmlRowView.Gutter, 8, 0, 0) });
+                    sp.Children.Add(new TextBlock { Text = I18n.Fmt("\u2026 y {0} l\u00EDneas m\u00E1s", "\u2026 and {0} more lines", (rows.Count - n).ToString("N0")), Foreground = look.Syntax.Hint, FontSize = 12.5, Margin = new Thickness(XmlRowView.Gutter, 8, 0, 0) });
                 page = new Border { Background = Ds.Brush(look.Dark ? Ds.Rgb(30, 30, 32) : Colors.White), Padding = new Thickness(28, 26, 28, 28), Width = W + 56, UseLayoutRounding = true, Child = sp };
                 TextOptions.SetTextFormattingMode(page, TextFormattingMode.Ideal);
                 TextOptions.SetTextRenderingMode(page, TextRenderingMode.Grayscale);
@@ -712,7 +712,7 @@ namespace Stackshot
             page.Arrange(new Rect(0, 0, page.DesiredSize.Width, page.DesiredSize.Height));
             page.UpdateLayout();
             int w = (int)Math.Ceiling(page.ActualWidth), h = (int)Math.Ceiling(page.ActualHeight);
-            if (h > 16000) { error = "La comparaci\u00F3n es demasiado larga para una sola imagen."; return null; }
+            if (h > 16000) { error = I18n.T("La comparaci\u00F3n es demasiado larga para una sola imagen.", "The comparison is too long for a single image."); return null; }
             double scale = h * 2 <= 16000 ? 2 : 1;
             RenderTargetBitmap rtb = new RenderTargetBitmap((int)(w * scale), (int)(h * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
             rtb.Render(page);

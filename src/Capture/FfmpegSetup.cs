@@ -94,10 +94,11 @@ namespace Stackshot
             KeepCaptionsOnTop();
             StackPanel head = new StackPanel { Orientation = Orientation.Horizontal };
             head.Children.Add(new IconTile("video", 40, Ds.Rgb(255, 85, 100), Ds.Rgb(230, 40, 40)));
-            head.Children.Add(Text("Grabar v\u00EDdeo y GIF", Ds.Title, 20, pal.Label, new Thickness(14, 0, 0, 0)));
+            head.Children.Add(Text(I18n.T("Grabar v\u00EDdeo y GIF", "Record video and GIF"), Ds.Title, 20, pal.Label, new Thickness(14, 0, 0, 0)));
             page.Children.Add(head);
-            TextBlock p = Text("Para grabar y reproducir v\u00EDdeo, Stackshot usa FFmpeg " + Version + ", un programa libre y gratuito con su propia licencia (GPL). Se descarga una sola vez (unos 110 MB) " +
-                               "desde GitHub, se comprueba que es el original y se guarda solo para tu usuario.", Ds.Regular, 13, pal.Label2, new Thickness(0, 16, 0, 0));
+            TextBlock p = Text(I18n.Fmt("Para grabar y reproducir v\u00EDdeo, Stackshot usa FFmpeg {0}, un programa libre y gratuito con su propia licencia (GPL). Se descarga una sola vez (unos 110 MB) ",
+                                        "To record and play video, Stackshot uses FFmpeg {0}, a free open-source program under its own license (GPL). It is downloaded once (about 110 MB) ", Version) +
+                               I18n.T("desde GitHub, se comprueba que es el original y se guarda solo para tu usuario.", "from GitHub, verified to be the original, and saved only for your user account."), Ds.Regular, 13, pal.Label2, new Thickness(0, 16, 0, 0));
             p.TextWrapping = TextWrapping.Wrap;
             p.LineHeight = 19;
             page.Children.Add(p);
@@ -114,15 +115,15 @@ namespace Stackshot
 
             Grid buttons = new Grid { Margin = new Thickness(0, 22, 0, 0) };
             StackPanel right = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            download = new MacButton(failed ? "Reintentar" : "Descargar", ButtonKind.Primary, "save", null, 32);
+            download = new MacButton(failed ? I18n.T("Reintentar", "Retry") : I18n.T("Descargar", "Download"), ButtonKind.Primary, "save", null, 32);
             download.Click += Start;
             download.IsEnabled = !busy && !installing;
-            browse = new MacButton("Ya lo tengo\u2026", ButtonKind.Secondary, null, null, 32);
+            browse = new MacButton(I18n.T("Ya lo tengo\u2026", "I already have it\u2026"), ButtonKind.Secondary, null, null, 32);
             browse.Margin = new Thickness(8, 0, 0, 0);
-            browse.ToolTip = "Elegir un ffmpeg.exe que ya tengas en el equipo";
+            browse.ToolTip = I18n.T("Elegir un ffmpeg.exe que ya tengas en el equipo", "Choose an ffmpeg.exe you already have on your PC");
             browse.Click += Browse;
             browse.IsEnabled = !busy && !installing;
-            cancel = new MacButton("Cancelar", ButtonKind.Secondary, null, null, 32);
+            cancel = new MacButton(I18n.Cancel, ButtonKind.Secondary, null, null, 32);
             cancel.Margin = new Thickness(8, 0, 0, 0);
             cancel.Click += delegate { Close(); };
             cancel.IsEnabled = !installing;
@@ -157,12 +158,12 @@ namespace Stackshot
             using (WF.OpenFileDialog d = new WF.OpenFileDialog())
             {
                 d.Filter = "ffmpeg.exe|ffmpeg.exe";
-                d.Title = "\u00BFD\u00F3nde est\u00E1 ffmpeg.exe?";
+                d.Title = I18n.T("\u00BFD\u00F3nde est\u00E1 ffmpeg.exe?", "Where is ffmpeg.exe?");
                 if (d.ShowDialog(Win32) != WF.DialogResult.OK) return;
                 string chosen = d.FileName;
                 // Asked off the window's thread: an exe that never answers must not freeze it.
                 browse.IsEnabled = download.IsEnabled = false;
-                SetStatus("Comprobando " + System.IO.Path.GetFileName(chosen) + "\u2026", false);
+                SetStatus(I18n.Fmt("Comprobando {0}\u2026", "Checking {0}\u2026", System.IO.Path.GetFileName(chosen)), false);
                 ThreadPool.QueueUserWorkItem(delegate
                 {
                     bool ok = AnswersAsFfmpeg(chosen);
@@ -172,7 +173,7 @@ namespace Stackshot
                         {
                             if (!IsVisible) return;
                             browse.IsEnabled = download.IsEnabled = !busy && !installing;
-                            if (!ok) { SetStatus("Ese archivo no responde como FFmpeg. Elige el ffmpeg.exe de una versi\u00F3n completa.", true); return; }
+                            if (!ok) { SetStatus(I18n.T("Ese archivo no responde como FFmpeg. Elige el ffmpeg.exe de una versi\u00F3n completa.", "That file does not respond as FFmpeg. Choose the ffmpeg.exe of a full version."), true); return; }
                             settings.Ffmpeg = chosen;
                             settings.Save();
                             result = chosen;
@@ -223,7 +224,7 @@ namespace Stackshot
                 DriveInfo drive = new DriveInfo(Path.GetPathRoot(Path.GetFullPath(Settings.DataDir)));
                 if (drive.IsReady && drive.AvailableFreeSpace < 400L * 1048576)
                 {
-                    SetStatus("Hacen falta unos 400 MB libres en " + drive.Name + " para descargar y preparar FFmpeg.", true);
+                    SetStatus(I18n.Fmt("Hacen falta unos 400 MB libres en {0} para descargar y preparar FFmpeg.", "Need about 400 MB free on {0} to download and prepare FFmpeg.", drive.Name), true);
                     return;
                 }
             }
@@ -251,7 +252,7 @@ namespace Stackshot
             browse.IsEnabled = false;
             track.Visibility = Visibility.Visible;
             ShowProgress();
-            SetStatus("Conectando\u2026", false);
+            SetStatus(I18n.T("Conectando\u2026", "Connecting\u2026"), false);
             try
             {
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
@@ -276,13 +277,13 @@ namespace Stackshot
                     if (mb != shownMb)
                     {
                         shownMb = mb;
-                        SetStatus(mb + " MB" + (total > 0 ? " de " + (total / 1048576) + " MB" : ""), false);
+                        SetStatus(total > 0 ? I18n.Fmt("{0} MB de {1} MB", "{0} MB of {1} MB", mb, total / 1048576) : mb + " MB", false);
                     }
                 };
                 web.DownloadFileCompleted += delegate(object o, System.ComponentModel.AsyncCompletedEventArgs e)
                 {
                     if (watch != null) watch.Stop();
-                    if (e.Cancelled && stalled && !IsDisposed) { TryDelete(zipPath); Fail("La descarga se ha quedado parada m\u00E1s de " + StallSeconds + " s. Comprueba la conexi\u00F3n y vuelve a intentarlo."); return; }
+                    if (e.Cancelled && stalled && !IsDisposed) { TryDelete(zipPath); Fail(I18n.Fmt("La descarga se ha quedado parada m\u00E1s de {0} s. Comprueba la conexi\u00F3n y vuelve a intentarlo.", "The download stalled for more than {0} s. Check your connection and try again.", StallSeconds)); return; }
                     if (e.Cancelled || IsDisposed) { TryDelete(zipPath); return; }
                     if (e.Error != null) { TryDelete(zipPath); Fail(DownloadProblem(e.Error)); return; }
                     // Verifying and extracting takes a few seconds; closing is blocked meanwhile.
@@ -290,7 +291,7 @@ namespace Stackshot
                     cancel.IsEnabled = false;
                     progress = 1;
                     ShowProgress();
-                    SetStatus("Comprobando que es el original y preparando\u2026", false);
+                    SetStatus(I18n.T("Comprobando que es el original y preparando\u2026", "Verifying authenticity and setting up\u2026"), false);
                     ThreadPool.QueueUserWorkItem(delegate { Install(); });
                 };
                 web.DownloadFileAsync(new Uri(Url), zipPath);
@@ -308,7 +309,7 @@ namespace Stackshot
                 using (FileStream fs = File.OpenRead(zipPath))
                 using (SHA256 sha = SHA256.Create())
                     actual = BitConverter.ToString(sha.ComputeHash(fs)).Replace("-", "").ToLowerInvariant();
-                if (actual != Sha256) error = "El archivo descargado no es el original y se ha descartado por seguridad. Vuelve a intentarlo.";
+                if (actual != Sha256) error = I18n.T("El archivo descargado no es el original y se ha descartado por seguridad. Vuelve a intentarlo.", "The downloaded file is not original and was discarded for security. Try again.");
                 else
                 {
                     bool found = false;
@@ -323,7 +324,7 @@ namespace Stackshot
                             break;
                         }
                     }
-                    if (!found) error = "El paquete descargado no trae ffmpeg.exe.";
+                    if (!found) error = I18n.T("El paquete descargado no trae ffmpeg.exe.", "The downloaded package does not contain ffmpeg.exe.");
                     else
                     {
                         if (File.Exists(exe)) File.Delete(exe);
@@ -359,18 +360,18 @@ namespace Stackshot
                     case WebExceptionStatus.NameResolutionFailure:
                     case WebExceptionStatus.ConnectFailure:
                     case WebExceptionStatus.ProxyNameResolutionFailure:
-                        return "No hay conexi\u00F3n con el servidor de descarga. Comprueba Internet o pregunta si tu red lo permite.";
+                        return I18n.T("No hay conexi\u00F3n con el servidor de descarga. Comprueba Internet o pregunta si tu red lo permite.", "No connection to download server. Check Internet or ask if your network allows it.");
                     case WebExceptionStatus.Timeout:
-                        return "La descarga ha tardado demasiado. Vuelve a intentarlo.";
+                        return I18n.T("La descarga ha tardado demasiado. Vuelve a intentarlo.", "The download timed out. Try again.");
                     case WebExceptionStatus.TrustFailure:
                     case WebExceptionStatus.SecureChannelFailure:
-                        return "No se pudo establecer una conexi\u00F3n segura (quiz\u00E1 un proxy de la empresa). Puedes descargar FFmpeg t\u00FA y elegirlo con \u00ABYa lo tengo\u2026\u00BB.";
+                        return I18n.T("No se pudo establecer una conexi\u00F3n segura (quiz\u00E1 un proxy de la empresa). Puedes descargar FFmpeg t\u00FA y elegirlo con \u00ABYa lo tengo\u2026\u00BB.", "Could not establish a secure connection (perhaps a corporate proxy). You can download FFmpeg yourself and pick it with \u201CI already have it\u2026\u201D.");
                 }
                 HttpWebResponse r = w.Response as HttpWebResponse;
-                if (r != null && (int)r.StatusCode == 407) return "El proxy de tu red pide usuario y contrase\u00F1a. Puedes descargar FFmpeg t\u00FA y elegirlo con \u00ABYa lo tengo\u2026\u00BB.";
+                if (r != null && (int)r.StatusCode == 407) return I18n.T("El proxy de tu red pide usuario y contrase\u00F1a. Puedes descargar FFmpeg t\u00FA y elegirlo con \u00ABYa lo tengo\u2026\u00BB.", "Your network proxy requires username and password. You can download FFmpeg yourself and pick it with \u201CI already have it\u2026\u201D.");
             }
-            if (ex.InnerException is IOException || ex is IOException) return "No se pudo guardar la descarga: quiz\u00E1 no quede espacio en el disco.";
-            return "No se pudo descargar FFmpeg. Vuelve a intentarlo.";
+            if (ex.InnerException is IOException || ex is IOException) return I18n.T("No se pudo guardar la descarga: quiz\u00E1 no quede espacio en el disco.", "Could not save download: disk might be full.");
+            return I18n.T("No se pudo descargar FFmpeg. Vuelve a intentarlo.", "Could not download FFmpeg. Try again.");
         }
 
         static void TryDelete(string f)
@@ -386,7 +387,7 @@ namespace Stackshot
             track.Visibility = Visibility.Collapsed;
             download.IsEnabled = true;
             browse.IsEnabled = true;
-            download.Label = "Reintentar";
+            download.Label = I18n.T("Reintentar", "Retry");
         }
 
         protected override void OnClosed(EventArgs e)

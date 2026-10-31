@@ -313,7 +313,8 @@ namespace Stackshot
                 {
                     failedBefore = null;
                     autoFailed = problemTag = Available.Tag;
-                    Problem = "La instalaci\u00F3n de la " + Available.Version.ToString(3) + " no se complet\u00F3. Vuelve a intentarlo o desc\u00E1rgala desde GitHub.";
+                    Problem = I18n.Fmt("La instalaci\u00F3n de la {0} no se complet\u00F3. Vuelve a intentarlo o desc\u00E1rgala desde GitHub.",
+                                       "Installing {0} did not complete. Try again or download it from GitHub.", Available.Version.ToString(3));
                     ProblemInstalling = true;
                 }
                 // Found from Acerca de: it's already on screen, no need to announce it.
@@ -471,23 +472,23 @@ namespace Stackshot
         // A failure in words for Acerca de (the details go to the log).
         static string Why(Exception ex, bool download)
         {
-            string what = download ? "descargar la actualizaci\u00F3n" : "consultar GitHub";
+            string what = download ? I18n.T("descargar la actualizaci\u00F3n", "download the update") : I18n.T("consultar GitHub", "check GitHub");
             WebException we = ex as WebException;
             if (we == null)
             {
-                if (ex is InvalidDataException) return "No se pudo " + what + " (" + ex.Message.TrimEnd('.') + ")."; // our own words
-                if (ex is IOException || ex is UnauthorizedAccessException) return "No se pudo " + what + ". " + ShotStack.Explain(ex, Path.Combine(UpdateDir, "x"));
-                return "No se pudo " + what + ". Se volver\u00E1 a intentar m\u00E1s tarde.";
+                if (ex is InvalidDataException) return I18n.Fmt("No se pudo {0} ({1}).", "Could not {0} ({1}).", what, ex.Message.TrimEnd('.'));
+                if (ex is IOException || ex is UnauthorizedAccessException) return I18n.Fmt("No se pudo {0}. ", "Could not {0}. ", what) + ShotStack.Explain(ex, Path.Combine(UpdateDir, "x"));
+                return I18n.Fmt("No se pudo {0}. Se volver\u00E1 a intentar m\u00E1s tarde.", "Could not {0}. Will try again later.", what);
             }
             HttpWebResponse resp = we.Response as HttpWebResponse;
             if (resp != null)
             {
                 int code = 0;
                 try { code = (int)resp.StatusCode; resp.Close(); } catch { }
-                if (code == 403 || code == 429) return "GitHub ha limitado las consultas durante un rato; se volver\u00E1 a intentar m\u00E1s tarde.";
-                if (code == 407) return "El proxy de la red no deja " + what + ".";
-                if (code >= 500) return "GitHub no responde ahora mismo; se volver\u00E1 a intentar m\u00E1s tarde.";
-                return "No se pudo " + what + " (error " + code + ").";
+                if (code == 403 || code == 429) return I18n.T("GitHub ha limitado las consultas durante un rato; se volver\u00E1 a intentar m\u00E1s tarde.", "GitHub rate limit reached; will try again later.");
+                if (code == 407) return I18n.Fmt("El proxy de la red no deja {0}.", "The network proxy does not let Stackshot {0}.", what);
+                if (code >= 500) return I18n.T("GitHub no responde ahora mismo; se volver\u00E1 a intentar m\u00E1s tarde.", "GitHub is not responding right now; will try again later.");
+                return I18n.Fmt("No se pudo {0} (error {1}).", "Could not {0} (error {1}).", what, code);
             }
             switch (we.Status)
             {
@@ -498,12 +499,12 @@ namespace Stackshot
                 case WebExceptionStatus.ConnectionClosed:
                 case WebExceptionStatus.ReceiveFailure:
                 case WebExceptionStatus.SendFailure:
-                    return download ? "Se ha perdido la conexi\u00F3n durante la descarga." : "Sin conexi\u00F3n con GitHub. Se volver\u00E1 a intentar cuando vuelva la red.";
+                    return download ? I18n.T("Se ha perdido la conexi\u00F3n durante la descarga.", "Connection lost during download.") : I18n.T("Sin conexi\u00F3n con GitHub. Se volver\u00E1 a intentar cuando vuelva la red.", "No connection to GitHub. Will try again when network is restored.");
                 case WebExceptionStatus.TrustFailure:
                 case WebExceptionStatus.SecureChannelFailure:
-                    return "No se pudo abrir una conexi\u00F3n segura con GitHub.";
+                    return I18n.T("No se pudo abrir una conexi\u00F3n segura con GitHub.", "Could not open a secure connection to GitHub.");
             }
-            return "No se pudo " + what + ". Se volver\u00E1 a intentar m\u00E1s tarde.";
+            return I18n.Fmt("No se pudo {0}. Se volver\u00E1 a intentar m\u00E1s tarde.", "Could not {0}. Will try again later.", what);
         }
 
         // ---- Installing
@@ -561,7 +562,7 @@ namespace Stackshot
                         error = Matches(exe, r);
                     }
                 }
-                catch (FormatException) { error = "La firma de la actualizaci\u00F3n no es v\u00E1lida; se ha descartado."; }
+                catch (FormatException) { error = I18n.T("La firma de la actualizaci\u00F3n no es v\u00E1lida; se ha descartado.", "The update's signature is not valid; it was discarded."); }
                 catch (Exception ex)
                 {
                     error = Why(ex, true);
@@ -601,14 +602,14 @@ namespace Stackshot
             using (Stream s = resp.GetResponseStream())
             {
                 long total = resp.ContentLength;
-                if (total > MaxDownload) throw new InvalidDataException("demasiado grande");
+                if (total > MaxDownload) throw new InvalidDataException(I18n.T("demasiado grande", "too large"));
                 MemoryStream ms = new MemoryStream(total > 0 ? (int)total : 1 << 20);
                 byte[] buf = new byte[81920];
                 int n, shown = Environment.TickCount;
                 while ((n = s.Read(buf, 0, buf.Length)) > 0)
                 {
                     ms.Write(buf, 0, n);
-                    if (ms.Length > MaxDownload) throw new InvalidDataException("demasiado grande");
+                    if (ms.Length > MaxDownload) throw new InvalidDataException(I18n.T("demasiado grande", "too large"));
                     if (report && total > 0 && unchecked(Environment.TickCount - shown) >= 60)
                     {
                         shown = Environment.TickCount;
@@ -628,7 +629,7 @@ namespace Stackshot
             string fv = FileVersionInfo.GetVersionInfo(exe).FileVersion ?? "";
             if (!Version.TryParse(fv, out got) || got <= Installer.MyVersion || got.Major != r.Version.Major || got.Minor != r.Version.Minor ||
                 Math.Max(0, got.Build) != r.Version.Build)
-                return "La versi\u00F3n descargada no coincide con la publicada; se ha descartado.";
+                return I18n.T("La versi\u00F3n descargada no coincide con la publicada; se ha descartado.", "The downloaded version does not match the published one; it was discarded.");
             return null;
         }
 
@@ -667,7 +668,7 @@ namespace Stackshot
                     byte[] data = new byte[fs.Length];
                     int off = 0, n;
                     while (off < data.Length && (n = fs.Read(data, off, data.Length - off)) > 0) off += n;
-                    error = off != data.Length ? "La descarga est\u00E1 incompleta; se ha descartado." : Verify(data, readySig, r.Sha256) ?? Matches(readyExe, r);
+                    error = off != data.Length ? I18n.T("La descarga est\u00E1 incompleta; se ha descartado.", "The download is incomplete; it was discarded.") : Verify(data, readySig, r.Sha256) ?? Matches(readyExe, r);
                     if (error == null)
                     {
                         ShotStack.Log("Actualizando a " + r.Tag + (manual ? "" : " (autom\u00E1tica)") + " (verificada: SHA-256 y firma)");
@@ -685,7 +686,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Iniciar la actualizaci\u00F3n: " + ex);
-                error = "No se pudo iniciar la actualizaci\u00F3n. " + ShotStack.ExplainOpen(ex, readyExe);
+                error = I18n.T("No se pudo iniciar la actualizaci\u00F3n. ", "Could not start update. ") + ShotStack.ExplainOpen(ex, readyExe);
             }
             if (error != null) Failed(r, error, !manual, false);
         }
@@ -697,7 +698,7 @@ namespace Stackshot
             try { code = p.ExitCode; p.Dispose(); } catch { }
             if (installer == p) installer = null;
             if (Doing != Step.Installing) return;
-            Failed(r, "La instalaci\u00F3n no se ha completado" + (code != 0 ? " (c\u00F3digo " + code + ")" : "") + ". Vuelve a intentarlo o desc\u00E1rgala desde GitHub.",
+            Failed(r, I18n.Fmt("La instalaci\u00F3n no se ha completado{0}. Vuelve a intentarlo o desc\u00E1rgala desde GitHub.", "Installation did not complete{0}. Try again or download from GitHub.", code != 0 ? " (" + I18n.T("c\u00F3digo ", "code ") + code + ")" : ""),
                    !launchManual, false);
         }
 
@@ -741,12 +742,12 @@ namespace Stackshot
         {
             string actual;
             using (SHA256 sha = SHA256.Create()) actual = BitConverter.ToString(sha.ComputeHash(data)).Replace("-", "").ToLowerInvariant();
-            if (sha256 == null || actual != sha256) return "La descarga no coincide con la suma SHA-256 publicada; se ha descartado.";
+            if (sha256 == null || actual != sha256) return I18n.T("La descarga no coincide con la suma SHA-256 publicada; se ha descartado.", "The download does not match the published SHA-256 checksum; it was discarded.");
             using (RSACng rsa = new RSACng())
             {
                 rsa.FromXmlString(PublicKey);
                 if (sig == null || !rsa.VerifyData(data, sig, HashAlgorithmName.SHA256, RSASignaturePadding.Pss))
-                    return "La firma de la actualizaci\u00F3n no es v\u00E1lida; se ha descartado.";
+                    return I18n.T("La firma de la actualizaci\u00F3n no es v\u00E1lida; se ha descartado.", "The update's signature is not valid; it was discarded.");
             }
             return null;
         }
@@ -758,7 +759,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("P\u00E1gina de la versi\u00F3n: " + ex.Message);
-                if (owner != null) owner.Notify("No se pudo abrir el navegador", page);
+                if (owner != null) owner.Notify(I18n.T("No se pudo abrir el navegador", "Could not open browser"), page);
             }
         }
 

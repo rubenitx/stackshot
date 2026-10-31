@@ -56,8 +56,8 @@ namespace Stackshot
 
         FrameworkElement OutlineTool()
         {
-            outlineButton = new OutlineToggle("\u00CDndice") { Margin = new Thickness(8, 0, 0, 0), On = outlineOn };
-            outlineButton.ToolTip = "\u00CDndice: mostrar u ocultar los t\u00EDtulos del documento";
+            outlineButton = new OutlineToggle(I18n.T("\u00CDndice", "Contents")) { Margin = new Thickness(8, 0, 0, 0), On = outlineOn };
+            outlineButton.ToolTip = I18n.T("\u00CDndice: mostrar u ocultar los t\u00EDtulos del documento", "Contents: show or hide the document's headings");
             outlineButton.Click += delegate { SetOutline(!outlineOn); };
             return outlineButton;
         }
@@ -110,7 +110,7 @@ namespace Stackshot
             Grid g = new Grid();
             g.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             g.RowDefinitions.Add(new RowDefinition());
-            g.Children.Add(new TextBlock { Text = "\u00CDndice", FontWeight = FontWeights.SemiBold, FontSize = 12, Foreground = Ds.Brush(pal.Label2), Margin = new Thickness(18, 12, 12, 6) });
+            g.Children.Add(new TextBlock { Text = I18n.T("\u00CDndice", "Contents"), FontWeight = FontWeights.SemiBold, FontSize = 12, Foreground = Ds.Brush(pal.Label2), Margin = new Thickness(18, 12, 12, 6) });
             outlineList = new NamedListBox { ItemName = delegate(object o) { MdHeading h = o as MdHeading; return h != null ? h.Text : null; } };
             string acc = Color.FromArgb(pal.High ? (byte)0xFF : pal.Dark ? (byte)0x55 : (byte)0x2E, pal.Accent.R, pal.Accent.G, pal.Accent.B).ToString();
             string xaml =
@@ -137,7 +137,7 @@ namespace Stackshot
             VirtualizingStackPanel.SetIsVirtualizing(outlineList, true);
             VirtualizingStackPanel.SetVirtualizationMode(outlineList, VirtualizationMode.Recycling);
             outlineList.ItemTemplate = new DataTemplate { VisualTree = new FrameworkElementFactory(typeof(MdOutlineRow)) };
-            System.Windows.Automation.AutomationProperties.SetName(outlineList, "\u00CDndice del documento");
+            System.Windows.Automation.AutomationProperties.SetName(outlineList, I18n.T("\u00CDndice del documento", "Document contents"));
             outlineList.PreviewMouseLeftButtonUp += delegate(object o, MouseButtonEventArgs e)
             {
                 ListBoxItem item = e.OriginalSource is DependencyObject ? ItemsControl.ContainerFromElement(outlineList, (DependencyObject)e.OriginalSource) as ListBoxItem : null;
@@ -155,7 +155,7 @@ namespace Stackshot
             g.Children.Add(outlineList);
             outlineEmpty = new TextBlock
             {
-                Text = "No hay t\u00EDtulos todav\u00EDa. Las l\u00EDneas que empiezan por # aparecer\u00E1n aqu\u00ED.",
+                Text = I18n.T("No hay t\u00EDtulos todav\u00EDa. Las l\u00EDneas que empiezan por # aparecer\u00E1n aqu\u00ED.", "No headings yet. Lines that start with # will show up here."),
                 FontSize = 12.5, Foreground = Ds.Brush(pal.Label2), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(18, 4, 16, 0), Visibility = Visibility.Collapsed
             };
             Grid.SetRow(outlineEmpty, 1);

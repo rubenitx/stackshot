@@ -82,6 +82,7 @@ namespace Stackshot
             watch.Interval = 30;
             watch.Tick += WatchTick;
             Ds.Changed += OnTheme;
+            I18n.Changed += OnTheme;
         }
 
         protected override bool PerPixel { get { return true; } }
@@ -452,7 +453,7 @@ namespace Stackshot
             if (Hotkeys.Split(combo).Count > 0)
             {
                 it.Caps = Hotkeys.Display(combo).Split(new string[] { " + " }, StringSplitOptions.None);
-                for (int i = 0; i < it.Caps.Length; i++) if (it.Caps[i] == "May\u00FAs") it.Caps[i] = ShiftKey;
+                for (int i = 0; i < it.Caps.Length; i++) if (it.Caps[i] == "May\u00FAs" || it.Caps[i] == "Shift") it.Caps[i] = ShiftKey;
                 it.Caps[it.Caps.Length - 1] = KeyCap(Hotkeys.Split(combo)[0], it.Caps[it.Caps.Length - 1]);
             }
             return it;
@@ -466,7 +467,7 @@ namespace Stackshot
             uint mods;
             Keys key;
             if (!Hotkeys.TryParse(combo, out mods, out key)) return shown;
-            if (key == Keys.Space) return "Espacio";
+            if (key == Keys.Space) return I18n.T("Espacio", "Space");
             if ((key >= Keys.D0 && key <= Keys.D9) || (key >= Keys.F1 && key <= Keys.F24) || key == Keys.PrintScreen || key == Keys.Escape) return shown;
             uint ch = MapVirtualKey((uint)key, 2) & 0x7FFFFFFF; // MAPVK_VK_TO_CHAR; the top bit marks dead keys
             return ch > 32 ? char.ToUpper((char)ch, CultureInfo.CurrentCulture).ToString() : shown;
@@ -477,17 +478,17 @@ namespace Stackshot
             items.Clear();
             Add(KHead, null, null, null, 0);
             Add(KLine, null, null, null, 0);
-            AddCapture("region", "\u00C1rea", "area", 1);
-            AddCapture("repeat", "Repetir \u00E1rea", "update", 1);
-            AddCapture("delayed", "\u00C1rea en " + settings.CaptureDelay + " s", "clock", 1);
-            AddCapture("screen", "Pantalla", "screen", 1);
-            AddCapture("window", "Ventana", "window", 1);
-            AddCapture("scroll", scrolling ? "Terminar desplazamiento" : "Desplazamiento", "scroll", 1);
-            AddCapture("text", "Texto", "textscan", 1);
+            AddCapture("region", I18n.T("\u00C1rea", "Area"), "area", 1);
+            AddCapture("repeat", I18n.T("Repetir \u00E1rea", "Repeat area"), "update", 1);
+            AddCapture("delayed", I18n.T("\u00C1rea en " + settings.CaptureDelay + " s", "Area in " + settings.CaptureDelay + " s"), "clock", 1);
+            AddCapture("screen", I18n.T("Pantalla", "Screen"), "screen", 1);
+            AddCapture("window", I18n.T("Ventana", "Window"), "window", 1);
+            AddCapture("scroll", scrolling ? I18n.T("Terminar desplazamiento", "Finish scrolling") : I18n.T("Desplazamiento", "Scrolling"), "scroll", 1);
+            AddCapture("text", I18n.T("Texto", "Text"), "textscan", 1);
             Add(KLine, null, null, null, 0);
-            AddCapture("video", recording ? "Detener grabaci\u00F3n" : "V\u00EDdeo", recording ? "stop!" : "video", 2).Alert = recording;
+            AddCapture("video", recording ? I18n.T("Detener grabaci\u00F3n", "Stop recording") : I18n.T("V\u00EDdeo", "Video"), recording ? "stop!" : "video", 2).Alert = recording;
             bool paused = recording && Recorder.Paused;
-            if (recording && Recorder.CanPause) Add(KRow, "pause", paused ? "Reanudar grabaci\u00F3n" : "Pausar grabaci\u00F3n", paused ? "play" : "pause", 2);
+            if (recording && Recorder.CanPause) Add(KRow, "pause", paused ? I18n.T("Reanudar grabaci\u00F3n", "Resume recording") : I18n.T("Pausar grabaci\u00F3n", "Pause recording"), paused ? "play" : "pause", 2);
             if (!recording) AddCapture("gif", "GIF", "gif", 2);
             AddCapture("markdown", "Markdown", "markdown", 2);
             Add(KLine, null, null, null, 0);
@@ -496,17 +497,17 @@ namespace Stackshot
                 Add(KStrip, null, null, null, 0);
                 Add(KLine, null, null, null, 0);
             }
-            Add(KRow, "home", "Abrir Stackshot", "home", 3);
-            Add(KRow, "folder", "Abrir capturas guardadas", "folder", 3);
-            Add(KRow, "openvideo", "Abrir v\u00EDdeo\u2026", "video", 3);
-            if (settings.XmlWatch) Add(KRow, "lastxml", "Abrir el \u00FAltimo XML", "doc", 3);
-            Add(KRow, "closeall", "Cerrar todas las miniaturas", "stack", 3).Enabled = HasCards == null || HasCards();
-            Add(KRow, "settings", "Ajustes\u2026", "gear", 3);
+            Add(KRow, "home", I18n.T("Abrir Stackshot", "Open Stackshot"), "home", 3);
+            Add(KRow, "folder", I18n.T("Abrir capturas guardadas", "Open saved captures"), "folder", 3);
+            Add(KRow, "openvideo", I18n.T("Abrir v\u00EDdeo\u2026", "Open video\u2026"), "video", 3);
+            if (settings.XmlWatch) Add(KRow, "lastxml", I18n.T("Abrir el \u00FAltimo XML", "Open latest XML"), "doc", 3);
+            Add(KRow, "closeall", I18n.T("Cerrar todas las miniaturas", "Close all thumbnails"), "stack", 3).Enabled = HasCards == null || HasCards();
+            Add(KRow, "settings", I18n.T("Ajustes\u2026", "Settings\u2026"), "gear", 3);
             Add(KLine, null, null, null, 0);
-            Add(KRow, "quit", "Salir", "power", 4);
+            Add(KRow, "quit", I18n.T("Salir", "Quit"), "power", 4);
             statusAlert = recording;
-            status = recording ? (paused ? "Grabaci\u00F3n en pausa" : "Grabando la pantalla") : scrolling ? "Captura con desplazamiento en curso"
-                   : today == 1 ? "1 captura hoy" : today > 1 ? today + " capturas hoy" : "Listo para capturar";
+            status = recording ? (paused ? I18n.T("Grabaci\u00F3n en pausa", "Recording paused") : I18n.T("Grabando la pantalla", "Recording screen")) : scrolling ? I18n.T("Captura con desplazamiento en curso", "Scrolling capture in progress")
+                   : today == 1 ? I18n.T("1 captura hoy", "1 capture today") : today > 1 ? I18n.T(today + " capturas hoy", today + " captures today") : I18n.T("Listo para capturar", "Ready to capture");
         }
 
         // Items from the current state; lays out (and drops the cached layers) only if anything changed. fit is the
@@ -929,7 +930,7 @@ namespace Stackshot
         void PaintStrip(M.DrawingContext dc, Item it)
         {
             Palette pal = Ds.Brushes;
-            M.FormattedText t = Ink.Px("Recientes", Ds.Semibold, U(11), pal.Label2);
+            M.FormattedText t = Ink.Px(I18n.T("Recientes", "Recent"), Ds.Semibold, U(11), pal.Label2);
             dc.DrawText(t, new W.Point(thumbR[0].X, Math.Round(thumbR[0].Y - Px(19))));
             double rr = Px(5);
             for (int i = 0; i < Recent && i < recent.Count; i++)
@@ -969,9 +970,9 @@ namespace Stackshot
         {
             DateTime d = t.Date, now = DateTime.Today;
             string hm = t.ToString("HH:mm", Es);
-            if (d == now) return "Hoy, " + hm;
-            if (d == now.AddDays(-1)) return "Ayer, " + hm;
-            return t.ToString("d MMM", Es).TrimEnd('.') + ", " + hm;
+            if (d == now) return I18n.T("Hoy, ", "Today, ") + hm;
+            if (d == now.AddDays(-1)) return I18n.T("Ayer, ", "Yesterday, ") + hm;
+            return (I18n.IsSpanish ? t.ToString("d MMM", Es).TrimEnd('.') : t.ToString("MMM d", CultureInfo.GetCultureInfo("en-US"))) + ", " + hm;
         }
 
         // ---- Hover, keyboard and clicks
@@ -1207,6 +1208,7 @@ namespace Stackshot
             if (disposing)
             {
                 Ds.Changed -= OnTheme;
+                I18n.Changed -= OnTheme;
                 watch.Dispose();
                 if (dib != null) { dib.Dispose(); dib = null; }
             }

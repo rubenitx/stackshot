@@ -191,7 +191,7 @@ namespace Stackshot
         public static string Size(long bytes)
         {
             if (bytes < 0) return "\u2026";
-            if (bytes == 0) return "Vac\u00EDa";
+            if (bytes == 0) return I18n.T("Vac\u00EDa", "Empty");
             // The unit is chosen from the rounded value, so nothing is ever shown as "1024 KB" or "1024 MB".
             int kb = Math.Max(1, (int)Math.Round(bytes / 1024.0));
             if (kb < 1024) return kb + " KB";

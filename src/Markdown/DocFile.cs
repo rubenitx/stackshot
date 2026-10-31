@@ -35,7 +35,7 @@ namespace Stackshot
                 int cp = Enc.CodePage;
                 string n = cp == 65001 ? "UTF-8" : cp == 1200 ? "UTF-16 LE" : cp == 1201 ? "UTF-16 BE" : cp == 12000 ? "UTF-32 LE" : cp == 12001 ? "UTF-32 BE"
                          : cp == 1252 ? "Windows-1252" : cp == 28591 ? "ISO-8859-1" : Enc.WebName.ToUpperInvariant();
-                return Bom && cp == 65001 ? n + " con BOM" : n;
+                return Bom && cp == 65001 ? n + I18n.T(" con BOM", " with BOM") : n;
             }
         }
 
@@ -50,10 +50,10 @@ namespace Stackshot
             try
             {
                 FileInfo fi = new FileInfo(path);
-                if (!fi.Exists) { error = "No encuentro el archivo: " + path; return null; }
-                if (!MarkdownTools.Supported(fi.Extension)) { error = "Solo admito archivos .md, .xml o .txt: " + fi.Name; return null; }
+                if (!fi.Exists) { error = I18n.Fmt("No encuentro el archivo: {0}", "Cannot find the file: {0}", path); return null; }
+                if (!MarkdownTools.Supported(fi.Extension)) { error = I18n.Fmt("Solo admito archivos .md, .xml o .txt: {0}", "Only .md, .xml or .txt files are supported: {0}", fi.Name); return null; }
                 bool xml = XmlDoc.IsXmlPath(path);
-                if (fi.Length > (xml ? XmlDoc.MaxChars : MarkdownTools.MaxBytes)) { error = "El archivo pesa demasiado (m\u00E1ximo " + (xml ? "8" : "2") + " MB): " + fi.Name; return null; }
+                if (fi.Length > (xml ? XmlDoc.MaxChars : MarkdownTools.MaxBytes)) { error = I18n.Fmt("El archivo pesa demasiado (m\u00E1ximo {0} MB): {1}", "The file is too big (maximum {0} MB): {1}", xml ? "8" : "2", fi.Name); return null; }
                 byte[] b = File.ReadAllBytes(path);
                 DocFile d = FromBytes(b, xml);
                 // An empty note is a fine thing to open and start writing in; an empty XML has no tree to show.
@@ -69,7 +69,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Documento: " + ex.Message);
-                error = "No he podido leer el archivo: " + path;
+                error = I18n.Fmt("No he podido leer el archivo: {0}", "Could not read the file: {0}", path);
                 return null;
             }
         }
@@ -238,12 +238,18 @@ namespace Stackshot
             }
             catch (EncoderFallbackException)
             {
-                warning = "Hay caracteres que no caben en " + Display(enc, false) + ".";
+                warning = I18n.Fmt("Hay caracteres que no caben en {0}.", "Some characters don't fit in {0}.", Display(enc, false));
                 return null;
             }
         }
 
-        public string LossyWarning { get { return "El archivo tiene bytes que no son " + EncodingName + " v\u00E1lido."; } }
+        public string LossyWarning { get { return I18n.Fmt("El archivo tiene bytes que no son {0} v\u00E1lido.", "The file has bytes that are not valid {0}.", EncodingName); } }
+
+        // The message Encode gives when a character does not fit the encoding (in either language).
+        public static bool IsCharsetError(string err)
+        {
+            return err != null && (err.StartsWith("Hay caracteres que no caben", StringComparison.Ordinal) || err.StartsWith("Some characters don't fit in", StringComparison.Ordinal));
+        }
 
         // The user agreed to write the unreadable bytes as U+FFFD.
         public void AcceptLoss() { Lossy = false; }
@@ -300,7 +306,7 @@ namespace Stackshot
         {
             error = null;
             if (target == null) target = Path;
-            if (target == null) { error = "Elige d\u00F3nde guardarlo."; return false; }
+            if (target == null) { error = I18n.T("Elige d\u00F3nde guardarlo.", "Choose where to save it."); return false; }
             bool same = Path != null && string.Equals(Full(target), Full(Path), StringComparison.OrdinalIgnoreCase);
             if (same && text == Text && Check() == DiskState.Unchanged) return true;
             string warning;
@@ -348,7 +354,7 @@ namespace Stackshot
             {
                 if (File.Exists(target) && (File.GetAttributes(target) & FileAttributes.ReadOnly) != 0)
                 {
-                    error = "Este archivo es de solo lectura. Usa \u00ABGuardar como\u2026\u00BB.";
+                    error = I18n.T("Este archivo es de solo lectura. Usa \u00ABGuardar como\u2026\u00BB.", "This file is read-only. Use \u201CSave as\u2026\u201D.");
                     return false;
                 }
             }
@@ -402,9 +408,9 @@ namespace Stackshot
                 if (tmpWritten) { try { File.Delete(tmp); } catch (Exception ex) { ShotStack.Log("Guardar (temporal): " + ex.Message); } }
                 return true;
             }
-            catch (UnauthorizedAccessException) { error = "No tengo permiso para escribir en " + name + ". Usa \u00ABGuardar como\u2026\u00BB."; }
-            catch (IOException ex) { error = "No he podido guardar " + name + ": " + Short(ex.Message); }
-            catch (Exception ex) { error = "No he podido guardar " + name + ": " + Short(ex.Message); }
+            catch (UnauthorizedAccessException) { error = I18n.Fmt("No tengo permiso para escribir en {0}. Usa \u00ABGuardar como\u2026\u00BB.", "No permission to write to {0}. Use \u201CSave as\u2026\u201D.", name); }
+            catch (IOException ex) { error = I18n.Fmt("No he podido guardar {0}: {1}", "Could not save {0}: {1}", name, Short(ex.Message)); }
+            catch (Exception ex) { error = I18n.Fmt("No he podido guardar {0}: {1}", "Could not save {0}: {1}", name, Short(ex.Message)); }
             // It couldn't even be opened (held by another program): the original is untouched and the text is still in the
             // window, so the temporary copy would only be clutter next to it.
             if (!opened && tmpWritten && File.Exists(target)) { try { File.Delete(tmp); } catch (Exception ex) { ShotStack.Log("Guardar (temporal): " + ex.Message); } }

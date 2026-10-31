@@ -51,7 +51,7 @@ namespace Stackshot
         void OpenAttachment(string value, string hint)
         {
             fade.Stop();
-            status = "Abriendo el adjunto\u2026";
+            status = I18n.T("Abriendo el adjunto\u2026", "Opening attachment\u2026");
             statusBad = false;
             Stats();
             Cursor = Cursors.AppStarting;
@@ -74,7 +74,7 @@ namespace Stackshot
                         {
                             doc = DocFile.FromBytes(data, t.Kind == AttachKind.Xml);
                             err = t.Kind == AttachKind.Xml ? XmlDoc.CheckText(doc.Text) : MarkdownTools.Validate(doc.Text);
-                            if (err != null) { err += " Usa \u00ABGuardar el adjunto como\u2026\u00BB."; doc = null; }
+                            if (err != null) { err += " " + I18n.T("Usa \u00ABGuardar el adjunto como\u2026\u00BB.", "Use \u201CSave attachment as\u2026\u201D."); doc = null; }
                         }
                         if (!XmlAttachment.Blocked(t, hint) && (t.Image || t.Document))
                         {
@@ -85,7 +85,7 @@ namespace Stackshot
                         }
                     }
                 }
-                catch (Exception ex) { ShotStack.Log("Adjunto: " + ex.Message); err = "No he podido leer el adjunto."; data = null; }
+                catch (Exception ex) { ShotStack.Log("Adjunto: " + ex.Message); err = I18n.T("No he podido leer el adjunto.", "Could not read attachment."); data = null; }
                 try
                 {
                     Dispatcher.BeginInvoke(new Action(delegate
@@ -103,21 +103,21 @@ namespace Stackshot
 
         void Opened(byte[] data, AttachType t, string hint, string path, DocFile doc, string err)
         {
-            if (data == null) { Say(err ?? "No he podido leer el adjunto.", true); return; }
-            const string SaveIt = "usa \u00ABGuardar el adjunto como\u2026\u00BB";
-            if (XmlAttachment.Blocked(t, hint)) { Say("Por seguridad no abro programas, scripts ni accesos directos: " + SaveIt + ".", true); return; }
+            if (data == null) { Say(err ?? I18n.T("No he podido leer el adjunto.", "Could not read attachment."), true); return; }
+            string saveIt = I18n.T("usa \u00ABGuardar el adjunto como\u2026\u00BB", "use \u201CSave attachment as\u2026\u201D");
+            if (XmlAttachment.Blocked(t, hint)) { Say(I18n.Fmt("Por seguridad no abro programas, scripts ni accesos directos: {0}.", "For security reasons programs, scripts and shortcuts are not opened: {0}.", saveIt), true); return; }
             if (t.Readable)
             {
-                if (doc == null) { Say(err ?? "No he podido leer el adjunto.", true); return; }
+                if (doc == null) { Say(err ?? I18n.T("No he podido leer el adjunto.", "Could not read attachment."), true); return; }
                 ShowAttachmentText(doc, t, hint);
                 return;
             }
             if (!t.Image && !t.Document)
             {
-                Say(t.Kind == AttachKind.Zip ? "Es un archivo ZIP: " + SaveIt + "." : t.Kind == AttachKind.OfficeMacros ? "Tiene macros: " + SaveIt + " si conf\u00EDas en \u00E9l." : "No s\u00E9 qu\u00E9 tipo de archivo es: " + SaveIt + ".", true);
+                Say(t.Kind == AttachKind.Zip ? I18n.Fmt("Es un archivo ZIP: {0}.", "It is a ZIP file: {0}.", saveIt) : t.Kind == AttachKind.OfficeMacros ? I18n.Fmt("Tiene macros: {0} si conf\u00EDas en \u00E9l.", "Contains macros: {0} if you trust it.", saveIt) : I18n.Fmt("No s\u00E9 qu\u00E9 tipo de archivo es: {0}.", "Unknown file type: {0}.", saveIt), true);
                 return;
             }
-            if (path == null) { Say(err ?? "No he podido escribir el adjunto.", true); return; }
+            if (path == null) { Say(err ?? I18n.T("No he podido escribir el adjunto.", "Could not write attachment."), true); return; }
             if (!attachHooked)
             {
                 attachHooked = true;
@@ -130,13 +130,15 @@ namespace Stackshot
                 Func<string, bool> hook = OpenInEditor;
                 try { ok = hook != null ? hook(path) : owner != null && owner.OpenEditor(path); }
                 catch (Exception ex) { ShotStack.Log("Adjunto en el editor: " + ex.Message); }
-                if (!ok) Say("No he podido abrir la imagen en el editor.", true);
+                if (!ok) Say(I18n.T("No he podido abrir la imagen en el editor.", "Could not open image in editor."), true);
                 return;
             }
             string ext = t.Ext;
-            string what = (t.Kind == AttachKind.Excel || t.Kind == AttachKind.PowerPoint ? "Es una " : "Es un ") + t.Label;
-            int r = DocAlert.Ask(this, "\u00BFAbrir el adjunto \u00AB" + shown + "\u00BB?", what + " que viene dentro del XML. Se abrir\u00E1 con el programa que Windows tenga para los archivos " + ext + ".",
-                                 new string[] { "Abrir", "Cancelar" }, 0, 1);
+            string what = I18n.IsSpanish ? (t.Kind == AttachKind.Excel || t.Kind == AttachKind.PowerPoint ? "Es una " : "Es un ") + t.Label
+                                         : (t.Label.Length > 0 && "AEIOUaeiou".IndexOf(t.Label[0]) >= 0 ? "an " : "a ") + t.Label;
+            int r = DocAlert.Ask(this, I18n.Fmt("\u00BFAbrir el adjunto \u00AB{0}\u00BB?", "Open attachment \u201C{0}\u201D?", shown),
+                                 I18n.Fmt("{0} que viene dentro del XML. Se abrir\u00E1 con el programa que Windows tenga para los archivos {1}.", "It's {0} that came inside the XML. It will open with the program Windows uses for {1} files.", what, ext),
+                                 new string[] { I18n.T("Abrir", "Open"), I18n.T("Cancelar", "Cancel") }, 0, 1);
             if (r != 0) return;
             bool done = false;
             Func<string, bool> app = OpenWithApp;
@@ -150,7 +152,7 @@ namespace Stackshot
                 }
             }
             catch (Exception ex) { ShotStack.Log("Abrir adjunto: " + ex.Message); }
-            if (!done) Say("No he podido abrir \u00AB" + shown + "\u00BB: quiz\u00E1 no haya ning\u00FAn programa para los archivos " + ext + ".", true);
+            if (!done) Say(I18n.Fmt("No he podido abrir \u00AB{0}\u00BB: quiz\u00E1 no haya ning\u00FAn programa para los archivos {1}.", "Could not open \u201C{0}\u201D: perhaps there is no program for {1} files.", shown, ext), true);
         }
 
         // XML or text from a field: a new document that is not a file yet (Guardar asks where), after the usual question
@@ -170,7 +172,7 @@ namespace Stackshot
                 using (System.Drawing.Image img = System.Drawing.Image.FromFile(gif)) img.Save(png, System.Drawing.Imaging.ImageFormat.Png);
                 return png;
             }
-            catch (Exception ex) { ShotStack.Log("Adjunto GIF: " + ex.Message); err = "No he podido leer la imagen GIF."; return null; }
+            catch (Exception ex) { ShotStack.Log("Adjunto GIF: " + ex.Message); err = I18n.T("No he podido leer la imagen GIF.", "Could not read GIF image."); return null; }
         }
 
         // Decoded first (its type gives the name), then the user says where, then it is written; all but the dialog off
@@ -178,7 +180,7 @@ namespace Stackshot
         void SaveAttachment(string value, string hint)
         {
             fade.Stop();
-            status = "Leyendo el adjunto\u2026";
+            status = I18n.T("Leyendo el adjunto\u2026", "Reading attachment\u2026");
             statusBad = false;
             Stats();
             Cursor = Cursors.AppStarting;
@@ -192,7 +194,7 @@ namespace Stackshot
                     data = XmlAttachment.Decode(value, out err);
                     if (data != null) t = XmlAttachment.Detect(data, false);
                 }
-                catch (Exception ex) { ShotStack.Log("Adjunto: " + ex.Message); err = "No he podido leer el adjunto."; data = null; }
+                catch (Exception ex) { ShotStack.Log("Adjunto: " + ex.Message); err = I18n.T("No he podido leer el adjunto.", "Could not read attachment."); data = null; }
                 try
                 {
                     Dispatcher.BeginInvoke(new Action(delegate
@@ -201,7 +203,7 @@ namespace Stackshot
                         Cursor = null;
                         status = null;
                         Stats();
-                        if (data == null) { Say(err ?? "No he podido leer el adjunto.", true); return; }
+                        if (data == null) { Say(err ?? I18n.T("No he podido leer el adjunto.", "Could not read attachment."), true); return; }
                         string target = AskAttachmentPath(XmlAttachment.FileName(t, hint));
                         if (target != null) WriteAttachment(data, target);
                     }));
@@ -212,7 +214,7 @@ namespace Stackshot
 
         void WriteAttachment(byte[] data, string target)
         {
-            Say("Guardando el adjunto\u2026", false);
+            Say(I18n.T("Guardando el adjunto\u2026", "Saving attachment\u2026"), false);
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
                 string err;
@@ -225,8 +227,8 @@ namespace Stackshot
                     Dispatcher.BeginInvoke(new Action(delegate
                     {
                         if (open != this) return;
-                        if (ok) Say("Adjunto guardado: " + Path.GetFileName(target) + ".", false);
-                        else Say(err ?? "No he podido guardar el adjunto.", true);
+                        if (ok) Say(I18n.Fmt("Adjunto guardado: {0}.", "Attachment saved: {0}.", Path.GetFileName(target)), false);
+                        else Say(err ?? I18n.T("No he podido guardar el adjunto.", "Could not save attachment."), true);
                     }));
                 }
                 catch { }
@@ -242,8 +244,8 @@ namespace Stackshot
                 using (System.Windows.Forms.SaveFileDialog d = new System.Windows.Forms.SaveFileDialog())
                 {
                     string ext = Path.GetExtension(suggested);
-                    d.Title = "Guardar el adjunto";
-                    d.Filter = (ext.Length > 1 ? "Archivo " + ext.Substring(1).ToUpperInvariant() + "|*" + ext + "|" : "") + "Todos los archivos|*.*";
+                    d.Title = I18n.T("Guardar el adjunto", "Save attachment");
+                    d.Filter = (ext.Length > 1 ? I18n.Fmt("Archivo {0}|*{1}|", "{0} file|*{1}|", ext.Substring(1).ToUpperInvariant(), ext) : "") + I18n.T("Todos los archivos|*.*", "All files|*.*");
                     d.FileName = suggested;
                     d.AddExtension = ext.Length > 1;
                     if (ext.Length > 1) d.DefaultExt = ext.Substring(1);
@@ -252,7 +254,7 @@ namespace Stackshot
                     return d.ShowDialog(Win32) == System.Windows.Forms.DialogResult.OK ? d.FileName : null;
                 }
             }
-            catch (Exception ex) { ShotStack.Log("Guardar adjunto: " + ex.Message); Say("No he podido abrir el di\u00E1logo de guardar.", true); return null; }
+            catch (Exception ex) { ShotStack.Log("Guardar adjunto: " + ex.Message); Say(I18n.T("No he podido abrir el di\u00E1logo de guardar.", "Could not open save dialog."), true); return null; }
         }
     }
 }

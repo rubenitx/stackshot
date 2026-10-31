@@ -37,6 +37,7 @@ namespace Stackshot.Tests
             testsDir = string.IsNullOrEmpty(env) ? @"C:\Projects\stackshot\tests\docs" : env;
             workRoot = Path.Combine(Path.GetTempPath(), "stackshot-doc-tests", "work");
             Settings.ReadOnly = true;
+            I18n.Apply("es");   // the suites check the Spanish texts, whatever language this Windows is in
             ShotStack.LogPath = null;   // set once the results folder exists
             Directory.CreateDirectory(workRoot);
             string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);

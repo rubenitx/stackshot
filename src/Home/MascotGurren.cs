@@ -124,6 +124,9 @@ namespace Stackshot
 
         static string[] KmLines()
         {
+            if (!I18n.IsSpanish)
+                return new string[] { "Just who the hell do you think I am?!", "Your drill is the drill that will pierce the heavens!", "Believe in the you who believes in yourself!",
+                                      "Kick logic to the curb and do the impossible!" };
             return new string[] { "\u00BF\u00A1Qui\u00E9n demonios te crees que soy!?", "\u00A1Tu taladro es el que perforar\u00E1 los cielos!", "\u00A1Cree en el t\u00FA que cree en ti!",
                                   "\u00A1Manda la l\u00F3gica a paseo y haz lo imposible!" };
         }

@@ -21,8 +21,8 @@ namespace Stackshot
     public static class Policy
     {
         public const string KeyPath = @"SOFTWARE\Policies\Stackshot";
-        public const string Managed = "Lo decide tu organizaci\u00F3n";
-        public const string ManagedNote = "Algunos ajustes los gestiona tu organizaci\u00F3n.";
+        public static string Managed { get { return I18n.T("Lo decide tu organizaci\u00F3n", "Managed by your organization"); } }
+        public static string ManagedNote { get { return I18n.T("Algunos ajustes los gestiona tu organizaci\u00F3n.", "Some settings are managed by your organization."); } }
 
         // Tests read the policies from throwaway keys: each stands for a hive root (the policy key is looked for inside).
         internal static RegistryKey MachineOverride { get; set; }

@@ -32,20 +32,17 @@ namespace Stackshot
             }
         }
 
-        // The rows (in General and in Ajustes de la mascota) of each setting a policy can force.
+        // The rows (in General and in Ajustes de la mascota) of each setting a policy can force, found by the same titles
+        // the pages build them with, so they match in every language.
         static bool ForcedByPolicy(Row r)
         {
             if (r is FolderRow) return Policy.FolderForced;
-            switch (r.Title)
-            {
-                case "Buscar actualizaciones": return Policy.ChecksForced;
-                case "Instalar actualizaciones autom\u00E1ticamente": return Policy.AutoForced;
-                case "Mostrar la mascota":
-                case "Saludos y consejos":
-                case "Mascota en el escritorio": return Policy.MascotForced;
-                case "Tapar los datos sensibles al capturar": return Policy.SensitiveForced;
-                case "Buscar por el texto de las capturas": return Policy.SearchForced;
-            }
+            string t = r.Title;
+            if (t == PolicyTitles.Checks) return Policy.ChecksForced;
+            if (t == PolicyTitles.Auto) return Policy.AutoForced;
+            if (t == PolicyTitles.Mascot || t == PolicyTitles.Greetings || t == PolicyTitles.Desktop) return Policy.MascotForced;
+            if (t == PolicyTitles.Sensitive) return Policy.SensitiveForced;
+            if (t == PolicyTitles.Search) return Policy.SearchForced;
             return false;
         }
 
@@ -72,5 +69,17 @@ namespace Stackshot
             line.Children.Add(Label(Policy.ManagedNote, Ds.Regular, 12.5, pal.Label2));
             return line;
         }
+    }
+
+    // Titles of the rows a policy can force: shared by the pages that build them and by ForcedByPolicy.
+    static class PolicyTitles
+    {
+        public static string Checks { get { return I18n.T("Buscar actualizaciones", "Check for updates"); } }
+        public static string Auto { get { return I18n.T("Instalar actualizaciones autom\u00E1ticamente", "Install updates automatically"); } }
+        public static string Mascot { get { return I18n.T("Mostrar la mascota", "Show mascot"); } }
+        public static string Greetings { get { return I18n.T("Saludos y consejos", "Greetings and tips"); } }
+        public static string Desktop { get { return I18n.T("Mascota en el escritorio", "Mascot on desktop"); } }
+        public static string Sensitive { get { return I18n.T("Tapar los datos sensibles al capturar", "Auto-redact sensitive data on capture"); } }
+        public static string Search { get { return I18n.T("Buscar por el texto de las capturas", "Search captures by OCR text"); } }
     }
 }

@@ -80,9 +80,9 @@ namespace Stackshot
 
         public static string CheckText(string t)
         {
-            if (t == null || t.Trim().Length == 0) return "Est\u00E1 vac\u00EDo: no hay nada que mostrar.";
-            if (t.Length > MaxChars) return "Es demasiado grande (m\u00E1ximo 8 MB de XML).";
-            if (t.IndexOf('\0') >= 0) return "No parece texto: tiene contenido binario.";
+            if (t == null || t.Trim().Length == 0) return I18n.T("Est\u00E1 vac\u00EDo: no hay nada que mostrar.", "It's empty: there is nothing to show.");
+            if (t.Length > MaxChars) return I18n.T("Es demasiado grande (m\u00E1ximo 8 MB de XML).", "It's too big (maximum 8 MB of XML).");
+            if (t.IndexOf('\0') >= 0) return I18n.T("No parece texto: tiene contenido binario.", "This doesn't look like text: it has binary content.");
             return null;
         }
 
@@ -157,15 +157,15 @@ namespace Stackshot
             catch (XmlException ex)
             {
                 line = ex.LineNumber; col = ex.LinePosition;
-                error = (line > 0 ? "L\u00EDnea " + line + ", columna " + col + ": " : "") + Friendly(ex);
+                error = (line > 0 ? I18n.Fmt("L\u00EDnea {0}, columna {1}: ", "Line {0}, column {1}: ", line, col) : "") + Friendly(ex);
                 return false;
             }
             catch (Exception ex)
             {
-                error = "No he podido leer el XML: " + ex.Message;
+                error = I18n.T("No he podido leer el XML: ", "Could not read the XML: ") + ex.Message;
                 return false;
             }
-            if (m.Top.Count == 0) { error = "No hay ning\u00FAn elemento XML."; return false; }
+            if (m.Top.Count == 0) { error = I18n.T("No hay ning\u00FAn elemento XML.", "No XML elements found."); return false; }
             model = m;
             return true;
         }
@@ -175,23 +175,23 @@ namespace Stackshot
             string m = ex.Message;
             m = Regex.Replace(m, @"\s*(Line|L[i\u00ED]nea)\s+\d+,\s*(position|posici[o\u00F3]n)\s+\d+\.?\s*$", "", RegexOptions.IgnoreCase).Trim();
             if (m.IndexOf("DTD", StringComparison.Ordinal) >= 0)
-                return "Tiene una declaraci\u00F3n DOCTYPE (DTD), que Stackshot no procesa por seguridad. Quita esa l\u00EDnea para verlo.";
+                return I18n.T("Tiene una declaraci\u00F3n DOCTYPE (DTD), que Stackshot no procesa por seguridad. Quita esa l\u00EDnea para verlo.", "It has a DOCTYPE (DTD) declaration, which Stackshot doesn't process for security. Remove that line to view it.");
             Match g;
             g = Regex.Match(m, @"The '([^']*)' start tag on line (\d+) position (\d+) does not match the end tag of '([^']*)'");
-            if (g.Success) return "La etiqueta de cierre </" + g.Groups[4].Value + "> no coincide con <" + g.Groups[1].Value + ">, abierta en la l\u00EDnea " + g.Groups[2].Value + ", columna " + g.Groups[3].Value + ".";
+            if (g.Success) return I18n.Fmt("La etiqueta de cierre </{0}> no coincide con <{1}>, abierta en la l\u00EDnea {2}, columna {3}.", "Closing tag </{0}> does not match <{1}>, opened on line {2}, column {3}.", g.Groups[4].Value, g.Groups[1].Value, g.Groups[2].Value, g.Groups[3].Value);
             g = Regex.Match(m, @"etiqueta de apertura '([^']*)' en la l[i\u00ED]nea (\d+) posici[o\u00F3]n (\d+) no coincide con la etiqueta de cierre de '([^']*)'", RegexOptions.IgnoreCase);
-            if (g.Success) return "La etiqueta de cierre </" + g.Groups[4].Value + "> no coincide con <" + g.Groups[1].Value + ">, abierta en la l\u00EDnea " + g.Groups[2].Value + ", columna " + g.Groups[3].Value + ".";
+            if (g.Success) return I18n.Fmt("La etiqueta de cierre </{0}> no coincide con <{1}>, abierta en la l\u00EDnea {2}, columna {3}.", "Closing tag </{0}> does not match <{1}>, opened on line {2}, column {3}.", g.Groups[4].Value, g.Groups[1].Value, g.Groups[2].Value, g.Groups[3].Value);
             g = Regex.Match(m, @"Unexpected end of file has occurred\. The following elements are not closed: ([^.]*)");
-            if (g.Success) return "El archivo termina sin cerrar: " + g.Groups[1].Value + ".";
-            if (m.StartsWith("Unexpected end of file", StringComparison.Ordinal)) return "El archivo termina antes de lo esperado.";
-            if (m.StartsWith("Root element is missing", StringComparison.Ordinal)) return "Falta el elemento ra\u00EDz.";
-            if (m.StartsWith("There are multiple root elements", StringComparison.Ordinal)) return "Hay m\u00E1s de un elemento ra\u00EDz.";
-            if (m.StartsWith("Data at the root level is invalid", StringComparison.Ordinal)) return "Hay texto fuera del elemento ra\u00EDz o el documento empieza mal.";
+            if (g.Success) return I18n.Fmt("El archivo termina sin cerrar: {0}.", "The file ends without closing: {0}.", g.Groups[1].Value);
+            if (m.StartsWith("Unexpected end of file", StringComparison.Ordinal)) return I18n.T("El archivo termina antes de lo esperado.", "The file ends sooner than expected.");
+            if (m.StartsWith("Root element is missing", StringComparison.Ordinal)) return I18n.T("Falta el elemento ra\u00EDz.", "Root element is missing.");
+            if (m.StartsWith("There are multiple root elements", StringComparison.Ordinal)) return I18n.T("Hay m\u00E1s de un elemento ra\u00EDz.", "There are multiple root elements.");
+            if (m.StartsWith("Data at the root level is invalid", StringComparison.Ordinal)) return I18n.T("Hay texto fuera del elemento ra\u00EDz o el documento empieza mal.", "There is text outside the root element, or the document starts wrong.");
             g = Regex.Match(m, @"'([^']*)' is a duplicate attribute name");
-            if (g.Success) return "El atributo " + g.Groups[1].Value + " est\u00E1 repetido.";
-            if (m.IndexOf("entity", StringComparison.OrdinalIgnoreCase) >= 0 && m.IndexOf("reference", StringComparison.OrdinalIgnoreCase) >= 0) return "Referencia a una entidad no v\u00E1lida (para escribir & usa &amp;).";
-            if (m.IndexOf("invalid character", StringComparison.OrdinalIgnoreCase) >= 0) return "Hay un car\u00E1cter que XML no admite. " + m;
-            if (m.IndexOf("namespace", StringComparison.OrdinalIgnoreCase) >= 0 && m.IndexOf("prefix", StringComparison.OrdinalIgnoreCase) >= 0) return "Prefijo de espacio de nombres sin declarar. " + m;
+            if (g.Success) return I18n.Fmt("El atributo {0} est\u00E1 repetido.", "The attribute {0} is repeated.", g.Groups[1].Value);
+            if (m.IndexOf("entity", StringComparison.OrdinalIgnoreCase) >= 0 && m.IndexOf("reference", StringComparison.OrdinalIgnoreCase) >= 0) return I18n.T("Referencia a una entidad no v\u00E1lida (para escribir & usa &amp;).", "Invalid entity reference (to write & use &amp;).");
+            if (m.IndexOf("invalid character", StringComparison.OrdinalIgnoreCase) >= 0) return I18n.T("Hay un car\u00E1cter que XML no admite. ", "There is a character XML doesn't allow. ") + m;
+            if (m.IndexOf("namespace", StringComparison.OrdinalIgnoreCase) >= 0 && m.IndexOf("prefix", StringComparison.OrdinalIgnoreCase) >= 0) return I18n.T("Prefijo de espacio de nombres sin declarar. ", "Undeclared namespace prefix. ") + m;
             return m;
         }
 
@@ -401,9 +401,9 @@ namespace Stackshot
         {
             error = null;
             try { return Write(Load(text), indent, f ?? new XmlFormat()); }
-            catch (XmlException ex) { error = (ex.LineNumber > 0 ? "L\u00EDnea " + ex.LineNumber + ", columna " + ex.LinePosition + ": " : "") + Friendly(ex); return null; }
-            catch (OutOfMemoryException) { error = "Est\u00E1 tan anidado o es tan grande que no se puede formatear con sangr\u00EDa."; return null; }
-            catch (Exception ex) { error = "No he podido leer el XML: " + ex.Message; return null; }
+            catch (XmlException ex) { error = (ex.LineNumber > 0 ? I18n.Fmt("L\u00EDnea {0}, columna {1}: ", "Line {0}, column {1}: ", ex.LineNumber, ex.LinePosition) : "") + Friendly(ex); return null; }
+            catch (OutOfMemoryException) { error = I18n.T("Est\u00E1 tan anidado o es tan grande que no se puede formatear con sangr\u00EDa.", "It's so deeply nested or so big that it can't be formatted with indentation."); return null; }
+            catch (Exception ex) { error = I18n.T("No he podido leer el XML: ", "Could not read the XML: ") + ex.Message; return null; }
         }
     }
 }

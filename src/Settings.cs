@@ -67,6 +67,8 @@ namespace Stackshot
         public string BgStyles = "";    // styles saved from the editor's sidebar (BgPanel.Styles)
         // Main window and mascot.
         public int Appearance = 0;          // 0 follow Windows, 1 light, 2 dark
+        public string Language = "auto";    // auto, es, en
+        public bool LanguageOffered;        // English was offered once (Spanish kept from before, Windows in another language)
         public bool AllInOne = false;       // area capture: adjust the area and choose image, video, GIF or scrolling before capturing
         public bool AdjustFirst = false;    // area capture: the area stays adjustable, with a live preview, until Enter or Capturar
         public int CaptureDelay = 3;        // seconds the timed capture counts down: 3, 5 or 10
@@ -172,6 +174,7 @@ namespace Stackshot
             // Equilibrado no longer has the mascot on the desktop: whoever had put it there is on Completo, as before.
             if (s.Profile == 1 && s.MascotDesktopSaved && s.MascotOnSaved) s.Profile = 2;
             Policy.Apply(s); // what IT forces; the file keeps the user's own choices
+            if (!ReadOnly) I18n.Apply(s.Language);
             return s;
         }
 
@@ -233,6 +236,7 @@ namespace Stackshot
         int Parse(string[] lines)
         {
             int known = 0;
+            bool hasLanguage = false;
             Settings s = this;
             foreach (string raw in lines)
             {
@@ -259,6 +263,7 @@ namespace Stackshot
                         case "window": s.HotWindow = v; break;
                         case "scroll": s.HotScroll = v; break;
                         case "appearance": s.Appearance = Int(v, s.Appearance, 0, 2); break;
+                        case "language": { string l = v.ToLowerInvariant().Trim(); if (l == "auto" || l == "es" || l == "en") s.Language = l; hasLanguage = true; break; }
                         case "allinone": s.AllInOne = Bool(v, s.AllInOne); break;
                         case "adjustfirst": s.AdjustFirst = Bool(v, s.AdjustFirst); break;
                         case "capturedelay": { int cd = Int(v, s.CaptureDelay, 0, 60); s.CaptureDelay = cd == 3 || cd == 5 || cd == 10 ? cd : s.CaptureDelay; break; }
@@ -268,6 +273,7 @@ namespace Stackshot
                         case "closetotray": s.CloseToTray = Bool(v, s.CloseToTray); break;
                         case "profile": s.Profile = Int(v, s.Profile, 0, 2); break;
                         case "showintro": s.ShowIntro = Bool(v, s.ShowIntro); break;
+                        case "languageoffered": s.LanguageOffered = Bool(v, s.LanguageOffered); break;
                         case "mascot": s.MascotOnSaved = Bool(v, s.MascotOnSaved); break;
                         case "mascotname": if (v.Length > 0) s.MascotName = Cut(v, 16); break;
                         case "mascotcolor": s.MascotColor = Int(v, s.MascotColor, 0, 99); break;
@@ -387,6 +393,9 @@ namespace Stackshot
                 }
                 catch (Exception ex) { ShotStack.Log("Ajustes (" + k + "): " + ex.Message); }
             }
+            // Written before there was a choice of language: whoever has used Stackshot keeps the Spanish they had, even
+            // on a Windows in another language. Only new installs follow Windows.
+            if (known > 0 && !hasLanguage) s.Language = "es";
             return known;
         }
 
@@ -537,6 +546,9 @@ namespace Stackshot
             b.AppendLine("BgStyles = " + OneLine(BgStyles));
             b.AppendLine("# Tema: 0 como Windows, 1 claro, 2 oscuro");
             b.AppendLine("Appearance = " + Appearance);
+            b.AppendLine("# Idioma / Language: auto, es, en");
+            b.AppendLine("Language = " + OneLine(Language));
+            b.AppendLine("LanguageOffered = " + (LanguageOffered ? "1" : "0"));
             b.AppendLine("AllInOne = " + (AllInOne ? "1" : "0"));
             b.AppendLine("AdjustFirst = " + (AdjustFirst ? "1" : "0"));
             b.AppendLine("CaptureDelay = " + CaptureDelay);

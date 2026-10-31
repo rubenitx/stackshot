@@ -44,8 +44,10 @@ namespace Stackshot
             NewsTold(v);
             Action open = delegate { if (!exiting) NewsWindow.Open(false, seen); };
             if (pet != null && pet.CanRemind) pet.AnnounceNews(v, head, open);
-            else Notify("Stackshot " + v + " ya est\u00E1 aqu\u00ED", (head.Length > 0 ? "Entre sus novedades: \u00AB" + head + "\u00BB. " : "") + "\u00BFQuieres ver qu\u00E9 trae?",
-                        NoticeKind.Info, "Ver novedades", open);
+            else Notify(I18n.Fmt("Stackshot {0} ya est\u00E1 aqu\u00ED", "Stackshot {0} is here", v),
+                        (head.Length > 0 ? I18n.Fmt("Entre sus novedades: \u00AB{0}\u00BB. ", "Highlights include: \u201C{0}\u201D. ", head) : "") +
+                        I18n.T("\u00BFQuieres ver qu\u00E9 trae?", "Would you like to see what's new?"),
+                        NoticeKind.Info, I18n.T("Ver novedades", "View what's new"), open);
         }
 
         void NewsTold(string v)

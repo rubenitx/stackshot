@@ -20,8 +20,11 @@ namespace Stackshot
 {
     public partial class HomeWindow
     {
-        static readonly string[] HistoryFilters = { "Todo", "Capturas", "V\u00EDdeos", "GIF" };
-        static readonly CultureInfo HistoryEs = new CultureInfo("es-ES");
+        static readonly string[] HistoryFiltersEs = { "Todo", "Capturas", "V\u00EDdeos", "GIF" };
+        static readonly string[] HistoryFiltersEn = { "All", "Captures", "Videos", "GIF" };
+        static string[] HistoryFilters { get { return I18n.IsSpanish ? HistoryFiltersEs : HistoryFiltersEn; } }
+        static readonly CultureInfo HistoryEsCulture = new CultureInfo("es-ES");
+        static CultureInfo HistoryEs { get { return I18n.IsSpanish ? HistoryEsCulture : CultureInfo.GetCultureInfo("en-US"); } }
 
         string historyQuery = "";
         int historyFilter;
@@ -49,7 +52,7 @@ namespace Stackshot
             HookHistory();
             body.MaxWidth = 700;
             historyBody = body;
-            Header("Historial", "Tus capturas y grabaciones, de la m\u00E1s reciente a la m\u00E1s antigua.");
+            Header(I18n.T("Historial", "History"), I18n.T("Tus capturas y grabaciones, de la m\u00E1s reciente a la m\u00E1s antigua.", "Your captures and recordings, newest first."));
             if (!settings.HistorySearch) Add(HistoryOffCard());
             Add(HistorySearchField());
             Add(HistoryChipsRow());
@@ -138,7 +141,10 @@ namespace Stackshot
             g.Children.Add(frame);
             GlyphView icon = new GlyphView("search", 15, pal.Label2, 1.7) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) };
             g.Children.Add(icon);
-            TextBlock hint = Label(settings.HistorySearch ? "Buscar por texto o nombre" : "Buscar por nombre", Ds.Regular, 13, pal.Label3, new Thickness(36, 0, 0, 1));
+            string searchHintText = settings.HistorySearch
+                ? I18n.T("Buscar por texto o nombre", "Search by text or name")
+                : I18n.T("Buscar por nombre", "Search by name");
+            TextBlock hint = Label(searchHintText, Ds.Regular, 13, pal.Label3, new Thickness(36, 0, 0, 1));
             hint.IsHitTestVisible = false;
             hint.HorizontalAlignment = HorizontalAlignment.Left;
             g.Children.Add(hint);
@@ -161,7 +167,7 @@ namespace Stackshot
                 Do = delegate { box.Text = ""; box.Focus(); },
                 Width = 16, Height = 16, CornerRadius = new CornerRadius(8), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 11, 0), Cursor = Cursors.Arrow, Background = Ds.Brush(pal.High ? pal.Label : pal.Dark ? Ds.Argb(0.32, 255, 255, 255) : Ds.Argb(0.28, 0, 0, 0)),
-                ToolTip = "Borrar la b\u00FAsqueda"
+                ToolTip = I18n.T("Borrar la b\u00FAsqueda", "Clear search")
             };
             clear.Child = new GlyphView("close", 10, pal.High ? pal.Window : pal.Dark ? Ds.Rgb(44, 44, 48) : Colors.White, 2.2) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             clear.MouseLeftButtonDown += delegate(object o, MouseButtonEventArgs e) { e.Handled = true; };
@@ -230,7 +236,7 @@ namespace Stackshot
         {
             Palette pal = Ds.Brushes;
             Grid row = new Grid { Margin = new Thickness(0, 0, 0, 14) };
-            StackPanel chips = new TapPanel { Orientation = Orientation.Horizontal, Interactive = false, Role = Access.Group, Label = "Mostrar" };
+            StackPanel chips = new TapPanel { Orientation = Orientation.Horizontal, Interactive = false, Role = Access.Group, Label = I18n.T("Mostrar", "Show") };
             historyChipViews.Clear();
             for (int i = 0; i < HistoryFilters.Length; i++)
             {
@@ -311,7 +317,7 @@ namespace Stackshot
             double share = -1;
             if (settings.HistorySearch)
             {
-                if (HistoryIndex.Unavailable) text = "Este Windows no tiene el reconocimiento de texto (OCR): de momento se busca solo por el nombre.";
+                if (HistoryIndex.Unavailable) text = I18n.T("Este Windows no tiene el reconocimiento de texto (OCR): de momento se busca solo por el nombre.", "This Windows does not have text recognition (OCR): searching by name only for now.");
                 else
                 {
                     int done, total;
@@ -319,8 +325,12 @@ namespace Stackshot
                     // A single new capture is read in a moment: no line for it.
                     if (total > 1 && done < total)
                     {
-                        text = "Leyendo el texto de las capturas\u2026 " + done.ToString("N0", HistoryEs) + " de " + total.ToString("N0", HistoryEs);
-                        if (HistoryIndex.Paused) text += Recorder.Recording ? " \u00B7 en pausa mientras grabas" : " \u00B7 en pausa mientras capturas";
+                        text = I18n.IsSpanish
+                            ? ("Leyendo el texto de las capturas\u2026 " + done.ToString("N0", HistoryEs) + " de " + total.ToString("N0", HistoryEs))
+                            : ("Reading capture text\u2026 " + done.ToString("N0", CultureInfo.InvariantCulture) + " of " + total.ToString("N0", CultureInfo.InvariantCulture));
+                        if (HistoryIndex.Paused) text += Recorder.Recording
+                            ? I18n.T(" \u00B7 en pausa mientras grabas", " \u00B7 paused while recording")
+                            : I18n.T(" \u00B7 en pausa mientras capturas", " \u00B7 paused while capturing");
                         share = done / (double)total;
                     }
                 }
@@ -352,15 +362,15 @@ namespace Stackshot
             g.Children.Add(tile);
             StackPanel text = new StackPanel();
             Grid.SetColumn(text, 1);
-            text.Children.Add(Label("La b\u00FAsqueda por texto est\u00E1 desactivada", Ds.Regular, 13.5, pal.Label));
-            TextBlock p = Paragraph("Stackshot puede leer el texto de cada captura en tu equipo, sin que nada salga de \u00E9l, para que la encuentres por lo que pon\u00EDa. " +
-                                    "Ahora solo se busca por el nombre. ", 12, pal.Label2);
+            text.Children.Add(Label(I18n.T("La b\u00FAsqueda por texto est\u00E1 desactivada", "Text search is turned off"), Ds.Regular, 13.5, pal.Label));
+            TextBlock p = Paragraph(I18n.T("Stackshot puede leer el texto de cada captura en tu equipo, sin que nada salga de \u00E9l, para que la encuentres por lo que pon\u00EDa. Ahora solo se busca por el nombre. ",
+                                           "Stackshot can read text from each capture on your device, without anything leaving your computer, so you can find captures by their content. Currently searching by name only. "), 12, pal.Label2);
             p.Margin = new Thickness(0, 3, 0, 0);
             if (Policy.SearchForced) p.Inlines.Add(new Run(Policy.Managed + "."));   // an IT policy keeps it off: no way to turn it on here
             else
             {
-                p.Inlines.Add(InlineLink("Activar la b\u00FAsqueda por texto", HistoryTurnOn));
-                p.Inlines.Add(new Run(" (tambi\u00E9n est\u00E1 en General\u00A0\u203A\u00A0Recientes)."));
+                p.Inlines.Add(InlineLink(I18n.T("Activar la b\u00FAsqueda por texto", "Turn on text search"), HistoryTurnOn));
+                p.Inlines.Add(new Run(I18n.T(" (tambi\u00E9n est\u00E1 en General\u00A0\u203A\u00A0Recientes).", " (also in General\u00A0\u203A\u00A0Recents).")));
             }
             text.Children.Add(p);
             g.Children.Add(text);
@@ -388,24 +398,24 @@ namespace Stackshot
             if (historyAll != null && historyAll.Count == 0)
             {
                 icon = "photo";
-                title = "Todav\u00EDa no hay capturas";
-                sub = "Las capturas y grabaciones que hagas aparecer\u00E1n aqu\u00ED, ordenadas por d\u00EDas.";
+                title = I18n.T("Todav\u00EDa no hay capturas", "No captures yet");
+                sub = I18n.T("Las capturas y grabaciones que hagas aparecer\u00E1n aqu\u00ED, ordenadas por d\u00EDas.", "Captures and recordings you make will appear here, grouped by day.");
             }
             else if (historyAll != null && shown == 0)
             {
                 if (historyWords.Length > 0)
                 {
-                    title = "Nada coincide con \u00AB" + historyQuery.Trim() + "\u00BB";
-                    sub = !settings.HistorySearch ? "Solo se busca por el nombre: la b\u00FAsqueda por texto est\u00E1 desactivada."
-                        : HistoryReading ? "Todav\u00EDa se est\u00E1 leyendo el texto de algunas capturas: prueba otra vez dentro de un momento."
-                        : historyFilter != 0 ? "Prueba con otras palabras o con \u00ABTodo\u00BB."
-                        : "Prueba con otras palabras: se busca en el texto de cada captura y en su nombre.";
+                    title = I18n.IsSpanish ? ("Nada coincide con \u00AB" + historyQuery.Trim() + "\u00BB") : ("Nothing matches \u201C" + historyQuery.Trim() + "\u201D");
+                    sub = !settings.HistorySearch ? I18n.T("Solo se busca por el nombre: la b\u00FAsqueda por texto est\u00E1 desactivada.", "Searching by name only: text search is disabled.")
+                        : HistoryReading ? I18n.T("Todav\u00EDa se est\u00E1 leyendo el texto de algunas capturas: prueba otra vez dentro de un momento.", "Still reading text from some captures: try again in a moment.")
+                        : historyFilter != 0 ? I18n.T("Prueba con otras palabras o con \u00ABTodo\u00BB.", "Try different words or switch to \u201CAll\u201D.")
+                        : I18n.T("Prueba con otras palabras: se busca en el texto de cada captura y en su nombre.", "Try different words: searching in both text and file names.");
                 }
                 else
                 {
                     icon = historyFilter == 2 ? "video" : historyFilter == 3 ? "gif" : "photo";
-                    title = historyFilter == 2 ? "No hay v\u00EDdeos" : historyFilter == 3 ? "No hay GIF" : "No hay capturas";
-                    sub = "Prueba con \u00ABTodo\u00BB.";
+                    title = historyFilter == 2 ? I18n.T("No hay v\u00EDdeos", "No videos") : historyFilter == 3 ? I18n.T("No hay GIF", "No GIFs") : I18n.T("No hay capturas", "No captures");
+                    sub = I18n.T("Prueba con \u00ABTodo\u00BB.", "Try \u201CAll\u201D.");
                 }
             }
             historyNotice.Visibility = title != null ? Visibility.Visible : Visibility.Collapsed;
@@ -552,9 +562,21 @@ namespace Stackshot
             historyWords = words;
             int n = shown.Count;
             if (historyCount != null)
-                historyCount.Text = historyAll == null || historyAll.Count == 0 || n == 0 ? ""
-                                  : words.Length > 0 ? (n == 1 ? "1 resultado" : n.ToString("N0", HistoryEs) + " resultados")
-                                  : (n == 1 ? "1 elemento" : n.ToString("N0", HistoryEs) + " elementos");
+            {
+                if (historyAll == null || historyAll.Count == 0 || n == 0) historyCount.Text = "";
+                else if (words.Length > 0)
+                {
+                    historyCount.Text = I18n.IsSpanish
+                        ? (n == 1 ? "1 resultado" : n.ToString("N0", HistoryEs) + " resultados")
+                        : (n == 1 ? "1 result" : n.ToString("N0", CultureInfo.InvariantCulture) + " results");
+                }
+                else
+                {
+                    historyCount.Text = I18n.IsSpanish
+                        ? (n == 1 ? "1 elemento" : n.ToString("N0", HistoryEs) + " elementos")
+                        : (n == 1 ? "1 item" : n.ToString("N0", CultureInfo.InvariantCulture) + " items");
+                }
+            }
             HistoryPaintNotice(n);
             if (historyGrid != null) historyGrid.Set(shown, words);
             if (fromTop) HistoryScrollToResults();
@@ -602,8 +624,8 @@ namespace Stackshot
                 string day = t.ToString("dddd", HistoryEs);
                 return char.ToUpper(day[0], HistoryEs) + day.Substring(1) + ", " + hm;
             }
-            if (t.Year == DateTime.Now.Year) return t.ToString("d MMM", HistoryEs).Replace(".", "") + ", " + hm;
-            return t.ToString("d MMM yyyy", HistoryEs).Replace(".", "");
+            if (t.Year == DateTime.Now.Year) return t.ToString(I18n.IsSpanish ? "d MMM" : "MMM d", HistoryEs).Replace(".", "") + ", " + hm;
+            return t.ToString(I18n.IsSpanish ? "d MMM yyyy" : "MMM d, yyyy", HistoryEs).Replace(".", "");
         }
 
         sealed class HistoryTile : TapPanel
@@ -710,7 +732,7 @@ namespace Stackshot
                 if (pos < sn.Text.Length) s.Inlines.Add(new Run(sn.Text.Substring(pos)));
                 t.Children.Add(s);
             }
-            t.ToolTip = it.Name + "\n" + it.When.ToString("dddd, d 'de' MMMM 'de' yyyy, HH:mm", HistoryEs);
+            t.ToolTip = it.Name + "\n" + it.When.ToString(I18n.IsSpanish ? "dddd, d 'de' MMMM 'de' yyyy, HH:mm" : "dddd, MMMM d, yyyy, HH:mm", HistoryEs);
             ToolTipService.SetInitialShowDelay(t, 700);
             bool pressed = false;
             t.MouseEnter += delegate { HomeGlide(ring, OpacityProperty, 1, 120, null); };
@@ -740,10 +762,10 @@ namespace Stackshot
             pic.UpdateLayout();
             bool image = it.Kind == HistoryKind.Image;
             List<MenuEntry> m = new List<MenuEntry>();
-            m.Add(MenuEntry.Item("Abrir", "open", false, delegate { HistoryOpen(it, image ? 1 : 0); }));
-            m.Add(MenuEntry.Item("Copiar", "copy", false, delegate { HistoryCopy(it); }));
-            m.Add(MenuEntry.Item("Mostrar en la carpeta", "folder", false, delegate { HistoryReveal(it); }));
-            if (image) m.Add(MenuEntry.Item("Abrir en el editor", "edit", false, delegate { HistoryOpen(it, 2); }));
+            m.Add(MenuEntry.Item(I18n.Open, "open", false, delegate { HistoryOpen(it, image ? 1 : 0); }));
+            m.Add(MenuEntry.Item(I18n.Copy, "copy", false, delegate { HistoryCopy(it); }));
+            m.Add(MenuEntry.Item(I18n.T("Mostrar en la carpeta", "Show in folder"), "folder", false, delegate { HistoryReveal(it); }));
+            if (image) m.Add(MenuEntry.Item(I18n.T("Abrir en el editor", "Open in editor"), "edit", false, delegate { HistoryOpen(it, 2); }));
             Popup pop = MacMenu.Show(anchor, m);
             pop.Closed += delegate { pic.Children.Remove(anchor); };
         }
@@ -759,13 +781,13 @@ namespace Stackshot
                 catch (Exception ex)
                 {
                     ShotStack.Log("Historial: abrir " + it.Path + ": " + ex.Message);
-                    owner.Notify("No se pudo abrir", it.Name + ": " + ShotStack.ExplainOpen(ex, it.Path));
+                    owner.Notify(I18n.T("No se pudo abrir", "Could not open"), it.Name + ": " + ShotStack.ExplainOpen(ex, it.Path));
                 }
                 return;
             }
             if (how == 2)
             {
-                if (!owner.OpenEditor(it.Path)) owner.Notify("No se pudo abrir", it.Name + " no se puede abrir en el editor.");
+                if (!owner.OpenEditor(it.Path)) owner.Notify(I18n.T("No se pudo abrir", "Could not open"), it.Name + I18n.T(" no se puede abrir en el editor.", " cannot be opened in the editor."));
                 return;
             }
             OpenCapture(it.Path);
@@ -784,14 +806,14 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Historial: mostrar " + it.Path + ": " + ex.Message);
-                owner.Notify("No se pudo abrir la carpeta", it.Name + ": " + ShotStack.ExplainOpen(ex, it.Path));
+                owner.Notify(I18n.T("No se pudo abrir la carpeta", "Could not open folder"), it.Name + ": " + ShotStack.ExplainOpen(ex, it.Path));
             }
         }
 
         // Deleted or moved since the list was made: said once, and the list catches up.
         void HistoryMissing(HistoryItem it)
         {
-            owner.Notify("No se encuentra la captura", it.Name + " ya no est\u00E1 en su carpeta: se ha movido o borrado.");
+            owner.Notify(I18n.T("No se encuentra la captura", "Capture not found"), it.Name + I18n.T(" ya no est\u00E1 en su carpeta: se ha movido o borrado.", " is no longer in its folder: moved or deleted."));
             HistoryLoad(false);
         }
 
@@ -806,17 +828,17 @@ namespace Stackshot
 
         void ClearHistoryIndex()
         {
-            string again = settings.HistorySearch ? " Mientras la b\u00FAsqueda siga activada, Stackshot volver\u00E1 a leerlas poco a poco." : "";
-            if (DocAlert.Ask(this, "\u00BFBorrar el \u00EDndice de texto?", "Tus capturas no se tocan." + again, new string[] { "Borrar el \u00EDndice", "Cancelar" }, 0, 1) != 0) return;
+            string again = settings.HistorySearch ? I18n.T(" Mientras la b\u00FAsqueda siga activada, Stackshot volver\u00E1 a leerlas poco a poco.", " While search remains on, Stackshot will gradually re-read them.") : "";
+            if (DocAlert.Ask(this, I18n.T("\u00BFBorrar el \u00EDndice de texto?", "Delete text index?"), I18n.T("Tus capturas no se tocan.", "Your captures are untouched.") + again, new string[] { I18n.T("Borrar el \u00EDndice", "Delete index"), I18n.Cancel }, 0, 1) != 0) return;
             HistoryIndex.Delete();
             SyncRows();
         }
 
         public class HistoryIndexRow : ButtonRow
         {
-            public HistoryIndexRow(Action act) : base("Borrar el \u00EDndice de texto", null, "trash", Mac.Red, Mac.Orange, "Borrar", act)
+            public HistoryIndexRow(Action act) : base(I18n.T("Borrar el \u00EDndice de texto", "Delete text index"), null, "trash", Mac.Red, Mac.Orange, I18n.T("Borrar", "Delete"), act)
             {
-                SubNow = delegate { return "Lo que Stackshot ha le\u00EDdo en tus capturas (" + Recents.Size(HistoryIndex.Bytes) + "). Se vuelve a crear solo mientras la b\u00FAsqueda est\u00E9 activada."; };
+                SubNow = delegate { return I18n.T("Lo que Stackshot ha le\u00EDdo en tus capturas (", "What Stackshot has indexed from your captures (") + Recents.Size(HistoryIndex.Bytes) + I18n.T("). Se vuelve a crear solo mientras la b\u00FAsqueda est\u00E9 activada.", "). Rebuilt automatically while search is on."); };
             }
 
             // Gone once deleted, with the separator above it.
@@ -841,7 +863,7 @@ namespace Stackshot
         {
             const double Gap = 12, MinCell = 148, HeadH = 40, Overscan = 500;
 
-            protected override System.Windows.Automation.Peers.AutomationPeer OnCreateAutomationPeer() { return new RolePeer(this, Access.List, "Capturas"); }
+            protected override System.Windows.Automation.Peers.AutomationPeer OnCreateAutomationPeer() { return new RolePeer(this, Access.List, I18n.T("Capturas", "Captures")); }
 
             sealed class Line
             {

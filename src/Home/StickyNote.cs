@@ -25,7 +25,8 @@ namespace Stackshot
             public bool Done;
         }
 
-        static readonly string[] ColorNames = { "Amarillo", "Azul", "Verde", "Rosa" };
+        static readonly string[] ColorNamesEs = { "Amarillo", "Azul", "Verde", "Rosa" };
+        static readonly string[] ColorNamesEn = { "Yellow", "Blue", "Green", "Pink" };
         static readonly M.Color[] Light = { Ds.Rgb(255, 244, 196), Ds.Rgb(219, 234, 254), Ds.Rgb(220, 245, 224), Ds.Rgb(252, 228, 236) };
         static readonly M.Color[] Dark = { Ds.Rgb(74, 66, 32), Ds.Rgb(30, 48, 74), Ds.Rgb(28, 60, 40), Ds.Rgb(72, 36, 50) };
 
@@ -114,26 +115,27 @@ namespace Stackshot
         ContextMenuStrip BuildMenu()
         {
             ContextMenuStrip m = TrayMenu.Create();
-            topItem = TrayMenu.Item("Siempre encima", null, delegate
+            topItem = TrayMenu.Item(I18n.T("Siempre encima", "Always on top"), null, delegate
             {
                 topmost = !topmost;
                 TopMost = topmost;
                 StickyNotes.Save();
             });
-            lockItem = TrayMenu.Item("Bloquear posici\u00F3n", null, delegate { locked = !locked; StickyNotes.Save(); });
+            lockItem = TrayMenu.Item(I18n.T("Bloquear posici\u00F3n", "Lock position"), null, delegate { locked = !locked; StickyNotes.Save(); });
             m.Items.Add(topItem);
             m.Items.Add(lockItem);
             m.Items.Add(TrayMenu.Separator());
             for (int i = 0; i < 4; i++)
             {
                 int c = i;
-                colorItems[i] = TrayMenu.Item("Color " + ColorNames[i].ToLowerInvariant(), null, delegate { color = c; Redraw(); StickyNotes.Save(); });
+                string label = I18n.T("Color " + ColorNamesEs[i].ToLowerInvariant(), ColorNamesEn[i] + " color");
+                colorItems[i] = TrayMenu.Item(label, null, delegate { color = c; Redraw(); StickyNotes.Save(); });
                 m.Items.Add(colorItems[i]);
             }
             m.Items.Add(TrayMenu.Separator());
-            m.Items.Add(TrayMenu.Item("Abrir Notas.md", "doc", delegate { owner.OpenNotes(); }));
+            m.Items.Add(TrayMenu.Item(I18n.T("Abrir Notas.md", "Open Notas.md"), "doc", delegate { owner.OpenNotes(); }));
             m.Items.Add(TrayMenu.Separator());
-            m.Items.Add(TrayMenu.Item("Quitar del escritorio", "close", delegate { BeginInvoke((Action)delegate { StickyNotes.Forget(key); }); }));
+            m.Items.Add(TrayMenu.Item(I18n.T("Quitar del escritorio", "Remove from desktop"), "close", delegate { BeginInvoke((Action)delegate { StickyNotes.Forget(key); }); }));
             m.Opening += delegate
             {
                 topItem.Checked = topmost;
@@ -447,7 +449,7 @@ namespace Stackshot
             if (have != null) { have.ShowFront(); return; }
             if (open.Count >= Max)
             {
-                owner.Notify("Notas fijadas", "Ya tienes 8 notas en el escritorio: quita alguna antes de fijar otra.");
+                owner.Notify(I18n.T("Notas fijadas", "Pinned notes"), I18n.T("Ya tienes 8 notas en el escritorio: quita alguna antes de fijar otra.", "You already have 8 notes on your desktop: remove one before pinning another."));
                 return;
             }
             Point m = Control.MousePosition;

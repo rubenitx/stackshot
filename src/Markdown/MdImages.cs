@@ -153,11 +153,11 @@ namespace Stackshot
             try
             {
                 FileInfo fi = new FileInfo(path);
-                if (!fi.Exists) { error = "No encuentro la imagen"; return null; }
+                if (!fi.Exists) { error = I18n.T("No encuentro la imagen", "Cannot find the image"); return null; }
                 stamp = fi.LastWriteTimeUtc;
                 size = fi.Length;
             }
-            catch (Exception ex) { error = "No puedo leer la imagen"; ShotStack.Log("Imagen " + path + ": " + ex.Message); return null; }
+            catch (Exception ex) { error = I18n.T("No puedo leer la imagen", "Cannot read the image"); ShotStack.Log("Imagen " + path + ": " + ex.Message); return null; }
             int gen;
             lock (gate)
             {
@@ -167,12 +167,12 @@ namespace Stackshot
             }
             BitmapSource bmp = null;
             string err = null;
-            if (size > MaxFile) err = "La imagen es demasiado grande para mostrarla";
-            else if (string.Equals(System.IO.Path.GetExtension(path), ".svg", StringComparison.OrdinalIgnoreCase)) err = "No puedo mostrar im\u00E1genes SVG";
+            if (size > MaxFile) err = I18n.T("La imagen es demasiado grande para mostrarla", "The image is too big to show");
+            else if (string.Equals(System.IO.Path.GetExtension(path), ".svg", StringComparison.OrdinalIgnoreCase)) err = I18n.T("No puedo mostrar im\u00E1genes SVG", "Cannot show SVG images");
             else
             {
                 try { bmp = Decode(path); }
-                catch (Exception ex) { err = "No puedo mostrar esta imagen"; ShotStack.Log("Imagen " + path + ": " + ex.Message); }
+                catch (Exception ex) { err = I18n.T("No puedo mostrar esta imagen", "Cannot show this image"); ShotStack.Log("Imagen " + path + ": " + ex.Message); }
             }
             Keep(path, new Entry { Bmp = bmp, Error = err, Stamp = stamp, Size = size, Bytes = bmp == null ? 0 : (long)bmp.PixelWidth * bmp.PixelHeight * 4 }, gen);
             error = err;
@@ -262,7 +262,7 @@ namespace Stackshot
                 string err = null;
                 BitmapSource b = null;
                 try { b = Load(j.Path, out err); }
-                catch (Exception ex) { err = "No puedo mostrar esta imagen"; ShotStack.Log("Imagen: " + ex.Message); }
+                catch (Exception ex) { err = I18n.T("No puedo mostrar esta imagen", "Cannot show this image"); ShotStack.Log("Imagen: " + ex.Message); }
                 Job k = j;
                 try { if (!k.To.HasShutdownStarted) k.To.BeginInvoke(new Action(delegate { k.Done(b, err); })); }
                 catch (Exception ex) { ShotStack.Log("Imagen aviso: " + ex.Message); }
@@ -288,7 +288,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Pegar imagen: " + ex.Message);
-                error = "No he podido guardar la imagen: " + ex.Message;
+                error = I18n.T("No he podido guardar la imagen: ", "Could not save image: ") + ex.Message;
                 return null;
             }
         }
@@ -332,7 +332,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Soltar imagen: " + ex.Message);
-                error = "No he podido copiar " + System.IO.Path.GetFileName(file) + ": " + ex.Message;
+                error = I18n.Fmt("No he podido copiar {0}: {1}", "Could not copy {0}: {1}", System.IO.Path.GetFileName(file), ex.Message);
                 return null;
             }
         }

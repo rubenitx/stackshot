@@ -41,15 +41,15 @@ namespace Stackshot
             {
                 Func<IDataObject> src = PasteSource;
                 if (src != null) d = src();
-                else if (!Retry(delegate { d = Clipboard.GetDataObject(); })) { Say("No he podido usar el portapapeles.", true); return true; }
+                else if (!Retry(delegate { d = Clipboard.GetDataObject(); })) { Say(I18n.T("No he podido usar el portapapeles.", "Could not access clipboard."), true); return true; }
             }
-            catch (Exception ex) { ShotStack.Log("Markdown pegar: " + ex.Message); Say("No he podido leer el portapapeles.", true); return true; }
+            catch (Exception ex) { ShotStack.Log("Markdown pegar: " + ex.Message); Say(I18n.T("No he podido leer el portapapeles.", "Could not read clipboard."), true); return true; }
             if (d == null) return plain;
             string t = ClipboardText(d);
             if (plain)
             {
                 if (t != null) InsertAtCaret(MarkdownTools.Normalize(t));
-                else Say("En el portapapeles no hay texto.", false);
+                else Say(I18n.T("En el portapapeles no hay texto.", "No text on clipboard."), false);
                 return true;
             }
             if (t != null)
@@ -77,13 +77,13 @@ namespace Stackshot
             if (sheet.Text.Length + (sheet.Html == null ? 0 : sheet.Html.Length) < BigSheet)
             {
                 string table = MdTablePaste.Convert(sheet, out rows, out cols);
-                if (table == null) { Say("No he podido pegar la tabla.", true); return; }
+                if (table == null) { Say(I18n.T("No he podido pegar la tabla.", "Could not paste table."), true); return; }
                 InsertOnOwnLines(table);
-                Say("Tabla pegada (" + rows + " \u00D7 " + cols + ").", false);
+                Say(I18n.Fmt("Tabla pegada ({0} \u00D7 {1}).", "Table pasted ({0} \u00D7 {1}).", rows, cols), false);
                 return;
             }
             int my = token;
-            SayLasting("Pegando la tabla\u2026");
+            SayLasting(I18n.T("Pegando la tabla\u2026", "Pasting table\u2026"));
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
                 string table = null;
@@ -95,9 +95,9 @@ namespace Stackshot
                     Dispatcher.BeginInvoke(new Action(delegate
                     {
                         if (my != token || editor == null) return;
-                        if (table == null) { Say("No he podido pegar la tabla.", true); return; }
+                        if (table == null) { Say(I18n.T("No he podido pegar la tabla.", "Could not paste table."), true); return; }
                         InsertOnOwnLines(table);
-                        Say("Tabla pegada (" + r + " \u00D7 " + c + ").", false);
+                        Say(I18n.Fmt("Tabla pegada ({0} \u00D7 {1}).", "Table pasted ({0} \u00D7 {1}).", r, c), false);
                     }));
                 }
                 catch (Exception ex) { ShotStack.Log("Pegar tabla: " + ex.Message); }
@@ -174,18 +174,18 @@ namespace Stackshot
         bool FolderForImages(string title)
         {
             if (DocumentFolder() != null) return true;
-            int r = DocAlert.Ask(this, title, "Las im\u00E1genes se guardan en la carpeta \u00AB" + MdImages.Folder + "\u00BB, junto al documento.",
-                                 new string[] { "Guardar como\u2026", "Cancelar" }, 0, 1);
+            int r = DocAlert.Ask(this, title, I18n.Fmt("Las im\u00E1genes se guardan en la carpeta \u00AB{0}\u00BB, junto al documento.", "Images are saved in the \u201C{0}\u201D folder, next to the document.", MdImages.Folder),
+                                 new string[] { I18n.T("Guardar como\u2026", "Save as\u2026"), I18n.T("Cancelar", "Cancel") }, 0, 1);
             return r == 0 && Save(true) && DocumentFolder() != null;
         }
 
         void AddPastedImage(byte[] png, BitmapSource bmp)
         {
-            if (!FolderForImages("Guarda el documento antes de pegar la imagen")) return;
+            if (!FolderForImages(I18n.T("Guarda el documento antes de pegar la imagen", "Save the document before pasting image"))) return;
             string dir = DocumentFolder();
             int my = token;
             DateTime when = DateTime.Now;
-            Say("Guardando la imagen\u2026", false);
+            Say(I18n.T("Guardando la imagen\u2026", "Saving image\u2026"), false);
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
             {
                 string err;
@@ -197,7 +197,7 @@ namespace Stackshot
                         if (my != token || editor == null) return;
                         if (rel == null) { Say(err, true); return; }
                         InsertAtCaret(MdImages.Link(rel));
-                        Say("Imagen pegada: " + rel + ".", false);
+                        Say(I18n.Fmt("Imagen pegada: {0}.", "Image pasted: {0}.", rel), false);
                     }));
                 }
                 catch (Exception ex) { ShotStack.Log("Pegar imagen: " + ex.Message); }
@@ -207,7 +207,7 @@ namespace Stackshot
         // Dropped image files: links where they fell (copies in imagenes for files from outside the document's folder).
         void AddImageFiles(List<string> files, int at)
         {
-            if (!FolderForImages(files.Count == 1 ? "Guarda el documento antes de a\u00F1adir la imagen" : "Guarda el documento antes de a\u00F1adir las im\u00E1genes")) return;
+            if (!FolderForImages(files.Count == 1 ? I18n.T("Guarda el documento antes de a\u00F1adir la imagen", "Save the document before adding image") : I18n.T("Guarda el documento antes de a\u00F1adir las im\u00E1genes", "Save the document before adding images"))) return;
             string dir = DocumentFolder();
             int my = token;
             System.Threading.ThreadPool.QueueUserWorkItem(delegate
@@ -225,14 +225,14 @@ namespace Stackshot
                     Dispatcher.BeginInvoke(new Action(delegate
                     {
                         if (my != token || editor == null) return;
-                        if (rels.Count == 0) { Say(err ?? "No he podido a\u00F1adir la imagen.", true); return; }
+                        if (rels.Count == 0) { Say(err ?? I18n.T("No he podido a\u00F1adir la imagen.", "Could not add image."), true); return; }
                         List<string> links = new List<string>();
                         foreach (string r in rels) links.Add(MdImages.Link(r));
                         string ins = string.Join("\n\n", links.ToArray());
                         if (at >= 0 && at <= editor.Text.Length) editor.Apply(TextEdit.Make(at, 0, ins, at + ins.Length, 0));
                         else InsertAtCaret(ins);
                         if (err != null) Say(err, true);
-                        else Say(rels.Count == 1 ? "Imagen a\u00F1adida: " + rels[0] + "." : rels.Count + " im\u00E1genes a\u00F1adidas.", false);
+                        else Say(rels.Count == 1 ? I18n.Fmt("Imagen a\u00F1adida: {0}.", "Image added: {0}.", rels[0]) : I18n.Fmt("{0} im\u00E1genes a\u00F1adidas.", "{0} images added.", rels.Count), false);
                     }));
                 }
                 catch (Exception ex) { ShotStack.Log("Soltar imagen: " + ex.Message); }

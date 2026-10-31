@@ -13,7 +13,7 @@ namespace Stackshot
         public static HttpWebRequest Create(string url, int timeoutMs, int readWriteMs)
         {
             Uri uri = new Uri(url);
-            if (uri.Scheme != Uri.UriSchemeHttps) throw new InvalidOperationException("Solo se permiten conexiones HTTPS: " + uri.GetLeftPart(UriPartial.Authority));
+            if (uri.Scheme != Uri.UriSchemeHttps) throw new InvalidOperationException(I18n.T("Solo se permiten conexiones HTTPS: ", "Only HTTPS connections are allowed: ") + uri.GetLeftPart(UriPartial.Authority));
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(uri);
             req.UserAgent = "Stackshot/" + Installer.MyVersion.ToString(3);

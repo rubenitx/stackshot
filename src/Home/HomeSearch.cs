@@ -63,7 +63,7 @@ namespace Stackshot
             g.Children.Add(frame);
             GlyphView icon = new GlyphView("search", 13, pal.Label2, 1.7) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(9, 0, 0, 0) };
             g.Children.Add(icon);
-            TextBlock hint = Label("Buscar ajustes", Ds.Regular, 12.5, pal.Label3, new Thickness(28, 0, 0, 1));
+            TextBlock hint = Label(I18n.T("Buscar ajustes", "Search settings"), Ds.Regular, 12.5, pal.Label3, new Thickness(28, 0, 0, 1));
             hint.IsHitTestVisible = false;
             hint.HorizontalAlignment = HorizontalAlignment.Left;
             g.Children.Add(hint);
@@ -73,14 +73,14 @@ namespace Stackshot
                 FontFamily = Ds.Text, FontSize = 12.5, Foreground = Ds.Brush(pal.Label), CaretBrush = Ds.Brush(pal.Accent), SelectionBrush = Ds.Brush(pal.Accent),
                 MaxLength = 80, VerticalContentAlignment = VerticalAlignment.Center, Template = DockFieldTemplate(), Text = searchText
             };
-            AutomationProperties.SetName(box, "Buscar ajustes");
+            AutomationProperties.SetName(box, I18n.T("Buscar ajustes", "Search settings"));
             AutomationProperties.SetHelpText(box, "Ctrl+F");
             g.Children.Add(box);
             Border clear = new TapBorder
             {
                 Width = 14, Height = 14, CornerRadius = new CornerRadius(7), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 7, 0), Cursor = Cursors.Arrow, Background = Ds.Brush(pal.Dark ? Ds.Argb(0.32, 255, 255, 255) : Ds.Argb(0.28, 0, 0, 0)),
-                ToolTip = "Borrar la b\u00FAsqueda", Label = "Borrar la b\u00FAsqueda", Do = delegate { box.Text = ""; box.Focus(); }
+                ToolTip = I18n.T("Borrar la b\u00FAsqueda", "Clear search"), Label = I18n.T("Borrar la b\u00FAsqueda", "Clear search"), Do = delegate { box.Text = ""; box.Focus(); }
             };
             clear.Child = new GlyphView("close", 9, pal.Dark ? Ds.Rgb(44, 44, 48) : Colors.White, 2.2) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             clear.MouseLeftButtonDown += delegate(object o, MouseButtonEventArgs e) { e.Handled = true; };
@@ -239,7 +239,7 @@ namespace Stackshot
         // While the results show, the toolbar names them (a sub-page's back button waits).
         void SearchToolbar()
         {
-            toolbarTitle.Text = "Resultados";
+            toolbarTitle.Text = I18n.T("Resultados", "Results");
             toolbarTitle.Margin = new Thickness(40, 0, 0, 0);
             foreach (UIElement c in toolbarRow.Children) if (c != toolbarTitle) c.Visibility = Visibility.Collapsed;
         }
@@ -297,14 +297,17 @@ namespace Stackshot
             // Other words start at the top; the same ones drawn again (a theme) stay where they were.
             if (q != searchShownQuery) searchScroller.ScrollToVerticalOffset(0);
             searchShownQuery = q;
-            searchList.Children.Add(Label("Resultados", Ds.Title, 26, pal.Label, new Thickness(0, 58, 0, 0)));
-            string quoted = "\u00AB" + q + "\u00BB";
+            searchList.Children.Add(Label(I18n.T("Resultados", "Results"), Ds.Title, 26, pal.Label, new Thickness(0, 58, 0, 0)));
+            string quoted = I18n.IsSpanish ? "\u00AB" + q + "\u00BB" : "\u201C" + q + "\u201D";
             if (hits.Count == 0)
             {
                 searchList.Children.Add(complete ? SearchNothing(quoted) : SearchWaiting());
                 return;
             }
-            TextBlock count = Paragraph(hits.Count == 1 ? "1 ajuste coincide con " + quoted + "." : hits.Count + " ajustes coinciden con " + quoted + ".", 13, pal.Label2);
+            string countMsg = I18n.IsSpanish
+                ? (hits.Count == 1 ? "1 ajuste coincide con " + quoted + "." : hits.Count + " ajustes coinciden con " + quoted + ".")
+                : (hits.Count == 1 ? "1 setting matches " + quoted + "." : hits.Count + " settings match " + quoted + ".");
+            TextBlock count = Paragraph(countMsg, 13, pal.Label2);
             count.Margin = new Thickness(0, 6, 0, 0);
             searchList.Children.Add(count);
             searchList.Children.Add(new Border { Height = 24 });
@@ -344,7 +347,8 @@ namespace Stackshot
             }
             if (searchPendingLeft > 0)
             {
-                TextBlock more = Paragraph("Y " + searchPendingLeft + " m\u00E1s: a\u00F1ade otra palabra para afinar.", 12, Ds.Brushes.Label2);
+                string moreMsg = I18n.IsSpanish ? ("Y " + searchPendingLeft + " m\u00E1s: a\u00F1ade otra palabra para afinar.") : ("And " + searchPendingLeft + " more: add another word to refine.");
+                TextBlock more = Paragraph(moreMsg, 12, Ds.Brushes.Label2);
                 more.Margin = new Thickness(8, -12, 8, 0);
                 searchList.Children.Add(more);
             }
@@ -356,12 +360,14 @@ namespace Stackshot
             Palette pal = Ds.Brushes;
             StackPanel p = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 54, 0, 0), MaxWidth = 420 };
             p.Children.Add(new GlyphView("search", 34, pal.Label3, 1.6) { HorizontalAlignment = HorizontalAlignment.Center });
-            TextBlock t = Label("No hay ajustes que coincidan con " + quoted, Ds.Semibold, 15, pal.Label, new Thickness(0, 14, 0, 0));
+            string titleMsg = I18n.IsSpanish ? ("No hay ajustes que coincidan con " + quoted) : ("No settings match " + quoted);
+            TextBlock t = Label(titleMsg, Ds.Semibold, 15, pal.Label, new Thickness(0, 14, 0, 0));
             t.TextWrapping = TextWrapping.Wrap;
             t.TextAlignment = TextAlignment.Center;
             t.HorizontalAlignment = HorizontalAlignment.Center;
             p.Children.Add(t);
-            TextBlock h = Paragraph("Prueba con otras palabras o con menos letras, como \u00ABcarpeta\u00BB, \u00ABsonido\u00BB o \u00ABatajo\u00BB.", 12.5, pal.Label2);
+            string helpMsg = I18n.IsSpanish ? "Prueba con otras palabras o con menos letras, como \u00ABcarpeta\u00BB, \u00ABsonido\u00BB o \u00ABatajo\u00BB." : "Try different words or fewer letters, such as \u201Cfolder\u201D, \u201Csound\u201D or \u201Cshortcut\u201D.";
+            TextBlock h = Paragraph(helpMsg, 12.5, pal.Label2);
             h.TextAlignment = TextAlignment.Center;
             h.Margin = new Thickness(0, 6, 0, 0);
             p.Children.Add(h);
@@ -371,7 +377,7 @@ namespace Stackshot
         // The first search while the index is still being made (a moment).
         FrameworkElement SearchWaiting()
         {
-            TextBlock t = Paragraph("Buscando\u2026", 13, Ds.Brushes.Label2);
+            TextBlock t = Paragraph(I18n.T("Buscando\u2026", "Searching\u2026"), 13, Ds.Brushes.Label2);
             t.Margin = new Thickness(0, 6, 0, 0);
             return t;
         }

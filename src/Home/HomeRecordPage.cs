@@ -16,9 +16,14 @@ namespace Stackshot
     {
         // Shown in quality order; the stored values keep 1 = Maxima from earlier versions.
         static readonly int[] RecOrder = { Recorder.Standard, Recorder.High, Recorder.Maximum, Recorder.Cinema };
-        static readonly string[] RecNames = { "Est\u00E1ndar", "Alta", "M\u00E1xima", "Cine" };
-        static readonly string[] RecLines = { "Ligera y fluida, para chats y correos.", "60 fps n\u00EDtidos, listo al momento.", "60 fps sin p\u00E9rdida al grabar.",
-                                              "Sin p\u00E9rdidas y verificado, en MKV." };
+        static readonly string[] RecNamesEs = { "Est\u00E1ndar", "Alta", "M\u00E1xima", "Cine" };
+        static readonly string[] RecNamesEn = { "Standard", "High", "Maximum", "Cinema" };
+        static string[] RecNames { get { return I18n.IsSpanish ? RecNamesEs : RecNamesEn; } }
+        static readonly string[] RecLinesEs = { "Ligera y fluida, para chats y correos.", "60 fps n\u00EDtidos, listo al momento.", "60 fps sin p\u00E9rdida al grabar.",
+                                                "Sin p\u00E9rdidas y verificado, en MKV." };
+        static readonly string[] RecLinesEn = { "Light and fluid, for chat and email.", "Sharp 60 fps, ready instantly.", "Lossless 60 fps while recording.",
+                                                "Lossless and verified, in MKV." };
+        static string[] RecLines { get { return I18n.IsSpanish ? RecLinesEs : RecLinesEn; } }
         static readonly string[] RecIcons = { "share", "video", "sparkle", "film" };
         static readonly Color[,] RecTiles =
         {
@@ -27,9 +32,11 @@ namespace Stackshot
             { Ds.Rgb(191, 90, 242), Ds.Rgb(120, 70, 220) },
             { Ds.Rgb(255, 159, 10), Ds.Rgb(255, 69, 58) }
         };
-        static readonly string[] RecMetrics = { "Nitidez", "Fluidez", "Tama\u00F1o" };
+        static readonly string[] RecMetricsEs = { "Nitidez", "Fluidez", "Tama\u00F1o" };
+        static readonly string[] RecMetricsEn = { "Sharpness", "Smoothness", "Size" };
+        static string[] RecMetrics { get { return I18n.IsSpanish ? RecMetricsEs : RecMetricsEn; } }
         static readonly int[,] RecLevels = { { 1, 2, 1 }, { 2, 3, 2 }, { 3, 4, 3 }, { 4, 4, 4 } };
-        static readonly string[] RecNotes =
+        static readonly string[] RecNotesEs =
         {
             "Est\u00E1ndar: 24, 30 o 60 fps con buena compresi\u00F3n. Archivos peque\u00F1os que se env\u00EDan en segundos.",
             "Alta: 60 fps y mucho detalle, codificado mientras grabas, as\u00ED que se guarda al instante. Archivos m\u00E1s grandes.",
@@ -39,6 +46,16 @@ namespace Stackshot
             "Graba a 60 o 30 fps (lo eliges aqu\u00ED debajo) y no capta todos los refrescos de una pantalla de m\u00E1s de 60 Hz. " +
             "Es fiel a lo que entrega Windows, no al color que muestra tu monitor (el HDR lo convierte Windows a SDR). Si el equipo no puede seguir el ritmo, la grabaci\u00F3n se detiene y conserva lo grabado."
         };
+        static readonly string[] RecNotesEn =
+        {
+            "Standard: 24, 30 or 60 fps with good compression. Small files ready to share in seconds.",
+            "High: 60 fps and rich detail, encoded while recording so it saves instantly. Larger files.",
+            "Maximum: 60 fps matched to your monitor rate, recorded losslessly (in areas larger than 1920 \u00D7 1200 with very high quality, but not lossless) and encoded with very high quality when finished. Takes a moment to save.",
+            "Cinema: saves every pixel and audio exactly as delivered by Windows, lossless (.mkv file), verified frame-by-frame upon completion. Uses significant disk (MBs to GBs per minute depending on motion), CPU and RAM. Plays inside Stackshot (Windows player cannot open it); to share, Export in editor creates a compatible MP4 without altering the original. " +
+            "Records at 60 or 30 fps (chosen below) and does not capture all refreshes above 60 Hz. " +
+            "Faithful to Windows output, not monitor color (Windows converts HDR to SDR). If the PC cannot keep up, recording stops safely keeping what was captured."
+        };
+        static string[] RecNotes { get { return I18n.IsSpanish ? RecNotesEs : RecNotesEn; } }
         static readonly int[] RecFps = { 24, 30, 60 }, RecGifFps = { 10, 15, 20, 25 };
 
         static List<string> recCameras;       // DirectShow cameras, looked up once per session (it runs FFmpeg)
@@ -72,8 +89,9 @@ namespace Stackshot
             head.ColumnDefinitions.Add(new ColumnDefinition());
             head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             StackPanel titles = new StackPanel();
-            titles.Children.Add(Label("Grabaci\u00F3n", Ds.Title, 26, pal.Label));
-            TextBlock sub = Paragraph("V\u00EDdeo con sonido (MP4, o MKV sin p\u00E9rdidas en Cine) y GIF animado. Para parar, pulsa el atajo otra vez o Detener en la barra de grabaci\u00F3n.", 13, pal.Label2);
+            titles.Children.Add(Label(I18n.T("Grabaci\u00F3n", "Recording"), Ds.Title, 26, pal.Label));
+            TextBlock sub = Paragraph(I18n.T("V\u00EDdeo con sonido (MP4, o MKV sin p\u00E9rdidas en Cine) y GIF animado. Para parar, pulsa el atajo otra vez o Detener en la barra de grabaci\u00F3n.",
+                                             "Video with sound (MP4, or lossless MKV in Cinema) and animated GIF. To stop, press the hotkey again or Stop in the recording bar."), 13, pal.Label2);
             sub.Margin = new Thickness(0, 5, 0, 0);
             titles.Children.Add(sub);
             head.Children.Add(titles);
@@ -86,7 +104,7 @@ namespace Stackshot
                 string combo = settings.HotkeysFor(action);
                 if (Hotkeys.Split(combo).Count == 0) continue;
                 keys.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                TextBlock name = Label(action == "video" ? "V\u00EDdeo" : "GIF", Ds.Regular, 11.5, pal.Label2, new Thickness(0, r > 0 ? 6 : 0, 10, 0));
+                TextBlock name = Label(action == "video" ? I18n.T("V\u00EDdeo", "Video") : "GIF", Ds.Regular, 11.5, pal.Label2, new Thickness(0, r > 0 ? 6 : 0, 10, 0));
                 name.HorizontalAlignment = HorizontalAlignment.Right;
                 Grid.SetRow(name, r);
                 keys.Children.Add(name);
@@ -223,7 +241,7 @@ namespace Stackshot
             Palette pal = Ds.Brushes;
             Grid row = RecRow(1);
             TextBlock sub;
-            StackPanel p = RecPanel(row, 0, "sparkle", pal.Purple, "Calidad", "Cu\u00E1nto detalle y fluidez guarda cada v\u00EDdeo, y lo que pesa.", out sub);
+            StackPanel p = RecPanel(row, 0, "sparkle", pal.Purple, I18n.T("Calidad", "Quality"), I18n.T("Cu\u00E1nto detalle y fluidez guarda cada v\u00EDdeo, y lo que pesa.", "How much detail and smoothness each video saves, and file size."), out sub);
             int q = Math.Max(0, Array.IndexOf(RecOrder, settings.VideoQuality));
             Grid cards = new Grid { Margin = new Thickness(0, 14, 0, 0) };
             recCards = new RecCard[RecOrder.Length];
@@ -252,8 +270,8 @@ namespace Stackshot
             recNote.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetColumn(recNote, 1);
             dg.Children.Add(recNote);
-            StackPanel fps = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 0, 0), ToolTip = "M\u00E1s fotogramas, m\u00E1s fluido (y m\u00E1s pesado)." };
-            TextBlock fl = Label("Fotogramas por segundo", Ds.Regular, 11.5, pal.Label2);
+            StackPanel fps = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 0, 0), ToolTip = I18n.T("M\u00E1s fotogramas, m\u00E1s fluido (y m\u00E1s pesado).", "More frames, smoother (and larger file).") };
+            TextBlock fl = Label(I18n.T("Fotogramas por segundo", "Frames per second"), Ds.Regular, 11.5, pal.Label2);
             fl.HorizontalAlignment = HorizontalAlignment.Center;
             fps.Children.Add(fl);
             if (!indexing) settings.VideoFps = RecFps[Nearest(RecFps, settings.VideoFps)]; // what is shown is what gets recorded
@@ -289,9 +307,9 @@ namespace Stackshot
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
             g.ColumnDefinitions.Add(new ColumnDefinition());
             MacSegmented fs = new MacSegmented(new string[] { "30", "60" }, settings.CineFps == 30 ? 0 : 1);
-            MacSegmented ms = new MacSegmented(new string[] { "Normal", "Alta" }, settings.CinePeakMemory >= 1 ? 1 : 0);
-            g.Children.Add(RecCineColumn("Fotogramas por segundo", fs, out recCineFpsNote));
-            FrameworkElement mem = RecCineColumn("Memoria para picos de movimiento", ms, out recCineMemNote);
+            MacSegmented ms = new MacSegmented(I18n.IsSpanish ? new string[] { "Normal", "Alta" } : new string[] { "Normal", "High" }, settings.CinePeakMemory >= 1 ? 1 : 0);
+            g.Children.Add(RecCineColumn(I18n.T("Fotogramas por segundo", "Frames per second"), fs, out recCineFpsNote));
+            FrameworkElement mem = RecCineColumn(I18n.T("Memoria para picos de movimiento", "Memory for motion peaks"), ms, out recCineMemNote);
             Grid.SetColumn(mem, 2);
             g.Children.Add(mem);
             RecCineNotes();
@@ -333,17 +351,17 @@ namespace Stackshot
             if (recCineFpsNote == null || recCineMemNote == null) return;
             int fps = settings.CineFps == 30 ? 30 : 60;
             recCineFpsNote.Text = fps == 60
-                ? "Movimiento fluido. Si el \u00E1rea es demasiado grande para tu equipo, te preguntar\u00E1 antes de grabar."
-                : "La mitad de datos y de trabajo: m\u00E1s margen para \u00E1reas grandes o equipos justos. Lo r\u00E1pido se ve menos suave.";
+                ? I18n.T("Movimiento fluido. Si el \u00E1rea es demasiado grande para tu equipo, te preguntar\u00E1 antes de grabar.", "Smooth motion. If the area is too large for your PC, it will ask before recording.")
+                : I18n.T("La mitad de datos y de trabajo: m\u00E1s margen para \u00E1reas grandes o equipos justos. Lo r\u00E1pido se ve menos suave.", "Half the data and workload: more headroom for large areas or modest PCs. Fast motion looks less smooth.");
             int level = settings.CinePeakMemory >= 1 ? 1 : 0;
             System.Drawing.Rectangle screen = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
             long frame = (long)screen.Width * screen.Height * 4, avail = Cine.AvailablePhysical();
             double seconds = Cine.PeakSeconds(level, frame, avail, fps);
-            string peak = "hasta " + DiskBudget.Gb(Cine.PoolBudget(level, avail)) + " (unos " + Math.Max(1, (int)Math.Round(seconds)) + " s de picos a " +
+            string peak = I18n.T("hasta ", "up to ") + DiskBudget.Gb(Cine.PoolBudget(level, avail)) + I18n.T(" (unos ", " (about ") + Math.Max(1, (int)Math.Round(seconds)) + I18n.T(" s de picos a ", " s of peaks at ") +
                           screen.Width + " \u00D7 " + screen.Height + ")";
             recCineMemNote.Text = level == 0
-                ? "Normal: " + peak + ". Solo se usa la que hace falta; si se llena, la grabaci\u00F3n se detiene y conserva lo grabado."
-                : "Alta: " + peak + ". Para tomas que se detienen con mucho movimiento; con poca memoria libre el equipo puede ir m\u00E1s lento.";
+                ? I18n.T("Normal: ", "Normal: ") + peak + I18n.T(". Solo se usa la que hace falta; si se llena, la grabaci\u00F3n se detiene y conserva lo grabado.", ". Only uses what is needed; if full, recording stops and keeps what was recorded.")
+                : I18n.T("Alta: ", "High: ") + peak + I18n.T(". Para tomas que se detienen con mucho movimiento; con poca memoria libre el equipo puede ir m\u00E1s lento.", ". For captures that stop with heavy motion; with low free memory the PC may slow down.");
         }
 
         // Nitidez, Fluidez and Tamano from 1 to 4; Standard follows its frame rate.
@@ -417,7 +435,7 @@ namespace Stackshot
                 l.MinHeight = 2 * l.LineHeight;
                 col.Children.Add(l);
                 Grid bars = new Grid { Margin = new Thickness(0, 12, 0, 0), Background = Brushes.Transparent,
-                                       ToolTip = "Nitidez y fluidez: cuantas m\u00E1s barras, mejor. Tama\u00F1o: lo que ocupa el archivo." };
+                                       ToolTip = I18n.T("Nitidez y fluidez: cuantas m\u00E1s barras, mejor. Tama\u00F1o: lo que ocupa el archivo.", "Sharpness and smoothness: more bars are better. Size: file space used.") };
                 bars.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 bars.ColumnDefinitions.Add(new ColumnDefinition());
                 segs = new SolidColorBrush[metrics.Length, 4];
@@ -502,7 +520,7 @@ namespace Stackshot
             Palette pal = Ds.Brushes;
             Grid row = RecRow(1);
             TextBlock sub;
-            StackPanel p = RecPanel(row, 0, "sound", pal.Orange, "Sonido", "Se graba lo que actives, cada uno desde el dispositivo que elijas.", out sub);
+            StackPanel p = RecPanel(row, 0, "sound", pal.Orange, I18n.T("Sonido", "Sound"), I18n.T("Se graba lo que actives, cada uno desde el dispositivo que elijas.", "Records what you turn on, each from the device you choose."), out sub);
             Grid tiles = new Grid { Margin = new Thickness(0, 14, 0, 0) };
             tiles.ColumnDefinitions.Add(new ColumnDefinition());
             tiles.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
@@ -512,8 +530,8 @@ namespace Stackshot
             tiles.Children.Add(a);
             tiles.Children.Add(b);
             p.Children.Add(tiles);
-            TextBlock n = Paragraph("Mientras grabas, la barra de grabaci\u00F3n muestra el nivel de cada sonido y un clic en el micr\u00F3fono lo silencia. El sonido va sincronizado con la imagen " +
-                                    "y, aunque suenen los dos a la vez, nunca se satura.", 12, pal.Label2);
+            TextBlock n = Paragraph(I18n.T("Mientras grabas, la barra de grabaci\u00F3n muestra el nivel de cada sonido y un clic en el micr\u00F3fono lo silencia. El sonido va sincronizado con la imagen y, aunque suenen los dos a la vez, nunca se satura.",
+                                          "While recording, the bar shows each sound level and clicking the mic mutes it. Sound is synced with video and never clips even if both play at once."), 12, pal.Label2);
             n.Margin = new Thickness(2, 12, 2, 0);
             p.Children.Add(n);
         }
@@ -546,7 +564,7 @@ namespace Stackshot
             IconTile colored = new IconTile(icon, 30, W(computer ? Mac.Orange : Mac.Pink), W(Mac.Red)) { Opacity = on ? 1 : 0 };
             icons.Children.Add(colored);
             head.Children.Add(icons);
-            TextBlock title = Label(computer ? "Sonido del equipo" : "Micr\u00F3fono", Ds.Semibold, 13.5, pal.Label, new Thickness(11, 0, 10, 0));
+            TextBlock title = Label(computer ? I18n.T("Sonido del equipo", "System audio") : I18n.T("Micr\u00F3fono", "Microphone"), Ds.Semibold, 13.5, pal.Label, new Thickness(11, 0, 10, 0));
             title.TextTrimming = TextTrimming.CharacterEllipsis;
             Grid.SetColumn(title, 1);
             head.Children.Add(title);
@@ -554,14 +572,15 @@ namespace Stackshot
             Grid.SetColumn(sw, 2);
             head.Children.Add(sw);
             col.Children.Add(head);
-            TextBlock d = Paragraph(computer ? "Lo que suena en el ordenador: v\u00EDdeos, llamadas, avisos." : "Tu voz mientras grabas, a un volumen claro y constante.", 12, pal.Label2);
+            TextBlock d = Paragraph(computer ? I18n.T("Lo que suena en el ordenador: v\u00EDdeos, llamadas, avisos.", "What plays on your computer: videos, calls, alerts.")
+                                             : I18n.T("Tu voz mientras grabas, a un volumen claro y constante.", "Your voice while recording, at a clear, constant volume."), 12, pal.Label2);
             d.Margin = new Thickness(0, 10, 0, 0);
             d.MinHeight = 2 * d.LineHeight;
             col.Children.Add(d);
             Access.Describe(sw, title.Text, d.Text);
             TextBlock name;
             Border pill = RecPill(icon, out name);
-            AccessPill(pill, computer ? "Grabar el sonido de" : "Micr\u00F3fono que se graba");
+            AccessPill(pill, computer ? I18n.T("Grabar el sonido de", "Record audio from") : I18n.T("Micr\u00F3fono que se graba", "Microphone to record"));
             pill.Margin = new Thickness(0, 10, 0, 0);
             pill.Opacity = on ? 1 : 0.55;
             bool warn;
@@ -591,14 +610,14 @@ namespace Stackshot
             if (string.IsNullOrEmpty(cur))
             {
                 string d = AudioDevices.DefaultName(!computer);
-                if (d != null) return "El de Windows: " + d;
+                if (d != null) return I18n.T("El de Windows: ", "Windows default: ") + d;
                 warn = true;
-                return computer ? "No hay ninguna salida de sonido" : "No hay ning\u00FAn micr\u00F3fono conectado";
+                return computer ? I18n.T("No hay ninguna salida de sonido", "No audio output available") : I18n.T("No hay ning\u00FAn micr\u00F3fono conectado", "No microphone connected");
             }
             foreach (KeyValuePair<string, string> m in computer ? AudioDevices.Outputs() : AudioDevices.Microphones())
                 if (string.Equals(m.Key, cur, StringComparison.OrdinalIgnoreCase)) return m.Value;
             warn = true;
-            return "Desconectado: se usar\u00E1 el de Windows";
+            return I18n.T("Desconectado: se usar\u00E1 el de Windows", "Disconnected: using Windows default");
         }
 
         void RecSoundMenu(FrameworkElement anchor, bool computer, TextBlock name)
@@ -608,9 +627,9 @@ namespace Stackshot
             string def = AudioDevices.DefaultName(!computer);
             string icon = computer ? "sound" : "mic";
             List<MenuEntry> list = new List<MenuEntry>();
-            list.Add(MenuEntry.Title(computer ? "Grabar el sonido de" : "Micr\u00F3fono que se graba"));
-            MenuEntry windows = MenuEntry.Item("El de Windows", icon, cur.Length == 0, delegate { RecSetSound(computer, "", name); });
-            windows.Detail = def ?? (computer ? "No hay ninguna salida de sonido" : "No hay ning\u00FAn micr\u00F3fono conectado");
+            list.Add(MenuEntry.Title(computer ? I18n.T("Grabar el sonido de", "Record audio from") : I18n.T("Micr\u00F3fono que se graba", "Microphone to record")));
+            MenuEntry windows = MenuEntry.Item(I18n.T("El de Windows", "Windows default"), icon, cur.Length == 0, delegate { RecSetSound(computer, "", name); });
+            windows.Detail = def ?? (computer ? I18n.T("No hay ninguna salida de sonido", "No audio output available") : I18n.T("No hay ning\u00FAn micr\u00F3fono conectado", "No microphone connected"));
             list.Add(windows);
             if (devices.Count > 0) list.Add(MenuEntry.Line());
             bool found = false;
@@ -623,8 +642,8 @@ namespace Stackshot
             }
             if (cur.Length > 0 && !found)
             {
-                MenuEntry gone = MenuEntry.Item("El que elegiste", icon, true, null);
-                gone.Detail = "Desconectado: se usar\u00E1 el de Windows";
+                MenuEntry gone = MenuEntry.Item(I18n.T("El que elegiste", "Selected device"), icon, true, null);
+                gone.Detail = I18n.T("Desconectado: se usar\u00E1 el de Windows", "Disconnected: using Windows default");
                 gone.Enabled = false;
                 list.Add(gone);
             }
@@ -648,7 +667,7 @@ namespace Stackshot
             Palette pal = Ds.Brushes;
             Grid row = RecRow(1);
             TextBlock sub;
-            StackPanel p = RecPanel(row, 0, "camera", pal.Green, "C\u00E1mara", RecCamHint(), out sub);
+            StackPanel p = RecPanel(row, 0, "camera", pal.Green, I18n.T("C\u00E1mara", "Camera"), RecCamHint(), out sub);
             Grid g = new Grid { Margin = new Thickness(0, 14, 0, 0) };
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
@@ -659,8 +678,8 @@ namespace Stackshot
             Grid form = new Grid { VerticalAlignment = VerticalAlignment.Center };
             form.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             form.ColumnDefinitions.Add(new ColumnDefinition());
-            MacSegmented shape = new MacSegmented(new string[] { "No", "Redonda", "Cuadrada" }, settings.Webcam);
-            MacSegmented size = new MacSegmented(new string[] { "Peque\u00F1a", "Mediana", "Grande" }, settings.WebcamSize);
+            MacSegmented shape = new MacSegmented(I18n.IsSpanish ? new string[] { "No", "Redonda", "Cuadrada" } : new string[] { "Off", "Round", "Square" }, settings.Webcam);
+            MacSegmented size = new MacSegmented(I18n.IsSpanish ? new string[] { "Peque\u00F1a", "Mediana", "Grande" } : new string[] { "Small", "Medium", "Large" }, settings.WebcamSize);
             TextBlock camName;
             recCamPill = RecPill("camera", out camName);
             recCamText = camName;
@@ -669,7 +688,7 @@ namespace Stackshot
             Press(pill, RecCamClick);
             RecCamRefresh();
             FrameworkElement[] controls = { shape, size, pill };
-            string[] names = { "Forma", "Tama\u00F1o", "C\u00E1mara" };
+            string[] names = I18n.IsSpanish ? new string[] { "Forma", "Tama\u00F1o", "C\u00E1mara" } : new string[] { "Shape", "Size", "Camera" };
             for (int i = 0; i < controls.Length; i++)
             {
                 form.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -708,8 +727,8 @@ namespace Stackshot
 
         string RecCamHint()
         {
-            return settings.Webcam == 0 ? "A\u00F1ade tu cara en una burbuja, como en Loom." :
-                   "Sale en una esquina de la zona grabada. Arr\u00E1strala; doble clic cambia la forma y clic derecho el tama\u00F1o.";
+            return settings.Webcam == 0 ? I18n.T("A\u00F1ade tu cara en una burbuja, como en Loom.", "Add your face in a bubble, like Loom.") :
+                   I18n.T("Sale en una esquina de la zona grabada. Arr\u00E1strala; doble clic cambia la forma y clic derecho el tama\u00F1o.", "Appears in a corner of the recorded area. Drag it; double-click changes shape and right-click changes size.");
         }
 
         void RecCamRefresh()
@@ -718,9 +737,9 @@ namespace Stackshot
             bool engine = Recorder.FindFfmpeg(settings) != null;
             string cur = settings.WebcamDevice ?? "";
             string s;
-            if (!engine) s = "Descarga el motor de v\u00EDdeo para elegir c\u00E1mara";
-            else if (recSearching) s = "Buscando c\u00E1maras\u2026";
-            else if (cur.Length == 0) s = recCameras != null && recCameras.Count > 0 ? "La primera que encuentre: " + recCameras[0] : "La primera que encuentre";
+            if (!engine) s = I18n.T("Descarga el motor de v\u00EDdeo para elegir c\u00E1mara", "Download video engine to select camera");
+            else if (recSearching) s = I18n.T("Buscando c\u00E1maras\u2026", "Searching for cameras\u2026");
+            else if (cur.Length == 0) s = recCameras != null && recCameras.Count > 0 ? I18n.T("La primera que encuentre: ", "First one found: ") + recCameras[0] : I18n.T("La primera que encuentre", "First one found");
             else s = cur;
             RecSetText(recCamText, s, !engine || (recCameras != null && cur.Length > 0 && !recCameras.Contains(cur)));
             if (engine && recSearching) recCamText.Foreground = Ds.Brush(Ds.Brushes.Label2);
@@ -766,8 +785,8 @@ namespace Stackshot
             List<string> cams = recCameras ?? new List<string>();
             string cur = settings.WebcamDevice ?? "";
             List<MenuEntry> list = new List<MenuEntry>();
-            list.Add(MenuEntry.Title("C\u00E1mara que se graba"));
-            MenuEntry first = MenuEntry.Item("La primera que encuentre", "camera", cur.Length == 0, delegate { RecSetCamera(""); });
+            list.Add(MenuEntry.Title(I18n.T("C\u00E1mara que se graba", "Camera to record")));
+            MenuEntry first = MenuEntry.Item(I18n.T("La primera que encuentre", "First one found"), "camera", cur.Length == 0, delegate { RecSetCamera(""); });
             if (cams.Count > 0) first.Detail = cams[0];
             list.Add(first);
             list.Add(MenuEntry.Line());
@@ -779,18 +798,18 @@ namespace Stackshot
             if (cur.Length > 0 && !cams.Contains(cur))
             {
                 MenuEntry gone = MenuEntry.Item(cur, "camera", true, null);
-                gone.Detail = "No est\u00E1 conectada ahora";
+                gone.Detail = I18n.T("No est\u00E1 conectada ahora", "Not connected now");
                 gone.Enabled = false;
                 list.Add(gone);
             }
             if (cams.Count == 0)
             {
-                MenuEntry none = MenuEntry.Item("No se encuentra ninguna c\u00E1mara", null, false, null);
+                MenuEntry none = MenuEntry.Item(I18n.T("No se encuentra ninguna c\u00E1mara", "No cameras found"), null, false, null);
                 none.Enabled = false;
                 list.Add(none);
             }
             list.Add(MenuEntry.Line());
-            list.Add(MenuEntry.Item("Buscar de nuevo", "search", false, delegate
+            list.Add(MenuEntry.Item(I18n.T("Buscar de nuevo", "Search again"), "search", false, delegate
             {
                 string ff = Recorder.FindFfmpeg(settings);
                 if (ff == null || recSearching) return;
@@ -920,10 +939,10 @@ namespace Stackshot
             if (!indexing) settings.GifFps = RecGifFps[gi];
             TextBlock num = Label(RecGifFps[gi].ToString(), Ds.Title, 30, pal.Label);
             big.Children.Add(num);
-            big.Children.Add(Label("fotogramas por segundo", Ds.Regular, 12, pal.Label2, new Thickness(8, 12, 0, 0)));
+            big.Children.Add(Label(I18n.T("fotogramas por segundo", "frames per second"), Ds.Regular, 12, pal.Label2, new Thickness(8, 12, 0, 0)));
             gp.Children.Add(big);
             MacSegmented gs = new MacSegmented(new string[] { "10", "15", "20", "25" }, gi);
-            Access.Describe(gs, "Fotogramas por segundo del GIF", null);
+            Access.Describe(gs, I18n.T("Fotogramas por segundo del GIF", "GIF frames per second"), null);
             gs.HorizontalAlignment = HorizontalAlignment.Left;
             gs.Margin = new Thickness(0, 10, 0, 0);
             gs.Changed += delegate(int i)
@@ -934,22 +953,22 @@ namespace Stackshot
                 RecIn(num);
             };
             gp.Children.Add(gs);
-            TextBlock gn = Paragraph("Los GIF pesan mucho: 15 suele ser el punto justo.", 12, pal.Label2);
+            TextBlock gn = Paragraph(I18n.T("Los GIF pesan mucho: 15 suele ser el punto justo.", "GIFs are large: 15 fps is usually the sweet spot."), 12, pal.Label2);
             gn.Margin = new Thickness(0, 10, 0, 0);
             gp.Children.Add(gn);
             SearchWidgetMore(gn.Text, ((TextBlock)big.Children[1]).Text);
 
             string ff = Recorder.FindFfmpeg(settings);
-            StackPanel ep = RecPanel(row, 1, "gear", pal.Label2, "Motor de v\u00EDdeo", null, out sub);
+            StackPanel ep = RecPanel(row, 1, "gear", pal.Label2, I18n.T("Motor de v\u00EDdeo", "Video engine"), null, out sub);
             StackPanel state = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 0) };
             Color dot = ff != null ? pal.Green : pal.Orange;
             Grid halo = new Grid { Width = 16, Height = 16, VerticalAlignment = VerticalAlignment.Center };
             halo.Children.Add(new System.Windows.Shapes.Ellipse { Fill = Ds.Brush(Ds.WithAlpha(dot, 0.25)) });
             halo.Children.Add(new System.Windows.Shapes.Ellipse { Width = 8, Height = 8, Fill = Ds.Brush(dot) });
             state.Children.Add(halo);
-            state.Children.Add(Label(ff != null ? "Listo" : "Sin descargar", Ds.Title, 20, pal.Label, new Thickness(9, 0, 0, 0)));
+            state.Children.Add(Label(ff != null ? I18n.T("Listo", "Ready") : I18n.T("Sin descargar", "Not downloaded"), Ds.Title, 20, pal.Label, new Thickness(9, 0, 0, 0)));
             ep.Children.Add(state);
-            TextBlock info = Paragraph(ff != null ? "FFmpeg graba y codifica tus v\u00EDdeos y GIF." : "Se descarga solo (unos 110 MB) la primera vez que grabes.", 12, pal.Label2);
+            TextBlock info = Paragraph(ff != null ? I18n.T("FFmpeg graba y codifica tus v\u00EDdeos y GIF.", "FFmpeg records and encodes your videos and GIFs.") : I18n.T("Se descarga solo (unos 110 MB) la primera vez que grabes.", "Downloads automatically (~110 MB) the first time you record."), 12, pal.Label2);
             info.Margin = new Thickness(0, 8, 0, 0);
             ep.Children.Add(info);
             SearchWidgetMore(info.Text, null);
@@ -962,7 +981,7 @@ namespace Stackshot
             }
             else
             {
-                MacButton get = new MacButton("Descargar ahora", ButtonKind.Primary);
+                MacButton get = new MacButton(I18n.T("Descargar ahora", "Download now"), ButtonKind.Primary);
                 get.HorizontalAlignment = HorizontalAlignment.Left;
                 get.Margin = new Thickness(0, 12, 0, 0);
                 get.Click += RecDownloadEngine;
@@ -976,16 +995,15 @@ namespace Stackshot
             Palette pal = Ds.Brushes;
             Grid row = RecRow(1);
             TextBlock sub;
-            StackPanel p = RecPanel(row, 0, "video", pal.Red, "Antes de grabar",
-                     "Al elegir el \u00E1rea aparecen las opciones de la toma (calidad, fotogramas, sonido y c\u00E1mara) con el bot\u00F3n Grabar, " +
-                     "y una cuenta atr\u00E1s te da tiempo para prepararte. La cuenta atr\u00E1s no sale en el v\u00EDdeo.", out sub);
+            StackPanel p = RecPanel(row, 0, "video", pal.Red, I18n.T("Antes de grabar", "Before recording"),
+                     I18n.T("Al elegir el \u00E1rea aparecen las opciones de la toma (calidad, fotogramas, sonido y c\u00E1mara) con el bot\u00F3n Grabar, y una cuenta atr\u00E1s te da tiempo para prepararte. La cuenta atr\u00E1s no sale en el v\u00EDdeo.", "Choosing the area shows shot options (quality, framerate, audio, camera) with the Record button, and a countdown gives you time to prepare. The countdown does not appear in the video."), out sub);
             Border tile = new Border { CornerRadius = new CornerRadius(12), Background = Ds.Brush(RecTile(false)), Padding = new Thickness(13, 11, 13, 11), Margin = new Thickness(0, 14, 0, 0) };
             Grid inner = new Grid();
             inner.ColumnDefinitions.Add(new ColumnDefinition());
             inner.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             inner.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             inner.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            TextBlock l1 = Label("Mostrar las opciones antes de grabar", Ds.Semibold, 13, pal.Label);
+            TextBlock l1 = Label(I18n.T("Mostrar las opciones antes de grabar", "Show options before recording"), Ds.Semibold, 13, pal.Label);
             l1.VerticalAlignment = VerticalAlignment.Center;
             inner.Children.Add(l1);
             MacSwitch sw = new MacSwitch(settings.RecordSetup) { VerticalAlignment = VerticalAlignment.Center };
@@ -993,12 +1011,12 @@ namespace Stackshot
             sw.Toggled += delegate(bool v) { settings.RecordSetup = v; Changed(); };
             Grid.SetColumn(sw, 1);
             inner.Children.Add(sw);
-            TextBlock l2 = Label("Cuenta atr\u00E1s", Ds.Semibold, 13, pal.Label, new Thickness(0, 12, 0, 0));
+            TextBlock l2 = Label(I18n.T("Cuenta atr\u00E1s", "Countdown"), Ds.Semibold, 13, pal.Label, new Thickness(0, 12, 0, 0));
             l2.VerticalAlignment = VerticalAlignment.Center;
             Grid.SetRow(l2, 1);
             inner.Children.Add(l2);
             int[] cds = RecordSetup.Countdowns;
-            MacSegmented cd = new MacSegmented(new string[] { "No", "3 s", "5 s", "10 s" }, Math.Max(0, Array.IndexOf(cds, Settings.Countdown(settings.RecordCountdown))));
+            MacSegmented cd = new MacSegmented(I18n.IsSpanish ? new string[] { "No", "3 s", "5 s", "10 s" } : new string[] { "Off", "3 s", "5 s", "10 s" }, Math.Max(0, Array.IndexOf(cds, Settings.Countdown(settings.RecordCountdown))));
             cd.Margin = new Thickness(0, 12, 0, 0);
             Access.Describe(cd, l2.Text, null);
             cd.Changed += delegate(int i) { settings.RecordCountdown = cds[i]; Changed(); };
@@ -1016,9 +1034,8 @@ namespace Stackshot
             Palette pal = Ds.Brushes;
             Grid row = RecRow(1);
             TextBlock sub;
-            StackPanel p = RecPanel(row, 0, "edit", pal.Accent, "Despu\u00E9s de grabar",
-                     "\u00ABEditar\u00BB en la miniatura abre el editor de v\u00EDdeo: recorta el principio y el final, cambia la velocidad, el tama\u00F1o o el formato, " +
-                     "a\u00F1ade marcas y ponle fondo. El sonido se mantiene.", out sub);
+            StackPanel p = RecPanel(row, 0, "edit", pal.Accent, I18n.T("Despu\u00E9s de grabar", "After recording"),
+                     I18n.T("\u00ABEditar\u00BB en la miniatura abre el editor de v\u00EDdeo: recorta el principio y el final, cambia la velocidad, el tama\u00F1o o el formato, a\u00F1ade marcas y ponle fondo. El sonido se mantiene.", "\u201CEdit\u201D on the thumbnail opens the video editor: trim start and end, change speed, size or format, add highlights and backdrops. Audio is preserved."), out sub);
 
             // The same switch as General > Copiar cada captura: a finished recording goes to the clipboard as a file.
             Border tile = new Border { CornerRadius = new CornerRadius(12), Background = Ds.Brush(RecTile(false)), Padding = new Thickness(13, 11, 13, 11), Margin = new Thickness(0, 14, 0, 0) };
@@ -1028,15 +1045,15 @@ namespace Stackshot
             inner.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             inner.Children.Add(new IconTile("copy", 28, W(Mac.Teal), W(Mac.Blue)) { VerticalAlignment = VerticalAlignment.Center });
             StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(11, 0, 12, 0) };
-            words.Children.Add(Label("Copiar el archivo al terminar", Ds.Semibold, 13, pal.Label));
+            words.Children.Add(Label(I18n.T("Copiar el archivo al terminar", "Copy file when finished"), Ds.Semibold, 13, pal.Label));
             // One setting for both: saying so avoids switching off the copy of captures by surprise.
-            TextBlock wl = Paragraph("Listo para pegar en un chat o un correo nada m\u00E1s parar. Es el mismo ajuste que \u00ABCopiar cada captura\u00BB, en General.", 12, pal.Label2);
+            TextBlock wl = Paragraph(I18n.T("Listo para pegar en un chat o un correo nada m\u00E1s parar. Es el mismo ajuste que \u00ABCopiar cada captura\u00BB, en General.", "Ready to paste into chat or email right after stopping. Same setting as \u201CCopy each capture\u201D in General."), 12, pal.Label2);
             wl.Margin = new Thickness(0, 2, 0, 0);
             words.Children.Add(wl);
             Grid.SetColumn(words, 1);
             inner.Children.Add(words);
             MacSwitch sw = new MacSwitch(settings.CopyToClipboard) { VerticalAlignment = VerticalAlignment.Center };
-            Access.Describe(sw, "Copiar el archivo al terminar", wl.Text);
+            Access.Describe(sw, I18n.T("Copiar el archivo al terminar", "Copy file when finished"), wl.Text);
             sw.Toggled += delegate(bool v) { settings.CopyToClipboard = v; Changed(); };
             Grid.SetColumn(sw, 2);
             inner.Children.Add(sw);
@@ -1052,14 +1069,14 @@ namespace Stackshot
             vin.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             vin.Children.Add(new IconTile("video", 28, Ds.Rgb(64, 156, 255), Ds.Rgb(10, 110, 230)) { VerticalAlignment = VerticalAlignment.Center });
             StackPanel vwords = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(11, 0, 12, 0) };
-            vwords.Children.Add(Label("Abrir los v\u00EDdeos en Stackshot", Ds.Semibold, 13, pal.Label));
-            TextBlock vl = Paragraph("Reproductor propio, con cualquier formato, pistas de sonido, velocidad y fotograma a fotograma. Si lo apagas, se abren en la aplicaci\u00F3n de Windows.", 12, pal.Label2);
+            vwords.Children.Add(Label(I18n.T("Abrir los v\u00EDdeos en Stackshot", "Open videos in Stackshot"), Ds.Semibold, 13, pal.Label));
+            TextBlock vl = Paragraph(I18n.T("Reproductor propio, con cualquier formato, pistas de sonido, velocidad y fotograma a fotograma. Si lo apagas, se abren en la aplicaci\u00F3n de Windows.", "Built-in player supporting all formats, audio tracks, speed, and frame-by-frame. If off, opens in the default Windows app."), 12, pal.Label2);
             vl.Margin = new Thickness(0, 2, 0, 0);
             vwords.Children.Add(vl);
             Grid.SetColumn(vwords, 1);
             vin.Children.Add(vwords);
             MacSwitch vsw = new MacSwitch(settings.PlayerOpensVideos) { VerticalAlignment = VerticalAlignment.Center };
-            Access.Describe(vsw, "Abrir los v\u00EDdeos en Stackshot", vl.Text);
+            Access.Describe(vsw, I18n.T("Abrir los v\u00EDdeos en Stackshot", "Open videos in Stackshot"), vl.Text);
             vsw.Toggled += delegate(bool v) { settings.PlayerOpensVideos = v; Changed(); };
             Grid.SetColumn(vsw, 2);
             vin.Children.Add(vsw);
@@ -1070,7 +1087,7 @@ namespace Stackshot
             // The tray's open-a-video dialog from here too: any video or a Cine master, in the player at its real size.
             StackPanel ok = new TapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(2, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Left,
                                            Cursor = Cursors.Hand, Background = Brushes.Transparent, Role = Access.Link, Do = delegate { owner.OpenVideoDialog(); } };
-            TextBlock ot = Label("Abrir un v\u00EDdeo o un m\u00E1ster Cine\u2026", Ds.Medium, 12, pal.Link);
+            TextBlock ot = Label(I18n.T("Abrir un v\u00EDdeo o un m\u00E1ster Cine\u2026", "Open a video or Cinema master\u2026"), Ds.Medium, 12, pal.Link);
             ok.Children.Add(ot);
             ok.Children.Add(new GlyphView("right", 11, pal.Link, 1.6) { Margin = new Thickness(3, 1, 0, 0), VerticalAlignment = VerticalAlignment.Center });
             ok.MouseEnter += delegate { ot.TextDecorations = TextDecorations.Underline; };
@@ -1081,7 +1098,7 @@ namespace Stackshot
             // Videos and GIF use the same backdrop as captures when presented.
             StackPanel lk = new TapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(2, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Left,
                                            Cursor = Cursors.Hand, Background = Brushes.Transparent, Role = Access.Link, Do = delegate { SetPage("editor", true); } };
-            TextBlock lt = Label("Elegir el fondo de \u00ABPresentar\u00BB", Ds.Medium, 12, pal.Link);
+            TextBlock lt = Label(I18n.T("Elegir el fondo de \u00ABPresentar\u00BB", "Choose \u201CPresent\u201D backdrop"), Ds.Medium, 12, pal.Link);
             lk.Children.Add(lt);
             lk.Children.Add(new GlyphView("right", 11, pal.Link, 1.6) { Margin = new Thickness(3, 1, 0, 0), VerticalAlignment = VerticalAlignment.Center });
             lk.MouseEnter += delegate { lt.TextDecorations = TextDecorations.Underline; };

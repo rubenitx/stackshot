@@ -41,7 +41,7 @@ namespace Stackshot
             public PanelAccess(BgPanel p) : base(p) { this.p = p; }
 
             public override AccessibleRole Role { get { return AccessibleRole.Grouping; } }
-            public override string Name { get { return "Fondo"; } }
+            public override string Name { get { return I18n.T("Fondo", "Backdrop"); } }
 
             protected override string Signature()
             {
@@ -70,7 +70,7 @@ namespace Stackshot
                         case Kind.Header:
                             continue;
                         case Kind.None:
-                            a = NewPart(into, "Sin fondo", AccessibleRole.RadioButton, r);
+                            a = NewPart(into, I18n.T("Sin fondo", "No backdrop"), AccessibleRole.RadioButton, r);
                             a.PartState = StateOf(p.Enabled, !p.On, false);
                             break;
                         case Kind.Swatch:
@@ -97,7 +97,7 @@ namespace Stackshot
                             a.PartState = StateOf(p.Enabled, bg.BgBalance, false);
                             break;
                         case Kind.Align:
-                            a = NewPart(into, "Alineaci\u00F3n: " + it.Label.ToLowerInvariant(), AccessibleRole.RadioButton, r);
+                            a = NewPart(into, I18n.T("Alineaci\u00F3n: ", "Alignment: ") + it.Label.ToLowerInvariant(), AccessibleRole.RadioButton, r);
                             a.PartState = StateOf(p.Enabled, bg.BgAlign == it.Index, false);
                             break;
                         case Kind.Ratio:
@@ -105,9 +105,9 @@ namespace Stackshot
                             for (int i = 0; i < Ratios.Length; i++)
                             {
                                 int idx = i;
-                                PartAccessible ra = NewPart(into, "Proporci\u00F3n " + RatioNames[i], AccessibleRole.RadioButton, r);
+                                PartAccessible ra = NewPart(into, I18n.T("Proporci\u00F3n ", "Aspect ratio ") + RatioNames[i], AccessibleRole.RadioButton, r);
                                 ra.PartState = StateOf(p.Enabled, bg.BgRatio == Ratios[i], false);
-                                ra.PartAction = "Elegir";
+                                ra.PartAction = I18n.T("Elegir", "Select");
                                 if (p.Enabled) ra.Do = delegate { p.SetRatio(idx); };
                             }
                             continue;
@@ -117,7 +117,9 @@ namespace Stackshot
                             a.PartState = StateOf(p.Enabled, false, false);
                             break;
                     }
-                    a.PartAction = it.Kind == Kind.Check ? "Cambiar" : it.Kind == Kind.More || it.Kind == Kind.Add || it.Kind == Kind.Picker || it.Kind == Kind.Styles || it.Kind == Kind.Keep ? "Pulsar" : "Elegir";
+                    a.PartAction = it.Kind == Kind.Check ? I18n.T("Cambiar", "Toggle")
+                                 : it.Kind == Kind.More || it.Kind == Kind.Add || it.Kind == Kind.Picker || it.Kind == Kind.Styles || it.Kind == Kind.Keep ? I18n.T("Pulsar", "Press")
+                                 : I18n.T("Elegir", "Select");
                     if (p.Enabled) a.Do = delegate { p.AccessPick(item); };
                 }
             }

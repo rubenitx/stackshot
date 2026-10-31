@@ -116,12 +116,12 @@ namespace Stackshot
                 string what = null;
                 string k = Key(s);
                 if (k != e.State && e.State.Length > 0)
-                    what = s.Open ? "se ha vuelto a abrir"
-                         : s.Reason == "completed" ? (e.Idea ? "est\u00E1 hecho" : "est\u00E1 arreglado")
-                         : s.Reason == "not_planned" ? "se ha descartado" : s.Reason == "duplicate" ? "est\u00E1 repetido" : "se ha cerrado";
+                    what = s.Open ? I18n.T("se ha vuelto a abrir", "was reopened")
+                         : s.Reason == "completed" ? (e.Idea ? I18n.T("est\u00E1 hecho", "is done") : I18n.T("est\u00E1 arreglado", "is fixed"))
+                         : s.Reason == "not_planned" ? I18n.T("se ha descartado", "was discarded") : s.Reason == "duplicate" ? I18n.T("est\u00E1 repetido", "is a duplicate") : I18n.T("se ha cerrado", "was closed");
                 int fresh = s.Replies.Count - e.Told;
-                if (fresh > 0) what = (fresh == 1 ? "tiene una respuesta nueva" : "tiene " + fresh + " respuestas nuevas") + (what != null ? " y " + what : "");
-                if (what != null) o.Add("\u00AB" + e.Title + "\u00BB " + what);
+                if (fresh > 0) what = (fresh == 1 ? I18n.T("tiene una respuesta nueva", "has a new reply") : I18n.Fmt("tiene {0} respuestas nuevas", "has {0} new replies", fresh)) + (what != null ? I18n.T(" y ", " and ") + what : "");
+                if (what != null) o.Add(I18n.Fmt("\u00AB{0}\u00BB {1}", "\u201C{0}\u201D {1}", e.Title, what));
             }
             return o;
         }
@@ -172,7 +172,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Mis reportes (GitHub): " + ex.Message);
-                error = "Ahora no se puede consultar c\u00F3mo van. Comprueba la conexi\u00F3n y pulsa Actualizar.";
+                error = I18n.T("Ahora no se puede consultar c\u00F3mo van. Comprueba la conexi\u00F3n y pulsa Actualizar.", "Cannot check how they are doing right now. Check your connection and click Refresh.");
                 return states;
             }
         }

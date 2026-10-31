@@ -15,14 +15,13 @@ namespace Stackshot
             Palette pal = Ds.Brushes;
             Grid row = RecRow(1);
             TextBlock sub;
-            StackPanel p = RecPanel(row, 0, "cursor", pal.Accent, "Clics y teclas",
-                                    "Se dibujan en el v\u00EDdeo mientras grabas, para que quien lo vea siga lo que haces. No salen durante las pausas.", out sub);
-            p.Children.Add(RecInputTile("cursor", W(Mac.Teal), W(Mac.Blue), "Mostrar los clics",
-                                        "Un c\u00EDrculo donde haces clic: azul con el bot\u00F3n izquierdo y naranja con el derecho.",
+            StackPanel p = RecPanel(row, 0, "cursor", pal.Accent, I18n.T("Clics y teclas", "Clicks & keys"),
+                                    I18n.T("Se dibujan en el v\u00EDdeo mientras grabas, para que quien lo vea siga lo que haces. No salen durante las pausas.", "Drawn onto the video while recording so viewers can follow your actions. Not shown during pauses."), out sub);
+            p.Children.Add(RecInputTile("cursor", W(Mac.Teal), W(Mac.Blue), I18n.T("Mostrar los clics", "Show clicks"),
+                                        I18n.T("Un c\u00EDrculo donde haces clic: azul con el bot\u00F3n izquierdo y naranja con el derecho.", "A circle where you click: blue for left click and orange for right click."),
                                         settings.RecordClicks, delegate(bool v) { settings.RecordClicks = v; }, 14));
-            p.Children.Add(RecInputTile("keyboard", W(Mac.Purple), W(Mac.Indigo), "Mostrar las teclas pulsadas",
-                                        "Los atajos (Ctrl + C, Alt + Tab, Win + May\u00FAs + S\u2026) salen abajo, en el centro. Lo que escribes nunca aparece, " +
-                                        "as\u00ED que tus contrase\u00F1as tampoco.",
+            p.Children.Add(RecInputTile("keyboard", W(Mac.Purple), W(Mac.Indigo), I18n.T("Mostrar las teclas pulsadas", "Show keystrokes pressed"),
+                                        I18n.T("Los atajos (Ctrl + C, Alt + Tab, Win + May\u00FAs + S\u2026) salen abajo, en el centro. Lo que escribes nunca aparece, as\u00ED que tus contrase\u00F1as tampoco.", "Shortcuts (Ctrl+C, Alt+Tab, Win+Shift+S\u2026) appear bottom-center. Typed text never appears, keeping your passwords safe."),
                                         settings.RecordKeys, delegate(bool v) { settings.RecordKeys = v; }, 8));
         }
 

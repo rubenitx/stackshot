@@ -33,18 +33,34 @@ namespace Stackshot
             0x000000, 0xFFFFFF, 0xE5383B, 0xF3722C, 0xF9C74F, 0x2B9348, 0x1D72E8, 0x7B2CBF, 0xE84393,
             0x2C2C2E, 0xE5E5EA, 0xF6A6A1, 0xF9C58D, 0xFBE3A0, 0xA8E6B4, 0xA9CBF5, 0xD3B8F2
         };
-        static readonly string[] PlainNames =
+        static readonly string[] PlainNamesEs =
         {
             "Negro", "Blanco", "Rojo", "Naranja", "Amarillo", "Verde", "Azul", "Morado", "Rosa",
             "Gris oscuro", "Gris claro", "Rojo suave", "Naranja suave", "Amarillo suave", "Verde suave", "Azul suave", "Morado suave"
         };
-        static readonly string[] BlurNames = { "Desenfocada", "Desenfocada y oscura", "Desenfocada y clara" };
-        static readonly string[] AlignNames =
+        static readonly string[] PlainNamesEn =
+        {
+            "Black", "White", "Red", "Orange", "Yellow", "Green", "Blue", "Purple", "Pink",
+            "Dark gray", "Light gray", "Soft red", "Soft orange", "Soft yellow", "Soft green", "Soft blue", "Soft purple"
+        };
+        static string[] PlainNames { get { return I18n.IsSpanish ? PlainNamesEs : PlainNamesEn; } }
+        static readonly string[] BlurNamesEs = { "Desenfocada", "Desenfocada y oscura", "Desenfocada y clara" };
+        static readonly string[] BlurNamesEn = { "Blurred", "Blurred & dark", "Blurred & light" };
+        static string[] BlurNames { get { return I18n.IsSpanish ? BlurNamesEs : BlurNamesEn; } }
+        static readonly string[] AlignNamesEs =
         {
             "Arriba a la izquierda", "Arriba", "Arriba a la derecha", "A la izquierda", "Centrada", "A la derecha",
             "Abajo a la izquierda", "Abajo", "Abajo a la derecha"
         };
-        static readonly string[] SliderNames = { "Margen", "Esquinas", "Sombra", "Inserci\u00F3n" };
+        static readonly string[] AlignNamesEn =
+        {
+            "Top left", "Top", "Top right", "Left", "Centered", "Right",
+            "Bottom left", "Bottom", "Bottom right"
+        };
+        static string[] AlignNames { get { return I18n.IsSpanish ? AlignNamesEs : AlignNamesEn; } }
+        static readonly string[] SliderNamesEs = { "Margen", "Esquinas", "Sombra", "Inserci\u00F3n" };
+        static readonly string[] SliderNamesEn = { "Padding", "Corners", "Shadow", "Border inset" };
+        static string[] SliderNames { get { return I18n.IsSpanish ? SliderNamesEs : SliderNamesEn; } }
         static bool allGradients = true;   // "Ver menos" folds them to one row, for the rest of the session
 
         public float S = 1f;
@@ -115,16 +131,16 @@ namespace Stackshot
             if (Bg == null) return;
             int m = P(14), w = Math.Max(P(120), width - 2 * m), y = P(14);
             // Saved styles: a menu to bring one back and a button that keeps the one on screen.
-            Add(Kind.Styles, 0, "Estilos guardados", new Rectangle(m, y, w - P(38), P(28)));
-            Add(Kind.Keep, 0, "Guardar este estilo", new Rectangle(m + w - P(30), y, P(30), P(28)));
+            Add(Kind.Styles, 0, I18n.T("Estilos guardados", "Saved styles"), new Rectangle(m, y, w - P(38), P(28)));
+            Add(Kind.Keep, 0, I18n.T("Guardar este estilo", "Save this style"), new Rectangle(m + w - P(30), y, P(30), P(28)));
             y += P(28) + P(10);
-            Add(Kind.None, 0, "Ninguno", new Rectangle(m, y, w, P(30)));
+            Add(Kind.None, 0, I18n.T("Ninguno", "None"), new Rectangle(m, y, w, P(30)));
             y += P(30) + P(18);
 
             // Gradients, five to a row.
             int gap = P(8), sw = (w - 4 * gap) / 5;
-            Add(Kind.Header, 0, "Degradados", new Rectangle(m, y, w, P(16)));
-            Add(Kind.More, 0, allGradients ? "Ver menos" : "Ver m\u00E1s", new Rectangle(m + w - P(84), y - P(3), P(84), P(22)));
+            Add(Kind.Header, 0, I18n.T("Degradados", "Gradients"), new Rectangle(m, y, w, P(16)));
+            Add(Kind.More, 0, allGradients ? I18n.T("Ver menos", "Show less") : I18n.T("Ver m\u00E1s", "Show more"), new Rectangle(m + w - P(84), y - P(3), P(84), P(22)));
             y += P(26);
             int col = 0, shown = 0;
             for (int i = 0; i < Backdrop.Count; i++)
@@ -139,7 +155,7 @@ namespace Stackshot
             y += P(10);
 
             // The desktop's wallpaper and the user's own pictures, then the button that adds one.
-            Add(Kind.Header, 1, "Fondos de pantalla", new Rectangle(m, y, w, P(16)));
+            Add(Kind.Header, 1, I18n.T("Fondos de pantalla", "Wallpapers"), new Rectangle(m, y, w, P(16)));
             y += P(26);
             col = 0;
             for (int i = 0; i < Backdrop.Count; i++)
@@ -150,7 +166,7 @@ namespace Stackshot
             }
             if (Backdrop.CustomCount < Backdrop.MaxCustom)
             {
-                Add(Kind.Add, 0, "A\u00F1adir una imagen\u2026", new Rectangle(m + col * (sw + gap), y, sw, sw));
+                Add(Kind.Add, 0, I18n.T("A\u00F1adir una imagen\u2026", "Add an image\u2026"), new Rectangle(m + col * (sw + gap), y, sw, sw));
                 col++;
             }
             if (col > 0) y += sw + gap;
@@ -158,21 +174,21 @@ namespace Stackshot
 
             if (!Video)
             {
-                Add(Kind.Header, 2, "Desenfocado", new Rectangle(m, y, w, P(16)));
+                Add(Kind.Header, 2, I18n.T("Desenfocado", "Blur"), new Rectangle(m, y, w, P(16)));
                 y += P(26);
                 for (int i = 0; i < 3; i++) Add(Kind.Blur, i, BlurNames[i], new Rectangle(m + i * (sw + gap), y, sw, sw));
                 y += sw + gap + P(10);
             }
 
             // Plain colours: two rows of nine, the last one opens the colour picker.
-            Add(Kind.Header, 3, "Color liso", new Rectangle(m, y, w, P(16)));
+            Add(Kind.Header, 3, I18n.T("Color liso", "Solid color"), new Rectangle(m, y, w, P(16)));
             y += P(26);
             int d = P(19), dg = (w - 9 * d) / 8;
             for (int i = 0; i < 18; i++)
             {
                 Rectangle r = new Rectangle(m + (i % 9) * (d + dg), y + (i / 9) * (d + P(9)), d, d);
                 if (i < Plains.Length) Add(Kind.Plain, Plains[i], PlainNames[i], r);
-                else Add(Kind.Picker, 0, "Otro color\u2026", r);
+                else Add(Kind.Picker, 0, I18n.T("Otro color\u2026", "Other color\u2026"), r);
             }
             y += 2 * d + P(9) + P(14);
             Add(Kind.Header, -1, null, new Rectangle(m, y, w, 1));   // a dividing line
@@ -184,19 +200,19 @@ namespace Stackshot
             if (!Video)
             {
                 Slider(3, m, y, half);
-                Add(Kind.Check, 0, "Auto-equilibrar", new Rectangle(right, y + P(16), half, P(24)));
+                Add(Kind.Check, 0, I18n.T("Auto-equilibrar", "Auto-balance"), new Rectangle(right, y + P(16), half, P(24)));
                 y += P(48);
             }
             Slider(2, m, y, half);
             Slider(1, right, y, half);
             y += P(52);
 
-            Add(Kind.Header, 4, "Alineaci\u00F3n", new Rectangle(m, y, half, P(16)));
-            Add(Kind.Header, 5, "Proporci\u00F3n", new Rectangle(right, y, half, P(16)));
+            Add(Kind.Header, 4, I18n.T("Alineaci\u00F3n", "Alignment"), new Rectangle(m, y, half, P(16)));
+            Add(Kind.Header, 5, I18n.T("Proporci\u00F3n", "Aspect ratio"), new Rectangle(right, y, half, P(16)));
             y += P(24);
             int cw = P(24), ch = P(18), cg = P(7);
             for (int i = 0; i < 9; i++) Add(Kind.Align, i, AlignNames[i], new Rectangle(m + (i % 3) * (cw + cg), y + (i / 3) * (ch + cg), cw, ch));
-            Add(Kind.Ratio, 0, "Proporci\u00F3n", new Rectangle(right, y, half, P(28)));
+            Add(Kind.Ratio, 0, I18n.T("Proporci\u00F3n", "Aspect ratio"), new Rectangle(right, y, half, P(28)));
             y += 3 * ch + 2 * cg + P(18);
             contentH = y;
         }
@@ -494,7 +510,7 @@ namespace Stackshot
                     if (it.Kind == Kind.Styles)
                     {
                         int n = Styles.Count(Bg);
-                        text = n == 0 ? "Estilos guardados\u2026" : "Estilos guardados (" + n + ")";
+                        text = n == 0 ? I18n.T("Estilos guardados\u2026", "Saved styles\u2026") : I18n.Fmt("Estilos guardados ({0})", "Saved styles ({0})", n);
                     }
                     else text = RatioNames[Math.Max(0, Array.IndexOf(Ratios, Bg.BgRatio))];
                     Rectangle tr = new Rectangle(it.R.X + P(10), it.R.Y, it.R.Width - P(30), it.R.Height);
@@ -652,8 +668,8 @@ namespace Stackshot
             if (Backdrop.CustomCount >= Backdrop.MaxCustom) return;
             using (OpenFileDialog d = new OpenFileDialog())
             {
-                d.Title = "Elige una imagen para usar de fondo";
-                d.Filter = "Im\u00E1genes|*.png;*.jpg;*.jpeg;*.bmp;*.gif|Todos los archivos|*.*";
+                d.Title = I18n.T("Elige una imagen para usar de fondo", "Choose an image to use as background");
+                d.Filter = I18n.T("Im\u00E1genes|*.png;*.jpg;*.jpeg;*.bmp;*.gif|Todos los archivos|*.*", "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif|All files|*.*");
                 if (d.ShowDialog(FindForm()) != DialogResult.OK) return;
                 int i;
                 Cursor = Cursors.WaitCursor;
@@ -661,7 +677,7 @@ namespace Stackshot
                 finally { Cursor = Cursors.Default; }
                 if (i < 0)
                 {
-                    Dialogs.Show(FindForm(), "No se ha podido abrir esa imagen.", "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    Dialogs.Show(FindForm(), I18n.T("No se ha podido abrir esa imagen.", "Could not open that image."), "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 On = true;
@@ -704,7 +720,7 @@ namespace Stackshot
                 if (it.Kind != Kind.Swatch || !Backdrop.IsCustom(it.Index)) return;
                 int idx = it.Index;
                 ContextMenuStrip m = TrayMenu.Create();
-                m.Items.Add(TrayMenu.Item("Quitar este fondo", "trash", delegate { RemovePicture(idx); }));
+                m.Items.Add(TrayMenu.Item(I18n.T("Quitar este fondo", "Remove this background"), "trash", delegate { RemovePicture(idx); }));
                 DisposeOnClose(m);
                 m.Show(this, e.Location);
                 return;

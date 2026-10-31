@@ -94,7 +94,7 @@ namespace Stackshot
                 // FFmpeg gone (an antivirus quarantined it, a custom path that no longer exists): a failure to report,
                 // never an exception on the caller's worker thread.
                 try { p.Start(); }
-                catch (Exception ex) { stderr = "No se pudo iniciar FFmpeg: " + ex.Message; return -1; }
+                catch (Exception ex) { stderr = I18n.T("No se pudo iniciar FFmpeg: ", "Could not start FFmpeg: ") + ex.Message; return -1; }
                 ChildJob.Add(p);
                 p.BeginErrorReadLine();
                 if (onLine != null) p.BeginOutputReadLine();
@@ -301,7 +301,7 @@ namespace Stackshot
             long bytes = TargetBytes(level);
             if (bytes <= 0) return "";
             double s = bytes * 8 * 0.98 / (TargetMinKbps * 1000.0 + (audio ? 128000 : 0));
-            return s >= 90 ? "unos " + (int)Math.Floor(s / 60) + " min" : "unos " + (int)Math.Floor(s) + " s";
+            return s >= 90 ? I18n.Fmt("unos {0} min", "about {0} min", (int)Math.Floor(s / 60)) : I18n.Fmt("unos {0} s", "about {0} s", (int)Math.Floor(s));
         }
 
         // Too long for its size limit: under this bitrate (kbit/s) a screen video is a blur, so the export is refused.

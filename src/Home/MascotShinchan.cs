@@ -351,6 +351,14 @@ namespace Stackshot
 
         static string[] ShinLines(int k)
         {
+            if (!I18n.IsSpanish)
+                switch (k)
+                {
+                    case KindUltraSd: return new string[] { "Ha ha ha ha! I'm Action Kamen!", "Action Beam!", "Justice always wins!", "Action Kamen never loses." };
+                    case KindKantamSd: return new string[] { "Kantam Robo, move out!", "Rocket punch!", "Beep, beep\u2026 I'm a robot.", "Final attack!" };
+                    case KindWaniSd: return new string[] { "I love Chocobi cookies!", "Nom, nom\u2026 Chocobi.", "I'm a crocodile!", "Grrr\u2026 I'm gonna eat you!" };
+                    default: return new string[] { "Do you like green peppers?", "Ha ha ha ha! I'm Action Kamen!", "Mom, I'm hungry!", "Chocobi cookies are the best.", "Shiro, come here!" };
+                }
             switch (k)
             {
                 case KindUltraSd: return new string[] { "\u00A1Ja, ja, ja, ja! \u00A1Soy Ultrah\u00E9roe!", "\u00A1Rayo de acci\u00F3n!", "\u00A1La justicia siempre triunfa!", "Ultrah\u00E9roe nunca pierde." };

@@ -393,7 +393,7 @@ namespace Stackshot
         Dib dib;
         float s;
         int D, M, W, wx, wy, measured;
-        string status = "Conectando la c\u00E1mara\u2026";
+        string status;
         bool down, dragged, live, dismissing;
         volatile bool gaveUp;
         double shownAt = double.MaxValue, dismissAt, dismissFrom = 1;
@@ -410,6 +410,7 @@ namespace Stackshot
             this.settings = settings;
             this.ffmpeg = ffmpeg;
             this.area = area;
+            status = I18n.T("Conectando la c\u00E1mara\u2026", "Connecting the camera\u2026");
             Text = "Stackshot";
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
@@ -544,7 +545,7 @@ namespace Stackshot
             {
                 if (closing) return;
                 ShotStack.Log("C\u00E1mara: " + ex.Message);
-                Fail("No se puede abrir la c\u00E1mara");
+                Fail(I18n.T("No se puede abrir la c\u00E1mara", "Cannot open the camera"));
             }
         }
 
@@ -562,7 +563,7 @@ namespace Stackshot
             if (cams.Count == 0)
             {
                 ShotStack.Log("C\u00E1mara: FFmpeg no encuentra ninguna c\u00E1mara");
-                Fail("No se encuentra ninguna c\u00E1mara");
+                Fail(I18n.T("No se encuentra ninguna c\u00E1mara", "No camera found"));
                 return;
             }
             string wanted = settings.WebcamDevice;
@@ -576,7 +577,7 @@ namespace Stackshot
                 if (o == Outcome.Closed) return;
                 if (o == Outcome.Lost) { Reconnect(cam, why); return; }
             }
-            if (!closing) Fail("No se puede abrir la c\u00E1mara");
+            if (!closing) Fail(I18n.T("No se puede abrir la c\u00E1mara", "Cannot open the camera"));
         }
 
         // The probed mode first, then the camera's default format (what older versions always used).
@@ -696,9 +697,9 @@ namespace Stackshot
             string err;
             lock (errors) err = errors.ToString();
             if (Volatile.Read(ref late) != 0)
-                why = started ? "sin imagen durante " + StallTimeoutMs / 1000 + " s" : "no responde en " + OpenTimeoutMs / 1000 + " s";
+                why = started ? I18n.Fmt("sin imagen durante {0} s", "no image for {0} s", StallTimeoutMs / 1000) : I18n.Fmt("no responde en {0} s", "no response in {0} s", OpenTimeoutMs / 1000);
             else if (err.Trim().Length > 0) why = Webcam.Tail(err, 300);
-            else if (why == null) why = "FFmpeg se ha cerrado";
+            else if (why == null) why = I18n.T("FFmpeg se ha cerrado", "FFmpeg closed");
             return started ? Outcome.Lost : Outcome.Failed;
         }
 
@@ -709,7 +710,7 @@ namespace Stackshot
             Stopwatch gone = Stopwatch.StartNew();
             while (!closing && gone.ElapsedMilliseconds < ReconnectMs)
             {
-                Status("Reconectando la c\u00E1mara\u2026");
+                Status(I18n.T("Reconectando la c\u00E1mara\u2026", "Reconnecting the camera\u2026"));
                 Pause(1000);
                 if (closing) return;
                 List<CameraInfo> cams = Webcam.ListCameras(ffmpeg);
@@ -727,7 +728,7 @@ namespace Stackshot
             }
             if (closing) return;
             ShotStack.Log("C\u00E1mara: \u00AB" + cam.Label + "\u00BB no ha vuelto");
-            Fail("La c\u00E1mara se ha desconectado");
+            Fail(I18n.T("La c\u00E1mara se ha desconectado", "The camera disconnected"));
         }
 
         void Pause(int ms)

@@ -34,8 +34,8 @@ namespace Stackshot
         public static string Page(string markdown, string title, Func<string, string> image)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
-            sb.Append("<title>").Append(Esc(title ?? "Documento")).Append("</title>\n<style>").Append(Css).Append("</style>\n</head>\n<body>\n<article>\n");
+            sb.Append(I18n.IsSpanish ? "<!DOCTYPE html>\n<html lang=\"es\">\n" : "<!DOCTYPE html>\n<html lang=\"en\">\n").Append("<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
+            sb.Append("<title>").Append(Esc(title ?? I18n.T("Documento", "Document"))).Append("</title>\n<style>").Append(Css).Append("</style>\n</head>\n<body>\n<article>\n");
             sb.Append(Body(markdown, image));
             sb.Append("</article>\n</body>\n</html>\n");
             return sb.ToString();

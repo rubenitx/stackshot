@@ -37,27 +37,27 @@ namespace Stackshot
             switch (buttons)
             {
                 case MessageBoxButtons.OKCancel:
-                    labels = new string[] { "Aceptar", "Cancelar" };
+                    labels = new string[] { I18n.T("Aceptar", "OK"), I18n.Cancel };
                     results = new DialogResult[] { DialogResult.OK, DialogResult.Cancel };
                     cancel = 1;
                     break;
                 case MessageBoxButtons.YesNo:
-                    labels = new string[] { "S\u00ED", "No" };
+                    labels = new string[] { I18n.T("S\u00ED", "Yes"), "No" };
                     results = new DialogResult[] { DialogResult.Yes, DialogResult.No };
                     cancel = 1;
                     break;
                 case MessageBoxButtons.YesNoCancel:
-                    labels = new string[] { "S\u00ED", "No", "Cancelar" };
+                    labels = new string[] { I18n.T("S\u00ED", "Yes"), "No", I18n.Cancel };
                     results = new DialogResult[] { DialogResult.Yes, DialogResult.No, DialogResult.Cancel };
                     cancel = 2;
                     break;
                 case MessageBoxButtons.RetryCancel:
-                    labels = new string[] { "Reintentar", "Cancelar" };
+                    labels = new string[] { I18n.T("Reintentar", "Retry"), I18n.Cancel };
                     results = new DialogResult[] { DialogResult.Retry, DialogResult.Cancel };
                     cancel = 1;
                     break;
                 default:
-                    labels = new string[] { "Aceptar" };
+                    labels = new string[] { I18n.T("Aceptar", "OK") };
                     results = new DialogResult[] { DialogResult.OK };
                     cancel = 0;
                     break;

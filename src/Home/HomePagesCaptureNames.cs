@@ -24,11 +24,19 @@ namespace Stackshot
             return l.ToArray();
         }
 
-        static readonly string[] SubfolderNames = { "No", "Por mes", "Por a\u00F1o y mes" };
+        static string[] SubfolderNames
+        {
+            get
+            {
+                return I18n.IsSpanish
+                    ? new string[] { "No", "Por mes", "Por a\u00F1o y mes" }
+                    : new string[] { "No", "By month", "By year and month" };
+            }
+        }
 
         SegRow SubfolderRow()
         {
-            return new SegRow("Subcarpetas", null, "folder", Mac.Indigo, Mac.Purple, SubfolderNames,
+            return new SegRow(I18n.T("Subcarpetas", "Subfolders"), null, "folder", Mac.Indigo, Mac.Purple, SubfolderNames,
                               delegate { return settings.SaveSubfolder; }, delegate(int i) { settings.SaveSubfolder = i; })
                 { SubNow = delegate { return SubfolderNote(settings.SaveSubfolder, DateTime.Now); } };
         }
@@ -38,16 +46,16 @@ namespace Stackshot
             string year = now.ToString("yyyy", CultureInfo.InvariantCulture), month = now.ToString("MM", CultureInfo.InvariantCulture);
             switch (mode)
             {
-                case 1: return "Lo que guardas va a una carpeta por mes, como " + year + "-" + month + ".";
-                case 2: return "Una carpeta por a\u00F1o y, dentro, una por mes, como " + year + "\\" + month + ".";
-                default: return "Todo va directamente a la carpeta elegida.";
+                case 1: return I18n.Fmt("Lo que guardas va a una carpeta por mes, como {0}-{1}.", "Saved captures go to a monthly folder, like {0}-{1}.", year, month);
+                case 2: return I18n.Fmt("Una carpeta por a\u00F1o y, dentro, una por mes, como {0}\\{1}.", "A folder per year and monthly subfolder inside, like {0}\\{1}.", year, month);
+                default: return I18n.T("Todo va directamente a la carpeta elegida.", "All files go directly into the chosen folder.");
             }
         }
 
         // What each token stands for, in the order of NameTemplate.Tokens.
         static string[] TokenTips(DateTime now)
         {
-            return new string[]
+            return I18n.IsSpanish ? new string[]
             {
                 "El tipo de captura: Captura, Pantalla, el programa de la ventana, Desplazamiento\u2026",
                 "La fecha, como " + now.ToString("yyyy-MM-dd"),
@@ -58,6 +66,17 @@ namespace Stackshot
                 "El mes, como " + now.ToString("MM"),
                 "El d\u00EDa, como " + now.ToString("dd"),
                 "Un n\u00FAmero que no se repite: 1, 2, 3\u2026 (con {fecha}, empieza cada d\u00EDa)"
+            } : new string[]
+            {
+                "Capture type: Capture, Screen, active app name, Scrolling\u2026",
+                "Date, like " + now.ToString("yyyy-MM-dd"),
+                "Time, like " + now.ToString("HH.mm.ss"),
+                "Active program when captured, like chrome or EXCEL",
+                "Title of that window",
+                "Year, like " + now.ToString("yyyy"),
+                "Month, like " + now.ToString("MM"),
+                "Day, like " + now.ToString("dd"),
+                "Sequential unique number: 1, 2, 3\u2026 (with {date}, resets daily)"
             };
         }
 
@@ -68,19 +87,21 @@ namespace Stackshot
             string t = (template ?? "").Trim();
             List<string> unknown = NameTemplate.Unknown(t);
             if (unknown.Count > 0)
-                return string.Join(" ", unknown.ToArray()) + (unknown.Count == 1 ? " no es ninguno de los de arriba: se queda tal cual." : " no son de los de arriba: se quedan tal cual.");
+                return I18n.IsSpanish
+                    ? string.Join(" ", unknown.ToArray()) + (unknown.Count == 1 ? " no es ninguno de los de arriba: se queda tal cual." : " no son de los de arriba: se quedan tal cual.")
+                    : string.Join(" ", unknown.ToArray()) + (unknown.Count == 1 ? " is not one of the tokens above: kept as-is." : " are not tokens above: kept as-is.");
             if (t.IndexOfAny(System.IO.Path.GetInvalidFileNameChars()) >= 0)
-                return "\\ / : * ? \" < > | no valen en un nombre de archivo: se cambian por _.";
+                return I18n.T("\\ / : * ? \" < > | no valen en un nombre de archivo: se cambian por _.", "\\ / : * ? \" < > | are invalid in file names: replaced with _.");
             warn = false;
-            if (t.Length == 0) return "Si lo dejas vac\u00EDo, se usa el nombre de siempre.";
+            if (t.Length == 0) return I18n.T("Si lo dejas vac\u00EDo, se usa el nombre de siempre.", "If left empty, default file name is used.");
             if (!NameTemplate.IsDefault(t) && !NameTemplate.Uses(t, "{hora}") && !NameTemplate.Uses(t, "{n}"))
-                return "Sin {hora} ni {n}, las capturas que se llamen igual llevar\u00E1n (2), (3)\u2026 al final.";
-            return "Para las im\u00E1genes; los v\u00EDdeos y los GIF conservan su nombre.";
+                return I18n.T("Sin {hora} ni {n}, las capturas que se llamen igual llevar\u00E1n (2), (3)\u2026 al final.", "Without {time} or {n}, duplicate names will append (2), (3)\u2026 at the end.");
+            return I18n.T("Para las im\u00E1genes; los v\u00EDdeos y los GIF conservan su nombre.", "For images; videos and GIFs retain their own names.");
         }
 
         internal static string NamePreview(string template)
         {
-            return "Ejemplo: " + NameTemplate.Example(template, DateTime.Now) + ".png";
+            return (I18n.IsSpanish ? "Ejemplo: " : "Example: ") + NameTemplate.Example(template, DateTime.Now) + ".png";
         }
 
         // The file name of the captures: the template in a field on the right, an example of the name it gives under the
@@ -94,7 +115,7 @@ namespace Stackshot
             string committed;
             bool placed;    // the user has been in the field: tokens go where its cursor is
 
-            public NameTemplateRow() : base("Nombre de los archivos", "", "edit", Mac.Orange, Mac.Pink)
+            public NameTemplateRow() : base(I18n.T("Nombre de los archivos", "File names"), "", "edit", Mac.Orange, Mac.Pink)
             {
                 Unloaded += delegate { Commit(); };
             }
@@ -114,10 +135,11 @@ namespace Stackshot
                 Grid.SetColumnSpan(below, 2);
                 WrapPanel chips = new WrapPanel();
                 string[] tips = TokenTips(DateTime.Now);
-                for (int i = 0; i < NameTemplate.Tokens.Length; i++) chips.Children.Add(Chip(NameTemplate.Tokens[i], tips[i]));
+                string[] tokens = NameTemplate.Tokens;
+                for (int i = 0; i < tokens.Length; i++) chips.Children.Add(Chip(tokens[i], tips[i]));
                 reset = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 0, 4), FontFamily = Ds.Text, FontSize = 12 };
-                reset.Inlines.Add(InlineLink("Restablecer", delegate { SetText(Settings.DefaultNameTemplate); Commit(); }));
-                reset.ToolTip = "Volver a " + Settings.DefaultNameTemplate;
+                reset.Inlines.Add(InlineLink(I18n.T("Restablecer", "Reset"), delegate { SetText(NameTemplate.DefaultShown); Commit(); }));
+                reset.ToolTip = I18n.Fmt("Volver a {0}", "Reset to {0}", NameTemplate.DefaultShown);
                 chips.Children.Add(reset);
                 below.Children.Add(chips);
                 hint = Label("", Ds.Regular, 11.5, pal.Label2, new Thickness(0, 2, 0, 0));
@@ -137,7 +159,7 @@ namespace Stackshot
                 };
                 box = new TextBox
                 {
-                    Text = W.settings.FileNameTemplate, MaxLength = 200, Background = Brushes.Transparent, BorderThickness = new Thickness(0),
+                    Text = NameTemplate.IsDefault(W.settings.FileNameTemplate) ? NameTemplate.DefaultShown : W.settings.FileNameTemplate, MaxLength = 200, Background = Brushes.Transparent, BorderThickness = new Thickness(0),
                     Padding = new Thickness(0), Margin = new Thickness(9, 0, 9, 1), FontFamily = Ds.Text, FontSize = 12.5,
                     Foreground = Ds.Brush(pal.Label), CaretBrush = Ds.Brush(pal.Accent), SelectionBrush = Ds.Brush(pal.Accent),
                     VerticalContentAlignment = VerticalAlignment.Center, Template = DockFieldTemplate()
@@ -237,7 +259,7 @@ namespace Stackshot
             void Typed()
             {
                 string t = box.Text.Trim();
-                W.settings.FileNameTemplate = t.Length > 0 ? t : Settings.DefaultNameTemplate;
+                W.settings.FileNameTemplate = t.Length > 0 ? t : NameTemplate.DefaultShown;
                 if (SubText != null) SubText.Text = NamePreview(box.Text);
                 Refresh();
             }
@@ -257,8 +279,10 @@ namespace Stackshot
             {
                 if (box == null || W == null) return;
                 string t = box.Text.Trim();
-                if (t.Length == 0) t = Settings.DefaultNameTemplate;
+                if (t.Length == 0) t = NameTemplate.DefaultShown;
                 SetText(t);
+                // The default in the other language is the same default: nothing to write.
+                if (NameTemplate.IsDefault(t) && NameTemplate.IsDefault(committed)) { W.settings.FileNameTemplate = committed; return; }
                 W.settings.FileNameTemplate = t;
                 if (t == committed) return;
                 committed = t;

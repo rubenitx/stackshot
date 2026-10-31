@@ -25,16 +25,16 @@ namespace Stackshot
             if (!r.Close && n.Kind != XKind.Decl)
             {
                 string v = n.Kind == XKind.Element ? (n.Inline && n.Kids.Count == 1 ? n.Kids[0].Value : null) : n.Value;
-                if (v != null) m.Add(MenuEntry.Item("Copiar valor", "copy", false, delegate { Ask(v, "Valor copiado."); }));
+                if (v != null) m.Add(MenuEntry.Item(I18n.T("Copiar valor", "Copy value"), "copy", false, delegate { Ask(v, I18n.T("Valor copiado.", "Value copied.")); }));
                 int a = AttrUnder(r, e);
                 if (a >= 0)
                 {
                     string key = n.Attrs[a].Key, val = n.Attrs[a].Value;
-                    m.Add(MenuEntry.Item("Copiar valor de \u00AB" + key + "\u00BB", "copy", false, delegate { Ask(val, "Valor copiado."); }));
+                    m.Add(MenuEntry.Item(I18n.Fmt("Copiar valor de \u00AB{0}\u00BB", "Copy value of \u201C{0}\u201D", key), "copy", false, delegate { Ask(val, I18n.T("Valor copiado.", "Value copied.")); }));
                 }
             }
             if (n.Kind == XKind.Element || n.Kind == XKind.Text || n.Kind == XKind.CData)
-                m.Add(MenuEntry.Item("Copiar como JSON", "copy", false, delegate { CopyJson(n); }));
+                m.Add(MenuEntry.Item(I18n.T("Copiar como JSON", "Copy as JSON"), "copy", false, delegate { CopyJson(n); }));
             AttachEntries(m, n);
         }
 
@@ -53,17 +53,17 @@ namespace Stackshot
             string hint = XmlAttachment.HintName(n);
             bool blocked = XmlAttachment.Blocked(t, hint), can = t.Opens && !blocked;
             m.Add(MenuEntry.Line());
-            MenuEntry open = MenuEntry.Item(can ? "Abrir el adjunto (" + t.Label + ")" : "Abrir el adjunto", "open", false, delegate { if (Attachment != null) Attachment(n, true); });
+            MenuEntry open = MenuEntry.Item(can ? I18n.Fmt("Abrir el adjunto ({0})", "Open attachment ({0})", t.Label) : I18n.T("Abrir el adjunto", "Open attachment"), "open", false, delegate { if (Attachment != null) Attachment(n, true); });
             if (!can)
             {
                 open.Enabled = false;
                 bool article = t.Kind == AttachKind.Executable || t.Kind == AttachKind.Shortcut || t.Kind == AttachKind.Zip || t.Kind == AttachKind.OfficeMacros;
-                open.Detail = article ? "Es " + t.Label + ": solo se puede guardar"
-                            : blocked ? "Su nombre es de un programa o un script: solo se puede guardar"
-                            : "Tipo desconocido: solo se puede guardar";
+                open.Detail = article ? I18n.Fmt("Es {0}: solo se puede guardar", "It is {0}: can only be saved", t.Label)
+                            : blocked ? I18n.T("Su nombre es de un programa o un script: solo se puede guardar", "Its name is for a program or script: can only be saved")
+                            : I18n.T("Tipo desconocido: solo se puede guardar", "Unknown type: can only be saved");
             }
             m.Add(open);
-            m.Add(MenuEntry.Item("Guardar el adjunto como\u2026", "save", false, delegate { if (Attachment != null) Attachment(n, false); }));
+            m.Add(MenuEntry.Item(I18n.T("Guardar el adjunto como\u2026", "Save attachment as\u2026"), "save", false, delegate { if (Attachment != null) Attachment(n, false); }));
         }
 
         // Copies the branch as JSON; the text is built off the UI thread (a whole document can be big).
@@ -79,8 +79,8 @@ namespace Stackshot
                 {
                     Dispatcher.BeginInvoke(new Action(delegate
                     {
-                        if (json != null) Ask(json, "JSON copiado.");
-                        else if (Notice != null) Notice(err ?? "No he podido convertirlo a JSON.", true);
+                        if (json != null) Ask(json, I18n.T("JSON copiado.", "JSON copied."));
+                        else if (Notice != null) Notice(err ?? I18n.T("No he podido convertirlo a JSON.", "Could not convert to JSON."), true);
                     }));
                 }
                 catch { }

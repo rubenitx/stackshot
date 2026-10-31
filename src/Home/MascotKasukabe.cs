@@ -103,7 +103,11 @@ namespace Stackshot
             VOval(g, k, D, c, Color.Empty, 0, f.X + 0.008f, f.Y + 0.002f, 0.08f, 0.046f);
         }
 
-        static string[] NevadoLines() { return new string[] { "\u00A1Guau!", "\u00A1Guau, guau!", "Grrr\u2026", "Auuu\u2026" }; }
+        static string[] NevadoLines()
+        {
+            if (!I18n.IsSpanish) return new string[] { "Woof!", "Woof, woof!", "Grrr\u2026", "Awooo\u2026" };
+            return new string[] { "\u00A1Guau!", "\u00A1Guau, guau!", "Grrr\u2026", "Auuu\u2026" };
+        }
     }
 
     public partial class Mascot

@@ -66,7 +66,7 @@ namespace Stackshot
         {
             if (!o.Regex || string.IsNullOrEmpty(q)) return null;
             try { Build(q, o); return null; }
-            catch (ArgumentException) { return "Expresi\u00F3n no v\u00E1lida"; }
+            catch (ArgumentException) { return I18n.T("Expresi\u00F3n no v\u00E1lida", "Invalid expression"); }
         }
 
         // Every match in order (at most max). timedOut: a regular expression took too long and the list is partial.
@@ -215,13 +215,13 @@ namespace Stackshot
             top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             top.ColumnDefinitions.Add(new ColumnDefinition());
             top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            Query = new FieldBox(pal, "Buscar", "search", 280);
+            Query = new FieldBox(pal, I18n.T("Buscar", "Find"), "search", 280);
             Query.Changed += delegate { later.Restart(); };
             top.Children.Add(Query);
             StackPanel opts = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-            caseChip = new ChipToggle("Aa", "Coincidir may\u00FAsculas", false);
-            wordChip = new ChipToggle("ab", "Palabra completa", true) { Margin = new Thickness(2, 0, 0, 0) };
-            rxChip = new ChipToggle(".*", "Expresi\u00F3n regular", false) { Margin = new Thickness(2, 0, 0, 0) };
+            caseChip = new ChipToggle("Aa", I18n.T("Coincidir may\u00FAsculas", "Match case"), false);
+            wordChip = new ChipToggle("ab", I18n.T("Palabra completa", "Whole word"), true) { Margin = new Thickness(2, 0, 0, 0) };
+            rxChip = new ChipToggle(".*", I18n.T("Expresi\u00F3n regular", "Regular expression"), false) { Margin = new Thickness(2, 0, 0, 0) };
             caseChip.Toggled += delegate(bool on) { options.Case = on; Fire(Changed); };
             wordChip.Toggled += delegate(bool on) { options.Word = on; Fire(Changed); };
             rxChip.Toggled += delegate(bool on) { options.Regex = on; Fire(Changed); };
@@ -234,8 +234,8 @@ namespace Stackshot
             Grid.SetColumn(count, 2);
             top.Children.Add(count);
             StackPanel nav = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            DocIconButton prev = new DocIconButton("up", "Anterior (May\u00FAs+F3)", 26), next = new DocIconButton("down", "Siguiente (F3)", 26);
-            DocIconButton close = new DocIconButton("close", "Cerrar (Esc)", 26) { Margin = new Thickness(6, 0, 0, 0) };
+            DocIconButton prev = new DocIconButton("up", I18n.T("Anterior (May\u00FAs+F3)", "Previous (Shift+F3)"), 26), next = new DocIconButton("down", I18n.T("Siguiente (F3)", "Next (F3)"), 26);
+            DocIconButton close = new DocIconButton("close", I18n.T("Cerrar (Esc)", "Close (Esc)"), 26) { Margin = new Thickness(6, 0, 0, 0) };
             prev.Click += delegate { Fire(Prev); };
             next.Click += delegate { Fire(Next); };
             close.Click += delegate { Fire(Closed); };
@@ -249,11 +249,11 @@ namespace Stackshot
             replaceRow = new Grid { Margin = new Thickness(0, 6, 0, 0), Visibility = Visibility.Collapsed };
             replaceRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             replaceRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            With = new FieldBox(pal, "Reemplazar por", null, 280);
+            With = new FieldBox(pal, I18n.T("Reemplazar por", "Replace with"), null, 280);
             replaceRow.Children.Add(With);
             StackPanel acts = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-            MacButton one = new MacButton("Reemplazar", ButtonKind.Secondary, null, null, 26);
-            MacButton all = new MacButton("Reemplazar todo", ButtonKind.Secondary, null, null, 26) { Margin = new Thickness(6, 0, 0, 0) };
+            MacButton one = new MacButton(I18n.T("Reemplazar", "Replace"), ButtonKind.Secondary, null, null, 26);
+            MacButton all = new MacButton(I18n.T("Reemplazar todo", "Replace all"), ButtonKind.Secondary, null, null, 26) { Margin = new Thickness(6, 0, 0, 0) };
             one.Click += delegate { Fire(Replace); };
             all.Click += delegate { Fire(ReplaceAll); };
             acts.Children.Add(one);
@@ -289,8 +289,8 @@ namespace Stackshot
             count.Foreground = Ds.Brush(error != null ? pal.Error : pal.Label2);
             if (error != null) count.Text = error;
             else if (Query.Text.Length == 0) count.Text = "";
-            else if (total == 0) count.Text = partial ? "Sin resultados (b\u00FAsqueda cortada)" : "Sin resultados";
-            else count.Text = (index >= 0 ? (index + 1).ToString("N0") + " de " : "") + total.ToString("N0") + (total >= TextSearch.MaxHits || partial ? "+" : "") + (index >= 0 ? "" : total == 1 ? " resultado" : " resultados");
+            else if (total == 0) count.Text = partial ? I18n.T("Sin resultados (b\u00FAsqueda cortada)", "No results (search cut short)") : I18n.T("Sin resultados", "No results");
+            else count.Text = (index >= 0 ? (index + 1).ToString("N0") + I18n.T(" de ", " of ") : "") + total.ToString("N0") + (total >= TextSearch.MaxHits || partial ? "+" : "") + (index >= 0 ? "" : total == 1 ? I18n.T(" resultado", " result") : I18n.T(" resultados", " results"));
         }
 
         public void FocusQuery()

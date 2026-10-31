@@ -408,7 +408,7 @@ namespace Stackshot
             leaving = true;
             m.WakeUp();
             if (state == State.Walk) state = State.Idle; // the current stroll ends here; the walk out starts after the wave
-            m.Greet(settings.MascotTalks ? (m.CanVent ? "Me voy por la alcantarilla\u2026 \u00A1que nadie me vea!" : "\u00A1Me voy a casa! \u00A1Hasta luego!") : null);
+            m.Greet(settings.MascotTalks ? (m.CanVent ? I18n.T("Me voy por la alcantarilla\u2026 \u00A1que nadie me vea!", "Off through the vent\u2026 don't let anyone see me!") : I18n.T("\u00A1Me voy a casa! \u00A1Hasta luego!", "Heading home! See you later!")) : null);
             nextIdea = Anim.Now + 1300; // wave first
             if (perch != IntPtr.Zero) HopDown();
         }
@@ -537,7 +537,7 @@ namespace Stackshot
             nextIdea = Anim.Now + 3000;
             Show();
             timer.Start();
-            if (settings.MascotTalks) m.Say(MascotTalk.Hello(settings) + " Haz clic en m\u00ED.", 4200);
+            if (settings.MascotTalks) m.Say(MascotTalk.Hello(settings) + I18n.T(" Haz clic en m\u00ED.", " Click me."), 4200);
         }
 
         // Neither a new look nor a capture interrupts a break in progress.
@@ -585,13 +585,13 @@ namespace Stackshot
             m.Bubble = null;
             menu = new List<Choice>();
             Header(text);
-            string go = kind == WellKind.Water ? "Bebo un vaso contigo" : kind == WellKind.Eyes ? "Empezar (20 s)" :
-                        kind == WellKind.Move ? (owner.MoveIsStretch ? "Estirarnos juntos" : "Hacer 8 sentadillas") : "Respirar 1 minuto";
+            string go = kind == WellKind.Water ? I18n.T("Bebo un vaso contigo", "I'll drink a glass with you") : kind == WellKind.Eyes ? I18n.T("Empezar (20 s)", "Start (20 s)") :
+                        kind == WellKind.Move ? (owner.MoveIsStretch ? I18n.T("Estirarnos juntos", "Let's stretch together") : I18n.T("Hacer 8 sentadillas", "Do 8 squats")) : I18n.T("Respirar 1 minuto", "Breathe for 1 minute");
             int k = kind;
             Add(WellKind.Glyphs[kind], go, null, delegate { StartSession(k); });
-            Add("check", "Ya lo he hecho", null, delegate { Finish(k, true); });
-            Add("clock", "Recu\u00E9rdamelo en 10 min", null, delegate { owner.WellLater(k, 600000); m.Say(MascotTalk.WellLater(settings), 3200); });
-            Add("close", "Hoy no", null, delegate { owner.WellLater(k, -1); m.Say(MascotTalk.WellToday(settings, k), 3200); });
+            Add("check", I18n.T("Ya lo he hecho", "Already done"), null, delegate { Finish(k, true); });
+            Add("clock", I18n.T("Recu\u00E9rdamelo en 10 min", "Remind me in 10 min"), null, delegate { owner.WellLater(k, 600000); m.Say(MascotTalk.WellLater(settings), 3200); });
+            Add("close", I18n.T("Hoy no", "Not today"), null, delegate { owner.WellLater(k, -1); m.Say(MascotTalk.WellToday(settings, k), 3200); });
             menuAt = menuSeen = Anim.Now;
             menuGone = null;
             Halt();
@@ -613,12 +613,12 @@ namespace Stackshot
             {
                 int k = i;
                 if (k == WellKind.Water && !owner.WaterOn) continue;
-                string text = k == WellKind.Water ? "Bebe agua conmigo" : k == WellKind.Eyes ? "Descansa la vista (20 s)" :
-                              k == WellKind.Move ? (owner.MoveIsStretch ? "Estira la espalda" : "Estira las piernas") : "Respira conmigo (1 min)";
+                string text = k == WellKind.Water ? I18n.T("Bebe agua conmigo", "Drink water with me") : k == WellKind.Eyes ? I18n.T("Descansa la vista (20 s)", "Rest your eyes (20 s)") :
+                              k == WellKind.Move ? (owner.MoveIsStretch ? I18n.T("Estira la espalda", "Stretch your back") : I18n.T("Estira las piernas", "Stretch your legs")) : I18n.T("Respira conmigo (1 min)", "Breathe with me (1 min)");
                 Add(WellKind.Glyphs[k], text, null, delegate { StartSession(k); });
             }
             AddSep();
-            Add("gear", "Ajustar los avisos", null, delegate { owner.ShowHome("mascotset", false); });
+            Add("gear", I18n.T("Ajustar los avisos", "Adjust reminders"), null, delegate { owner.ShowHome("mascotset", false); });
             menuAt = menuSeen = Anim.Now;
             menuGone = null;
             Halt();
@@ -635,9 +635,9 @@ namespace Stackshot
             m.Bubble = null;
             bubble = null;
             menu = new List<Choice>();
-            Header("\u00A1Estrenamos Stackshot " + version + "! \u00BFTe cuento qu\u00E9 trae?" + (headline.Length > 0 ? " Por ejemplo: \u00AB" + headline + "\u00BB." : ""));
-            Add("sparkle", "Ver las novedades", null, open);
-            Add("clock", "Luego", null, delegate { m.Say("Cuando quieras: Inicio, Acerca de, Novedades.", 3600); });
+            Header(I18n.Fmt("\u00A1Estrenamos Stackshot {0}! \u00BFTe cuento qu\u00E9 trae?", "Stackshot {0} is here! Want to hear what's new?", version) + (headline.Length > 0 ? I18n.Fmt(" Por ejemplo: \u00AB{0}\u00BB.", " For example: \u201C{0}\u201D.", headline) : ""));
+            Add("sparkle", I18n.T("Ver las novedades", "See what's new"), null, open);
+            Add("clock", I18n.T("Luego", "Later"), null, delegate { m.Say(I18n.T("Cuando quieras: Inicio, Acerca de, Novedades.", "Whenever you like: Home, About, What's new."), 3600); });
             menuAt = menuSeen = Anim.Now;
             menuGone = null;
             Halt();
@@ -664,7 +664,7 @@ namespace Stackshot
             FocusClock f = owner.FocusState;
             string today = owner.FocusToday();
             m.Perform(MascotCmd.Cheer);
-            FocusPrompt("\u00A1Bloque " + f.Block + " de " + f.Rounds + " hecho!" + (today != null ? " " + today + "." : "") + (levelUp != null ? " " + levelUp : ""));
+            FocusPrompt(I18n.Fmt("\u00A1Bloque {0} de {1} hecho!", "Block {0} of {1} done!", f.Block, f.Rounds) + (today != null ? " " + today + "." : "") + (levelUp != null ? " " + levelUp : ""));
             AddFocusChoices(f);
         }
 
@@ -674,7 +674,7 @@ namespace Stackshot
             FocusClock f = owner.FocusState;
             int next = f.Block >= f.Rounds || f.LongBreak ? 1 : f.Block + 1;
             m.Perform(MascotCmd.Wave);
-            FocusPrompt("Fin del descanso. \u00BFSeguimos con el bloque " + next + " de " + f.Rounds + "?");
+            FocusPrompt(I18n.Fmt("Fin del descanso. \u00BFSeguimos con el bloque {0} de {1}?", "Break's over. Shall we go on with block {0} of {1}?", next, f.Rounds));
             AddFocusChoices(f);
         }
 
@@ -712,15 +712,15 @@ namespace Stackshot
             if (cheer) m.Perform(MascotCmd.Cheer);
             FocusPrompt(text);
             menuFocus = false;
-            Add("check", "Gracias", null, delegate { });
+            Add("check", I18n.T("Gracias", "Thanks"), null, delegate { });
         }
 
         public void HealthAskMove(string text)
         {
             FocusPrompt(text);
             menuFocus = false;
-            Add(WellKind.Glyphs[WellKind.Move], "Estiramos las piernas", null, delegate { StartSession(WellKind.Move); });
-            Add("clock", "Luego", null, delegate { m.Say("Vale, luego nos movemos.", 2600); });
+            Add(WellKind.Glyphs[WellKind.Move], I18n.T("Estiramos las piernas", "Let's stretch our legs"), null, delegate { StartSession(WellKind.Move); });
+            Add("clock", I18n.T("Luego", "Later"), null, delegate { m.Say(I18n.T("Vale, luego nos movemos.", "OK, we'll move later."), 2600); });
         }
 
         // Close to the day's goal: a real walk (the watch is read again when you are back) or not now.
@@ -728,28 +728,30 @@ namespace Stackshot
         {
             FocusPrompt(text);
             menuFocus = false;
-            Add("walk", "Voy a dar un paseo", null, delegate
+            Add("walk", I18n.T("Voy a dar un paseo", "I'll go for a walk"), null, delegate
             {
                 owner.WalkStarted();
                 m.Perform(MascotCmd.Cheer);
-                m.Say("\u00A1Genial! Cuando vuelvas te digo cu\u00E1ntos pasos has dado.", 3600);
+                m.Say(I18n.T("\u00A1Genial! Cuando vuelvas te digo cu\u00E1ntos pasos has dado.", "Great! When you're back I'll tell you how many steps you took."), 3600);
             });
-            Add("clock", "Ahora no", null, delegate { m.Say("Vale. Si luego te apetece, aqu\u00ED estoy.", 2600); });
+            Add("clock", I18n.T("Ahora no", "Not now"), null, delegate { m.Say(I18n.T("Vale. Si luego te apetece, aqu\u00ED estoy.", "OK. If you feel like it later, I'm here."), 2600); });
         }
 
-        static readonly string[] Opening = { "\u00A1Marchando!", "\u00A1Te lo abro!", "\u00A1Ah\u00ED va!", "\u00A1Hecho!" };
+        static readonly string[] OpeningEs = { "\u00A1Marchando!", "\u00A1Te lo abro!", "\u00A1Ah\u00ED va!", "\u00A1Hecho!" };
+        static readonly string[] OpeningEn = { "Coming right up!", "Opening it!", "Here it goes!", "Done!" };
+        static string[] Opening { get { return I18n.IsSpanish ? OpeningEs : OpeningEn; } }
 
         void OpenLink(QuickLink l)
         {
             string why = owner.OpenLink(l);
             if (why != null) { m.Say(why, 3600); return; }
-            if (settings.MascotTalks) m.Say(Opening[rnd.Next(Opening.Length)] + " \u00AB" + l.Name + "\u00BB", 2200);
+            if (settings.MascotTalks) m.Say(Opening[rnd.Next(Opening.Length)] + I18n.Fmt(" \u00AB{0}\u00BB", " \u201C{0}\u201D", l.Name), 2200);
         }
 
         // "Mi actividad": the watch is read now and the mascot tells how the day goes.
         void TellActivity()
         {
-            m.Say("Miro tu reloj\u2026", 2200);
+            m.Say(I18n.T("Miro tu reloj\u2026", "Checking your watch\u2026"), 2200);
             Action tell = delegate
             {
                 if (IsDisposed || !Visible) return;
@@ -788,11 +790,11 @@ namespace Stackshot
         public void ReminderCard(string text, Action<int> later)
         {
             m.Perform(MascotCmd.Wave);
-            FocusPrompt("Recordatorio: " + text);
+            FocusPrompt(I18n.T("Recordatorio: ", "Reminder: ") + text);
             menuFocus = false;
-            Add("check", "Hecho", null, delegate { m.Hop(0.8); });
-            Add("clock", "Recu\u00E9rdamelo en 10 min", null, delegate { later(10); m.Say("Vale, en 10 minutos.", 2600); });
-            Add("clock", "En 1 hora", null, delegate { later(60); m.Say("Vale, dentro de una hora.", 2600); });
+            Add("check", I18n.T("Hecho", "Done"), null, delegate { m.Hop(0.8); });
+            Add("clock", I18n.T("Recu\u00E9rdamelo en 10 min", "Remind me in 10 min"), null, delegate { later(10); m.Say(I18n.T("Vale, en 10 minutos.", "OK, in 10 minutes."), 2600); });
+            Add("clock", I18n.T("En 1 hora", "In 1 hour"), null, delegate { later(60); m.Say(I18n.T("Vale, dentro de una hora.", "OK, in an hour."), 2600); });
         }
 
         public void FaultCard(string text, Action open)
@@ -800,8 +802,8 @@ namespace Stackshot
             m.Hop(1.0);
             FocusPrompt(text);
             menuFocus = false;
-            Add("open", "Abrir el XML", null, open);
-            Add("check", "Vale", null, delegate { });
+            Add("open", I18n.T("Abrir el XML", "Open the XML"), null, open);
+            Add("check", I18n.T("Vale", "OK"), null, delegate { });
         }
 
         static bool Droppable(IDataObject d)
@@ -829,7 +831,7 @@ namespace Stackshot
             bool files = e.Data.GetDataPresent(DataFormats.FileDrop);
             string[] dropped = files ? e.Data.GetData(DataFormats.FileDrop) as string[] : null;
             bool folder = dropped != null && dropped.Length > 0 && System.IO.Directory.Exists(dropped[0]);
-            m.Say(folder ? "\u00A1Su\u00E9ltala y la guardo en mis accesos r\u00E1pidos!" : files ? "\u00A1Su\u00E9ltalo aqu\u00ED y te lo abro!" : "\u00A1Su\u00E9ltalo y lo apunto en tus notas!", 2000);
+            m.Say(folder ? I18n.T("\u00A1Su\u00E9ltala y la guardo en mis accesos r\u00E1pidos!", "Drop it and I'll save it in my shortcuts!") : files ? I18n.T("\u00A1Su\u00E9ltalo aqu\u00ED y te lo abro!", "Drop it here and I'll open it!") : I18n.T("\u00A1Su\u00E9ltalo y lo apunto en tus notas!", "Drop it and I'll add it to your notes!"), 2000);
         }
 
         protected override void OnDragOver(DragEventArgs e)
@@ -862,7 +864,7 @@ namespace Stackshot
                     return;
                 }
                 string text = (e.Data.GetData(DataFormats.UnicodeText) ?? e.Data.GetData(DataFormats.Text)) as string;
-                if (!string.IsNullOrEmpty(text) && owner.AddNote(text)) { m.Perform(MascotCmd.Read); m.Say("Apuntado en tus notas.", 2600); }
+                if (!string.IsNullOrEmpty(text) && owner.AddNote(text)) { m.Perform(MascotCmd.Read); m.Say(I18n.T("Apuntado en tus notas.", "Added to your notes."), 2600); }
             }
             catch (Exception ex) { ShotStack.Log("Soltar en la mascota: " + ex.Message); }
         }
@@ -873,9 +875,9 @@ namespace Stackshot
             m.Perform(MascotCmd.Wave);
             FocusPrompt(text);
             menuFocus = false;
-            Add("google", "Conectar mi reloj", null, delegate { connect(); m.Say("Te abro el inicio de sesi\u00F3n en el navegador.", 3600); });
-            Add("clock", "Luego", null, delegate { m.Say("Vale, otro d\u00EDa te lo vuelvo a preguntar.", 3000); });
-            Add("close", "No tengo reloj", null, delegate { never(); m.Say("\u00A1Entendido! Sin reloj tambi\u00E9n te acompa\u00F1o.", 3000); });
+            Add("google", I18n.T("Conectar mi reloj", "Connect my watch"), null, delegate { connect(); m.Say(I18n.T("Te abro el inicio de sesi\u00F3n en el navegador.", "Opening the sign-in page in your browser."), 3600); });
+            Add("clock", I18n.T("Luego", "Later"), null, delegate { m.Say(I18n.T("Vale, otro d\u00EDa te lo vuelvo a preguntar.", "OK, I'll ask you again another day."), 3000); });
+            Add("close", I18n.T("No tengo reloj", "I don't have a watch"), null, delegate { never(); m.Say(I18n.T("\u00A1Entendido! Sin reloj tambi\u00E9n te acompa\u00F1o.", "Got it! I'll keep you company without a watch too."), 3000); });
         }
 
         void DrinkOne()
@@ -889,7 +891,7 @@ namespace Stackshot
         void TellDay()
         {
             string day = owner.DaySummary();
-            HealthTell(day != null ? day : "Todav\u00EDa no ha pasado nada que contar hoy. \u00A1Vamos all\u00E1!", false);
+            HealthTell(day != null ? day : I18n.T("Todav\u00EDa no ha pasado nada que contar hoy. \u00A1Vamos all\u00E1!", "Nothing to tell about today yet. Let's go!"), false);
         }
 
         // What can be done now, for the questions and the top of its menu.
@@ -898,30 +900,30 @@ namespace Stackshot
             if (f.Asking && f.Now == FocusClock.Phase.Work)
             {
                 bool longBreak = f.Block >= f.Rounds;
-                Add("clock", (longBreak ? "Descanso largo de " + FocusClock.Minutes(settings.FocusLong) : "Descanso de " + FocusClock.Minutes(settings.FocusShort)), null, owner.FocusBreak);
+                Add("clock", (longBreak ? I18n.Fmt("Descanso largo de {0}", "{0} long break", FocusClock.Minutes(settings.FocusLong)) : I18n.Fmt("Descanso de {0}", "{0} break", FocusClock.Minutes(settings.FocusShort))), null, owner.FocusBreak);
                 // The healthy break that is due fits in the break: started together.
                 int well = owner.WellDueKind();
-                if (well >= 0) Add(WellKind.Glyphs[well], WellKind.Names[well] + " conmigo", null, delegate { owner.FocusBreak(); int k = well; BeginInvoke((Action)delegate { StartSession(k); }); });
-                Add("play", "Otro bloque sin descanso", null, delegate { owner.FocusWork(false); });
-                Add("close", "Terminar por hoy", null, owner.FocusStop);
+                if (well >= 0) Add(WellKind.Glyphs[well], I18n.Fmt("{0} conmigo", "{0} with me", WellKind.Names[well]), null, delegate { owner.FocusBreak(); int k = well; BeginInvoke((Action)delegate { StartSession(k); }); });
+                Add("play", I18n.T("Otro bloque sin descanso", "Another block, no break"), null, delegate { owner.FocusWork(false); });
+                Add("close", I18n.T("Terminar por hoy", "Done for today"), null, owner.FocusStop);
             }
             else if (f.Asking)
             {
-                Add("play", "Empezar el bloque", null, delegate { owner.FocusWork(false); });
-                Add("clock", "5 minutos m\u00E1s de descanso", null, delegate { owner.FocusMore(5); });
-                Add("close", "Terminar por hoy", null, owner.FocusStop);
+                Add("play", I18n.T("Empezar el bloque", "Start the block"), null, delegate { owner.FocusWork(false); });
+                Add("clock", I18n.T("5 minutos m\u00E1s de descanso", "5 more minutes of break"), null, delegate { owner.FocusMore(5); });
+                Add("close", I18n.T("Terminar por hoy", "Done for today"), null, owner.FocusStop);
             }
             else if (f.Paused)
             {
-                Add("play!", f.Now == FocusClock.Phase.Work ? "Seguir donde lo dej\u00E9" : "Seguir con el descanso", null, owner.FocusResume);
-                if (f.Now == FocusClock.Phase.Work) Add("update", "Empezar el bloque de nuevo", null, delegate { owner.FocusWork(true); });
-                Add("close", "Terminar la concentraci\u00F3n", null, owner.FocusStop);
+                Add("play!", f.Now == FocusClock.Phase.Work ? I18n.T("Seguir donde lo dej\u00E9", "Pick up where I left off") : I18n.T("Seguir con el descanso", "Go on with the break"), null, owner.FocusResume);
+                if (f.Now == FocusClock.Phase.Work) Add("update", I18n.T("Empezar el bloque de nuevo", "Restart the block"), null, delegate { owner.FocusWork(true); });
+                Add("close", I18n.T("Terminar la concentraci\u00F3n", "End focus"), null, owner.FocusStop);
             }
             else
             {
-                Add("pause", "Pausar", null, owner.FocusPause);
-                if (f.Now == FocusClock.Phase.Break) Add("play", "Saltar el descanso", null, delegate { owner.FocusWork(false); });
-                Add("close", "Terminar la concentraci\u00F3n", null, owner.FocusStop);
+                Add("pause", I18n.T("Pausar", "Pause"), null, owner.FocusPause);
+                if (f.Now == FocusClock.Phase.Break) Add("play", I18n.T("Saltar el descanso", "Skip the break"), null, delegate { owner.FocusWork(false); });
+                Add("close", I18n.T("Terminar la concentraci\u00F3n", "End focus"), null, owner.FocusStop);
             }
         }
 
@@ -938,12 +940,12 @@ namespace Stackshot
             if (f.Asking)
             {
                 time = "";
-                label = f.Now == FocusClock.Phase.Work ? "\u00A1Bloque hecho! T\u00F3came" : "\u00BFSeguimos? T\u00F3came";
+                label = f.Now == FocusClock.Phase.Work ? I18n.T("\u00A1Bloque hecho! T\u00F3came", "Block done! Tap me") : I18n.T("\u00BFSeguimos? T\u00F3came", "Shall we go on? Tap me");
                 tone = Color.FromArgb(10, 132, 255);
                 return;
             }
             time = FocusClock.Clock(f.Left(now));
-            label = f.Paused ? "En pausa" : f.Now == FocusClock.Phase.Break ? (f.LongBreak ? "Descanso largo" : "Descanso") : "Concentraci\u00F3n";
+            label = f.Paused ? I18n.T("En pausa", "Paused") : f.Now == FocusClock.Phase.Break ? (f.LongBreak ? I18n.T("Descanso largo", "Long break") : I18n.T("Descanso", "Break")) : I18n.T("Concentraci\u00F3n", "Focus");
             tone = f.Paused ? Color.FromArgb(160, 160, 170) : f.Now == FocusClock.Phase.Break ? Color.FromArgb(52, 199, 89) : Color.FromArgb(255, 159, 10);
         }
 
@@ -1103,7 +1105,7 @@ namespace Stackshot
                 m.Guided = false;
                 nextIdea = now + 6000;
                 if (whole) Finish(k, false);
-                else { owner.WellLater(k, 600000); m.Say("Lo dejamos para dentro de 10 minutos.", 2600); }
+                else { owner.WellLater(k, 600000); m.Say(I18n.T("Lo dejamos para dentro de 10 minutos.", "Let's leave it for 10 minutes."), 2600); }
                 return;
             }
             // Said again every frame, so a line that lasts longer than the bubble never blinks.
@@ -1115,21 +1117,21 @@ namespace Stackshot
             string line;
             switch (session)
             {
-                case WellKind.Water: line = t < 2500 ? "\u00A1Un vaso de agua! Bebe conmigo." : "Sorbo a sorbo\u2026"; break;
+                case WellKind.Water: line = t < 2500 ? I18n.T("\u00A1Un vaso de agua! Bebe conmigo.", "A glass of water! Drink with me.") : I18n.T("Sorbo a sorbo\u2026", "Sip by sip\u2026"); break;
                 case WellKind.Eyes:
                 {
                     int left = (int)Math.Ceiling(Math.Max(0, 20000 - t) / 1000);
-                    line = left > 0 ? "Mira algo lejano, a m\u00E1s de 6 metros\u2026 " + left : "\u00A1Listo!";
+                    line = left > 0 ? I18n.T("Mira algo lejano, a m\u00E1s de 6 metros\u2026 ", "Look at something far away, over 20 feet\u2026 ") + left : I18n.T("\u00A1Listo!", "Done!");
                     break;
                 }
                 case WellKind.Move:
-                    line = sessionStretch ? "Brazos arriba y estira la espalda\u2026 " + (sessionReps + 1) + " de 3"
-                                          : "Sentadilla " + Math.Min(8, (int)(Math.Max(0, t - 200) / MascotProps.SquatMs) + 1) + " de 8";
+                    line = sessionStretch ? I18n.T("Brazos arriba y estira la espalda\u2026 ", "Arms up and stretch your back\u2026 ") + (sessionReps + 1) + I18n.T(" de 3", " of 3")
+                                          : I18n.T("Sentadilla ", "Squat ") + Math.Min(8, (int)(Math.Max(0, t - 200) / MascotProps.SquatMs) + 1) + I18n.T(" de 8", " of 8");
                     break;
                 default:
                 {
                     int n = Math.Min(6, (int)(Math.Max(0, t - 200) / MascotProps.BreathMs) + 1);
-                    line = (MascotProps.Inhaling(t) ? "Inspira despacio por la nariz\u2026 " : "Suelta el aire poco a poco\u2026 ") + n + " de 6";
+                    line = (MascotProps.Inhaling(t) ? I18n.T("Inspira despacio por la nariz\u2026 ", "Breathe in slowly through your nose\u2026 ") : I18n.T("Suelta el aire poco a poco\u2026 ", "Let the air out little by little\u2026 ")) + n + I18n.T(" de 6", " of 6");
                     break;
                 }
             }
@@ -1772,10 +1774,10 @@ namespace Stackshot
                 AddSep();
             }
             // Short on purpose: what gets used, in four groups (capture, links, notes and well-being, the app).
-            Add("area", "Capturar un \u00E1rea", Keys(settings.HotRegion), delegate { owner.Run("region"); });
-            Add("video", Recorder.Recording ? "Parar la grabaci\u00F3n" : "Grabar un v\u00EDdeo", null, delegate { owner.Run("video"); });
-            Add("textscan", "Copiar texto", Keys(settings.HotText), delegate { owner.Run("text"); });
-            Add("folder", "Abrir mis capturas", null, delegate { owner.OpenFolder(); });
+            Add("area", I18n.T("Capturar un \u00E1rea", "Capture an area"), Keys(settings.HotRegion), delegate { owner.Run("region"); });
+            Add("video", Recorder.Recording ? I18n.T("Parar la grabaci\u00F3n", "Stop recording") : I18n.T("Grabar un v\u00EDdeo", "Record a video"), null, delegate { owner.Run("video"); });
+            Add("textscan", I18n.T("Copiar texto", "Copy text"), Keys(settings.HotText), delegate { owner.Run("text"); });
+            Add("folder", I18n.T("Abrir mis capturas", "Open my captures"), null, delegate { owner.OpenFolder(); });
             AddSep();
             // Quick links: each one opens with a word from it; the last row adds or tidies them.
             // A few fit above the mascot (fewer with the focus rows on top); the rest open from their window.
@@ -1786,34 +1788,34 @@ namespace Stackshot
                 QuickLink it = links[i];
                 Add(it.Icon, it.Name, null, delegate { OpenLink(it); });
             }
-            Add("plus", links.Count == 0 ? "A\u00F1adir un acceso r\u00E1pido\u2026" : "Accesos r\u00E1pidos\u2026", links.Count > room ? (links.Count - room) + " m\u00E1s" : null,
+            Add("plus", links.Count == 0 ? I18n.T("A\u00F1adir un acceso r\u00E1pido\u2026", "Add a quick link\u2026") : I18n.T("Accesos r\u00E1pidos\u2026", "Quick links\u2026"), links.Count > room ? (links.Count - room) + I18n.T(" m\u00E1s", " more") : null,
                 delegate { LinksWindow.Show(owner); });
             AddSep();
             // What it helps with: reminders, notes, focus, breaks and the day.
             int pending = owner.Reminders.Count;
-            Add("bell", "Recu\u00E9rdame algo\u2026", pending > 0 ? pending + (pending == 1 ? " pendiente" : " pendientes") : null, delegate { QuickWindow.Remind(owner); });
-            Add("memo", "Apunta algo\u2026", null, delegate { QuickWindow.Note(owner); });
-            if (!f.On) Add("clock", "Concentrarme " + FocusClock.Minutes(settings.FocusWork), null, owner.FocusStart);
+            Add("bell", I18n.T("Recu\u00E9rdame algo\u2026", "Remind me of something\u2026"), pending > 0 ? pending + (pending == 1 ? I18n.T(" pendiente", " pending") : I18n.T(" pendientes", " pending")) : null, delegate { QuickWindow.Remind(owner); });
+            Add("memo", I18n.T("Apunta algo\u2026", "Note something\u2026"), null, delegate { QuickWindow.Note(owner); });
+            if (!f.On) Add("clock", I18n.T("Concentrarme ", "Focus ") + FocusClock.Minutes(settings.FocusWork), null, owner.FocusStart);
             // Only what is turned on: no breaks or water rows for someone who doesn't use them.
-            if (settings.WellOn) Add("drop", "Una pausa conmigo", null, OpenBreaks);
+            if (settings.WellOn) Add("drop", I18n.T("Una pausa conmigo", "Take a break with me"), null, OpenBreaks);
             if (owner.WaterOn)
             {
                 int water = owner.WaterToday();
-                Add("drop", "+1 vaso de agua", settings.WaterGoal > 0 ? water + " de " + settings.WaterGoal : water + " hoy", DrinkOne);
+                Add("drop", I18n.T("+1 vaso de agua", "+1 glass"), settings.WaterGoal > 0 ? water + I18n.T(" de ", " of ") + settings.WaterGoal : water + I18n.T(" hoy", " today"), DrinkOne);
             }
-            Add("heart", "\u00BFQu\u00E9 tal el d\u00EDa?", null, TellDay);
+            Add("heart", I18n.T("\u00BFQu\u00E9 tal el d\u00EDa?", "How's your day going?"), null, TellDay);
             if (GoogleHealth.Connected && !f.On)
             {
                 GoogleHealth.Today w = owner.Watch;
-                Add("walk", "Mi actividad", w != null && !w.Empty ? w.Steps.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo("es-ES")) + " pasos" : null, TellActivity);
+                Add("walk", I18n.T("Mi actividad", "My activity"), w != null && !w.Empty ? w.Steps.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo(I18n.IsSpanish ? "es-ES" : "en-US")) + I18n.T(" pasos", " steps") : null, TellActivity);
             }
             // Not for someone who said they have no watch (it stays in Ajustes > Salud y actividad).
             if (GoogleHealth.Available && !GoogleHealth.Connected && !GoogleHealth.Connecting && settings.FitbitAsked != "no")
-                Add("google", "Conectar mi reloj", null, delegate { owner.ConnectWatch(null); m.Say("Te abro el inicio de sesi\u00F3n en el navegador.", 3600); });
+                Add("google", I18n.T("Conectar mi reloj", "Connect my watch"), null, delegate { owner.ConnectWatch(null); m.Say(I18n.T("Te abro el inicio de sesi\u00F3n en el navegador.", "Opening the sign-in page in your browser."), 3600); });
             AddSep();
-            Add("brush", "Cambiarme de ropa", null, delegate { owner.ShowHome("mascot", false); });
-            Add("logo", "Abrir Stackshot", null, delegate { owner.ShowHome("home", false); });
-            Add("home", "Vete a casa", null, GoHome);
+            Add("brush", I18n.T("Cambiarme de ropa", "Change my outfit"), null, delegate { owner.ShowHome("mascot", false); });
+            Add("logo", I18n.T("Abrir Stackshot", "Open Stackshot"), null, delegate { owner.ShowHome("home", false); });
+            Add("home", I18n.T("Vete a casa", "Go home"), null, GoHome);
             menuAt = menuSeen = Anim.Now;
             menuGone = null;
             Halt();

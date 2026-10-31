@@ -24,7 +24,7 @@ namespace Stackshot
         public static readonly string[] EditorFormats = ShotStack.VideoExtensions;
         public static string CineDir = Path.Combine(Settings.DataDir, "cine");   // tests point it elsewhere
 
-        static string Dec(double v, string f) { return v.ToString(f, CultureInfo.InvariantCulture).Replace('.', ','); }
+        static string Dec(double v, string f) { return v.ToString(f, CultureInfo.InvariantCulture).Replace('.', I18n.IsSpanish ? ',' : '.'); }
 
         // 1:07 or 1:02:03.
         public static string Clock(double seconds)
@@ -84,10 +84,10 @@ namespace Stackshot
         public static string ScaleNote(Size video, Rectangle picture, bool grow)
         {
             if (video.Width <= 0 || video.Height <= 0 || picture.Width <= 0) return "";
-            if (picture.Width == video.Width && picture.Height == video.Height) return "100 % (tama\u00F1o real: un p\u00EDxel del v\u00EDdeo, un p\u00EDxel de la pantalla)";
+            if (picture.Width == video.Width && picture.Height == video.Height) return I18n.T("100 % (tama\u00F1o real: un p\u00EDxel del v\u00EDdeo, un p\u00EDxel de la pantalla)", "100 % (actual size: 1 video pixel = 1 screen pixel)");
             double pc = picture.Width * 100.0 / video.Width;
-            if (pc > 100) return Math.Max(101, (int)Math.Ceiling(pc)) + " % (ampliado para llenar la ventana)";
-            return Math.Min(99, (int)Math.Floor(pc)) + " % (" + (grow ? "la ventana es m\u00E1s peque\u00F1a que el v\u00EDdeo: maxim\u00EDzala o pulsa F" : "el v\u00EDdeo es m\u00E1s grande que la pantalla") + ")";
+            if (pc > 100) return Math.Max(101, (int)Math.Ceiling(pc)) + I18n.T(" % (ampliado para llenar la ventana)", " % (scaled to fill window)");
+            return Math.Min(99, (int)Math.Floor(pc)) + " % (" + (grow ? I18n.T("la ventana es m\u00E1s peque\u00F1a que el v\u00EDdeo: maxim\u00EDzala o pulsa F", "window is smaller than video: maximize or press F") : I18n.T("el v\u00EDdeo es m\u00E1s grande que la pantalla", "video is larger than screen")) + ")";
         }
 
         // The client size of a window for a video: the video at its real size when it fits the work area with the window's
@@ -321,32 +321,32 @@ namespace Stackshot
         {
             List<string[]> r = new List<string[]>();
             string raw = m.Raw ?? "";
-            r.Add(new string[] { "Archivo", Path.GetFileName(path ?? "") });
+            r.Add(new string[] { I18n.T("Archivo", "File"), Path.GetFileName(path ?? "") });
             string cont = Container(raw);
-            if (cont != null) r.Add(new string[] { "Contenedor", cont });
+            if (cont != null) r.Add(new string[] { I18n.T("Contenedor", "Container"), cont });
             Match v = Regex.Match(raw, @"Stream #\d+:\d+[^\n]*?: Video: ([^\s,]+)(?: \(([^)]*)\))?");
-            if (v.Success) r.Add(new string[] { "C\u00F3dec de v\u00EDdeo", v.Groups[1].Value + (v.Groups[2].Success ? " (" + v.Groups[2].Value + ")" : "") });
-            if (m.PixelFormat != null) r.Add(new string[] { "Formato de p\u00EDxel", m.PixelFormat });
+            if (v.Success) r.Add(new string[] { I18n.T("C\u00F3dec de v\u00EDdeo", "Video codec"), v.Groups[1].Value + (v.Groups[2].Success ? " (" + v.Groups[2].Value + ")" : "") });
+            if (m.PixelFormat != null) r.Add(new string[] { I18n.T("Formato de p\u00EDxel", "Pixel format"), m.PixelFormat });
             Size seen = m.Display;
-            if (m.HasVideo) r.Add(new string[] { "Tama\u00F1o", m.Width + " \u00D7 " + m.Height + (seen.Width == m.Width && seen.Height == m.Height ? "" :
-                                                  " (p\u00EDxeles no cuadrados " + m.SarNum + ":" + m.SarDen + ", se ve a " + seen.Width + " \u00D7 " + seen.Height + ")") });
-            if (m.Fps > 0) r.Add(new string[] { "Fotogramas por segundo", Dec(m.Fps, "0.##") });
-            if (m.Duration > 0) r.Add(new string[] { "Duraci\u00F3n", Clock(m.Duration) });
+            if (m.HasVideo) r.Add(new string[] { I18n.T("Tama\u00F1o", "Size"), m.Width + " \u00D7 " + m.Height + (seen.Width == m.Width && seen.Height == m.Height ? "" :
+                                                  I18n.Fmt(" (p\u00EDxeles no cuadrados {0}:{1}, se ve a {2} \u00D7 {3})", " (non-square pixels {0}:{1}, displayed as {2} \u00D7 {3})", m.SarNum, m.SarDen, seen.Width, seen.Height)) });
+            if (m.Fps > 0) r.Add(new string[] { I18n.T("Fotogramas por segundo", "Frames per second"), Dec(m.Fps, "0.##") });
+            if (m.Duration > 0) r.Add(new string[] { I18n.T("Duraci\u00F3n", "Duration"), Clock(m.Duration) });
             MatchCollection au = Regex.Matches(raw, @"Stream #\d+:\d+[^\n]*?: Audio: ([^\s,]+)(?: \(([^)]*)\))?[^,\n]*, (\d+) Hz, ([^,\n]+)");
-            if (m.Audio.Count == 0) r.Add(new string[] { "Audio", "Sin sonido" });
+            if (m.Audio.Count == 0) r.Add(new string[] { "Audio", I18n.T("Sin sonido", "No audio") });
             for (int i = 0; i < m.Audio.Count; i++)
             {
-                string title = string.IsNullOrEmpty(m.Audio[i].Title) ? "Pista " + (i + 1) : m.Audio[i].Title;
+                string title = string.IsNullOrEmpty(m.Audio[i].Title) ? I18n.Fmt("Pista {0}", "Track {0}", i + 1) : Cine.TrackName(m.Audio[i].Title);
                 string detail = "";
                 if (i < au.Count)
                 {
                     string layout = au[i].Groups[4].Value.Trim();
-                    if (layout == "stereo") layout = "est\u00E9reo";
+                    if (layout == "stereo") layout = I18n.T("est\u00E9reo", "stereo");
                     detail = au[i].Groups[1].Value + " \u00B7 " + layout + " \u00B7 " + au[i].Groups[3].Value + " Hz";
                 }
                 r.Add(new string[] { m.Audio.Count > 1 ? "Audio " + (i + 1) : "Audio", title + (detail.Length > 0 ? " \u00B7 " + detail : "") });
             }
-            if (fileBytes > 0) r.Add(new string[] { "Tama\u00F1o del archivo", Bytes(fileBytes) });
+            if (fileBytes > 0) r.Add(new string[] { I18n.T("Tama\u00F1o del archivo", "File size"), Bytes(fileBytes) });
             bool passed = false, known = false;
             long matched = 0;
             if (!string.IsNullOrEmpty(cineJson))
@@ -370,8 +370,8 @@ namespace Stackshot
                 }
                 catch (Exception) { known = false; }
             }
-            if (IsMaster(m) || known) r.Add(new string[] { "M\u00E1ster sin p\u00E9rdidas", "S\u00ED: cada p\u00EDxel y el sonido, tal como los entreg\u00F3 Windows" });
-            if (known) r.Add(new string[] { "Comprobaci\u00F3n", passed ? "Correcta" + (matched > 0 ? ": " + matched + " fotogramas id\u00E9nticos" : "") : "No superada" });
+            if (IsMaster(m) || known) r.Add(new string[] { I18n.T("M\u00E1ster sin p\u00E9rdidas", "Lossless master"), I18n.T("S\u00ED: cada p\u00EDxel y el sonido, tal como los entreg\u00F3 Windows", "Yes: every pixel and audio exactly as delivered by Windows") });
+            if (known) r.Add(new string[] { I18n.T("Comprobaci\u00F3n", "Verification"), passed ? I18n.T("Correcta", "Passed") + (matched > 0 ? I18n.Fmt(": {0} fotogramas id\u00E9nticos", ": {0} identical frames", matched) : "") : I18n.T("No superada", "Failed") });
             return r;
         }
     }

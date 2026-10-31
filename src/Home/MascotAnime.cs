@@ -15,7 +15,11 @@ namespace Stackshot
 
         // Fan tributes: the characters' own names and where each comes from (shown on hover). Not affiliated with or
         // endorsed by their owners; see the README. Ready-made costumes below: kind, color, eyes, hat, outfit, face.
-        public static readonly string[] AnimeNames = { "Finn", "Jake", "Pakkun", "Edward Elric", "Eren Jaeger", "Luffy", "Tanjiro", "Gojo",
+        // Each language has its own table, index for index (settings store the index); Captions, Beside and the
+        // catalog order match on the Spanish one, so they work the same in both languages.
+        public static string[] AnimeNames { get { return I18n.IsSpanish ? AnimeNamesEs : AnimeNamesEn; } }
+        public static string[] AnimeInspiration { get { return I18n.IsSpanish ? AnimeInspirationEs : AnimeInspirationEn; } }
+        static readonly string[] AnimeNamesEs = { "Finn", "Jake", "Pakkun", "Edward Elric", "Eren Jaeger", "Luffy", "Tanjiro", "Gojo",
                                                        "Shin-chan", "BMO", "Pikachu", "Doraemon", "Naruto", "Totoro", "Kratos", "Doom Slayer", "Claude",
                                                        "Codex", "Gon", "Killua", "Hisoka", "Sasuke", "Kakashi", "Zoro", "Chopper", "Saitama", "Levi",
                                                        "Nezuko", "Spider-Man", "Batman", "Flash", "Superman", "Iron Man",
@@ -33,7 +37,25 @@ namespace Stackshot
                                                        "Capit\u00E1n Am\u00E9rica", "Thor", "Hulk", "Viuda Negra", "Ojo de Halc\u00F3n", "Pantera Negra", "Doctor Strange",
                                                        "Capitana Marvel", "Bruja Escarlata", "Tit\u00E1n Colosal", "Tit\u00E1n de Ataque", "Tit\u00E1n Acorazado",
                                                        "Tit\u00E1n sonriente", "Tit\u00E1n bobalic\u00F3n" };
-        public static readonly string[] AnimeInspiration = { "Hora de aventuras", "Hora de aventuras", "Naruto", "Fullmetal Alchemist", "Ataque a los titanes",
+        static readonly string[] AnimeNamesEn = { "Finn", "Jake", "Pakkun", "Edward Elric", "Eren Jaeger", "Luffy", "Tanjiro", "Gojo",
+                                                  "Shin-chan", "BMO", "Pikachu", "Doraemon", "Naruto", "Totoro", "Kratos", "Doom Slayer", "Claude",
+                                                  "Codex", "Gon", "Killua", "Hisoka", "Sasuke", "Kakashi", "Zoro", "Chopper", "Saitama", "Levi",
+                                                  "Nezuko", "Spider-Man", "Batman", "Flash", "Superman", "Iron Man",
+                                                  "Knight", "Astronaut", "Wise wizard", "Superhero", "Kero", "Kamina",
+                                                  "Toothless", "Light Fury", "Stormfly", "Hookfang", "Meatlug",
+                                                  "Stitch", "Kirby", "Grogu", "Eevee", "Charmander",
+                                                  "Bulbasaur", "Squirtle", "Jigglypuff", "Snorlax", "Gengar", "Mew",
+                                                  "Psyduck", "Togepi", "Meowth", "Piplup", "Mimikyu", "Lucario", "Dragonite", "Ditto", "Mewtwo",
+                                                  "No-Face", "Calcifer", "Kodama", "Yoshi", "Pac-Man", "Creeper", "Crewmate", "Blinky", "Slime",
+                                                  "Snoopy", "Hello Kitty", "Baby Groot", "Rilakkuma", "Pusheen", "Pochacco",
+                                                  "Pinky", "Inky", "Clyde", "Space Invader", "Goomba", "Boo", "Toad", "Super Mushroom", "Bob-omb", "Chain Chomp",
+                                                  "Red", "Piggy", "The Knight", "Companion Cube", "Bomberman", "Pooka", "Fall Guy", "Pig", "? Block", "Metroid", "Waddle Dee", "1-Up Mushroom",
+                                                  "Wilson", "Willow", "Bumpo", "Ollmeister", "Abigail",
+                                                  "Shiro", "Buriburizaemon", "Shin-chan as Kantam Robo", "Shin-chan as Action Kamen", "Shin-chan as Waniyama",
+                                                  "Captain America", "Thor", "Hulk", "Black Widow", "Hawkeye", "Black Panther", "Doctor Strange",
+                                                  "Captain Marvel", "Scarlet Witch", "Colossal Titan", "Attack Titan", "Armored Titan",
+                                                  "Smiling Titan", "Silly Titan" };
+        static readonly string[] AnimeInspirationEs = { "Hora de aventuras", "Hora de aventuras", "Naruto", "Fullmetal Alchemist", "Ataque a los titanes",
                                                              "One Piece", "Kimetsu no Yaiba", "Jujutsu Kaisen", "Crayon Shin-chan",
                                                              "Hora de aventuras", "Pok\u00E9mon", "Doraemon", "Naruto", "Mi vecino Totoro", "God of War", "Doom",
                                                              "Anthropic", "OpenAI", "Hunter x Hunter", "Hunter x Hunter", "Hunter x Hunter", "Naruto", "Naruto",
@@ -55,6 +77,28 @@ namespace Stackshot
                                                              "Marvel", "Marvel", "Marvel", "Marvel", "Marvel", "Marvel", "Marvel", "Marvel", "Marvel",
                                                              "Ataque a los titanes", "Ataque a los titanes", "Ataque a los titanes",
                                                              "Ataque a los titanes", "Ataque a los titanes" };
+        static readonly string[] AnimeInspirationEn = { "Adventure Time", "Adventure Time", "Naruto", "Fullmetal Alchemist", "Attack on Titan",
+                                                        "One Piece", "Demon Slayer", "Jujutsu Kaisen", "Crayon Shin-chan",
+                                                        "Adventure Time", "Pok\u00E9mon", "Doraemon", "Naruto", "My Neighbor Totoro", "God of War", "Doom",
+                                                        "Anthropic", "OpenAI", "Hunter x Hunter", "Hunter x Hunter", "Hunter x Hunter", "Naruto", "Naruto",
+                                                        "One Piece", "One Piece", "One Punch Man", "Attack on Titan", "Demon Slayer",
+                                                        "Marvel", "DC", "DC", "DC", "Marvel", null, null, null, null,
+                                                        "Cardcaptor Sakura", "Tengen Toppa Gurren Lagann",
+                                                        "How to Train Your Dragon", "How to Train Your Dragon", "How to Train Your Dragon",
+                                                        "How to Train Your Dragon", "How to Train Your Dragon",
+                                                        "Lilo & Stitch", "Kirby", "The Mandalorian", "Pok\u00E9mon", "Pok\u00E9mon",
+                                                        "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon",
+                                                        "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon", "Pok\u00E9mon",
+                                                        "Spirited Away", "Howl's Moving Castle", "Princess Mononoke", "Super Mario", "Pac-Man", "Minecraft",
+                                                        "Among Us", "Pac-Man", "Dragon Quest", "Peanuts", "Sanrio", "Marvel", "San-X", "Pusheen", "Sanrio",
+                                                        "Pac-Man", "Pac-Man", "Pac-Man", "Space Invaders", "Super Mario", "Super Mario", "Super Mario", "Super Mario", "Super Mario", "Super Mario",
+                                                        "Angry Birds", "Angry Birds", "Hollow Knight", "Portal", "Bomberman", "Dig Dug", "Fall Guys", "Minecraft", "Super Mario", "Metroid", "Kirby", "Super Mario",
+                                                        "Don't Starve Together", "Don't Starve Together", "Oxygen Not Included", "Oxygen Not Included",
+                                                        "Don't Starve Together",
+                                                        "Crayon Shin-chan", "Crayon Shin-chan", "Crayon Shin-chan", "Crayon Shin-chan", "Crayon Shin-chan",
+                                                        "Marvel", "Marvel", "Marvel", "Marvel", "Marvel", "Marvel", "Marvel", "Marvel", "Marvel",
+                                                        "Attack on Titan", "Attack on Titan", "Attack on Titan",
+                                                        "Attack on Titan", "Attack on Titan" };
         static readonly int[,] Anime =
         {
             { 88, 17, 2, 0, 0, 0 },
@@ -232,7 +276,28 @@ namespace Stackshot
         public static int KindLatest(int kind) { int n = KindNewer(kind); return n >= 0 ? n : kind; }
 
         // What each character is in its story, shown on the vitrine's plate.
-        public static readonly string[] AnimeRoles =
+        public static string[] AnimeRoles { get { return I18n.IsSpanish ? AnimeRolesEs : AnimeRolesEn; } }
+        static readonly string[] AnimeRolesEn =
+        {
+            "Protagonist", "Companion", "Companion", "Protagonist", "Protagonist", "Protagonist", "Protagonist", "Mentor",
+            "Protagonist", "Companion", "Companion", "Protagonist", "Protagonist", "Spirit", "Protagonist", "Protagonist",
+            "AI assistant", "AI assistant", "Protagonist", "Companion", "Villain", "Rival", "Mentor", "Companion", "Companion",
+            "Protagonist", "Captain", "Companion", "Avenger", "Superhero", "Superhero", "Superhero", "Avenger",
+            "Original", "Original", "Original", "Original", "Guardian", "Leader",
+            "Co-protagonist", "Companion", "Companion", "Companion", "Companion",
+            "Protagonist", "Protagonist", "Companion", "Companion", "Starter",
+            "Starter", "Starter", "Singer", "Sleepyhead", "Ghost", "Mythical",
+            "Companion", "Companion", "Villain", "Starter", "In disguise", "Guardian", "Pseudo-legendary", "Shapeshifter", "Legendary",
+            "Spirit", "Fire demon", "Spirit", "Companion", "Protagonist", "Enemy", "Impostor?", "Enemy", "Monster",
+            "Pet", "Icon", "Guardian", "Icon", "Icon", "Icon",
+            "Enemy", "Enemy", "Enemy", "Enemy", "Enemy", "Enemy", "Ally", "Power-up", "Enemy", "Enemy",
+            "Protagonist", "Villain", "Protagonist", "Companion", "Protagonist", "Enemy", "Contestant", "Animal", "Object", "Enemy", "Enemy", "Extra life",
+            "Protagonist", "Survivor", "Duplicant", "Duplicant", "Ghost",
+            "Pet", "Antihero", "Costume", "Costume", "Costume",
+            "Leader", "Avenger", "Avenger", "Avenger", "Avenger", "King", "Sorcerer", "Avenger", "Avenger",
+            "Titan", "Protagonist", "Titan", "Titan", "Titan"
+        };
+        static readonly string[] AnimeRolesEs =
         {
             "Protagonista", "Compa\u00F1ero", "Compa\u00F1ero", "Protagonista", "Protagonista", "Protagonista", "Protagonista", "Mentor",
             "Protagonista", "Compa\u00F1ero", "Compa\u00F1ero", "Protagonista", "Protagonista", "Esp\u00EDritu", "Protagonista", "Protagonista",
@@ -256,16 +321,17 @@ namespace Stackshot
         public static string AnimeRole(int i) { return i >= 0 && i < AnimeRoles.Length ? AnimeRoles[i] : null; }
 
         // The name under a tile, short enough to read whole there (the group over the tiles says the rest).
+        // Keyed by the Spanish name; then the Spanish and the English caption.
         static readonly string[,] Captions =
         {
-            { "Shin-chan de robot Kantam", "Kantam" }, { "Shin-chan de Ultrah\u00E9roe", "Ultrah\u00E9roe" }, { "Shin-chan de Waniyama", "Waniyama" },
-            { "Champi\u00F1\u00F3n 1-Up", "1-Up" }, { "Chomp Cadenas", "Chomp" }, { "Cubo de compa\u00F1\u00EDa", "Cubo" }
+            { "Shin-chan de robot Kantam", "Kantam", "Kantam" }, { "Shin-chan de Ultrah\u00E9roe", "Ultrah\u00E9roe", "Action Kamen" }, { "Shin-chan de Waniyama", "Waniyama", "Waniyama" },
+            { "Champi\u00F1\u00F3n 1-Up", "1-Up", "1-Up" }, { "Chomp Cadenas", "Chomp", "Chomp" }, { "Cubo de compa\u00F1\u00EDa", "Cubo", "Cube" }
         };
 
         public static string AnimeCaption(int i)
         {
             if (i < 0 || i >= AnimeNames.Length) return "";
-            for (int k = 0; k < Captions.GetLength(0); k++) if (Captions[k, 0] == AnimeNames[i]) return Captions[k, 1];
+            for (int k = 0; k < Captions.GetLength(0); k++) if (Captions[k, 0] == AnimeNamesEs[i]) return I18n.IsSpanish ? Captions[k, 1] : Captions[k, 2];
             return AnimeNames[i];
         }
 
@@ -273,22 +339,33 @@ namespace Stackshot
         // Ghibli's films, the AI assistants, the kawaii classics and the lone characters of smaller games share a group, so
         // the row reads as a few clear groups instead of a name over every other tile. Only the dock: the plate and the
         // label on hover keep each one's own series.
+        // Series as the Spanish table names it, as the English one does, then the group in Spanish and in English.
         static readonly string[,] SeriesGroups =
         {
-            { "Tengen Toppa Gurren Lagann", "Gurren Lagann" }, { "Cardcaptor Sakura", "Sakura" }, { "Crayon Shin-chan", "Shin-chan" },
-            { "Fullmetal Alchemist", "Fullmetal" }, { "Don't Starve Together", "Don't Starve" }, { "Oxygen Not Included", "Oxygen" },
-            { "Mi vecino Totoro", "Studio Ghibli" }, { "El viaje de Chihiro", "Studio Ghibli" }, { "El castillo ambulante", "Studio Ghibli" },
-            { "La princesa Mononoke", "Studio Ghibli" }, { "The Mandalorian", "Star Wars" }, { "Anthropic", "Asistentes de IA" },
-            { "OpenAI", "Asistentes de IA" }, { "Sanrio", "Kawaii" }, { "San-X", "Kawaii" }, { "Pusheen", "Kawaii" },
-            { "Among Us", "M\u00E1s videojuegos" }, { "Dragon Quest", "M\u00E1s videojuegos" }, { "Space Invaders", "M\u00E1s videojuegos" },
-            { "Hollow Knight", "M\u00E1s videojuegos" }, { "Portal", "M\u00E1s videojuegos" }, { "Bomberman", "M\u00E1s videojuegos" },
-            { "Dig Dug", "M\u00E1s videojuegos" }, { "Fall Guys", "M\u00E1s videojuegos" }, { "Metroid", "M\u00E1s videojuegos" }
+            { "Tengen Toppa Gurren Lagann", "Tengen Toppa Gurren Lagann", "Gurren Lagann", "Gurren Lagann" }, { "Cardcaptor Sakura", "Cardcaptor Sakura", "Sakura", "Sakura" },
+            { "Crayon Shin-chan", "Crayon Shin-chan", "Shin-chan", "Shin-chan" },
+            { "Fullmetal Alchemist", "Fullmetal Alchemist", "Fullmetal", "Fullmetal" }, { "Don't Starve Together", "Don't Starve Together", "Don't Starve", "Don't Starve" },
+            { "Oxygen Not Included", "Oxygen Not Included", "Oxygen", "Oxygen" },
+            { "Mi vecino Totoro", "My Neighbor Totoro", "Studio Ghibli", "Studio Ghibli" }, { "El viaje de Chihiro", "Spirited Away", "Studio Ghibli", "Studio Ghibli" },
+            { "El castillo ambulante", "Howl's Moving Castle", "Studio Ghibli", "Studio Ghibli" },
+            { "La princesa Mononoke", "Princess Mononoke", "Studio Ghibli", "Studio Ghibli" }, { "The Mandalorian", "The Mandalorian", "Star Wars", "Star Wars" },
+            { "Anthropic", "Anthropic", "Asistentes de IA", "AI assistants" },
+            { "OpenAI", "OpenAI", "Asistentes de IA", "AI assistants" }, { "Sanrio", "Sanrio", "Kawaii", "Kawaii" }, { "San-X", "San-X", "Kawaii", "Kawaii" },
+            { "Pusheen", "Pusheen", "Kawaii", "Kawaii" },
+            { "Among Us", "Among Us", "M\u00E1s videojuegos", "More games" }, { "Dragon Quest", "Dragon Quest", "M\u00E1s videojuegos", "More games" },
+            { "Space Invaders", "Space Invaders", "M\u00E1s videojuegos", "More games" },
+            { "Hollow Knight", "Hollow Knight", "M\u00E1s videojuegos", "More games" }, { "Portal", "Portal", "M\u00E1s videojuegos", "More games" },
+            { "Bomberman", "Bomberman", "M\u00E1s videojuegos", "More games" },
+            { "Dig Dug", "Dig Dug", "M\u00E1s videojuegos", "More games" }, { "Fall Guys", "Fall Guys", "M\u00E1s videojuegos", "More games" },
+            { "Metroid", "Metroid", "M\u00E1s videojuegos", "More games" }
         };
 
+        // Takes a series in either language and answers in the current one.
         public static string SeriesGroup(string s)
         {
             if (s == null) return null;
-            for (int i = 0; i < SeriesGroups.GetLength(0); i++) if (SeriesGroups[i, 0] == s) return SeriesGroups[i, 1];
+            for (int i = 0; i < SeriesGroups.GetLength(0); i++)
+                if (SeriesGroups[i, 0] == s || SeriesGroups[i, 1] == s) return I18n.IsSpanish ? SeriesGroups[i, 2] : SeriesGroups[i, 3];
             return s;
         }
 
@@ -317,7 +394,7 @@ namespace Stackshot
                 // Variants sit right next to the one they come from (the green 1-Up beside the red mushroom).
                 for (int k = 0; k < Beside.GetLength(0); k++)
                 {
-                    int v = Array.IndexOf(AnimeNames, Beside[k, 0]), b = Array.IndexOf(AnimeNames, Beside[k, 1]);
+                    int v = Array.IndexOf(AnimeNamesEs, Beside[k, 0]), b = Array.IndexOf(AnimeNamesEs, Beside[k, 1]);
                     if (v < 0 || b < 0) continue;
                     o.Remove(v);
                     o.Insert(o.IndexOf(b) + 1, v);

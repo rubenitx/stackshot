@@ -21,7 +21,7 @@ namespace Stackshot
             peeked = false;
             Screen scr = AnchorScreen();
             if (savingCard == null || savingCard.IsDisposed) savingCard = new SavingCard();
-            savingCard.Set(SavingSlot(scr), ScaleFor(scr), label ?? (gif ? "Guardando el GIF\u2026" : "Guardando el v\u00EDdeo\u2026"), fraction);
+            savingCard.Set(SavingSlot(scr), ScaleFor(scr), label ?? (gif ? I18n.T("Guardando el GIF\u2026", "Saving GIF\u2026") : I18n.T("Guardando el v\u00EDdeo\u2026", "Saving video\u2026")), fraction);
         }
 
         public void SavingDone()
@@ -129,7 +129,8 @@ namespace Stackshot
             title.MaxTextWidth = Math.Max(1, tw);
             title.MaxLineCount = 1;
             title.Trimming = System.Windows.TextTrimming.CharacterEllipsis;
-            string sub = fraction >= 0 ? (int)Math.Round(fraction * 100) + " %  \u00B7  aparecer\u00E1 aqu\u00ED" : "Aparecer\u00E1 aqu\u00ED en un momento";
+            string sub = fraction >= 0 ? I18n.Fmt("{0} %  \u00B7  aparecer\u00E1 aqu\u00ED", "{0}%  \u00B7  it will appear here", (int)Math.Round(fraction * 100))
+                                       : I18n.T("Aparecer\u00E1 aqu\u00ED en un momento", "It will appear here in a moment");
             System.Windows.Media.FormattedText st = Ink.Px(sub, Ds.Regular, P(11.5f), dim);
             st.MaxTextWidth = Math.Max(1, tw);
             st.MaxLineCount = 1;

@@ -272,10 +272,11 @@ namespace Stackshot
             if (len > 0 && UrlRx.IsMatch(sel.Trim()))
             {
                 string url = sel.Trim();
-                string ins = "[texto](" + url + ")";
-                return TextEdit.Make(s, len, ins, s + 1, 5);
+                string ph = I18n.T("texto", "text");
+                string ins = "[" + ph + "](" + url + ")";
+                return TextEdit.Make(s, len, ins, s + 1, ph.Length);
             }
-            if (len == 0) return TextEdit.Make(s, 0, "[texto](https://)", s + 1, 5);
+            if (len == 0) { string ph = I18n.T("texto", "text"); return TextEdit.Make(s, 0, "[" + ph + "](https://)", s + 1, ph.Length); }
             string w = "[" + sel + "](https://)";
             return TextEdit.Make(s, len, w, s + sel.Length + 3, 8);
         }
@@ -313,7 +314,7 @@ namespace Stackshot
             int at = emptyLine ? a : b;
             StringBuilder sb = new StringBuilder();
             string[] head = new string[cols];
-            for (int c = 0; c < cols; c++) head[c] = "Columna " + (c + 1);
+            for (int c = 0; c < cols; c++) head[c] = I18n.T("Columna ", "Column ") + (c + 1);
             int w = head[0].Length;
             sb.Append('|');
             foreach (string h in head) sb.Append(' ').Append(h).Append(" |");
@@ -609,7 +610,7 @@ namespace Stackshot
                     }
                 case TableOp.ColumnRight:
                     foreach (List<string> r in rows) r.Insert(col + 1, "");
-                    rows[0][col + 1] = "Columna " + (n + 1);
+                    rows[0][col + 1] = I18n.T("Columna ", "Column ") + (n + 1);
                     delim.Insert(col + 1, "---");
                     n++;
                     targetCol = col + 1;

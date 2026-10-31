@@ -80,20 +80,21 @@ namespace Stackshot
 
     internal static class ShareCheck
     {
-        internal const string NameFile = "Archivo";
-        internal const string NameStructure = "Estructura MP4";
-        internal const string NameFaststart = "Inicio r\u00E1pido";
-        internal const string NameVideo = "V\u00EDdeo";
-        internal const string NameSize = "Tama\u00F1o";
-        internal const string NameFps = "Fotogramas por segundo";
-        internal const string NameColor = "Color";
-        internal const string NameAudio = "Sonido";
-        internal const string NameDuration = "Duraci\u00F3n";
-        internal const string NameDecode = "Lectura completa";
-        internal const string NameFrames = "N\u00FAmero de fotogramas";
-        internal const string NameLevel = "Nivel H.264";
-        internal const string NameFileSize = "L\u00EDmite de tama\u00F1o";
-        internal const string NameCheck = "Comprobaci\u00F3n";
+        // The names are shown to the user (Summary) and looked up with Find in the same language.
+        internal static string NameFile { get { return I18n.T("Archivo", "File"); } }
+        internal static string NameStructure { get { return I18n.T("Estructura MP4", "MP4 structure"); } }
+        internal static string NameFaststart { get { return I18n.T("Inicio r\u00E1pido", "Fast start"); } }
+        internal static string NameVideo { get { return I18n.T("V\u00EDdeo", "Video"); } }
+        internal static string NameSize { get { return I18n.T("Tama\u00F1o", "Size"); } }
+        internal static string NameFps { get { return I18n.T("Fotogramas por segundo", "Frames per second"); } }
+        internal static string NameColor { get { return "Color"; } }
+        internal static string NameAudio { get { return I18n.T("Sonido", "Sound"); } }
+        internal static string NameDuration { get { return I18n.T("Duraci\u00F3n", "Duration"); } }
+        internal static string NameDecode { get { return I18n.T("Lectura completa", "Full read"); } }
+        internal static string NameFrames { get { return I18n.T("N\u00FAmero de fotogramas", "Frame count"); } }
+        internal static string NameLevel { get { return I18n.T("Nivel H.264", "H.264 level"); } }
+        internal static string NameFileSize { get { return I18n.T("L\u00EDmite de tama\u00F1o", "Size limit"); } }
+        internal static string NameCheck { get { return I18n.T("Comprobaci\u00F3n", "Check"); } }
 
         // The top-level boxes of an MP4: type and size of each, and whether they cover the file exactly.
         internal static Mp4Boxes WalkBoxes(Stream s)
@@ -104,26 +105,26 @@ namespace Stackshot
             byte[] h = new byte[16];
             while (pos < len)
             {
-                if (len - pos < 8) { r.Error = "sobran " + (len - pos) + " bytes al final"; return r; }
+                if (len - pos < 8) { r.Error = I18n.Fmt("sobran {0} bytes al final", "{0} extra bytes at the end", len - pos); return r; }
                 s.Position = pos;
-                if (!Fill(s, h, 8)) { r.Error = "no se puede leer en " + pos; return r; }
+                if (!Fill(s, h, 8)) { r.Error = I18n.Fmt("no se puede leer en {0}", "cannot read at {0}", pos); return r; }
                 long size = ((long)h[0] << 24) | ((long)h[1] << 16) | ((long)h[2] << 8) | h[3];
                 string type = Encoding.ASCII.GetString(h, 4, 4);
                 long head = 8;
                 if (size == 1)
                 {
-                    if (len - pos < 16 || !Fill(s, h, 8)) { r.Error = "la caja '" + type + "' est\u00E1 cortada"; return r; }
+                    if (len - pos < 16 || !Fill(s, h, 8)) { r.Error = I18n.Fmt("la caja '{0}' est\u00E1 cortada", "the '{0}' box is cut short", type); return r; }
                     size = 0;
                     for (int i = 0; i < 8; i++) size = (size << 8) | h[i];
                     head = 16;
                 }
                 else if (size == 0) size = len - pos;
-                if (size < head) { r.Error = "la caja '" + type + "' en " + pos + " tiene un tama\u00F1o imposible"; return r; }
+                if (size < head) { r.Error = I18n.Fmt("la caja '{0}' en {1} tiene un tama\u00F1o imposible", "the '{0}' box at {1} has an impossible size", type, pos); return r; }
                 r.Types.Add(type);
                 r.Sizes.Add(size);
                 if (pos + size > len || size < 0)
                 {
-                    r.Error = "la caja '" + type + "' declara " + size + " bytes y solo quedan " + (len - pos) + " (archivo cortado)";
+                    r.Error = I18n.Fmt("la caja '{0}' declara {1} bytes y solo quedan {2} (archivo cortado)", "the '{0}' box declares {1} bytes and only {2} are left (file cut short)", type, size, len - pos);
                     return r;
                 }
                 pos += size;
@@ -238,10 +239,10 @@ namespace Stackshot
             bool all = true;
             foreach (ShareReport.Check c in r.Checks) if (!c.Passed) all = false;
             r.Passed = all;
-            if (all) r.Summary = "El v\u00EDdeo se ha comprobado: se abre entero y tiene el tama\u00F1o, la duraci\u00F3n y el sonido esperados.";
+            if (all) r.Summary = I18n.T("El v\u00EDdeo se ha comprobado: se abre entero y tiene el tama\u00F1o, la duraci\u00F3n y el sonido esperados.", "The video was verified: it opens completely and has the expected size, duration and sound.");
             else
             {
-                StringBuilder sb = new StringBuilder("El v\u00EDdeo no pasa la comprobaci\u00F3n: ");
+                StringBuilder sb = new StringBuilder(I18n.T("El v\u00EDdeo no pasa la comprobaci\u00F3n: ", "The video did not pass verification: "));
                 bool first = true;
                 foreach (ShareReport.Check c in r.Checks)
                 {
@@ -257,10 +258,11 @@ namespace Stackshot
         static void Run(ShareReport r, string ff, string path, ShareExpect e)
         {
             long size = File.Exists(path) ? new FileInfo(path).Length : -1;
-            Add(r, NameFile, size > 1024, size < 0 ? "no existe" : size + " bytes" + (size > 1024 ? "" : ", demasiado peque\u00F1o"));
+            Add(r, NameFile, size > 1024, size < 0 ? I18n.T("no existe", "does not exist") : size + " bytes" + (size > 1024 ? "" : I18n.T(", demasiado peque\u00F1o", ", too small")));
             if (size <= 1024) return;
             if (e.MaxBytes > 0)
-                Add(r, NameFileSize, size <= e.MaxBytes, (size / 1000000.0).ToString("0.0", CultureInfo.InvariantCulture) + " MB, como mucho " + (e.MaxBytes / 1000000.0).ToString("0.0", CultureInfo.InvariantCulture) + " MB");
+                Add(r, NameFileSize, size <= e.MaxBytes, I18n.Fmt("{0} MB, como mucho {1} MB", "{0} MB, at most {1} MB",
+                                                                  (size / 1000000.0).ToString("0.0", CultureInfo.InvariantCulture), (e.MaxBytes / 1000000.0).ToString("0.0", CultureInfo.InvariantCulture)));
 
             if (e.Gif)
             {
@@ -275,7 +277,7 @@ namespace Stackshot
                 }
                 string sig = Encoding.ASCII.GetString(head);
                 bool whole = (sig == "GIF89a" || sig == "GIF87a") && last == 0x3B;
-                Add(r, NameStructure, whole, whole ? "GIF completo" : "el GIF est\u00E1 cortado o no es un GIF");
+                Add(r, NameStructure, whole, whole ? I18n.T("GIF completo", "complete GIF") : I18n.T("el GIF est\u00E1 cortado o no es un GIF", "the GIF is cut short or is not a GIF"));
             }
             else
             {
@@ -283,31 +285,33 @@ namespace Stackshot
                 using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) b = WalkBoxes(fs);
                 bool ftyp = b.Types.Count > 0 && b.Types[0] == "ftyp";
                 int moov = b.Types.IndexOf("moov"), mdat = b.Types.IndexOf("mdat");
-                string why = b.Error ?? (!ftyp ? "no empieza por 'ftyp'" : moov < 0 ? "falta 'moov'" : mdat < 0 ? "falta 'mdat'" : null);
+                string why = b.Error ?? (!ftyp ? I18n.T("no empieza por 'ftyp'", "does not start with 'ftyp'") : moov < 0 ? I18n.T("falta 'moov'", "'moov' is missing")
+                                         : mdat < 0 ? I18n.T("falta 'mdat'", "'mdat' is missing") : null);
                 Add(r, NameStructure, why == null, why ?? string.Join(" ", b.Types.ToArray()));
                 if (moov >= 0 && mdat >= 0)
-                    Add(r, NameFaststart, moov < mdat, moov < mdat ? "el \u00EDndice va antes de los datos" : "el \u00EDndice va despu\u00E9s de los datos: no empieza a verse hasta que baja entero");
+                    Add(r, NameFaststart, moov < mdat, moov < mdat ? I18n.T("el \u00EDndice va antes de los datos", "the index comes before the data")
+                                                                   : I18n.T("el \u00EDndice va despu\u00E9s de los datos: no empieza a verse hasta que baja entero", "the index comes after the data: it does not start playing until fully downloaded"));
             }
 
             string err;
             string safe = Recorder.SafeInput;
             int code = VideoExport.Run(ff, "-hide_banner " + safe + "-i " + Recorder.Quote(path), 30000, out err);
             ShareProbe p = ParseProbe(err);
-            if (code == -1) { Add(r, NameVideo, false, "FFmpeg no termin\u00F3 de leer el archivo"); return; }
+            if (code == -1) { Add(r, NameVideo, false, I18n.T("FFmpeg no termin\u00F3 de leer el archivo", "FFmpeg did not finish reading the file")); return; }
 
             if (e.Gif)
             {
-                Add(r, NameVideo, p.VideoStreams == 1 && p.VideoCodec == "gif", p.VideoStreams + " v\u00EDdeo(s), " + (p.VideoCodec ?? "sin c\u00F3dec"));
-                Add(r, NameSize, p.Width == e.Width && p.Height == e.Height, p.Width + "x" + p.Height + ", esperado " + e.Width + "x" + e.Height);
+                Add(r, NameVideo, p.VideoStreams == 1 && p.VideoCodec == "gif", p.VideoStreams + I18n.T(" v\u00EDdeo(s), ", " video(s), ") + (p.VideoCodec ?? I18n.T("sin c\u00F3dec", "no codec")));
+                Add(r, NameSize, p.Width == e.Width && p.Height == e.Height, p.Width + "x" + p.Height + I18n.T(", esperado ", ", expected ") + e.Width + "x" + e.Height);
             }
             else
             {
                 bool profile = p.Profile == "High" || p.Profile == "Main" || p.Profile == "Constrained Baseline";
                 bool ok = p.VideoStreams == 1 && p.VideoCodec == "h264" && profile && p.PixFmt == "yuv420p";
-                Add(r, NameVideo, ok, p.VideoStreams + " v\u00EDdeo(s), " + (p.VideoCodec ?? "sin c\u00F3dec") + " (" + (p.Profile ?? "sin perfil") + "), " + (p.PixFmt ?? "sin formato") +
-                                      (ok ? "" : "; se esperaba h264 High/Main, yuv420p"));
-                Add(r, NameSize, p.Width == e.Width && p.Height == e.Height, p.Width + "x" + p.Height + ", esperado " + e.Width + "x" + e.Height);
-                if (e.Fps > 0) Add(r, NameFps, p.Fps > 0 && Math.Abs(p.Fps - e.Fps) <= 0.01, N(p.Fps) + ", esperado " + N(e.Fps));
+                Add(r, NameVideo, ok, p.VideoStreams + I18n.T(" v\u00EDdeo(s), ", " video(s), ") + (p.VideoCodec ?? I18n.T("sin c\u00F3dec", "no codec")) + " (" + (p.Profile ?? I18n.T("sin perfil", "no profile")) + "), " +
+                                      (p.PixFmt ?? I18n.T("sin formato", "no format")) + (ok ? "" : I18n.T("; se esperaba h264 High/Main, yuv420p", "; expected h264 High/Main, yuv420p")));
+                Add(r, NameSize, p.Width == e.Width && p.Height == e.Height, p.Width + "x" + p.Height + I18n.T(", esperado ", ", expected ") + e.Width + "x" + e.Height);
+                if (e.Fps > 0) Add(r, NameFps, p.Fps > 0 && Math.Abs(p.Fps - e.Fps) <= 0.01, N(p.Fps) + I18n.T(", esperado ", ", expected ") + N(e.Fps));
                 // The level and the chroma location are read from the stream's own header, not from what was asked of x264.
                 SpsInfo sps = null;
                 if (e.Level > 0 || e.CentredChroma)
@@ -317,15 +321,16 @@ namespace Stackshot
                     sps = ParseSps(trace);
                 }
                 if (e.Level > 0)
-                    Add(r, NameLevel, sps.Level == e.Level, sps.Level < 0 ? "no se pudo leer" : LevelName(sps.Level) + (sps.Level == e.Level ? "" : ", esperado " + LevelName(e.Level)));
+                    Add(r, NameLevel, sps.Level == e.Level, sps.Level < 0 ? I18n.T("no se pudo leer", "could not be read")
+                                                                          : LevelName(sps.Level) + (sps.Level == e.Level ? "" : I18n.T(", esperado ", ", expected ") + LevelName(e.Level)));
                 if (e.RgbSource)
                 {
                     string col = p.Color ?? "";
                     bool tagged = col.Contains("tv") && col.Contains("bt709/bt709/iec61966-2-1");
                     bool sited = !e.CentredChroma || sps.ChromaLoc == 1;
-                    Add(r, NameColor, tagged && sited, !tagged ? "sin las etiquetas BT.709 (" + (col.Length == 0 ? "ninguna" : col) + ")" :
-                                                       !sited ? "BT.709, pero no dice que el croma va centrado" :
-                                                       "BT.709, rango limitado" + (e.CentredChroma ? ", croma centrado" : ""));
+                    Add(r, NameColor, tagged && sited, !tagged ? I18n.T("sin las etiquetas BT.709 (", "without the BT.709 tags (") + (col.Length == 0 ? I18n.T("ninguna", "none") : col) + ")" :
+                                                       !sited ? I18n.T("BT.709, pero no dice que el croma va centrado", "BT.709, but it does not say the chroma is centered") :
+                                                       I18n.T("BT.709, rango limitado", "BT.709, limited range") + (e.CentredChroma ? I18n.T(", croma centrado", ", centered chroma") : ""));
                 }
                 bool audio;
                 string adetail;
@@ -333,18 +338,19 @@ namespace Stackshot
                 {
                     ShareAudio a = p.Audio.Count > 0 ? p.Audio[0] : null;
                     audio = p.Audio.Count == 1 && a.Codec == "aac" && a.Profile == "LC" && a.Rate == 48000 && a.Layout == "stereo";
-                    adetail = p.Audio.Count == 1 ? a.Codec + " (" + a.Profile + "), " + a.Rate + " Hz, " + a.Layout : p.Audio.Count + " pistas de sonido, esperada 1";
+                    adetail = p.Audio.Count == 1 ? a.Codec + " (" + a.Profile + "), " + a.Rate + " Hz, " + a.Layout
+                                                 : I18n.Fmt("{0} pistas de sonido, esperada 1", "{0} sound tracks, expected 1", p.Audio.Count);
                 }
                 else
                 {
                     audio = p.Audio.Count == 0;
-                    adetail = audio ? "sin sonido, como se esperaba" : p.Audio.Count + " pistas de sonido, esperadas 0";
+                    adetail = audio ? I18n.T("sin sonido, como se esperaba", "no sound, as expected") : I18n.Fmt("{0} pistas de sonido, esperadas 0", "{0} sound tracks, expected 0", p.Audio.Count);
                 }
                 Add(r, NameAudio, audio, adetail);
                 if (e.Seconds > 0)
                 {
                     double tol = Math.Max(0.15, e.Fps > 0 ? 2 / e.Fps : 0) + e.Slack;
-                    Add(r, NameDuration, p.Seconds >= 0 && Math.Abs(p.Seconds - e.Seconds) <= tol, N(p.Seconds) + " s, esperado " + N(e.Seconds) + " s");
+                    Add(r, NameDuration, p.Seconds >= 0 && Math.Abs(p.Seconds - e.Seconds) <= tol, I18n.Fmt("{0} s, esperado {1} s", "{0} s, expected {1} s", N(p.Seconds), N(e.Seconds)));
                 }
             }
 
@@ -359,11 +365,12 @@ namespace Stackshot
             string dargs = "-hide_banner -v error " + safe + "-i " + Recorder.Quote(path) + " -map 0" + asIs + " -f null - -map 0:v:0" + asIs + " -f framecrc -";
             code = VideoExport.Run(ff, dargs, timeout, delegate(string line) { if (line.Length > 0 && line[0] != '#') lock (sync) frames++; }, out err);
             err = (err ?? "").Trim();
-            if (code == -1) Add(r, NameDecode, false, "tard\u00F3 demasiado y se cancel\u00F3");
+            if (code == -1) Add(r, NameDecode, false, I18n.T("tard\u00F3 demasiado y se cancel\u00F3", "took too long and was cancelled"));
             else
             {
                 string tail = err.Length > 160 ? err.Substring(0, 160) + "\u2026" : err;
-                Add(r, NameDecode, code == 0 && err.Length == 0, code == 0 && err.Length == 0 ? "sin errores" : "FFmpeg sali\u00F3 con " + code + (err.Length > 0 ? ": " + tail.Replace("\r", " ").Replace("\n", " | ") : ""));
+                Add(r, NameDecode, code == 0 && err.Length == 0, code == 0 && err.Length == 0 ? I18n.T("sin errores", "no errors")
+                    : I18n.T("FFmpeg sali\u00F3 con ", "FFmpeg exited with ") + code + (err.Length > 0 ? ": " + tail.Replace("\r", " ").Replace("\n", " | ") : ""));
             }
             if (!e.Gif && e.Fps > 0 && e.Seconds > 0 && code != -1)
             {
@@ -371,7 +378,7 @@ namespace Stackshot
                 int got;
                 lock (sync) got = frames;
                 int tolFrames = 1 + (int)Math.Ceiling(e.Slack * e.Fps);
-                Add(r, NameFrames, Math.Abs(got - want) <= tolFrames, got + " fotogramas, esperados " + want);
+                Add(r, NameFrames, Math.Abs(got - want) <= tolFrames, I18n.Fmt("{0} fotogramas, esperados {1}", "{0} frames, expected {1}", got, want));
             }
         }
     }

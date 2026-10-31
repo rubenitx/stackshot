@@ -364,19 +364,19 @@ namespace Stackshot
             Box.Focus();
             List<MenuEntry> m = new List<MenuEntry>();
             bool sel = Box.SelectionLength > 0;
-            MenuEntry undo = MenuEntry.Item("Deshacer", "undo", false, delegate { Box.Undo(); });
+            MenuEntry undo = MenuEntry.Item(I18n.T("Deshacer", "Undo"), "undo", false, delegate { Box.Undo(); });
             undo.Enabled = Box.CanUndo;
-            MenuEntry redo = MenuEntry.Item("Rehacer", "redo", false, delegate { Box.Redo(); });
+            MenuEntry redo = MenuEntry.Item(I18n.T("Rehacer", "Redo"), "redo", false, delegate { Box.Redo(); });
             redo.Enabled = Box.CanRedo;
-            MenuEntry cut = MenuEntry.Item("Cortar", null, false, delegate { Box.Cut(); if (Copied != null) Copied("Cortado."); });
+            MenuEntry cut = MenuEntry.Item(I18n.T("Cortar", "Cut"), null, false, delegate { Box.Cut(); if (Copied != null) Copied(I18n.T("Cortado.", "Cut.")); });
             cut.Enabled = sel;
-            MenuEntry copy = MenuEntry.Item("Copiar", "copy", false, delegate { Box.Copy(); if (Copied != null) Copied("Copiado."); });
+            MenuEntry copy = MenuEntry.Item(I18n.T("Copiar", "Copy"), "copy", false, delegate { Box.Copy(); if (Copied != null) Copied(I18n.T("Copiado.", "Copied.")); });
             copy.Enabled = sel;
             m.Add(undo); m.Add(redo); m.Add(MenuEntry.Line());
             m.Add(cut); m.Add(copy);
-            m.Add(MenuEntry.Item("Pegar", null, false, delegate { if (!Pasted(false)) Box.Paste(); }));
+            m.Add(MenuEntry.Item(I18n.T("Pegar", "Paste"), null, false, delegate { if (!Pasted(false)) Box.Paste(); }));
             m.Add(MenuEntry.Line());
-            m.Add(MenuEntry.Item("Seleccionar todo", "check", false, delegate { Box.SelectAll(); }));
+            m.Add(MenuEntry.Item(I18n.T("Seleccionar todo", "Select all"), "check", false, delegate { Box.SelectAll(); }));
             Menu(e, m);
         }
 

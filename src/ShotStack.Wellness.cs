@@ -61,7 +61,7 @@ namespace Stackshot
             else
             {
                 int k = kind;
-                Notify(settings.MascotName + ": " + WellKind.Names[kind].ToLowerInvariant(), text, NoticeKind.Info, "Hecho", delegate
+                Notify(settings.MascotName + ": " + WellKind.Names[kind].ToLowerInvariant(), text, NoticeKind.Info, I18n.T("Hecho", "Done"), delegate
                 {
                     string up;
                     int today = WellDone(k, out up);

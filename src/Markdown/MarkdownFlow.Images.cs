@@ -75,7 +75,7 @@ namespace Stackshot
             StackPanel row = new StackPanel { Orientation = Orientation.Horizontal };
             // The icon cache belongs to the UI thread; a printed note does without it.
             if (!printing) row.Children.Add(new GlyphView("photo", 14, pal.Label2, 1.6) { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 7, 0) });
-            row.Children.Add(new TextBlock { Text = (err ?? "No puedo mostrar esta imagen") + ": " + Uri.UnescapeDataString(href), FontSize = 12.5, Foreground = faint, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
+            row.Children.Add(new TextBlock { Text = (err ?? I18n.T("No puedo mostrar esta imagen", "Cannot show this image")) + ": " + Uri.UnescapeDataString(href), FontSize = 12.5, Foreground = faint, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
             host.Child = row;
         }
     }

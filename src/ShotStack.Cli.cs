@@ -43,7 +43,7 @@ namespace Stackshot
                 string last = XmlWatch.Latest(dir);
                 Ui(delegate
                 {
-                    if (last == null) Notify("Stackshot", "No hay ning\u00FAn XML en " + dir + ".");
+                    if (last == null) Notify("Stackshot", I18n.Fmt("No hay ning\u00FAn XML en {0}.", "There is no XML in {0}.", dir));
                     else OpenViewerFile(last);
                 });
             });

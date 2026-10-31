@@ -53,10 +53,10 @@ namespace Stackshot
                 e.Handled = true;
                 if (Menu == null) return;
                 List<MenuEntry> m = new List<MenuEntry>();
-                MenuEntry copy = MenuEntry.Item("Copiar", "copy", false, delegate { Box.Copy(); if (Copied != null) Copied("Copiado."); });
+                MenuEntry copy = MenuEntry.Item(I18n.T("Copiar", "Copy"), "copy", false, delegate { Box.Copy(); if (Copied != null) Copied(I18n.T("Copiado.", "Copied.")); });
                 copy.Enabled = !Box.Selection.IsEmpty;
                 m.Add(copy);
-                m.Add(MenuEntry.Item("Seleccionar todo", "check", false, delegate { Box.Focus(); Box.SelectAll(); }));
+                m.Add(MenuEntry.Item(I18n.T("Seleccionar todo", "Select all"), "check", false, delegate { Box.Focus(); Box.SelectAll(); }));
                 Menu(e, m);
             };
             // Mouse wheel moves the page by a comfortable step (the box scrolls by lines otherwise).

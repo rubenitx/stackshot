@@ -3,7 +3,7 @@
 A screenshot tool for Windows in the spirit of CleanShot X: its own capture (scrolling capture too), a stack of floating
 thumbnails, a quick editor with a presentation backdrop, video and GIF through FFmpeg, a main window with a customizable
 mascot, and a per-user installation. A single `.exe` (about 2.2 MB) written in C# 5 + WinForms and WPF on .NET Framework 4.8.
-Windows 10 and 11 only. The user interface is in Spanish; code comments are in English.
+Windows 10 and 11 only. The user interface is in Spanish and English (`src/I18n.cs`); code comments are in English.
 
 ## Build and test
 
@@ -70,6 +70,13 @@ Windows 10 and 11 only. The user interface is in Spanish; code comments are in E
 ## Code rules
 
 - **C# 5 only**: no `$""`, `?.`, `nameof`, expression-bodied members, `out var` or auto-property initializers.
+- **Every text in both languages.** What the user reads or hears goes through `I18n.T("español", "English")`, or
+  `I18n.Fmt(...)` when it carries values (same `{0}` placeholders in both); lists are `XxxEs`/`XxxEn` arrays behind a property
+  that picks one by `I18n.IsSpanish`, never a static field that calls `I18n.T` (it would freeze the language at startup).
+  Logs, settings keys, file names on disk and anything compared to decide behaviour stay as they are: never decide by a
+  translated text (use an id or a flag). A notice's kind comes from its title's first words (`Notice.KindFor`): give a new
+  title a start of the same kind in both languages. `tests\app\run-tests.ps1 i18n` checks that Automático follows Windows
+  and that no page shows Spanish in English.
 - **ASCII literals**: accented characters in strings are Unicode escapes. Some editing tools turn them into real
   characters; after editing, `perl tools/escape-literals.pl <file>` escapes them again.
 - The process is per-monitor DPI aware (PerMonitorV2 manifest): sizes are in physical pixels and scaled with

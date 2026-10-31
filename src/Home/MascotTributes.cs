@@ -73,12 +73,12 @@ namespace Stackshot
             if (ArcadeHasPower(kind)) return ArcadePowerName(kind);
             switch (kind)
             {
-                case KindStitch: return "Hazte el loco";
-                case KindKirby: return "Inhala";
-                case KindGrogu: return "Usa la Fuerza";
-                case KindEevee: return "Rueda de alegr\u00EDa";
-                case KindPikachu: return "Impactrueno";
-                default: return "Echa una llamarada";
+                case KindStitch: return I18n.T("Hazte el loco", "Go wild");
+                case KindKirby: return I18n.T("Inhala", "Inhale");
+                case KindGrogu: return I18n.T("Usa la Fuerza", "Use the Force");
+                case KindEevee: return I18n.T("Rueda de alegr\u00EDa", "Joy roll");
+                case KindPikachu: return I18n.T("Impactrueno", "Thunder Shock");
+                default: return I18n.T("Echa una llamarada", "Breathe fire");
             }
         }
 
@@ -87,12 +87,12 @@ namespace Stackshot
             if (ArcadeHasPower(kind)) return ArcadePowerHint(kind);
             switch (kind)
             {
-                case KindStitch: return "Gira, saca dos brazos m\u00E1s y suelta chispas";
-                case KindKirby: return "Aspira con un remolino y se hincha";
-                case KindGrogu: return "Levanta una piedra sin tocarla";
-                case KindEevee: return "Una voltereta llena de estrellas";
-                case KindPikachu: return "Se carga los mofletes y suelta rayos";
-                default: return "Una peque\u00F1a llamarada, y la cola arde m\u00E1s";
+                case KindStitch: return I18n.T("Gira, saca dos brazos m\u00E1s y suelta chispas", "Spins, pops out two extra arms and throws sparks");
+                case KindKirby: return I18n.T("Aspira con un remolino y se hincha", "Sucks in with a whirlwind and puffs up");
+                case KindGrogu: return I18n.T("Levanta una piedra sin tocarla", "Lifts a rock without touching it");
+                case KindEevee: return I18n.T("Una voltereta llena de estrellas", "A somersault full of stars");
+                case KindPikachu: return I18n.T("Se carga los mofletes y suelta rayos", "Charges its cheeks and lets out lightning");
+                default: return I18n.T("Una peque\u00F1a llamarada, y la cola arde m\u00E1s", "A little burst of flame, and the tail burns brighter");
             }
         }
 
@@ -101,12 +101,12 @@ namespace Stackshot
             if (power >= PowerChomp) return ArcadePowerLine(power);
             switch (power)
             {
-                case PowerCrazy: return "\u00A1Ohana!";
-                case PowerInhale: return "\u00A1Poyo!";
+                case PowerCrazy: return I18n.T("\u00A1Ohana!", "Ohana!");
+                case PowerInhale: return I18n.T("\u00A1Poyo!", "Poyo!");
                 case PowerForce: return "Mmm\u2026";
-                case PowerRoll: return "\u00A1Eevee!";
-                case PowerThunder: return "\u00A1Pika pika!";
-                default: return "\u00A1Char!";
+                case PowerRoll: return I18n.T("\u00A1Eevee!", "Eevee!");
+                case PowerThunder: return I18n.T("\u00A1Pika pika!", "Pika pika!");
+                default: return I18n.T("\u00A1Char!", "Char!");
             }
         }
 

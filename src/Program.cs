@@ -123,7 +123,7 @@ namespace Stackshot
                 catch (Exception ex)
                 {
                     ShotStack.Log("Editar " + edit + ": " + ex);
-                    MessageBox.Show("No se pudo abrir " + Path.GetFileName(edit) + ".\n\n" + OpenProblem(ex, edit), "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(I18n.Fmt("No se pudo abrir {0}.\n\n{1}", "Could not open {0}.\n\n{1}", Path.GetFileName(edit), OpenProblem(ex, edit)), "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
                 return 0;
             }
@@ -187,14 +187,14 @@ namespace Stackshot
                     // MSI installs are updated through the MSI, never overwritten here.
                     if (Installer.MyVersion > Installer.InstalledVersion && Installer.ManagedByMsi)
                     {
-                        MessageBox.Show("Este equipo tiene Stackshot " + Installer.InstalledVersion.ToString(3) + " instalado con el paquete MSI.\n\n" +
-                                        "Para pasar a la " + Installer.MyVersion.ToString(3) + ", instala Stackshot.msi de esa versi\u00F3n (o p\u00EDdeselo a inform\u00E1tica).",
+                        MessageBox.Show(I18n.Fmt("Este equipo tiene Stackshot {0} instalado con el paquete MSI.\n\nPara pasar a la {1}, instala Stackshot.msi de esa versi\u00F3n (o p\u00EDdeselo a inform\u00E1tica).",
+                                                 "This machine has Stackshot {0} installed via MSI package.\n\nTo update to {1}, install Stackshot.msi for that version (or ask IT).",
+                                                 Installer.InstalledVersion.ToString(3), Installer.MyVersion.ToString(3)),
                                         "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else if (Installer.MyVersion > Installer.InstalledVersion)
                     {
-                        if (MessageBox.Show("\u00BFActualizar Stackshot de la versi\u00F3n " + Installer.InstalledVersion.ToString(3) + " a la " +
-                                            Installer.MyVersion.ToString(3) + "?", "Stackshot", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return 0;
+                        if (MessageBox.Show(I18n.Fmt("\u00BFActualizar Stackshot de la versi\u00F3n {0} a la {1}?", "Update Stackshot from version {0} to {1}?", Installer.InstalledVersion.ToString(3), Installer.MyVersion.ToString(3)), "Stackshot", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return 0;
                         if (!TryInstall(Installer.StartupEnabled)) return 1;
                     }
                     Start(Settings.InstalledExe, view != null ? "\"" + view + "\"" : null);
@@ -292,8 +292,8 @@ namespace Stackshot
         static string OpenProblem(Exception ex, string path)
         {
             if (ex is IOException || ex is UnauthorizedAccessException) return ShotStack.ExplainOpen(ex, path);
-            if (ex is ArgumentException || ex is OutOfMemoryException) return "No parece una imagen v\u00E1lida, o est\u00E1 da\u00F1ada.";
-            return "El archivo no se puede abrir en el editor.";
+            if (ex is ArgumentException || ex is OutOfMemoryException) return I18n.T("No parece una imagen v\u00E1lida, o est\u00E1 da\u00F1ada.", "Does not seem to be a valid image, or is corrupted.");
+            return I18n.T("El archivo no se puede abrir en el editor.", "The file cannot be opened in the editor.");
         }
 
         // Installs this copy; a failure is explained instead of crashing, and a copy it had already closed is reopened.
@@ -307,7 +307,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Instalar " + Installer.MyVersion.ToString(3) + ": " + ex);
-                MessageBox.Show("No se pudo instalar Stackshot.\n\n" + ShotStack.Explain(ex, Settings.InstalledExe) + "\n\nSi Stackshot sigue abierto (una grabaci\u00F3n guard\u00E1ndose, cambios sin guardar), ci\u00E9rralo y vuelve a intentarlo.",
+                MessageBox.Show(I18n.T("No se pudo instalar Stackshot.\n\n", "Could not install Stackshot.\n\n") + ShotStack.Explain(ex, Settings.InstalledExe) + I18n.T("\n\nSi Stackshot sigue abierto (una grabaci\u00F3n guard\u00E1ndose, cambios sin guardar), ci\u00E9rralo y vuelve a intentarlo.", "\n\nIf Stackshot is still open (saving a recording, unsaved changes), close it and try again."),
                                 "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 if (Installer.IsInstalled) Start(Settings.InstalledExe, "--background");
                 return false;

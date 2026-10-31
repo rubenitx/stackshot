@@ -122,7 +122,9 @@ namespace Stackshot
             xmlWatch.Apply(settings);
             // Turned on with no folder (an earlier version had a default one): said once per start, instead of silence.
             if (settings.XmlWatch && XmlWatch.FolderFor(settings) == null && !Test)
-                After(6000, delegate { if (!exiting) NotifyPage("Elige la carpeta de los XML", "La vigilancia de XML est\u00E1 activada pero no tiene carpeta. El\u00EDgela en General > Avanzado.", "general"); });
+                After(6000, delegate { if (!exiting) NotifyPage(I18n.T("Elige la carpeta de los XML", "Choose the XML folder"), I18n.T("La vigilancia de XML est\u00E1 activada pero no tiene carpeta. El\u00EDgela en General > Avanzado.", "XML monitoring is on, but has no folder. Pick one in General > Advanced."), "general"); });
+            // Spanish kept from before on a Windows in another language: English is offered once.
+            if (!Test) After(8000, delegate { if (!exiting) OfferEnglish(); });
 
             // Another instance (an update, the uninstaller) can ask this one to quit cleanly.
             if (!Test)
@@ -311,7 +313,7 @@ namespace Stackshot
             if (docs.Count == 0) return;
             OpenViewerFile(docs[0]);
             if (docs.Count > 1)
-                Notify("Stackshot", "Se abre " + Path.GetFileName(docs[0]) + ". " + (docs.Count - 1) + (docs.Count == 2 ? " archivo m\u00E1s" : " archivos m\u00E1s") + " (el visor muestra uno cada vez).");
+                Notify("Stackshot", string.Format(I18n.T("Se abre {0}. {1} {2} (el visor muestra uno cada vez).", "Opening {0}. {1} {2} (the viewer shows one at a time)."), Path.GetFileName(docs[0]), docs.Count - 1, docs.Count == 2 ? I18n.T("archivo m\u00E1s", "more file") : I18n.T("archivos m\u00E1s", "more files")));
         }
 
         void OpenViewerFile(string path)
@@ -332,7 +334,7 @@ namespace Stackshot
             TellArrivedXml(path);
         }
 
-        internal const string NoXmlFolder = "Todav\u00EDa no hay ninguna carpeta de XML vigilada: el\u00EDgela en Ajustes > General > Avanzado.";
+        internal static string NoXmlFolder { get { return I18n.T("Todav\u00EDa no hay ninguna carpeta de XML vigilada: el\u00EDgela en Ajustes > General > Avanzado.", "No XML folder is monitored yet: choose it in Settings > General > Advanced."); } }
 
         // The tray's latest-XML entry: the newest file in the watched folder.
         void OpenLatestXml()
@@ -340,7 +342,7 @@ namespace Stackshot
             string dir = XmlWatch.FolderFor(settings);
             if (dir == null) { Notify("Stackshot", NoXmlFolder); return; }
             string last = XmlWatch.Latest(dir);
-            if (last == null) { Notify("Stackshot", "No hay ning\u00FAn XML en " + dir + "."); return; }
+            if (last == null) { Notify("Stackshot", I18n.Fmt("No hay ning\u00FAn XML en {0}.", "There is no XML in {0}.", dir)); return; }
             OpenViewerFile(last);
         }
         CloseListener closeListener;
@@ -458,11 +460,11 @@ namespace Stackshot
                 "; no v\u00E1lidos " + string.Join(", ", unreadable.ToArray()));
             if (!report) return;
             List<string> why = new List<string>();
-            if (failed.Count > 0) why.Add(string.Join(", ", failed.ToArray()) + " los usa otro programa (\u00BFOneDrive, ShareX, Lightshot, Greenshot\u2026?).");
-            if (twice.Count > 0) why.Add(string.Join(", ", twice.ToArray()) + " est\u00E1 puesto dos veces en los atajos de Stackshot: solo cuenta la primera.");
-            if (unreadable.Count > 0) why.Add(string.Join(", ", unreadable.ToArray()) + " no es una combinaci\u00F3n de teclas v\u00E1lida.");
-            Notify(failed.Count > 0 ? "Algunos atajos est\u00E1n ocupados" : "Algunos atajos no funcionan", string.Join(" ", why.ToArray()),
-                   NoticeKind.Warning, "Elegir otros atajos", ChooseOtherKeys);
+            if (failed.Count > 0) why.Add(string.Join(", ", failed.ToArray()) + " " + I18n.T("los usa otro programa (\u00BFOneDrive, ShareX, Lightshot, Greenshot\u2026?).", "is used by another program (OneDrive, ShareX, Lightshot, Greenshot\u2026?)."));
+            if (twice.Count > 0) why.Add(string.Join(", ", twice.ToArray()) + " " + I18n.T("est\u00E1 puesto dos veces en los atajos de Stackshot: solo cuenta la primera.", "is set twice in Stackshot shortcuts: only the first counts."));
+            if (unreadable.Count > 0) why.Add(string.Join(", ", unreadable.ToArray()) + " " + I18n.T("no es una combinaci\u00F3n de teclas v\u00E1lida.", "is not a valid key combination."));
+            Notify(failed.Count > 0 ? I18n.T("Algunos atajos est\u00E1n ocupados", "Some shortcuts are occupied") : I18n.T("Algunos atajos no funcionan", "Some shortcuts do not work"), string.Join(" ", why.ToArray()),
+                   NoticeKind.Warning, I18n.T("Elegir otros atajos", "Choose other shortcuts"), ChooseOtherKeys);
         }
 
         // A short notice: Stackshot's own toast by the clock (ShotStack.Toast.cs).
@@ -508,9 +510,9 @@ namespace Stackshot
                 // Never a silent failure: the details go to the log, the user hears it didn't work.
                 Log("Captura (" + action + "): " + ex);
                 if (!exiting)
-                    Notify(action == "markdown" ? "No se pudo abrir el visor" : "No se pudo capturar",
-                           ex is OutOfMemoryException ? "No hay memoria suficiente para una imagen tan grande. Prueba con un \u00E1rea m\u00E1s peque\u00F1a."
-                                                      : "Ha fallado algo inesperado. Vuelve a intentarlo; si se repite, el registro de Stackshot tiene los detalles.");
+                    Notify(action == "markdown" ? I18n.T("No se pudo abrir el visor", "Could not open viewer") : I18n.T("No se pudo capturar", "Could not capture"),
+                           ex is OutOfMemoryException ? I18n.T("No hay memoria suficiente para una imagen tan grande. Prueba con un \u00E1rea m\u00E1s peque\u00F1a.", "Not enough memory for such a large image. Try a smaller area.")
+                                                      : I18n.T("Ha fallado algo inesperado. Vuelve a intentarlo; si se repite, el registro de Stackshot tiene los detalles.", "An unexpected error occurred. Please try again; if it recurs, check the Stackshot log for details."));
             }
             finally { picking = false; EndCapture(); }
         }
@@ -603,9 +605,11 @@ namespace Stackshot
                 {
                     if (!AsksAboutRecording(kind, Recorder.Recording)) return true;
                     string text = kind == QuitKind.Session
-                        ? "Windows quiere cerrar la sesi\u00F3n y hay una grabaci\u00F3n en marcha.\n\nStackshot la detiene y la guarda en tu carpeta antes de salir."
-                        : "Hay una grabaci\u00F3n en marcha.\n\nStackshot la detiene y la guarda en tu carpeta antes de salir.";
-                    return Dialogs.Ask(null, text, MessageBoxIcon.Question, new string[] { "Detener y salir", "Seguir grabando" }, 1, 1) == 0;
+                        ? I18n.T("Windows quiere cerrar la sesi\u00F3n y hay una grabaci\u00F3n en marcha.\n\nStackshot la detiene y la guarda en tu carpeta antes de salir.",
+                                 "Windows wants to sign out and a recording is in progress.\n\nStackshot will stop and save it to your folder before exiting.")
+                        : I18n.T("Hay una grabaci\u00F3n en marcha.\n\nStackshot la detiene y la guarda en tu carpeta antes de salir.",
+                                 "A recording is in progress.\n\nStackshot will stop and save it to your folder before exiting.");
+                    return Dialogs.Ask(null, text, MessageBoxIcon.Question, new string[] { I18n.T("Detener y salir", "Stop and exit"), I18n.T("Seguir grabando", "Keep recording") }, 1, 1) == 0;
                 };
                 steps.ConfirmEditors = Editor.ConfirmCloseAll;
                 steps.ConfirmDocuments = MarkdownWindow.ConfirmCloseAll;
@@ -681,9 +685,9 @@ namespace Stackshot
             try { docs = Editor.AnyUnsaved || MarkdownWindow.AnyUnsaved; } catch { }
             bool live = false;
             try { live = Recorder.Recording; } catch { }
-            if (live) return "Hay una grabaci\u00F3n en marcha en Stackshot";
-            if (rec) return "Stackshot est\u00E1 guardando una grabaci\u00F3n\u2026";
-            if (docs) return "Hay cambios sin guardar en Stackshot";
+            if (live) return I18n.T("Hay una grabaci\u00F3n en marcha en Stackshot", "A recording is in progress in Stackshot");
+            if (rec) return I18n.T("Stackshot est\u00E1 guardando una grabaci\u00F3n\u2026", "Stackshot is saving a recording\u2026");
+            if (docs) return I18n.T("Hay cambios sin guardar en Stackshot", "There are unsaved changes in Stackshot");
             return null;
         }
 
@@ -740,7 +744,7 @@ namespace Stackshot
                 if (src.Width < 1 || src.Height < 1) return;
                 Bitmap shot = frozen.Clone(src, PixelFormat.Format32bppArgb);
                 start.DrawPointer(shot, new Point(src.X + vs.X, src.Y + vs.Y));
-                string name = "Captura";
+                string name = I18n.T("Captura", "Capture");
                 if (window != IntPtr.Zero)
                 {
                     name = Grabber.ProcessName(window) ?? name;
@@ -788,25 +792,25 @@ namespace Stackshot
                 if (exiting) return;
                 bool ok = false;
                 string title, message;
-                if (text == null) { title = "No se ha podido leer el texto"; message = error; }
-                else if (text.Trim().Length == 0) { title = "No hay texto"; message = "No se ha encontrado texto en la imagen."; }
+                if (text == null) { title = I18n.T("No se ha podido leer el texto", "Could not read text"); message = error; }
+                else if (text.Trim().Length == 0) { title = I18n.T("No hay texto", "No text found"); message = I18n.T("No se ha encontrado texto en la imagen.", "No text found in the image."); }
                 else
                 {
                     try
                     {
                         CopyPlainText(text);
                         ok = true;
-                        title = "Texto copiado";
+                        title = I18n.T("Texto copiado", "Text copied");
                         message = Ocr.Describe(text);
                     }
                     catch (Exception ex)
                     {
                         Log("Copiar texto: " + ex.Message);
-                        title = "No se pudo copiar";
-                        message = "Otro programa est\u00E1 usando el portapapeles. Vuelve a intentarlo.";
+                        title = I18n.T("No se pudo copiar", "Could not copy");
+                        message = I18n.T("Otro programa est\u00E1 usando el portapapeles. Vuelve a intentarlo.", "Another program is using the clipboard. Please try again.");
                     }
                 }
-                if (done != null) done(ok, ok ? "Texto copiado" : title);
+                if (done != null) done(ok, ok ? I18n.T("Texto copiado", "Text copied") : title);
                 if (done == null || !ok || text.IndexOf('\n') >= 0 || text.Length > 40) Notify(title, message);
             });
         }
@@ -826,7 +830,7 @@ namespace Stackshot
             Screen scr = Grabber.CurrentScreen();
             Bitmap shot = Grabber.Grab(scr.Bounds);
             start.DrawPointer(shot, scr.Bounds.Location);
-            SaveCapture(shot, "Pantalla", start);
+            SaveCapture(shot, I18n.T("Pantalla", "Screen"), start);
         }
 
         void CaptureWindow()
@@ -840,7 +844,7 @@ namespace Stackshot
             Bitmap shot = Grabber.Grab(r);
             start.DrawPointer(shot, r.Location);
             if (WindowIsRounded(h, r)) shot = Grabber.RoundCorners(shot, 8 * ScaleFor(Screen.FromRectangle(r)));
-            SaveCapture(shot, Grabber.ProcessName(h) ?? "Ventana", start);
+            SaveCapture(shot, Grabber.ProcessName(h) ?? I18n.T("Ventana", "Window"), start);
         }
 
         // On Windows 11, normal (non-maximized) windows have rounded corners.
@@ -873,9 +877,9 @@ namespace Stackshot
                     if (Find(path) == null)
                     {
                         DropUnsaved(path);
-                        Notify("No se pudo guardar la captura", Explain(ex, path));
+                        Notify(I18n.T("No se pudo guardar la captura", "Could not save capture"), Explain(ex, path));
                     }
-                    else Notify("No se pudo guardar la captura", Explain(ex, path) + " La miniatura sigue en la pila: puedes copiarla o guardarla en tu carpeta.");
+                    else Notify(I18n.T("No se pudo guardar la captura", "Could not save capture"), Explain(ex, path) + I18n.T(" La miniatura sigue en la pila: puedes copiarla o guardarla en tu carpeta.", " The thumbnail remains in the stack: you can copy it or save it to your folder."));
                 });
             });
             PlanSweep(TempLife + TimeSpan.FromSeconds(5));
@@ -904,7 +908,7 @@ namespace Stackshot
             if (!settings.SaveAll || Test) return;
             KeepAsync(path, delegate(string saved, string why)
             {
-                if (saved == null) Notify("No se pudo guardar en tu carpeta", why + " La miniatura sigue en la pila: puedes volver a pulsar Guardar.");
+                if (saved == null) Notify(I18n.T("No se pudo guardar en tu carpeta", "Could not save to your folder"), why + I18n.T(" La miniatura sigue en la pila: puedes volver a pulsar Guardar.", " The thumbnail remains in the stack: you can click Save again."));
             }, true);
         }
 
@@ -1340,33 +1344,33 @@ namespace Stackshot
             System.ComponentModel.Win32Exception w = ex as System.ComponentModel.Win32Exception;
             if (w != null) code = w.NativeErrorCode;
             if (code == 1260 || code == 225 || code == 4551)
-                return "Windows o el antivirus lo ha bloqueado.";
+                return I18n.T("Windows o el antivirus lo ha bloqueado.", "Windows or the antivirus blocked it.");
             if (code == 1155)
-                return "Windows no tiene ninguna aplicaci\u00F3n para abrir este tipo de archivo.";
+                return I18n.T("Windows no tiene ninguna aplicaci\u00F3n para abrir este tipo de archivo.", "Windows has no application to open this type of file.");
             if ((ex is UnauthorizedAccessException || code == 5) && !writing)
-                return "Windows no deja abrir el archivo (por sus permisos o por el antivirus).";
+                return I18n.T("Windows no deja abrir el archivo (por sus permisos o por el antivirus).", "Windows cannot open the file (due to permissions or antivirus).");
             if (ex is UnauthorizedAccessException || code == 5)
-                return "Windows no deja escribir en " + Show(where) + ". Comprueba los permisos de la carpeta o si \u00ABAcceso controlado a carpetas\u00BB la protege.";
+                return I18n.Fmt("Windows no deja escribir en {0}. Comprueba los permisos de la carpeta o si \u00ABAcceso controlado a carpetas\u00BB la protege.", "Windows cannot write to {0}. Check folder permissions or if Controlled Folder Access is protecting it.", Show(where));
             if (code == 112 || code == 39)
-                return "No queda espacio en el disco de " + Show(where) + ". Libera espacio y vuelve a intentarlo.";
+                return I18n.Fmt("No queda espacio en el disco de {0}. Libera espacio y vuelve a intentarlo.", "No space left on the disk of {0}. Free up space and try again.", Show(where));
             if (code == 32 || code == 33)
-                return "Otro programa est\u00E1 usando el archivo. Ci\u00E9rralo y vuelve a intentarlo.";
+                return I18n.T("Otro programa est\u00E1 usando el archivo. Ci\u00E9rralo y vuelve a intentarlo.", "Another program is using the file. Close it and try again.");
             if (ex is DirectoryNotFoundException || ex is DriveNotFoundException || code == 3 || code == 21 || code == 53 || code == 67)
-                return "No se encuentra la carpeta " + Show(where) + " (\u00BFuna unidad desconectada o de red?).";
+                return I18n.Fmt("No se encuentra la carpeta {0} (\u00BFuna unidad desconectada o de red?).", "Cannot find folder {0} (a disconnected or network drive?).", Show(where));
             if (ex is FileNotFoundException || code == 2)
-                return "El archivo ya no existe.";
+                return I18n.T("El archivo ya no existe.", "The file no longer exists.");
             if (ex is PathTooLongException || code == 206)
-                return "La ruta es demasiado larga para Windows. Elige una carpeta con una ruta m\u00E1s corta.";
+                return I18n.T("La ruta es demasiado larga para Windows. Elige una carpeta con una ruta m\u00E1s corta.", "The path is too long for Windows. Choose a folder with a shorter path.");
             if (ex is OutOfMemoryException)
-                return "No hay memoria suficiente. Cierra algo y vuelve a intentarlo.";
+                return I18n.T("No hay memoria suficiente. Cierra algo y vuelve a intentarlo.", "Not enough memory. Close something and try again.");
             if (!writing)
-                return "Ha fallado al abrir el archivo. Vuelve a intentarlo; si se repite, el registro de Stackshot tiene los detalles.";
-            return "Ha fallado al leer o escribir el archivo. Vuelve a intentarlo; si se repite, el registro de Stackshot tiene los detalles.";
+                return I18n.T("Ha fallado al abrir el archivo. Vuelve a intentarlo; si se repite, el registro de Stackshot tiene los detalles.", "Failed to open the file. Try again; if it recurs, the Stackshot log has the details.");
+            return I18n.T("Ha fallado al leer o escribir el archivo. Vuelve a intentarlo; si se repite, el registro de Stackshot tiene los detalles.", "Failed to read or write the file. Try again; if it recurs, the Stackshot log has the details.");
         }
 
         static string Show(string dir)
         {
-            return string.IsNullOrEmpty(dir) ? "la carpeta" : "\u00AB" + dir + "\u00BB";
+            return string.IsNullOrEmpty(dir) ? I18n.T("la carpeta", "the folder") : "\u00AB" + dir + "\u00BB";
         }
 
         public bool IsKept(string path)
@@ -1479,11 +1483,14 @@ namespace Stackshot
             List<WorkFiles.Rescued> moved = WorkFiles.Rescue(folder, RecoveredDir, TimeSpan.FromSeconds(10), true);
             if (moved.Count == 0) return;
             WorkFiles.Rescued last = moved[moved.Count - 1];
-            string when = last.Started != DateTime.MinValue ? " (la de las " + last.Started.ToString("HH:mm") + (last.Started.Date != DateTime.Today ? " del " + last.Started.ToString("d/M") : "") + ")" : "";
-            string text = (moved.Count == 1 ? "Stackshot se cerr\u00F3 mientras grababa" + when + ". Lo grabado est\u00E1 a salvo" : "Stackshot se cerr\u00F3 durante " + moved.Count + " grabaciones. Lo grabado est\u00E1 a salvo") +
-                          " en la carpeta \u00ABrecuperado\u00BB.";
+            // Spanish as it always was; English with the month spelled out (3/11 reads differently in the US).
+            string when = last.Started == DateTime.MinValue ? "" : I18n.IsSpanish
+                ? " (la de las " + last.Started.ToString("HH:mm") + (last.Started.Date != DateTime.Today ? " del " + last.Started.ToString("d/M") : "") + ")"
+                : " (the one from " + last.Started.ToString("HH:mm") + (last.Started.Date != DateTime.Today ? " on " + last.Started.ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture) : "") + ")";
+            string text = (moved.Count == 1 ? I18n.Fmt("Stackshot se cerr\u00F3 mientras grababa{0}. Lo grabado est\u00E1 a salvo", "Stackshot closed while recording{0}. The recording is safe", when) : I18n.Fmt("Stackshot se cerr\u00F3 durante {0} grabaciones. Lo grabado est\u00E1 a salvo", "Stackshot closed during {0} recordings. The recordings are safe", moved.Count)) +
+                          " " + I18n.T("en la carpeta \u00ABrecuperado\u00BB.", "in the \u201Crecuperado\u201D folder.");
             string dir = moved.Count == 1 ? last.Folder : RecoveredDir;
-            sync.BeginInvoke((Action)delegate { if (!exiting) Notify("Grabaci\u00F3n recuperada", text, dir); });
+            sync.BeginInvoke((Action)delegate { if (!exiting) Notify(I18n.T("Grabaci\u00F3n recuperada", "Recording recovered"), text, dir); });
         }
 
         // The editor and the player write their work files (first frame, overlay, two-pass logs, strip, GIF palette)
@@ -1511,7 +1518,7 @@ namespace Stackshot
         void OpenExplorer(string dir)
         {
             try { Process.Start(Native.Explorer, "\"" + dir + "\""); }
-            catch (Exception ex) { Log("Carpeta: " + ex.Message); Notify("No se pudo abrir la carpeta", ExplainOpen(ex, dir)); }
+            catch (Exception ex) { Log("Carpeta: " + ex.Message); Notify(I18n.T("No se pudo abrir la carpeta", "Could not open folder"), ExplainOpen(ex, dir)); }
         }
 
         // Deletes every temporary capture that is not on screen or open (the save folder is never touched).
@@ -1580,9 +1587,9 @@ namespace Stackshot
         {
             get
             {
-                System.Text.StringBuilder sb = new System.Text.StringBuilder("V\u00EDdeos|");
+                System.Text.StringBuilder sb = new System.Text.StringBuilder(I18n.T("V\u00EDdeos|", "Videos|"));
                 for (int i = 0; i < VideoExtensions.Length; i++) sb.Append(i > 0 ? ";*" : "*").Append(VideoExtensions[i]);
-                return sb.Append("|Todos los archivos|*.*").ToString();
+                return sb.Append("|").Append(I18n.T("Todos los archivos", "All files")).Append("|*.*").ToString();
             }
         }
 
@@ -1628,7 +1635,7 @@ namespace Stackshot
         void OpenWithWindows(string path)
         {
             try { Process.Start(path); }
-            catch (Exception ex) { Log("Abrir: " + ex.Message); Notify("No se pudo abrir", Path.GetFileName(path) + ": " + ExplainOpen(ex, path)); }
+            catch (Exception ex) { Log("Abrir: " + ex.Message); Notify(I18n.T("No se pudo abrir", "Could not open"), Path.GetFileName(path) + ": " + ExplainOpen(ex, path)); }
         }
 
         // FFmpeg decides: a file it can play follows the video route, anything else opens in Windows.
@@ -1686,7 +1693,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 Log("Reproductor: " + ex.Message);
-                Notify("No se pudo abrir", Path.GetFileName(path));
+                Notify(I18n.T("No se pudo abrir", "Could not open"), Path.GetFileName(path));
                 return;
             }
             players.Add(win);
@@ -1700,7 +1707,7 @@ namespace Stackshot
         {
             using (System.Windows.Forms.OpenFileDialog d = new System.Windows.Forms.OpenFileDialog())
             {
-                d.Title = "Abrir v\u00EDdeo";
+                d.Title = I18n.T("Abrir v\u00EDdeo", "Open video");
                 d.Filter = VideoFilter;
                 // "Todos los archivos" can pick an image: it goes where a card would send it.
                 if (d.ShowDialog() != DialogResult.OK) return;
@@ -2029,7 +2036,7 @@ namespace Stackshot
             int y = wa.Bottom - margin;
             if (bottom > 0)
             {
-                downChip.Set(new Rectangle(left, y - chipH, width, chipH), s, bottom + (bottom == 1 ? " anterior" : " anteriores"), true);
+                downChip.Set(new Rectangle(left, y - chipH, width, chipH), s, I18n.Fmt(bottom == 1 ? "{0} anterior" : "{0} anteriores", bottom == 1 ? "{0} older" : "{0} older", bottom), true);
                 y -= chipH + gap;
             }
             else downChip.Set(Rectangle.Empty, s, "", false);
@@ -2042,7 +2049,7 @@ namespace Stackshot
                 y -= gap;
             }
             int hidden = n - 1 - top;
-            if (hidden > 0) upChip.Set(new Rectangle(left, y - chipH, width, chipH), s, hidden + (hidden == 1 ? " m\u00E1s reciente" : " m\u00E1s recientes"), true);
+            if (hidden > 0) upChip.Set(new Rectangle(left, y - chipH, width, chipH), s, I18n.Fmt(hidden == 1 ? "{0} m\u00E1s reciente" : "{0} m\u00E1s recientes", hidden == 1 ? "{0} newer" : "{0} newer", hidden), true);
             else upChip.Set(Rectangle.Empty, s, "", false);
 
             // Cards that don't fit are parked on their side: older ones below, newer ones above.
@@ -2160,7 +2167,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 Log("Carpeta: " + ex.Message);
-                Notify("No se pudo abrir la carpeta", ExplainOpen(ex, settings.SaveFolder));
+                Notify(I18n.T("No se pudo abrir la carpeta", "Could not open folder"), ExplainOpen(ex, settings.SaveFolder));
             }
         }
 

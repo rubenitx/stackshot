@@ -62,8 +62,8 @@ namespace Stackshot
             Log("Recordatorio para las " + dueLocal.ToString("HH:mm"));
             if (quiet) return;
             string when = WhenText(dueLocal);
-            if (PetShown) pet.FocusSay("Te lo recuerdo " + when + ".");
-            else Notify("Recordatorio guardado", "Te lo recuerdo " + when + ": \u00AB" + text + "\u00BB.");
+            if (PetShown) pet.FocusSay(I18n.Fmt("Te lo recuerdo {0}.", "I'll remind you {0}.", when));
+            else Notify(I18n.T("Recordatorio guardado", "Reminder saved"), I18n.Fmt("Te lo recuerdo {0}: \u00AB{1}\u00BB.", "I'll remind you {0}: \u201C{1}\u201D.", when, text));
         }
 
         public void RemoveReminder(Reminder r)
@@ -75,10 +75,10 @@ namespace Stackshot
         // "a las 11:45", "mañana a las 9:00", "el 16/10 a las 9:00".
         public static string WhenText(DateTime local)
         {
-            string at = "a las " + local.ToString("H:mm");
+            string at = I18n.Fmt("a las {0}", "at {0}", local.ToString("H:mm"));
             if (local.Date == DateTime.Today) return at;
-            if (local.Date == DateTime.Today.AddDays(1)) return "ma\u00F1ana " + at;
-            return "el " + local.ToString("d/M") + " " + at;
+            if (local.Date == DateTime.Today.AddDays(1)) return I18n.Fmt("ma\u00F1ana {0}", "tomorrow {0}", at);
+            return I18n.Fmt("el {0} {1}", "on {0} {1}", local.ToString("d/M"), at);
         }
 
         void RemindTick()
@@ -91,7 +91,7 @@ namespace Stackshot
             // notice (which itself waits through presentations and full-screen apps).
             if (Native.IdleMs() >= Wellness.ActiveIdleMs) return;
             DateTime local = due.DueUtc.ToLocalTime();
-            string late = DateTime.UtcNow - due.DueUtc > TimeSpan.FromMinutes(3) ? "Era para " + WhenText(local).Replace("ma\u00F1ana ", "") + ": " : "";
+            string late = DateTime.UtcNow - due.DueUtc > TimeSpan.FromMinutes(3) ? I18n.Fmt("Era para {0}: ", "Was for {0}: ", WhenText(local).Replace("ma\u00F1ana ", "").Replace("tomorrow ", "")) : "";
             Teller teller = TellerFor(ref remindWait, 60000);
             if (teller == Teller.Wait) return;
             if (teller == Teller.Pet)
@@ -102,7 +102,7 @@ namespace Stackshot
             }
             if (ToastQuietNow(Screen.PrimaryScreen.Bounds) != null) return;
             RemoveReminder(due);
-            Notify("Recordatorio", late + due.Text, NoticeKind.Info, "10 min m\u00E1s", delegate { AddReminder(due.Text, DateTime.Now.AddMinutes(10), true); });
+            Notify(I18n.T("Recordatorio", "Reminder"), late + due.Text, NoticeKind.Info, I18n.T("10 min m\u00E1s", "10 more min"), delegate { AddReminder(due.Text, DateTime.Now.AddMinutes(10), true); });
         }
 
         void LoadReminders()
@@ -151,7 +151,7 @@ namespace Stackshot
                 List<string> kept = new List<string>();
                 foreach (string l in text.Split('\n')) if (l.Trim().Length > 0) kept.Add(l.TrimEnd());
                 string body = string.Join("\n  ", kept.ToArray());
-                string entry = (fresh ? "# Notas\n\n" : "") + "- [ ] **" + DateTime.Now.ToString("d/M/yyyy H:mm", CultureInfo.GetCultureInfo("es-ES")) + "** \u00B7 " + body + "\n";
+                string entry = (fresh ? I18n.T("# Notas\n\n", "# Notes\n\n") : "") + "- [ ] **" + DateTime.Now.ToString("d/M/yyyy H:mm", CultureInfo.GetCultureInfo("es-ES")) + "** \u00B7 " + body + "\n";
                 File.AppendAllText(NotesPath, entry, new UTF8Encoding(false));
                 Log("Nota apuntada");
                 return true;
@@ -159,7 +159,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 Log("Notas: " + ex.Message);
-                Notify("No se pudo apuntar", Explain(ex, NotesPath));
+                Notify(I18n.T("No se pudo apuntar", "Could not add note"), Explain(ex, NotesPath));
                 return false;
             }
         }
@@ -289,7 +289,7 @@ namespace Stackshot
             catch (Exception ex)
             {
                 Log("Notas: " + ex.Message);
-                Notify("No se pudo cambiar la nota", Explain(ex, NotesPath));
+                Notify(I18n.T("No se pudo cambiar la nota", "Could not update note"), Explain(ex, NotesPath));
                 return false;
             }
         }
@@ -297,7 +297,7 @@ namespace Stackshot
         public void OpenNotes()
         {
             if (!File.Exists(NotesPath))
-                try { Directory.CreateDirectory(settings.SaveFolder); File.WriteAllText(NotesPath, "# Notas\n\n", new UTF8Encoding(false)); }
+                try { Directory.CreateDirectory(settings.SaveFolder); File.WriteAllText(NotesPath, I18n.T("# Notas\n\n", "# Notes\n\n"), new UTF8Encoding(false)); }
                 catch (Exception ex) { Log("Notas: " + ex.Message); }
             OpenViewerFile(NotesPath);
         }
@@ -333,12 +333,12 @@ namespace Stackshot
             int n = pics + vids + docs;
             // Folders kept as quick links: said first (with the files opened, if any).
             if (kept > 0)
-                return (kept == 1 ? "\u00A1Apuntada! \u00AB" + folder + "\u00BB ya est\u00E1 en mis accesos r\u00E1pidos." : "\u00A1Apuntadas " + kept + " carpetas en mis accesos r\u00E1pidos!") +
-                       (n > 0 ? " Y te abro " + (n == 1 ? "el archivo." : "los " + n + " archivos.") : "");
+                return (kept == 1 ? I18n.Fmt("\u00A1Apuntada! \u00AB{0}\u00BB ya est\u00E1 en mis accesos r\u00E1pidos.", "Noted! \u201C{0}\u201D is now in my quick links.", folder) : I18n.Fmt("\u00A1Apuntadas {0} carpetas en mis accesos r\u00E1pidos!", "Noted {0} folders in my quick links!", kept)) +
+                       (n > 0 ? " " + (n == 1 ? I18n.T("Y te abro el archivo.", "And I'll open the file for you.") : I18n.Fmt("Y te abro los {0} archivos.", "And I'll open the {0} files for you.", n)) : "");
             if (why != null && n == 0) return why;
-            if (n == 0) return skipped != null ? "No s\u00E9 qu\u00E9 hacer con \u00AB" + skipped + "\u00BB. Su\u00E9ltame im\u00E1genes, v\u00EDdeos, XML o Markdown." : null;
-            if (n > 1) return "\u00A1Abro " + n + " archivos!";
-            return pics == 1 ? "\u00A1Al editor!" : vids == 1 ? "\u00A1A verlo!" : "\u00A1Te lo abro!";
+            if (n == 0) return skipped != null ? I18n.Fmt("No s\u00E9 qu\u00E9 hacer con \u00AB{0}\u00BB. Su\u00E9ltame im\u00E1genes, v\u00EDdeos, XML o Markdown.", "I don't know what to do with \u201C{0}\u201D. Drop images, videos, XML or Markdown.", skipped) : null;
+            if (n > 1) return I18n.Fmt("\u00A1Abro {0} archivos!", "Opening {0} files!", n);
+            return pics == 1 ? I18n.T("\u00A1Al editor!", "To the editor!") : vids == 1 ? I18n.T("\u00A1A verlo!", "Let's watch it!") : I18n.T("\u00A1Te lo abro!", "Opening it for you!");
         }
 
         // ---- A SOAP fault arriving in the watched folder
@@ -368,8 +368,8 @@ namespace Stackshot
                 {
                     string what = (op != null ? op + ": " : "") + (string.IsNullOrEmpty(message) ? (string.IsNullOrEmpty(code) ? "SOAP Fault" : code) : message);
                     Log("XML con fallo: " + Path.GetFileName(path));
-                    if (pet != null && pet.CanRemind) pet.FaultCard("Ojo: ha llegado un XML con fallo. " + what, delegate { OpenViewerFile(path); });
-                    else Notify("XML con fallo", Path.GetFileName(path) + " \u00B7 " + what, NoticeKind.Warning, "Abrir el XML", delegate { if (!exiting) OpenViewerFile(path); });
+                    if (pet != null && pet.CanRemind) pet.FaultCard(I18n.T("Ojo: ha llegado un XML con fallo. ", "Watch out: an XML with a fault has arrived. ") + what, delegate { OpenViewerFile(path); });
+                    else Notify(I18n.T("XML con fallo", "XML with fault"), Path.GetFileName(path) + " \u00B7 " + what, NoticeKind.Warning, I18n.T("Abrir el XML", "Open XML"), delegate { if (!exiting) OpenViewerFile(path); });
                 });
             });
         }

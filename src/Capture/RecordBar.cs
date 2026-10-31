@@ -30,9 +30,12 @@ namespace Stackshot
     {
         enum Phase { Rec, Busy, Progress, Done, Gone }
 
-        const string DiscardHint = "\u00BFDescartar?";
-        const string CancelText = "Cancelar", CancelHint = "\u00BFCancelar?";
-        const string PausedText = "En pausa", PauseTip = "Pausar", ResumeTip = "Reanudar";
+        static string DiscardHint { get { return I18n.T("\u00BFDescartar?", "Discard?"); } }
+        static string CancelText { get { return I18n.Cancel; } }
+        static string CancelHint { get { return I18n.T("\u00BFCancelar?", "Cancel?"); } }
+        static string PausedText { get { return I18n.T("En pausa", "Paused"); } }
+        static string PauseTip { get { return I18n.T("Pausar", "Pause"); } }
+        static string ResumeTip { get { return I18n.T("Reanudar", "Resume"); } }
         static readonly WM.Color Amber = Ds.Rgb(255, 179, 64);
         const double ArmMs = 3000;          // a first click on Discard asks for a second one within this time
         const double QuickDiscardMs = 3000; // shorter recordings are discarded at once
@@ -101,7 +104,7 @@ namespace Stackshot
         // Devices are being opened: nothing is recorded yet.
         public void Prepare(bool countdown)
         {
-            if (phase == Phase.Rec && !IsDisposed) Become(Phase.Busy, countdown ? "Cuenta atr\u00e1s\u2026" : "Preparando\u2026", -1);
+            if (phase == Phase.Rec && !IsDisposed) Become(Phase.Busy, countdown ? I18n.T("Cuenta atr\u00e1s\u2026", "Countdown\u2026") : I18n.T("Preparando\u2026", "Preparing\u2026"), -1);
         }
 
         // Everything is ready and recording starts: back to the recording controls.
@@ -120,13 +123,13 @@ namespace Stackshot
         // Recording stopped: saving starts.
         public void Saving()
         {
-            if (phase == Phase.Rec && !IsDisposed) Become(Phase.Busy, "Guardando\u2026", -1);
+            if (phase == Phase.Rec && !IsDisposed) Become(Phase.Busy, I18n.T("Guardando\u2026", "Saving\u2026"), -1);
         }
 
         // The save was cancelled: what was recorded is being put away.
         public void Cancelling()
         {
-            if (phase != Phase.Done && phase != Phase.Gone && !IsDisposed) Become(Phase.Busy, "Conservando lo grabado\u2026", -1);
+            if (phase != Phase.Done && phase != Phase.Gone && !IsDisposed) Become(Phase.Busy, I18n.T("Conservando lo grabado\u2026", "Preserving recording\u2026"), -1);
         }
 
         // Little disk left while recording (null: enough again).
@@ -190,7 +193,7 @@ namespace Stackshot
             if (phase == Phase.Done || phase == Phase.Gone || IsDisposed) return;
             double wait = 0;
             Tip(-1);
-            if (saved) { Become(Phase.Done, "Guardado", -1); wait = 900; }
+            if (saved) { Become(Phase.Done, I18n.T("Guardado", "Saved"), -1); wait = 900; }
             else phase = Phase.Gone;
             tick.Stop();
             dragging = false;
@@ -368,7 +371,7 @@ namespace Stackshot
         {
             double clockW = ClockWidth(longClock ? "0:00:00" : "00:00");
             WM.FormattedText hint = Ink.Px(DiscardHint, Ds.Semibold, P(13), Palette.HudLabel);
-            WM.FormattedText stop = Ink.Px("Detener", Ds.Semibold, P(13), Palette.HudLabel);
+            WM.FormattedText stop = Ink.Px(I18n.T("Detener", "Stop"), Ds.Semibold, P(13), Palette.HudLabel);
             timeX = P(34);
             srcX = timeX + (int)Math.Ceiling(clockW) + P(10);
             int left = srcX + (hasSys ? P(44) : 0) + (hasMic ? P(44) : 0);
@@ -538,7 +541,7 @@ namespace Stackshot
             Ink.Round(dc, Palette.HudFill(hot == 0 && pressed == 0 ? Ds.Rgb(222, 46, 36) : hot == 0 ? Ds.Rgb(255, 92, 82) : Red), sr, sr.Height / 2);
             double sq = 9 * s;
             Ink.Round(dc, Palette.OnHudFill(white), new System.Windows.Rect(Math.Round(sr.X + P(14)), Math.Round(cy - sq / 2), sq, sq), 2 * s);
-            WM.FormattedText st = Ink.Px("Detener", Ds.Semibold, P(13), Palette.OnHudFill(white));
+            WM.FormattedText st = Ink.Px(I18n.T("Detener", "Stop"), Ds.Semibold, P(13), Palette.OnHudFill(white));
             dc.DrawText(st, new System.Windows.Point(Math.Round(sr.X + P(30)), Math.Round(cy - st.Height / 2)));
             System.Windows.Rect dr = R(DiscardRect());
             System.Windows.Point dcp = new System.Windows.Point(dr.X + dr.Width / 2, cy);
@@ -836,14 +839,14 @@ namespace Stackshot
             public BarAccess(RecordBar b) : base(b) { this.b = b; }
 
             public override AccessibleRole Role { get { return AccessibleRole.ToolBar; } }
-            public override string Name { get { return "Barra de grabaci\u00F3n"; } }
+            public override string Name { get { return I18n.T("Barra de grabaci\u00F3n", "Recording bar"); } }
             public override string Value
             {
                 get
                 {
-                    if (b.phase == Phase.Rec) return (b.paused ? PausedText : "Grabando") + " " + Clock(b.session.Elapsed);
-                    if (b.phase == Phase.Progress || b.phase == Phase.Busy) return "Guardando la grabaci\u00F3n";
-                    return "Grabaci\u00F3n guardada";
+                    if (b.phase == Phase.Rec) return (b.paused ? PausedText : I18n.T("Grabando", "Recording")) + " " + Clock(b.session.Elapsed);
+                    if (b.phase == Phase.Progress || b.phase == Phase.Busy) return I18n.T("Guardando la grabaci\u00F3n", "Saving recording");
+                    return I18n.T("Grabaci\u00F3n guardada", "Recording saved");
                 }
             }
 
@@ -862,19 +865,19 @@ namespace Stackshot
             protected override void Fill(List<PartAccessible> into)
             {
                 if (b.phase != Phase.Rec) return;
-                Add(into, "Detener y guardar", b.StopRect(), 0);
+                Add(into, I18n.T("Detener y guardar", "Stop and save"), b.StopRect(), 0);
                 Add(into, b.paused ? ResumeTip : PauseTip, b.PauseRect(), 5);
-                Add(into, b.armedAt >= 0 ? "Descartar (pulsa otra vez para confirmar)" : "Descartar", b.DiscardRect(), 1);
+                Add(into, b.armedAt >= 0 ? I18n.T("Descartar (pulsa otra vez para confirmar)", "Discard (press again to confirm)") : I18n.T("Descartar", "Discard"), b.DiscardRect(), 1);
                 if (b.paused || b.armedAt >= 0) return;
-                if (b.hasMic) Add(into, b.session.Microphone.Muted ? "Activar el micr\u00F3fono" : "Silenciar el micr\u00F3fono", b.SourceRect(b.hasSys ? 1 : 0), 2);
-                if (b.hasSys) Add(into, b.session.SystemAudio.Muted ? "Activar el sonido del equipo" : "Silenciar el sonido del equipo", b.SourceRect(0), 3);
+                if (b.hasMic) Add(into, b.session.Microphone.Muted ? I18n.T("Activar el micr\u00F3fono", "Unmute microphone") : I18n.T("Silenciar el micr\u00F3fono", "Mute microphone"), b.SourceRect(b.hasSys ? 1 : 0), 2);
+                if (b.hasSys) Add(into, b.session.SystemAudio.Muted ? I18n.T("Activar el sonido del equipo", "Unmute system audio") : I18n.T("Silenciar el sonido del equipo", "Mute system audio"), b.SourceRect(0), 3);
             }
 
             void Add(List<PartAccessible> into, string name, Rectangle capsule, int what)
             {
                 PartAccessible p = NewPart(into, name, AccessibleRole.PushButton, Window(capsule));
                 p.PartState = StateOf(true, false, false);
-                p.PartAction = "Pulsar";
+                p.PartAction = I18n.T("Pulsar", "Press");
                 p.Do = delegate { if (!b.IsDisposed) b.Act(what); };
             }
         }

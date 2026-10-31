@@ -449,16 +449,16 @@ namespace Stackshot
             btns.Clear();
             int W = body.Width, H = body.Height;
             int cs = P(26), m = P(8);
-            Corner(new Rectangle(m, m, cs, cs), "close", "Cerrar", delegate { owner.Remove(this); }).Close = true;
-            if (IsMedia) Corner(new Rectangle(W - m - cs, m, cs, cs), "play!", "Abrir", OpenFile);
-            else Corner(new Rectangle(W - m - cs, m, cs, cs), "pin", "Fijar en pantalla", Pin);
-            Corner(new Rectangle(m, H - m - cs, cs, cs), "edit", "Editar", Edit);
-            if (!IsMedia) Corner(new Rectangle(m + cs + P(6), H - m - cs, cs, cs), "text", "Copiar texto", CopyText);
-            if (SavedPath != null) Corner(new Rectangle(W - m - cs, H - m - cs, cs, cs), "folder", "Mostrar en la carpeta", ShowInFolder);
+            Corner(new Rectangle(m, m, cs, cs), "close", I18n.Close, delegate { owner.Remove(this); }).Close = true;
+            if (IsMedia) Corner(new Rectangle(W - m - cs, m, cs, cs), "play!", I18n.Open, OpenFile);
+            else Corner(new Rectangle(W - m - cs, m, cs, cs), "pin", I18n.T("Fijar en pantalla", "Pin to screen"), Pin);
+            Corner(new Rectangle(m, H - m - cs, cs, cs), "edit", I18n.T("Editar", "Edit"), Edit);
+            if (!IsMedia) Corner(new Rectangle(m + cs + P(6), H - m - cs, cs, cs), "text", I18n.T("Copiar texto", "Copy text"), CopyText);
+            if (SavedPath != null) Corner(new Rectangle(W - m - cs, H - m - cs, cs, cs), "folder", I18n.T("Mostrar en la carpeta", "Show in folder"), ShowInFolder);
 
             List<Btn> pills = new List<Btn>();
-            pills.Add(Pill("Copiar", Copy));
-            pills.Add(SavedPath == null ? Pill("Guardar", Keep) : Pill("Abrir", IsMedia ? (Action)OpenFile : (Action)Edit));
+            pills.Add(Pill(I18n.Copy, Copy));
+            pills.Add(SavedPath == null ? Pill(I18n.Save, Keep) : Pill(I18n.Open, IsMedia ? (Action)OpenFile : (Action)Edit));
             int ph = P(28), gap = P(8), total = 0;
             foreach (Btn b in pills) { b.R.Width = Measure(b.Label) + P(26); total += b.R.Width; }
             total += gap * (pills.Count - 1);
@@ -680,7 +680,7 @@ namespace Stackshot
             ring.Freeze();
             b.Inflate(-P(1.5f), -P(1.5f));
             dc.DrawRoundedRectangle(null, ring, b, R, R);
-            M.FormattedText t = Ink.Px(ok ? "Unir" : "Solo im\u00E1genes", Ds.Semibold, P(13), M.Colors.White);
+            M.FormattedText t = Ink.Px(ok ? I18n.T("Unir", "Join") : I18n.T("Solo im\u00E1genes", "Images only"), Ds.Semibold, P(13), M.Colors.White);
             double pw = t.Width + P(22), ph = P(28);
             W.Rect pill = new W.Rect((body.Width - pw) / 2, (body.Height - ph) / 2, pw, ph);
             dc.DrawRoundedRectangle(Ds.Brush(ok ? Ds.Brushes.AccentDeep : Ds.Rgb(72, 72, 76)), null, pill, ph / 2, ph / 2);
@@ -747,7 +747,7 @@ namespace Stackshot
         {
             if (IsDisposed) return;
             saving = -1;
-            Flash("No se pudo guardar", false);
+            Flash(I18n.T("No se pudo guardar", "Could not save"), false);
         }
 
         void PaintSaving(M.DrawingContext dc, W.Rect b, double R)
@@ -756,7 +756,7 @@ namespace Stackshot
             dc.PushClip(new M.RectangleGeometry(b, R, R));
             Ink.Round(dc, Ds.Argb(0.30, 0, 0, 0), b, 0);
             dc.Pop();
-            string text = "Guardando\u2026" + (saving > 0.005 ? " " + (int)Math.Round(saving * 100) + " %" : "");
+            string text = I18n.T("Guardando\u2026", "Saving\u2026") + (saving > 0.005 ? " " + (int)Math.Round(saving * 100) + " %" : "");
             M.FormattedText t = Ink.Px(text, Ds.Semibold, P(13), Palette.HudLabel);
             double w = Math.Max(t.WidthIncludingTrailingWhitespace + P(28), P(150)), hh = P(40);
             W.Rect r = new W.Rect((b.Width - w) / 2, (b.Height - hh) / 2, w, hh);
@@ -1163,12 +1163,12 @@ namespace Stackshot
                 try
                 {
                     ShotStack.CopyFiles(FilePath);
-                    Flash("Copiado", true);
+                    Flash(I18n.T("Copiado", "Copied"), true);
                 }
                 catch (Exception ex)
                 {
                     ShotStack.Log("Copiar: " + ex.Message);
-                    Flash("No se pudo copiar", false);
+                    Flash(I18n.T("No se pudo copiar", "Could not copy"), false);
                 }
                 return;
             }
@@ -1179,12 +1179,12 @@ namespace Stackshot
                 {
                     if (img == null) throw new IOException(error);
                     owner.CopyTracked(path, img, false, true);
-                    if (!IsDisposed) Flash("Copiado", true);
+                    if (!IsDisposed) Flash(I18n.T("Copiado", "Copied"), true);
                 }
                 catch (Exception ex)
                 {
                     ShotStack.Log("Copiar: " + ex.Message);
-                    if (!IsDisposed) Flash("No se pudo copiar", false);
+                    if (!IsDisposed) Flash(I18n.T("No se pudo copiar", "Could not copy"), false);
                 }
             });
         }
@@ -1192,13 +1192,13 @@ namespace Stackshot
         // The text in the capture to the clipboard (Windows' OCR).
         void CopyText()
         {
-            Flash("Leyendo\u2026", true);
+            Flash(I18n.T("Leyendo\u2026", "Reading\u2026"), true);
             WithFull(FilePath, delegate(Bitmap img, string error)
             {
                 if (img == null)
                 {
                     ShotStack.Log("Copiar texto: " + error);
-                    if (!IsDisposed) Flash("No se pudo leer", false);
+                    if (!IsDisposed) Flash(I18n.T("No se pudo leer", "Could not read"), false);
                     return;
                 }
                 owner.CopyText(img, true, delegate(bool ok, string message) { if (!IsDisposed) Flash(message, ok); });
@@ -1227,7 +1227,7 @@ namespace Stackshot
                 if (img == null)
                 {
                     ShotStack.Log("Fijar: " + error);
-                    owner.Notify("No se pudo fijar la captura", "No se ha podido leer la imagen. Vuelve a intentarlo.");
+                    owner.Notify(I18n.T("No se pudo fijar la captura", "Could not pin capture"), I18n.T("No se ha podido leer la imagen. Vuelve a intentarlo.", "Could not read the image. Please try again."));
                     return;
                 }
                 try { PinWindow.Open(img); }
@@ -1235,7 +1235,7 @@ namespace Stackshot
                 {
                     img.Dispose();
                     ShotStack.Log("Fijar: " + ex.Message);
-                    owner.Notify("No se pudo fijar la captura", "Vuelve a intentarlo.");
+                    owner.Notify(I18n.T("No se pudo fijar la captura", "Could not pin capture"), I18n.T("Vuelve a intentarlo.", "Please try again."));
                 }
             });
             owner.Remove(this);
@@ -1248,13 +1248,13 @@ namespace Stackshot
             ShotStack.OpenRoute route = ShotStack.RouteFor(path, owner.Settings.PlayerOpensVideos);
             if (route == ShotStack.OpenRoute.Player) { owner.OpenPlayerWhenReady(path); return; }
             if (route == ShotStack.OpenRoute.Editor && !ShotStack.IsEditorFile(path)) { owner.OpenMedia(path); return; }
-            OffUi(path, delegate { Process.Start(path); }, "Abrir", "No se pudo abrir");
+            OffUi(path, delegate { Process.Start(path); }, "Abrir", I18n.T("No se pudo abrir", "Could not open"));
         }
 
         void ShowInFolder()
         {
             string path = FilePath, shown = SavedPath ?? FilePath;
-            OffUi(path, delegate { Process.Start(Native.Explorer, "/select,\"" + shown + "\""); }, "Carpeta", "No se pudo mostrar");
+            OffUi(path, delegate { Process.Start(Native.Explorer, "/select,\"" + shown + "\""); }, "Carpeta", I18n.T("No se pudo mostrar", "Could not show"));
         }
 
         // Waits for a fresh capture's file and starts the program on the thread pool, so the stack never freezes.
@@ -1281,7 +1281,7 @@ namespace Stackshot
         {
             owner.KeepAsync(FilePath, delegate(string dest, string error)
             {
-                if (error != null) owner.Notify("No se pudo guardar", error);
+                if (error != null) owner.Notify(I18n.T("No se pudo guardar", "Could not save"), error);
             });
         }
 
@@ -1303,7 +1303,7 @@ namespace Stackshot
             {
                 badgeT.Set(0);
                 badgeT.Go(1, 420, 0, Ease.OutBack, null);
-                Flash("Guardada", true);
+                Flash(I18n.T("Guardada", "Saved"), true);
             }
             else Redraw();
         }

@@ -22,7 +22,8 @@ namespace Stackshot
         public const double Length = 1900;
         public const double RevealAt = 1450;   // from here on the window shows through
 
-        const string Name = "Stackshot", Tagline = "Captura, marca y comparte en segundos";
+        const string Name = "Stackshot";
+        static string Tagline { get { return I18n.T("Captura, marca y comparte en segundos", "Capture, annotate and share in seconds"); } }
 
         readonly double start;
         Bitmap still;                  // the finished logo, for the flight

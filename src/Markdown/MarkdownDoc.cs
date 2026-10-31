@@ -406,7 +406,7 @@ namespace Stackshot
                             url = url.Trim('<', '>');
                             Add(o, buf.ToString(), b, it, st, href); buf.Length = 0;
                             string label = s.Substring(start + 1, close - start - 1);
-                            if (img) o.Add(new MdSpan { Text = "\u25A3 " + (label.Length > 0 ? label : "imagen"), Bold = b, Italic = true, Strike = st, Href = url, Image = true });
+                            if (img) o.Add(new MdSpan { Text = "\u25A3 " + (label.Length > 0 ? label : I18n.T("imagen", "image")), Bold = b, Italic = true, Strike = st, Href = url, Image = true });
                             else Run(label.Length > 0 ? label : url, o, b, it, st, url, depth + 1);
                             i = pe + 1;
                             continue;

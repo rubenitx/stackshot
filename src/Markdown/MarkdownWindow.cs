@@ -153,7 +153,7 @@ namespace Stackshot
         void Neighbour(int step)
         {
             string next = XmlWatch.Sibling(file.Path, step);
-            if (next == null) { Say(step < 0 ? "No hay XML anteriores en la carpeta." : "No hay XML posteriores en la carpeta.", false); return; }
+            if (next == null) { Say(step < 0 ? I18n.T("No hay XML anteriores en la carpeta.", "No earlier XML in the folder.") : I18n.T("No hay XML posteriores en la carpeta.", "No later XML in the folder."), false); return; }
             LoadFile(next);
         }
 
@@ -176,7 +176,7 @@ namespace Stackshot
         MarkdownWindow(ShotStack owner)
         {
             this.owner = owner;
-            Title = "Markdown y XML";
+            Title = I18n.T("Markdown y XML", "Markdown and XML");
             Width = 1000;
             Height = 720;
             MinWidth = 720;
@@ -282,8 +282,8 @@ namespace Stackshot
         internal bool ConfirmDiscard()
         {
             if (!Dirty) return true;
-            int r = DocAlert.Ask(this, "\u00BFGuardar los cambios en \u00AB" + (name ?? "Sin t\u00EDtulo") + "\u00BB?", "Si no los guardas, se perder\u00E1n.",
-                                 new string[] { "Guardar", "No guardar", "Cancelar" }, 0, 2);
+            int r = DocAlert.Ask(this, I18n.Fmt("\u00BFGuardar los cambios en \u00AB{0}\u00BB?", "Save changes to \u201C{0}\u201D?", name ?? I18n.T("Sin t\u00EDtulo", "Untitled")), I18n.T("Si no los guardas, se perder\u00E1n.", "If you don't save them, they will be lost."),
+                                 new string[] { I18n.T("Guardar", "Save"), I18n.T("No guardar", "Don't save"), I18n.T("Cancelar", "Cancel") }, 0, 2);
             if (r == 0) return Save(false);
             return r == 1;
         }
@@ -316,7 +316,7 @@ namespace Stackshot
             bool has = text != null;
             tools = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(16, 0, 104, 0), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
             tools.Visibility = has ? Visibility.Visible : Visibility.Hidden;
-            mode = new MacSegmented(new string[] { "Vista", "Editar" }, editing ? 1 : 0);
+            mode = new MacSegmented(new string[] { I18n.T("Vista", "View"), I18n.T("Editar", "Edit") }, editing ? 1 : 0);
             mode.Changed += delegate(int i) { SetEditing(i == 1); };
             compact = false;
             FillTools();
@@ -351,24 +351,24 @@ namespace Stackshot
             Grid.SetColumn(acts, 1);
             if (has)
             {
-                MacButton fresh = new MacButton("Nuevo", ButtonKind.Plain, "plus", null, 30);
-                fresh.ToolTip = "Nuevo (Ctrl+N)";
+                MacButton fresh = new MacButton(I18n.T("Nuevo", "New"), ButtonKind.Plain, "plus", null, 30);
+                fresh.ToolTip = I18n.T("Nuevo (Ctrl+N)", "New (Ctrl+N)");
                 fresh.Click += delegate { New(); };
                 acts.Children.Add(fresh);
-                DocIconButton more = new DocIconButton("more", "M\u00E1s opciones", 30) { Margin = new Thickness(6, 0, 0, 0) };
+                DocIconButton more = new DocIconButton("more", I18n.T("M\u00E1s opciones", "More options"), 30) { Margin = new Thickness(6, 0, 0, 0) };
                 more.Click += delegate { MoreMenu(more); };
                 acts.Children.Add(more);
                 Grid saveBox = new Grid { Margin = new Thickness(6, 0, 0, 0) };
-                MacButton save = new MacButton("Guardar", ButtonKind.Secondary, "save", null, 30);
-                save.ToolTip = "Guardar (Ctrl+S)";
+                MacButton save = new MacButton(I18n.T("Guardar", "Save"), ButtonKind.Secondary, "save", null, 30);
+                save.ToolTip = I18n.T("Guardar (Ctrl+S)", "Save (Ctrl+S)");
                 save.Click += delegate { Save(false); };
                 saveBox.Children.Add(save);
                 saveDot = new Ellipse { Width = 7, Height = 7, Fill = Ds.Brush(pal.Accent), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, -2, -2, 0), IsHitTestVisible = false, Visibility = Dirty ? Visibility.Visible : Visibility.Hidden };
-                System.Windows.Automation.AutomationProperties.SetName(save, "Guardar");
+                System.Windows.Automation.AutomationProperties.SetName(save, I18n.T("Guardar", "Save"));
                 saveBox.Children.Add(saveDot);
                 acts.Children.Add(saveBox);
-                MacButton done = new MacButton("Listo", ButtonKind.Primary, "check", null, 30) { Margin = new Thickness(8, 0, 0, 0) };
-                done.ToolTip = "Crear la captura y cerrar (Ctrl+Intro)";
+                MacButton done = new MacButton(I18n.T("Listo", "Done"), ButtonKind.Primary, "check", null, 30) { Margin = new Thickness(8, 0, 0, 0) };
+                done.ToolTip = I18n.T("Crear la captura y cerrar (Ctrl+Intro)", "Create the capture and close (Ctrl+Enter)");
                 done.Click += Done;
                 acts.Children.Add(done);
             }
@@ -388,19 +388,19 @@ namespace Stackshot
             {
                 if (editing)
                 {
-                    tools.Children.Add(Tool("Formatear", "sparkle", delegate { Reformat(true); }, "Formatear (Ctrl+May\u00FAs+F)"));
-                    DocIconButton opts = new DocIconButton("down", "Opciones de formato", 30) { Margin = new Thickness(2, 0, 0, 0) };
+                    tools.Children.Add(Tool(I18n.T("Formatear", "Format"), "sparkle", delegate { Reformat(true); }, I18n.T("Formatear (Ctrl+May\u00FAs+F)", "Format (Ctrl+Shift+F)")));
+                    DocIconButton opts = new DocIconButton("down", I18n.T("Opciones de formato", "Format options"), 30) { Margin = new Thickness(2, 0, 0, 0) };
                     opts.Click += delegate { FormatMenu(opts); };
                     tools.Children.Add(opts);
-                    tools.Children.Add(Tool("Compactar", "minus", delegate { Reformat(false); }, null));
+                    tools.Children.Add(Tool(I18n.T("Compactar", "Compact"), "minus", delegate { Reformat(false); }, null));
                 }
                 else
                 {
-                    tools.Children.Add(Tool("Expandir todo", "plus", delegate { ExpandXml(true); }, null));
-                    tools.Children.Add(Tool("Contraer todo", "minus", delegate { ExpandXml(false); }, null));
+                    tools.Children.Add(Tool(I18n.T("Expandir todo", "Expand all"), "plus", delegate { ExpandXml(true); }, null));
+                    tools.Children.Add(Tool(I18n.T("Contraer todo", "Collapse all"), "minus", delegate { ExpandXml(false); }, null));
                     if (search == null)
                     {
-                        search = new SearchField(Ds.Brushes, "Buscar o filtrar");
+                        search = new SearchField(Ds.Brushes, I18n.T("Buscar o filtrar", "Search or filter"));
                         search.Text = query;
                         search.Changed += OnSearch;
                         search.Step += StepSearch;
@@ -408,16 +408,16 @@ namespace Stackshot
                     }
                     tools.Children.Add(search);
                 }
-                tools.Children.Add(copyTextTool = Tool("Copiar XML", "copy", CopyMarkdown, null));
+                tools.Children.Add(copyTextTool = Tool(I18n.T("Copiar XML", "Copy XML"), "copy", CopyMarkdown, null));
             }
             else
             {
                 tools.Children.Add(OutlineTool());
-                tools.Children.Add(tidyTool = Tool("Ordenar", "sparkle", Tidy, null));
-                tools.Children.Add(indexTool = Tool("Insertar \u00EDndice", "plus", Index, null));
-                tools.Children.Add(copyTextTool = Tool("Copiar Markdown", "copy", CopyMarkdown, null));
+                tools.Children.Add(tidyTool = Tool(I18n.T("Ordenar", "Tidy"), "sparkle", Tidy, null));
+                tools.Children.Add(indexTool = Tool(I18n.T("Insertar \u00EDndice", "Insert contents"), "plus", Index, null));
+                tools.Children.Add(copyTextTool = Tool(I18n.T("Copiar Markdown", "Copy Markdown"), "copy", CopyMarkdown, null));
             }
-            tools.Children.Add(copyImageTool = Tool("Copiar como imagen", "photo", CopyImage, null));
+            tools.Children.Add(copyImageTool = Tool(I18n.T("Copiar como imagen", "Copy as image"), "photo", CopyImage, null));
         }
 
         // The toolbar buttons that confirm on themselves (the status line also says it).
@@ -459,28 +459,28 @@ namespace Stackshot
             g.ColumnDefinitions.Add(new ColumnDefinition());
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             StackPanel s = new StackPanel { Orientation = Orientation.Horizontal };
-            Fmt(s, "text:B", "Negrita (Ctrl+B)", delegate { Wrap("**", "texto"); });
-            Fmt(s, "text:I", "Cursiva (Ctrl+I)", delegate { Wrap("*", "texto"); });
-            Fmt(s, "text:S", "Tachado (Ctrl+May\u00FAs+X)", delegate { Wrap("~~", "texto"); });
+            Fmt(s, "text:B", I18n.T("Negrita (Ctrl+B)", "Bold (Ctrl+B)"), delegate { Wrap("**", I18n.T("texto", "text")); });
+            Fmt(s, "text:I", I18n.T("Cursiva (Ctrl+I)", "Italic (Ctrl+I)"), delegate { Wrap("*", I18n.T("texto", "text")); });
+            Fmt(s, "text:S", I18n.T("Tachado (Ctrl+May\u00FAs+X)", "Strikethrough (Ctrl+Shift+X)"), delegate { Wrap("~~", I18n.T("texto", "text")); });
             Sep(s);
-            Fmt(s, "text:H", "T\u00EDtulo (Ctrl+1 a Ctrl+6)", delegate { HeadingCycle(); });
+            Fmt(s, "text:H", I18n.T("T\u00EDtulo (Ctrl+1 a Ctrl+6)", "Heading (Ctrl+1 to Ctrl+6)"), delegate { HeadingCycle(); });
             Sep(s);
-            Fmt(s, "md-list", "Lista (Ctrl+May\u00FAs+8)", delegate { Prefix(LineKind.Bullet); });
-            Fmt(s, "md-numlist", "Lista numerada (Ctrl+May\u00FAs+7)", delegate { Prefix(LineKind.Numbered); });
-            Fmt(s, "md-task", "Lista de tareas", delegate { Prefix(LineKind.Task); });
-            Fmt(s, "md-quote", "Cita", delegate { Prefix(LineKind.Quote); });
+            Fmt(s, "md-list", I18n.T("Lista (Ctrl+May\u00FAs+8)", "List (Ctrl+Shift+8)"), delegate { Prefix(LineKind.Bullet); });
+            Fmt(s, "md-numlist", I18n.T("Lista numerada (Ctrl+May\u00FAs+7)", "Numbered list (Ctrl+Shift+7)"), delegate { Prefix(LineKind.Numbered); });
+            Fmt(s, "md-task", I18n.T("Lista de tareas", "Task list"), delegate { Prefix(LineKind.Task); });
+            Fmt(s, "md-quote", I18n.T("Cita", "Quote"), delegate { Prefix(LineKind.Quote); });
             Sep(s);
-            Fmt(s, "md-link", "Enlace (Ctrl+K)", delegate { Command(delegate(string t, int a, int l) { return EditCommands.Link(t, a, l); }); });
-            Fmt(s, "md-code", "C\u00F3digo (Ctrl+May\u00FAs+C)", delegate { Wrap("`", "c\u00F3digo"); });
-            Fmt(s, "md-codeblock", "Bloque de c\u00F3digo", delegate { Command(delegate(string t, int a, int l) { return EditCommands.CodeBlock(t, a, l); }); });
-            DocIconButton table = Fmt(s, "md-table", "Tabla (dentro de una: filas y columnas)", null);
+            Fmt(s, "md-link", I18n.T("Enlace (Ctrl+K)", "Link (Ctrl+K)"), delegate { Command(delegate(string t, int a, int l) { return EditCommands.Link(t, a, l); }); });
+            Fmt(s, "md-code", I18n.T("C\u00F3digo (Ctrl+May\u00FAs+C)", "Code (Ctrl+Shift+C)"), delegate { Wrap("`", I18n.T("c\u00F3digo", "code")); });
+            Fmt(s, "md-codeblock", I18n.T("Bloque de c\u00F3digo", "Code block"), delegate { Command(delegate(string t, int a, int l) { return EditCommands.CodeBlock(t, a, l); }); });
+            DocIconButton table = Fmt(s, "md-table", I18n.T("Tabla (dentro de una: filas y columnas)", "Table (inside one: rows and columns)"), null);
             table.Click += delegate { TableButton(table); };
-            Fmt(s, "md-rule", "Separador", delegate { Command(delegate(string t, int a, int l) { return EditCommands.Rule(t, a); }); });
+            Fmt(s, "md-rule", I18n.T("Separador", "Divider"), delegate { Command(delegate(string t, int a, int l) { return EditCommands.Rule(t, a); }); });
             g.Children.Add(s);
             StackPanel right = new StackPanel { Orientation = Orientation.Horizontal };
             Grid.SetColumn(right, 1);
-            Fmt(right, "undo", "Deshacer (Ctrl+Z)", delegate { if (editor != null) { editor.Box.Undo(); editor.Box.Focus(); } });
-            Fmt(right, "redo", "Rehacer (Ctrl+Y)", delegate { if (editor != null) { editor.Box.Redo(); editor.Box.Focus(); } });
+            Fmt(right, "undo", I18n.T("Deshacer (Ctrl+Z)", "Undo (Ctrl+Z)"), delegate { if (editor != null) { editor.Box.Undo(); editor.Box.Focus(); } });
+            Fmt(right, "redo", I18n.T("Rehacer (Ctrl+Y)", "Redo (Ctrl+Y)"), delegate { if (editor != null) { editor.Box.Redo(); editor.Box.Focus(); } });
             g.Children.Add(right);
             b.Child = g;
             return b;
@@ -504,13 +504,13 @@ namespace Stackshot
                 return;
             }
             List<MenuEntry> m = new List<MenuEntry>();
-            m.Add(MenuEntry.Item("Insertar fila debajo", null, false, delegate { TableOp(EditCommands.TableOp.RowBelow); }));
-            m.Add(MenuEntry.Item("Insertar columna a la derecha", null, false, delegate { TableOp(EditCommands.TableOp.ColumnRight); }));
+            m.Add(MenuEntry.Item(I18n.T("Insertar fila debajo", "Insert row below"), null, false, delegate { TableOp(EditCommands.TableOp.RowBelow); }));
+            m.Add(MenuEntry.Item(I18n.T("Insertar columna a la derecha", "Insert column to the right"), null, false, delegate { TableOp(EditCommands.TableOp.ColumnRight); }));
             m.Add(MenuEntry.Line());
-            m.Add(MenuEntry.Item("Eliminar fila", null, false, delegate { TableOp(EditCommands.TableOp.DeleteRow); }));
-            m.Add(MenuEntry.Item("Eliminar columna", null, false, delegate { TableOp(EditCommands.TableOp.DeleteColumn); }));
+            m.Add(MenuEntry.Item(I18n.T("Eliminar fila", "Delete row"), null, false, delegate { TableOp(EditCommands.TableOp.DeleteRow); }));
+            m.Add(MenuEntry.Item(I18n.T("Eliminar columna", "Delete column"), null, false, delegate { TableOp(EditCommands.TableOp.DeleteColumn); }));
             m.Add(MenuEntry.Line());
-            m.Add(MenuEntry.Item("Alinear la tabla", null, false, delegate { TableOp(EditCommands.TableOp.Align); }));
+            m.Add(MenuEntry.Item(I18n.T("Alinear la tabla", "Align table"), null, false, delegate { TableOp(EditCommands.TableOp.Align); }));
             MacMenu.Show(anchor, m);
         }
 
@@ -519,7 +519,7 @@ namespace Stackshot
             Command(delegate(string t, int a, int l)
             {
                 TextEdit ed = EditCommands.Table(t, a, op);
-                if (ed.None && op == EditCommands.TableOp.DeleteRow) Say("La fila de t\u00EDtulos no se puede eliminar.", false);
+                if (ed.None && op == EditCommands.TableOp.DeleteRow) Say(I18n.T("La fila de t\u00EDtulos no se puede eliminar.", "The header row cannot be deleted."), false);
                 return ed;
             });
         }
@@ -533,23 +533,23 @@ namespace Stackshot
         {
             bool onDisk = file != null && file.Path != null;
             List<MenuEntry> m = new List<MenuEntry>();
-            m.Add(MenuEntry.Item("Abrir\u2026", "folder", false, delegate { Browse(); }));
-            m.Add(MenuEntry.Item("Guardar como\u2026", "save", false, delegate { Save(true); }));
+            m.Add(MenuEntry.Item(I18n.T("Abrir\u2026", "Open\u2026"), "folder", false, delegate { Browse(); }));
+            m.Add(MenuEntry.Item(I18n.T("Guardar como\u2026", "Save as\u2026"), "save", false, delegate { Save(true); }));
             m.Add(MenuEntry.Line());
-            MenuEntry reload = MenuEntry.Item("Recargar desde el disco", "update", false, delegate { Reload(true); });
+            MenuEntry reload = MenuEntry.Item(I18n.T("Recargar desde el disco", "Reload from disk"), "update", false, delegate { Reload(true); });
             reload.Enabled = onDisk;
             m.Add(reload);
-            MenuEntry show = MenuEntry.Item("Mostrar en la carpeta", "folder", false, delegate { ShowInFolder(); });
+            MenuEntry show = MenuEntry.Item(I18n.T("Mostrar en la carpeta", "Show in folder"), "folder", false, delegate { ShowInFolder(); });
             show.Enabled = onDisk;
             m.Add(show);
-            MenuEntry copy = MenuEntry.Item("Copiar la ruta", "copy", false, delegate { if (Retry(delegate { Clipboard.SetText(file.Path); })) Say("Ruta copiada.", false); });
+            MenuEntry copy = MenuEntry.Item(I18n.T("Copiar la ruta", "Copy path"), "copy", false, delegate { if (Retry(delegate { Clipboard.SetText(file.Path); })) Say(I18n.T("Ruta copiada.", "Path copied."), false); });
             copy.Enabled = onDisk;
             m.Add(copy);
             if (!xml)
             {
                 m.Add(MenuEntry.Line());
-                m.Add(MenuEntry.Item("Copiar como HTML", "copy", false, delegate { CopyHtml(); }));
-                m.Add(MenuEntry.Item("Exportar HTML\u2026", "share", false, delegate { ExportHtml(); }));
+                m.Add(MenuEntry.Item(I18n.T("Copiar como HTML", "Copy as HTML"), "copy", false, delegate { CopyHtml(); }));
+                m.Add(MenuEntry.Item(I18n.T("Exportar HTML\u2026", "Export HTML\u2026"), "share", false, delegate { ExportHtml(); }));
                 m.Add(PdfEntry());
             }
             else XmlEntries(m, onDisk);
@@ -560,10 +560,10 @@ namespace Stackshot
         void XmlEntries(List<MenuEntry> m, bool onDisk)
         {
             m.Add(MenuEntry.Line());
-            MenuEntry prev = MenuEntry.Item("XML anterior de la carpeta   [", "back", false, delegate { Neighbour(-1); });
+            MenuEntry prev = MenuEntry.Item(I18n.T("XML anterior de la carpeta   [", "Previous XML in the folder   ["), "back", false, delegate { Neighbour(-1); });
             prev.Enabled = onDisk;
             m.Add(prev);
-            MenuEntry next = MenuEntry.Item("XML siguiente de la carpeta   ]", "right", false, delegate { Neighbour(1); });
+            MenuEntry next = MenuEntry.Item(I18n.T("XML siguiente de la carpeta   ]", "Next XML in the folder   ]"), "right", false, delegate { Neighbour(1); });
             next.Enabled = onDisk;
             m.Add(next);
             XmlExtraEntries(m, onDisk);
@@ -572,12 +572,12 @@ namespace Stackshot
             List<XmlRecent> recent = XmlWatch.Recent(XmlWatch.FolderFor(s), 8);
             if (recent.Count == 0) return;
             m.Add(MenuEntry.Line());
-            m.Add(MenuEntry.Title("XML recientes"));
+            m.Add(MenuEntry.Title(I18n.T("XML recientes", "Recent XML")));
             foreach (XmlRecent r in recent)
             {
                 string p = r.Path;
                 bool current = onDisk && string.Equals(p, file.Path, StringComparison.OrdinalIgnoreCase);
-                string when = r.Written.ToString(r.Written.Date == DateTime.Today ? "HH:mm:ss" : "dd/MM HH:mm");
+                string when = r.Written.ToString(r.Written.Date == DateTime.Today ? "HH:mm:ss" : I18n.T("dd/MM HH:mm", "MMM d HH:mm"), I18n.IsSpanish ? System.Globalization.CultureInfo.CurrentCulture : System.Globalization.CultureInfo.InvariantCulture);
                 MenuEntry e = MenuEntry.Item(when + "   " + (r.Operation.Length > 0 ? r.Operation : System.IO.Path.GetFileName(p)), null, current, delegate { LoadFile(p); });
                 e.Detail = System.IO.Path.GetFileName(p);
                 m.Add(e);
@@ -593,10 +593,10 @@ namespace Stackshot
                 DataObject d = new DataObject();
                 d.SetData(DataFormats.Html, MdHtml.Clipboard(body));
                 d.SetData(DataFormats.UnicodeText, text);
-                if (Retry(delegate { Clipboard.SetDataObject(d, true); })) Say("HTML copiado.", false);
-                else Say("No he podido usar el portapapeles.", true);
+                if (Retry(delegate { Clipboard.SetDataObject(d, true); })) Say(I18n.T("HTML copiado.", "HTML copied."), false);
+                else Say(I18n.T("No he podido usar el portapapeles.", "Could not use the clipboard."), true);
             }
-            catch (Exception ex) { ShotStack.Log("Copiar HTML: " + ex.Message); Say("No he podido copiar el HTML.", true); }
+            catch (Exception ex) { ShotStack.Log("Copiar HTML: " + ex.Message); Say(I18n.T("No he podido copiar el HTML.", "Could not copy the HTML."), true); }
         }
 
         // A standalone page next to the document (or where the user says), always UTF-8.
@@ -614,8 +614,8 @@ namespace Stackshot
                 {
                     using (System.Windows.Forms.SaveFileDialog d = new System.Windows.Forms.SaveFileDialog())
                     {
-                        d.Title = "Exportar HTML";
-                        d.Filter = "P\u00E1gina web|*.html;*.htm|Todos los archivos|*.*";
+                        d.Title = I18n.T("Exportar HTML", "Export HTML");
+                        d.Filter = I18n.T("P\u00E1gina web|*.html;*.htm|Todos los archivos|*.*", "Web page|*.html;*.htm|All files|*.*");
                         d.FileName = baseName + ".html";
                         d.DefaultExt = "html";
                         d.AddExtension = true;
@@ -630,19 +630,19 @@ namespace Stackshot
             string err;
             string title = MarkdownTools.Title(text) ?? baseName;
             if (!DocFile.Write(target, new UTF8Encoding(false).GetBytes(MdHtml.Page(text, title, HtmlImages(target))), out err)) { Say(err, true); return false; }
-            Say("Exportado: " + System.IO.Path.GetFileName(target) + ".", false);
+            Say(I18n.Fmt("Exportado: {0}.", "Exported: {0}.", System.IO.Path.GetFileName(target)), false);
             return true;
         }
 
         void FormatMenu(FrameworkElement anchor)
         {
             List<MenuEntry> m = new List<MenuEntry>();
-            m.Add(MenuEntry.Title("Sangr\u00EDa"));
-            m.Add(MenuEntry.Item("2 espacios", null, format.Indent == "  ", delegate { format.Indent = "  "; }));
-            m.Add(MenuEntry.Item("4 espacios", null, format.Indent == "    ", delegate { format.Indent = "    "; }));
-            m.Add(MenuEntry.Item("Tabulador", null, format.Indent == "\t", delegate { format.Indent = "\t"; }));
+            m.Add(MenuEntry.Title(I18n.T("Sangr\u00EDa", "Indent")));
+            m.Add(MenuEntry.Item(I18n.T("2 espacios", "2 spaces"), null, format.Indent == "  ", delegate { format.Indent = "  "; }));
+            m.Add(MenuEntry.Item(I18n.T("4 espacios", "4 spaces"), null, format.Indent == "    ", delegate { format.Indent = "    "; }));
+            m.Add(MenuEntry.Item(I18n.T("Tabulador", "Tab"), null, format.Indent == "\t", delegate { format.Indent = "\t"; }));
             m.Add(MenuEntry.Line());
-            m.Add(MenuEntry.Item("Atributos en l\u00EDneas nuevas", null, format.AttrLines, delegate { format.AttrLines = !format.AttrLines; }));
+            m.Add(MenuEntry.Item(I18n.T("Atributos en l\u00EDneas nuevas", "Attributes on new lines"), null, format.AttrLines, delegate { format.AttrLines = !format.AttrLines; }));
             MacMenu.Show(anchor, m);
         }
 
@@ -656,13 +656,13 @@ namespace Stackshot
             StackPanel s = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
             IconTile tile = new IconTile("markdown", 56, Ds.Rgb(140, 150, 255), Ds.Rgb(88, 86, 214)) { HorizontalAlignment = HorizontalAlignment.Center };
             s.Children.Add(tile);
-            s.Children.Add(new TextBlock { Text = "Pega o arrastra un .md, .xml o texto", FontFamily = Ds.Display, FontWeight = FontWeights.SemiBold, FontSize = 20, Foreground = Ds.Brush(pal.Label), Margin = new Thickness(0, 18, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
-            s.Children.Add(new TextBlock { Text = "Ctrl+V pega desde el portapapeles. Admite .md y .txt de hasta 2 MB, y .xml de hasta 8 MB.", FontSize = 13, Foreground = Ds.Brush(pal.Label2), Margin = new Thickness(0, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+            s.Children.Add(new TextBlock { Text = I18n.T("Pega o arrastra un .md, .xml o texto", "Paste or drag in a .md, .xml or text"), FontFamily = Ds.Display, FontWeight = FontWeights.SemiBold, FontSize = 20, Foreground = Ds.Brush(pal.Label), Margin = new Thickness(0, 18, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+            s.Children.Add(new TextBlock { Text = I18n.T("Ctrl+V pega desde el portapapeles. Admite .md y .txt de hasta 2 MB, y .xml de hasta 8 MB.", "Ctrl+V pastes from the clipboard. Accepts .md and .txt up to 2 MB, and .xml up to 8 MB."), FontSize = 13, Foreground = Ds.Brush(pal.Label2), Margin = new Thickness(0, 6, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
             StackPanel buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 20, 0, 0) };
-            MacButton browse = new MacButton("Abrir archivo\u2026", ButtonKind.Secondary, "folder", null, 30);
-            browse.ToolTip = "Abrir (Ctrl+O)";
+            MacButton browse = new MacButton(I18n.T("Abrir archivo\u2026", "Open file\u2026"), ButtonKind.Secondary, "folder", null, 30);
+            browse.ToolTip = I18n.T("Abrir (Ctrl+O)", "Open (Ctrl+O)");
             browse.Click += Browse;
-            MacButton blank = new MacButton("Documento en blanco", ButtonKind.Secondary, "edit", null, 30) { Margin = new Thickness(8, 0, 0, 0) };
+            MacButton blank = new MacButton(I18n.T("Documento en blanco", "Blank document"), ButtonKind.Secondary, "edit", null, 30) { Margin = new Thickness(8, 0, 0, 0) };
             blank.Click += Blank;
             buttons.Children.Add(browse);
             buttons.Children.Add(blank);
@@ -714,7 +714,7 @@ namespace Stackshot
                 tree.CopyRequest += delegate(string t, string what)
                 {
                     if (Retry(delegate { Clipboard.SetText(t); })) Say(what, false);
-                    else Say("No he podido usar el portapapeles.", true);
+                    else Say(I18n.T("No he podido usar el portapapeles.", "Could not use the clipboard."), true);
                 };
                 tree.Menu += ShowMenu;
                 WireTree();
@@ -825,7 +825,7 @@ namespace Stackshot
             {
                 XmlModel m = null; string err = null; int l = 0, c = 0;
                 try { XmlDoc.Parse(snap, delegate { return System.Threading.Volatile.Read(ref parseToken) != my; }, out m, out err, out l, out c); }
-                catch (Exception ex) { ShotStack.Log("XML leer: " + ex.Message); err = "No he podido leer el XML: " + ex.Message; }
+                catch (Exception ex) { ShotStack.Log("XML leer: " + ex.Message); err = I18n.Fmt("No he podido leer el XML: {0}", "Could not read the XML: {0}", ex.Message); }
                 // Escaped XML and the SOAP fault are worked out here too: on a big document they are whole-tree passes.
                 bool ready = false;
                 string fc = null, ft = null;
@@ -868,7 +868,7 @@ namespace Stackshot
             if (parsedText != Current() || parsing)
             {
                 // Keep the tree on screen while an edit is being read again; show the wait only when there is none.
-                if (previewHost.Child != tree && !(previewHost.Child is StackPanel)) previewHost.Child = LoadingPanel("Leyendo el XML\u2026");
+                if (previewHost.Child != tree && !(previewHost.Child is StackPanel)) previewHost.Child = LoadingPanel(I18n.T("Leyendo el XML\u2026", "Reading the XML\u2026"));
                 ParseXml(delegate
                 {
                     if (autoEdit)
@@ -914,12 +914,12 @@ namespace Stackshot
             Palette pal = Ds.Brushes;
             StackPanel s = new StackPanel { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center, MaxWidth = 480, Margin = new Thickness(28) };
             s.Children.Add(new GlyphView("warning", 30, pal.Red) { HorizontalAlignment = HorizontalAlignment.Center });
-            s.Children.Add(new TextBlock { Text = "El XML no est\u00E1 bien formado", FontFamily = Ds.Display, FontWeight = FontWeights.SemiBold, FontSize = 17, Foreground = Ds.Brush(pal.Label), Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
+            s.Children.Add(new TextBlock { Text = I18n.T("El XML no est\u00E1 bien formado", "The XML is not well-formed"), FontFamily = Ds.Display, FontWeight = FontWeights.SemiBold, FontSize = 17, Foreground = Ds.Brush(pal.Label), Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Center });
             s.Children.Add(new TextBlock { Text = xmlError, FontSize = 13, Foreground = Ds.Brush(pal.Error), TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 8, 0, 0) });
-            s.Children.Add(new TextBlock { Text = editing ? "Corr\u00EDgelo en el editor: esta vista se actualiza sola." : "Pasa a Editar para corregirlo.", FontSize = 12.5, Foreground = Ds.Brush(pal.Label2), TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 10, 0, 0) });
+            s.Children.Add(new TextBlock { Text = editing ? I18n.T("Corr\u00EDgelo en el editor: esta vista se actualiza sola.", "Fix it in the editor: this view updates by itself.") : I18n.T("Pasa a Editar para corregirlo.", "Switch to Edit to fix it."), FontSize = 12.5, Foreground = Ds.Brush(pal.Label2), TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 10, 0, 0) });
             if (editing && editor != null && errLine > 0)
             {
-                MacButton go = new MacButton("Ir al error", ButtonKind.Secondary, null, "F8", 30) { Margin = new Thickness(0, 14, 0, 0), HorizontalAlignment = HorizontalAlignment.Center };
+                MacButton go = new MacButton(I18n.T("Ir al error", "Go to error"), ButtonKind.Secondary, null, "F8", 30) { Margin = new Thickness(0, 14, 0, 0), HorizontalAlignment = HorizontalAlignment.Center };
                 go.Click += GoToError;
                 s.Children.Add(go);
             }
@@ -1008,28 +1008,28 @@ namespace Stackshot
             // A message stands out from the usual counts while it lasts.
             statusLabel.FontWeight = status != null ? FontWeights.SemiBold : FontWeights.Normal;
             if (status != null) { statusLabel.Text = status; return; }
-            if (text == null) { statusLabel.Text = "Ver, editar y convertir Markdown o XML en una captura"; return; }
-            string head = name != null ? name : "Sin t\u00EDtulo";
-            string tail = (file != null && file.Path != null ? "  \u00B7  " + file.EncodingName + "  \u00B7  " + file.NewlineName : "") + "  \u00B7  " + (Dirty ? "sin guardar" : file != null && file.Path != null ? "guardado" : "sin cambios");
+            if (text == null) { statusLabel.Text = I18n.T("Ver, editar y convertir Markdown o XML en una captura", "View, edit and turn Markdown or XML into a capture"); return; }
+            string head = name != null ? name : I18n.T("Sin t\u00EDtulo", "Untitled");
+            string tail = (file != null && file.Path != null ? "  \u00B7  " + file.EncodingName + "  \u00B7  " + file.NewlineName : "") + "  \u00B7  " + (Dirty ? I18n.T("sin guardar", "unsaved") : file != null && file.Path != null ? I18n.T("guardado", "saved") : I18n.T("sin cambios", "no changes"));
             if (xml)
             {
-                if (parsing && parsedText != text) { statusLabel.Text = head + "  \u00B7  leyendo\u2026"; return; }
+                if (parsing && parsedText != text) { statusLabel.Text = head + I18n.T("  \u00B7  leyendo\u2026", "  \u00B7  reading\u2026"); return; }
                 if (model == null && parsedText == text)
                 {
                     statusLabel.Foreground = Ds.Brush(pal.Error);
-                    statusLabel.Text = head + "  \u00B7  " + (xmlError ?? "XML con errores");
+                    statusLabel.Text = head + "  \u00B7  " + (xmlError ?? I18n.T("XML con errores", "XML with errors"));
                     return;
                 }
                 if (CompareShown()) { statusLabel.Text = CompareStatus(); return; }
                 if (selPath != null && !editing) { statusLabel.Text = selPath; return; }
-                string extra = tree != null && tree.Filtering ? "  \u00B7  " + tree.Matches.ToString("N0") + (tree.Matches == 1 ? " coincidencia" : " coincidencias") : "";
+                string extra = tree != null && tree.Filtering ? "  \u00B7  " + tree.Matches.ToString("N0") + (tree.Matches == 1 ? I18n.T(" coincidencia", " match") : I18n.T(" coincidencias", " matches")) : "";
                 int n = model != null ? model.Count : 0;
-                string ok = editing && model != null ? "  \u00B7  bien formado" : "";
-                statusLabel.Text = head + "  \u00B7  " + n.ToString("N0") + (n == 1 ? " nodo" : " nodos") + (model != null && model.Truncated ? " (los primeros)" : "") + extra + ok + tail;
+                string ok = editing && model != null ? I18n.T("  \u00B7  bien formado", "  \u00B7  well-formed") : "";
+                statusLabel.Text = head + "  \u00B7  " + n.ToString("N0") + (n == 1 ? I18n.T(" nodo", " node") : I18n.T(" nodos", " nodes")) + (model != null && model.Truncated ? I18n.T(" (los primeros)", " (the first ones)") : "") + extra + ok + tail;
                 return;
             }
             int w = MarkdownTools.Words(text);
-            statusLabel.Text = head + "  \u00B7  " + w.ToString("N0") + (w == 1 ? " palabra" : " palabras") + tail;
+            statusLabel.Text = head + "  \u00B7  " + w.ToString("N0") + (w == 1 ? I18n.T(" palabra", " word") : I18n.T(" palabras", " words")) + tail;
         }
 
         void Say(string msg, bool bad)
@@ -1043,7 +1043,7 @@ namespace Stackshot
 
         void SetTitle()
         {
-            string t = name != null ? name + " \u2014 " + (xml ? "XML" : "Markdown") : text != null ? "Sin t\u00EDtulo \u2014 " + (xml ? "XML" : "Markdown") : "Markdown y XML";
+            string t = name != null ? name + " \u2014 " + (xml ? "XML" : "Markdown") : text != null ? I18n.T("Sin t\u00EDtulo \u2014 ", "Untitled \u2014 ") + (xml ? "XML" : "Markdown") : I18n.T("Markdown y XML", "Markdown and XML");
             Title = (text != null && Dirty ? "\u25CF " : "") + t;
         }
 
@@ -1087,7 +1087,7 @@ namespace Stackshot
             autoEdit = xml;
             Build();
             if (reveal) Reveal(); else Enter(page, 0);
-            if (file != null && file.Lossy) Say("Hay bytes que no son " + file.EncodingName + " v\u00E1lido: se muestran como \u00AB\uFFFD\u00BB.", true);
+            if (file != null && file.Lossy) Say(I18n.Fmt("Hay bytes que no son {0} v\u00E1lido: se muestran como \u00AB\uFFFD\u00BB.", "Some bytes are not valid {0}: they show as \u201C\uFFFD\u201D.", file.EncodingName), true);
         }
 
         void Start(string t, string label, DocFile doc, bool isXml, bool edit)
@@ -1120,7 +1120,7 @@ namespace Stackshot
             string first = specs[0];
             int cut = first.LastIndexOfAny(new char[] { '/', '\\' });
             fade.Stop();
-            status = "Cargando " + first.Substring(cut + 1) + "\u2026";
+            status = I18n.Fmt("Cargando {0}\u2026", "Loading {0}\u2026", first.Substring(cut + 1));
             statusBad = false;
             if (errorLabel != null) errorLabel.Visibility = Visibility.Collapsed;
             Cursor = Cursors.AppStarting;
@@ -1130,7 +1130,7 @@ namespace Stackshot
                 DocFile doc = null;
                 string err = null;
                 try { doc = MarkdownTools.LoadDoc(specs, out err); }
-                catch (Exception ex) { ShotStack.Log("Markdown cargar: " + ex.Message); err = "No he podido leer el archivo: " + first; }
+                catch (Exception ex) { ShotStack.Log("Markdown cargar: " + ex.Message); err = I18n.Fmt("No he podido leer el archivo: {0}", "Could not read the file: {0}", first); }
                 try
                 {
                     Dispatcher.BeginInvoke(new Action(delegate
@@ -1138,7 +1138,7 @@ namespace Stackshot
                         if (token != my || open != this) return;
                         Cursor = null;
                         status = null;
-                        if (doc == null) { Stats(); Fail(err ?? "No he podido leer el archivo."); }
+                        if (doc == null) { Stats(); Fail(err ?? I18n.T("No he podido leer el archivo.", "Could not read the file.")); }
                         else LoadText(doc.Text, System.IO.Path.GetFileName(doc.Path), doc);
                         Reveal();
                     }));
@@ -1204,19 +1204,19 @@ namespace Stackshot
             {
                 using (System.Windows.Forms.OpenFileDialog d = new System.Windows.Forms.OpenFileDialog())
                 {
-                    d.Title = "Abrir un documento Markdown o XML";
-                    d.Filter = "Markdown, XML y texto|*.md;*.markdown;*.mdown;*.mkd;*.xml;*.xsd;*.config;*.svg;*.xaml;*.txt|Todos los archivos|*.*";
+                    d.Title = I18n.T("Abrir un documento Markdown o XML", "Open a Markdown or XML document");
+                    d.Filter = I18n.T("Markdown, XML y texto|*.md;*.markdown;*.mdown;*.mkd;*.xml;*.xsd;*.config;*.svg;*.xaml;*.txt|Todos los archivos|*.*", "Markdown, XML and text|*.md;*.markdown;*.mdown;*.mkd;*.xml;*.xsd;*.config;*.svg;*.xaml;*.txt|All files|*.*");
                     if (file != null && file.Path != null) d.InitialDirectory = System.IO.Path.GetDirectoryName(file.Path);
                     if (d.ShowDialog(Win32) == System.Windows.Forms.DialogResult.OK) LoadFile(d.FileName);
                 }
             }
-            catch (Exception ex) { ShotStack.Log("Markdown abrir: " + ex.Message); Fail("No he podido abrir el selector de archivos."); }
+            catch (Exception ex) { ShotStack.Log("Markdown abrir: " + ex.Message); Fail(I18n.T("No he podido abrir el selector de archivos.", "Could not open file picker.")); }
         }
 
         void Paste()
         {
-            try { LoadData(Clipboard.GetDataObject(), "En el portapapeles no hay texto ni un archivo .md o .xml."); }
-            catch (Exception ex) { ShotStack.Log("Markdown pegar: " + ex.Message); Fail("No he podido leer el portapapeles."); }
+            try { LoadData(Clipboard.GetDataObject(), I18n.T("En el portapapeles no hay texto ni un archivo .md o .xml.", "There is no text or .md/.xml file on the clipboard.")); }
+            catch (Exception ex) { ShotStack.Log("Markdown pegar: " + ex.Message); Fail(I18n.T("No he podido leer el portapapeles.", "Could not read clipboard.")); }
         }
 
         // ---- Saving
@@ -1234,7 +1234,9 @@ namespace Stackshot
             }
             else if (file.Check() == DiskState.Modified)
             {
-                int r = DocAlert.Ask(this, "\u00AB" + name + "\u00BB ha cambiado fuera de Stackshot", "Si guardas, tu versi\u00F3n sustituye a la del disco.", new string[] { "Sobrescribir", "Cancelar" }, 1, 1);
+                int r = DocAlert.Ask(this, I18n.Fmt("\u00AB{0}\u00BB ha cambiado fuera de Stackshot", "\u201C{0}\u201D has changed outside Stackshot", name),
+                                     I18n.T("Si guardas, tu versi\u00F3n sustituye a la del disco.", "If you save, your version replaces the one on disk."),
+                                     new string[] { I18n.T("Sobrescribir", "Overwrite"), I18n.T("Cancelar", "Cancel") }, 1, 1);
                 if (r != 0) return false;
             }
             string err;
@@ -1243,14 +1245,16 @@ namespace Stackshot
             if (!ok && file.Lossy)
             {
                 bool over = file.Path != null && string.Equals(System.IO.Path.GetFullPath(target), file.Path, StringComparison.OrdinalIgnoreCase);
-                int r = DocAlert.Ask(this, err, "Al guardar, esos bytes se sustituyen por \u00AB\uFFFD\u00BB" + (over ? " y el original se pierde. Para conservarlo, usa \u00ABGuardar como\u2026\u00BB." : "."),
-                                     new string[] { "Guardar igualmente", "Cancelar" }, 1, 1);
+                int r = DocAlert.Ask(this, err, I18n.T("Al guardar, esos bytes se sustituyen por \u00AB\uFFFD\u00BB", "When you save, those bytes are replaced by \u201C\uFFFD\u201D") +
+                                     (over ? I18n.T(" y el original se pierde. Para conservarlo, usa \u00ABGuardar como\u2026\u00BB.", " and the original is lost. To keep it, use \u201CSave as\u2026\u201D.") : "."),
+                                     new string[] { I18n.T("Guardar igualmente", "Save anyway"), I18n.T("Cancelar", "Cancel") }, 1, 1);
                 if (r != 0) return false;
                 lock (file) { file.AcceptLoss(); ok = file.Save(text, target, out err); if (!ok) file.Lossy = true; }
             }
-            if (!ok && err != null && err.StartsWith("Hay caracteres que no caben", StringComparison.Ordinal))
+            if (!ok && err != null && DocFile.IsCharsetError(err))
             {
-                int r = DocAlert.Ask(this, err, "Puedo guardarlo en UTF-8, que admite cualquier car\u00E1cter.", new string[] { "Guardar en UTF-8", "Cancelar" }, 0, 1);
+                int r = DocAlert.Ask(this, err, I18n.T("Puedo guardarlo en UTF-8, que admite cualquier car\u00E1cter.", "I can save it in UTF-8, which supports any character."),
+                                     new string[] { I18n.T("Guardar en UTF-8", "Save in UTF-8"), I18n.T("Cancelar", "Cancel") }, 0, 1);
                 if (r != 0) return false;
                 string t2;
                 lock (file) t2 = file.ToUtf8(text);
@@ -1258,7 +1262,7 @@ namespace Stackshot
                 if (t2 != text) { if (editor != null) editor.SetText(t2); text = t2; }
                 lock (file) ok = file.Save(text, target, out err);
             }
-            if (!ok) { Say(err ?? "No he podido guardar.", true); return false; }
+            if (!ok) { Say(err ?? I18n.T("No he podido guardar.", "Could not save."), true); return false; }
             savedText = text;
             approvedText = null;
             name = System.IO.Path.GetFileName(file.Path);
@@ -1267,7 +1271,7 @@ namespace Stackshot
             Watch();
             PicturesFolderChanged();
             MarkDirty(true);
-            Say("Guardado a las " + DateTime.Now.ToString("HH:mm") + ".", false);
+            Say(I18n.Fmt("Guardado a las {0}.", "Saved at {0}.", DateTime.Now.ToString("HH:mm")), false);
             return true;
         }
 
@@ -1288,8 +1292,8 @@ namespace Stackshot
             {
                 using (System.Windows.Forms.SaveFileDialog d = new System.Windows.Forms.SaveFileDialog())
                 {
-                    d.Title = "Guardar como";
-                    d.Filter = xml ? "XML|*.xml|Todos los archivos|*.*" : "Markdown|*.md|Texto|*.txt|Todos los archivos|*.*";
+                    d.Title = I18n.T("Guardar como", "Save as");
+                    d.Filter = xml ? I18n.T("XML|*.xml|Todos los archivos|*.*", "XML|*.xml|All files|*.*") : I18n.T("Markdown|*.md|Texto|*.txt|Todos los archivos|*.*", "Markdown|*.md|Text|*.txt|All files|*.*");
                     d.FileName = suggested;
                     d.AddExtension = true;
                     d.DefaultExt = ext.Substring(1);
@@ -1298,7 +1302,7 @@ namespace Stackshot
                     return d.ShowDialog(Win32) == System.Windows.Forms.DialogResult.OK ? d.FileName : null;
                 }
             }
-            catch (Exception ex) { ShotStack.Log("Guardar como: " + ex.Message); Say("No he podido abrir el di\u00E1logo de guardar.", true); return null; }
+            catch (Exception ex) { ShotStack.Log("Guardar como: " + ex.Message); Say(I18n.T("No he podido abrir el di\u00E1logo de guardar.", "Could not open save dialog."), true); return null; }
         }
 
         static string Safe(string title)
@@ -1317,7 +1321,7 @@ namespace Stackshot
         {
             if (file == null || file.Path == null) return;
             try { System.Diagnostics.Process.Start("explorer.exe", "/select,\"" + file.Path + "\""); }
-            catch (Exception ex) { ShotStack.Log("Mostrar en la carpeta: " + ex.Message); Say("No he podido abrir la carpeta.", true); }
+            catch (Exception ex) { ShotStack.Log("Mostrar en la carpeta: " + ex.Message); Say(I18n.T("No he podido abrir la carpeta.", "Could not open the folder."), true); }
         }
 
         // ---- Changes on disk
@@ -1380,7 +1384,9 @@ namespace Stackshot
             if (file == null || file.Path == null) return;
             if (asked && Dirty)
             {
-                int r = DocAlert.Ask(this, "\u00BFRecargar \u00AB" + name + "\u00BB desde el disco?", "Se perder\u00E1n los cambios que no has guardado.", new string[] { "Recargar", "Cancelar" }, 1, 1);
+                int r = DocAlert.Ask(this, I18n.Fmt("\u00BFRecargar \u00AB{0}\u00BB desde el disco?", "Reload \u201C{0}\u201D from disk?", name),
+                                     I18n.T("Se perder\u00E1n los cambios que no has guardado.", "Unsaved changes will be lost."),
+                                     new string[] { I18n.T("Recargar", "Reload"), I18n.T("Cancelar", "Cancel") }, 1, 1);
                 if (r != 0) return;
             }
             string path = file.Path;
@@ -1394,7 +1400,7 @@ namespace Stackshot
                     Dispatcher.BeginInvoke(new Action(delegate
                     {
                         if (my != token || open != this) return;
-                        if (d == null) { Say(err ?? "No he podido leer el archivo.", true); return; }
+                        if (d == null) { Say(err ?? I18n.T("No he podido leer el archivo.", "Could not read file."), true); return; }
                         ApplyReload(d, asked);
                     }));
                 }
@@ -1416,7 +1422,7 @@ namespace Stackshot
             MarkDirty(true);
             Preview(false);
             Watch();
-            Say(asked ? "Recargado desde el disco." : "Recargado: el archivo cambi\u00F3 fuera de Stackshot.", false);
+            Say(asked ? I18n.T("Recargado desde el disco.", "Reloaded from disk.") : I18n.T("Recargado: el archivo cambi\u00F3 fuera de Stackshot.", "Reloaded: file changed outside Stackshot."), false);
         }
 
         string faultCode, faultText;
@@ -1453,16 +1459,17 @@ namespace Stackshot
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             g.Children.Add(new GlyphView("warning", 16, pal.Orange) { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) });
             TextBlock msg = new TextBlock { FontSize = 13, Foreground = Ds.Brush(pal.Label), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
-            msg.Text = kind == 1 ? "El archivo ha cambiado en el disco y aqu\u00ED tienes cambios sin guardar." : "El archivo ya no existe en el disco. Gu\u00E1rdalo para no perder el texto.";
+            msg.Text = kind == 1 ? I18n.T("El archivo ha cambiado en el disco y aqu\u00ED tienes cambios sin guardar.", "The file changed on disk and you have unsaved changes here.") :
+                                   I18n.T("El archivo ya no existe en el disco. Gu\u00E1rdalo para no perder el texto.", "The file no longer exists on disk. Save it so you don't lose the text.");
             Grid.SetColumn(msg, 1);
             g.Children.Add(msg);
             StackPanel acts = new StackPanel { Orientation = Orientation.Horizontal };
             Grid.SetColumn(acts, 2);
             if (kind == 1)
             {
-                MacButton reload = new MacButton("Recargar", ButtonKind.Secondary, null, null, 26);
+                MacButton reload = new MacButton(I18n.T("Recargar", "Reload"), ButtonKind.Secondary, null, null, 26);
                 reload.Click += delegate { Reload(false); };
-                MacButton keep = new MacButton("Mantener mis cambios", ButtonKind.Secondary, null, null, 26) { Margin = new Thickness(6, 0, 0, 0) };
+                MacButton keep = new MacButton(I18n.T("Mantener mis cambios", "Keep my changes"), ButtonKind.Secondary, null, null, 26) { Margin = new Thickness(6, 0, 0, 0) };
                 keep.Click += delegate
                 {
                     // The version on disk is now known: saving will overwrite it without asking again.
@@ -1475,9 +1482,9 @@ namespace Stackshot
             }
             else
             {
-                MacButton save = new MacButton("Guardar", ButtonKind.Secondary, "save", null, 26);
+                MacButton save = new MacButton(I18n.T("Guardar", "Save"), ButtonKind.Secondary, "save", null, 26);
                 save.Click += delegate { if (file != null) lock (file) file.Acknowledge(); Save(false); };
-                MacButton saveAs = new MacButton("Guardar como\u2026", ButtonKind.Secondary, null, null, 26) { Margin = new Thickness(6, 0, 0, 0) };
+                MacButton saveAs = new MacButton(I18n.T("Guardar como\u2026", "Save as\u2026"), ButtonKind.Secondary, null, null, 26) { Margin = new Thickness(6, 0, 0, 0) };
                 saveAs.Click += delegate { Save(true); };
                 acts.Children.Add(save);
                 acts.Children.Add(saveAs);
@@ -1617,13 +1624,13 @@ namespace Stackshot
             int n;
             bool slow;
             string t = TextSearch.ReplaceAll(Current(), findQuery, findBar.With.Text, findBar.Options, out n, out slow);
-            if (slow) { Say("La expresi\u00F3n tarda demasiado: no he reemplazado nada.", true); return; }
-            if (n == 0) { Say("No hay nada que reemplazar.", false); return; }
+            if (slow) { Say(I18n.T("La expresi\u00F3n tarda demasiado: no he reemplazado nada.", "The expression takes too long: nothing was replaced."), true); return; }
+            if (n == 0) { Say(I18n.T("No hay nada que reemplazar.", "Nothing to replace."), false); return; }
             // One edit, one undo step.
             editor.SetText(t);
             text = editor.Text;
             RefreshHits(false);
-            Say(n == 1 ? "1 reemplazo." : n.ToString("N0") + " reemplazos.", false);
+            Say(n == 1 ? I18n.T("1 reemplazo.", "1 replacement.") : I18n.Fmt("{0} reemplazos.", "{0} replacements.", n.ToString("N0")), false);
         }
 
         // ---- Input
@@ -1655,7 +1662,7 @@ namespace Stackshot
                     return;
                 }
                 // In the editor the first Esc only leaves it, so a stray press does not close the window.
-                if (Keyboard.FocusedElement is TextBox) { Keyboard.ClearFocus(); Focus(); if (Dirty) Say("Pulsa Esc otra vez para cerrar.", false); }
+                if (Keyboard.FocusedElement is TextBox) { Keyboard.ClearFocus(); Focus(); if (Dirty) Say(I18n.T("Pulsa Esc otra vez para cerrar.", "Press Esc again to close."), false); }
                 else Close();
                 return;
             }
@@ -1691,10 +1698,10 @@ namespace Stackshot
             if (!inEditor || xml) return;
 
             // Markdown formatting in the editor.
-            if (key == Key.B && !shift) { e.Handled = true; Wrap("**", "texto"); }
-            else if (key == Key.I && !shift) { e.Handled = true; Wrap("*", "texto"); }
-            else if (key == Key.X && shift) { e.Handled = true; Wrap("~~", "texto"); }
-            else if (key == Key.C && shift) { e.Handled = true; Wrap("`", "c\u00F3digo"); }
+            if (key == Key.B && !shift) { e.Handled = true; Wrap("**", I18n.T("texto", "text")); }
+            else if (key == Key.I && !shift) { e.Handled = true; Wrap("*", I18n.T("texto", "text")); }
+            else if (key == Key.X && shift) { e.Handled = true; Wrap("~~", I18n.T("texto", "text")); }
+            else if (key == Key.C && shift) { e.Handled = true; Wrap("`", I18n.T("c\u00F3digo", "code")); }
             else if (key == Key.K && !shift) { e.Handled = true; Command(delegate(string t, int a, int l) { return EditCommands.Link(t, a, l); }); }
             else if ((key == Key.D8 || key == Key.NumPad8) && shift) { e.Handled = true; Prefix(LineKind.Bullet); }
             else if ((key == Key.D7 || key == Key.NumPad7) && shift) { e.Handled = true; Prefix(LineKind.Numbered); }
@@ -1753,9 +1760,9 @@ namespace Stackshot
                 // keep Explorer waiting in the middle of the drag.
                 string plain;
                 List<string> specs = MarkdownTools.Specs(e.Data, out plain);
-                Dispatcher.BeginInvoke(new Action(delegate { LoadParsed(specs, plain, "No he encontrado ning\u00FAn texto ni archivo .md o .xml en lo que has soltado."); }));
+                Dispatcher.BeginInvoke(new Action(delegate { LoadParsed(specs, plain, I18n.T("No he encontrado ning\u00FAn texto ni archivo .md o .xml en lo que has soltado.", "No text or .md/.xml file found in what you dropped.")); }));
             }
-            catch (Exception ex) { ShotStack.Log("Markdown soltar: " + ex.Message); Fail("No he podido leer lo que has soltado."); }
+            catch (Exception ex) { ShotStack.Log("Markdown soltar: " + ex.Message); Fail(I18n.T("No he podido leer lo que has soltado.", "Could not read what you dropped.")); }
         }
 
         void Glow(bool on)
@@ -1784,7 +1791,7 @@ namespace Stackshot
             // A big document takes a moment to lay out in the editor: say so before it starts.
             if (fresh && text.Length > MarkdownEditor.NiceFontLimit)
             {
-                Say("Abriendo el editor\u2026", false);
+                Say(I18n.T("Abriendo el editor\u2026", "Opening the editor\u2026"), false);
                 Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(delegate { if (editing && text != null) { Build(); status = null; Stats(); } }));
                 if (mode != null) mode.Selected = 1;
                 return;
@@ -1812,42 +1819,42 @@ namespace Stackshot
         {
             if (xml || Current() == null) return;
             string t = MarkdownTools.Tidy(text);
-            if (t.TrimEnd('\n') == text.TrimEnd('\n')) { Say("Ya estaba ordenado.", false); Confirm(tidyTool, "Ya estaba"); return; }
-            Replace(t, "Documento ordenado.");
-            Confirm(tidyTool, "Ordenado");
+            if (t.TrimEnd('\n') == text.TrimEnd('\n')) { Say(I18n.T("Ya estaba ordenado.", "Already tidy."), false); Confirm(tidyTool, I18n.T("Ya estaba", "Already")); return; }
+            Replace(t, I18n.T("Documento ordenado.", "Document tidied."));
+            Confirm(tidyTool, I18n.T("Ordenado", "Tidied"));
         }
 
         void Index()
         {
             if (xml || Current() == null) return;
             string t = MarkdownTools.Toc(text);
-            if (t == null) { Say("No hay t\u00EDtulos suficientes para un \u00EDndice.", true); return; }
-            Replace(t, "\u00CDndice insertado.");
-            Confirm(indexTool, "Insertado");
+            if (t == null) { Say(I18n.T("No hay t\u00EDtulos suficientes para un \u00EDndice.", "Not enough headings for a table of contents."), true); return; }
+            Replace(t, I18n.T("\u00CDndice insertado.", "Table of contents inserted."));
+            Confirm(indexTool, I18n.T("Insertado", "Inserted"));
         }
 
         // Formats or compacts the XML (text next to markup and xml:space="preserve" stay as they are).
         void Reformat(bool indent)
         {
             if (!xml || Current() == null) return;
-            if (formatting) { Say("Ya estoy formateando\u2026", false); return; }
+            if (formatting) { Say(I18n.T("Ya estoy formateando\u2026", "Already formatting\u2026"), false); return; }
             string snap = text;
             int my = ++formatToken;
             formatting = true;
             XmlFormat f = new XmlFormat { Indent = format.Indent, AttrLines = format.AttrLines };
-            Say(indent ? "Formateando\u2026" : "Compactando\u2026", false);
+            Say(indent ? I18n.T("Formateando\u2026", "Formatting\u2026") : I18n.T("Compactando\u2026", "Compacting\u2026"), false);
             System.Threading.Tasks.Task.Factory.StartNew(delegate
             {
                 string e = null, r = null;
                 try { r = XmlDoc.Format(snap, indent, f, out e); }
-                catch (Exception ex) { ShotStack.Log("XML formatear: " + ex.Message); e = "No he podido leer el XML: " + ex.Message; }
+                catch (Exception ex) { ShotStack.Log("XML formatear: " + ex.Message); e = I18n.Fmt("No he podido leer el XML: {0}", "Could not read the XML: {0}", ex.Message); }
                 try
                 {
                     Dispatcher.BeginInvoke(new Action(delegate
                     {
                         if (my != formatToken) return;
                         formatting = false;
-                        if (Current() != snap) { Say("El texto cambi\u00F3 mientras formateaba: vuelve a pulsar " + (indent ? "Formatear" : "Compactar") + ".", false); return; }
+                        if (Current() != snap) { Say(I18n.Fmt("El texto cambi\u00F3 mientras formateaba: vuelve a pulsar {0}.", "The text changed while formatting: press {0} again.", indent ? I18n.T("Formatear", "Format") : I18n.T("Compactar", "Compact")), false); return; }
                         ApplyFormat(r, e, indent);
                     }));
                 }
@@ -1858,8 +1865,8 @@ namespace Stackshot
         void ApplyFormat(string t, string err, bool indent)
         {
             if (t == null) { Say(err, true); return; }
-            if (t.TrimEnd('\n') == text.TrimEnd('\n')) { Say(indent ? "Ya estaba formateado." : "Ya estaba compacto.", false); return; }
-            Replace(t, indent ? "XML formateado." : "XML compactado.");
+            if (t.TrimEnd('\n') == text.TrimEnd('\n')) { Say(indent ? I18n.T("Ya estaba formateado.", "Already formatted.") : I18n.T("Ya estaba compacto.", "Already compact."), false); return; }
+            Replace(t, indent ? I18n.T("XML formateado.", "XML formatted.") : I18n.T("XML compactado.", "XML compacted."));
         }
 
         BitmapSource RenderDoc(out string err)
@@ -1867,9 +1874,9 @@ namespace Stackshot
             err = null;
             if (!xml) return MarkdownView.Render(Current(), out err);
             if (CompareShown()) return CompareImage(out err);
-            if (parsing || parsedText != Current()) { err = "Un momento: todav\u00EDa estoy leyendo el XML."; return null; }
-            if (model == null) { err = "Corrige el XML antes de crear la imagen."; return null; }
-            if (tree == null) { err = "Pasa a Vista para crear la imagen del XML."; return null; }
+            if (parsing || parsedText != Current()) { err = I18n.T("Un momento: todav\u00EDa estoy leyendo el XML.", "One moment: still reading the XML."); return null; }
+            if (model == null) { err = I18n.T("Corrige el XML antes de crear la imagen.", "Fix the XML before creating the image."); return null; }
+            if (tree == null) { err = I18n.T("Pasa a Vista para crear la imagen del XML.", "Switch to View to create the XML image."); return null; }
             return XmlTreeView.Render(tree.Rows, tree.Look, out err);
         }
 
@@ -1878,16 +1885,16 @@ namespace Stackshot
         {
             if (xml || err != MarkdownView.TooLong) { Say(err, true); return; }
             Cursor = null;
-            if (DocAlert.Ask(this, "Demasiado largo para una imagen",
-                             "Como imagen medir\u00EDa m\u00E1s de 16.000 p\u00EDxeles de alto y no se podr\u00EDa ver bien. En PDF va entero, repartido en p\u00E1ginas.",
-                             new string[] { "Guardar como PDF", "Cancelar" }, 0, 1) == 0)
+            if (DocAlert.Ask(this, I18n.T("Demasiado largo para una imagen", "Too long for an image"),
+                             I18n.T("Como imagen medir\u00EDa m\u00E1s de 16.000 p\u00EDxeles de alto y no se podr\u00EDa ver bien. En PDF va entero, repartido en p\u00E1ginas.", "As an image it would be over 16,000 pixels high and hard to view properly. In PDF it stays whole, split across pages."),
+                             new string[] { I18n.T("Guardar como PDF", "Save as PDF"), I18n.T("Cancelar", "Cancel") }, 0, 1) == 0)
                 ExportPdf();
         }
 
         void CopyMarkdown()
         {
-            if (Retry(delegate { Clipboard.SetText(Current()); })) { Say(xml ? "XML copiado." : "Markdown copiado.", false); Confirm(copyTextTool, "Copiado"); }
-            else Say("No he podido usar el portapapeles.", true);
+            if (Retry(delegate { Clipboard.SetText(Current()); })) { Say(xml ? I18n.T("XML copiado.", "XML copied.") : I18n.T("Markdown copiado.", "Markdown copied."), false); Confirm(copyTextTool, I18n.T("Copiado", "Copied")); }
+            else Say(I18n.T("No he podido usar el portapapeles.", "Could not use the clipboard."), true);
         }
 
         void CopyImage()
@@ -1902,10 +1909,10 @@ namespace Stackshot
                 DataObject d = new DataObject();
                 d.SetImage(img);
                 d.SetData("CanUploadToCloudClipboard", new MemoryStream(BitConverter.GetBytes(0)));
-                if (Retry(delegate { Clipboard.SetDataObject(d, true); })) { Say("Imagen copiada.", false); Confirm(copyImageTool, "Copiada"); }
-                else Say("No he podido usar el portapapeles.", true);
+                if (Retry(delegate { Clipboard.SetDataObject(d, true); })) { Say(I18n.T("Imagen copiada.", "Image copied."), false); Confirm(copyImageTool, I18n.T("Copiada", "Copied")); }
+                else Say(I18n.T("No he podido usar el portapapeles.", "Could not use the clipboard."), true);
             }
-            catch (Exception ex) { ShotStack.Log("Markdown imagen: " + ex.Message); Say("No he podido crear la imagen.", true); }
+            catch (Exception ex) { ShotStack.Log("Markdown imagen: " + ex.Message); Say(I18n.T("No he podido crear la imagen.", "Could not create image."), true); }
             finally { Cursor = null; }
         }
 
@@ -1947,7 +1954,7 @@ namespace Stackshot
                 BitmapSource img = RenderDoc(out err);
                 if (img == null) { NoImage(err); return; }
                 string path = owner.SaveCapture(Ink.ToGdi(img), xml ? "XML" : "Markdown");
-                if (path == null) { Say("No he podido a\u00F1adir la captura.", true); return; }
+                if (path == null) { Say(I18n.T("No he podido a\u00F1adir la captura.", "Could not add capture."), true); return; }
                 try { System.IO.File.WriteAllBytes(System.IO.Path.ChangeExtension(path, xml ? ".xml" : ".md"), Companion(text, xml, file)); }
                 catch (Exception ex) { ShotStack.Log("Markdown guardar: " + ex.Message); }
                 // Text that is not a file is kept in the copy next to the capture.
@@ -1955,7 +1962,7 @@ namespace Stackshot
                 if (asked) approvedText = text;
                 Close();
             }
-            catch (Exception ex) { ShotStack.Log("Markdown listo: " + ex.Message); Say("No he podido crear la captura.", true); }
+            catch (Exception ex) { ShotStack.Log("Markdown listo: " + ex.Message); Say(I18n.T("No he podido crear la captura.", "Could not create capture."), true); }
             finally { Cursor = null; }
         }
 

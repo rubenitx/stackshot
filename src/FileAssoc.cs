@@ -9,9 +9,11 @@ namespace Stackshot
 {
     public sealed class AssocKind
     {
-        public readonly string ProgId, Friendly;
+        public readonly string ProgId, FriendlyEs, FriendlyEn;
         public readonly string[] Exts;
-        public AssocKind(string progId, string friendly, params string[] exts) { ProgId = progId; Friendly = friendly; Exts = exts; }
+        // The type's name as Explorer shows it, in the language in use when it is registered.
+        public string Friendly { get { return I18n.IsSpanish ? FriendlyEs : FriendlyEn; } }
+        public AssocKind(string progId, string friendlyEs, string friendlyEn, params string[] exts) { ProgId = progId; FriendlyEs = friendlyEs; FriendlyEn = friendlyEn; Exts = exts; }
     }
 
     // Stackshot is offered as an app for the extension: its own ProgID, an OpenWithProgids entry, and Capabilities with a
@@ -19,10 +21,10 @@ namespace Stackshot
     // is only ever read. Every key here is ours; nothing of another app is touched. Nothing is written unless asked.
     public static class FileAssoc
     {
-        public static readonly AssocKind Markdown = new AssocKind("Stackshot.Markdown", "Documento Markdown", ".md", ".markdown");
-        public static readonly AssocKind Xml = new AssocKind("Stackshot.Xml", "Documento XML", ".xml");
+        public static readonly AssocKind Markdown = new AssocKind("Stackshot.Markdown", "Documento Markdown", "Markdown document", ".md", ".markdown");
+        public static readonly AssocKind Xml = new AssocKind("Stackshot.Xml", "Documento XML", "XML document", ".xml");
         // Cine masters: Windows' own player cannot decode them, Stackshot's can.
-        public static readonly AssocKind Video = new AssocKind("Stackshot.Video", "V\u00EDdeo MKV", ".mkv");
+        public static readonly AssocKind Video = new AssocKind("Stackshot.Video", "V\u00EDdeo MKV", "MKV video", ".mkv");
         static readonly AssocKind[] All = { Markdown, Xml, Video };
 
         const string Classes = @"Software\Classes\";
@@ -88,7 +90,8 @@ namespace Stackshot
                 using (RegistryKey cap = Hkcu.CreateSubKey(CapKey))
                 {
                     cap.SetValue("ApplicationName", AppName);
-                    cap.SetValue("ApplicationDescription", "Capturas de pantalla, v\u00EDdeo y GIF, con reproductor de v\u00EDdeo y visor de Markdown y XML");
+                    cap.SetValue("ApplicationDescription", I18n.T("Capturas de pantalla, v\u00EDdeo y GIF, con reproductor de v\u00EDdeo y visor de Markdown y XML",
+                                                                  "Screenshots, video and GIF, with a video player and a Markdown and XML viewer"));
                     cap.SetValue("ApplicationIcon", "\"" + exe + "\",0");
                     using (RegistryKey fa = cap.CreateSubKey("FileAssociations"))
                         foreach (string ext in k.Exts) fa.SetValue(ext, k.ProgId);

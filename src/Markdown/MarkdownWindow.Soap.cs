@@ -85,7 +85,7 @@ namespace Stackshot
             for (int i = 0; i < 5; i++) g.ColumnDefinitions.Add(new ColumnDefinition { Width = i == 1 ? new GridLength(1, GridUnitType.Star) : GridLength.Auto });
 
             TextBlock op = new TextBlock { FontSize = 13, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 420 };
-            op.Text = s.FaultBody ? "SOAP Fault" : s.Operation.Length > 0 ? s.Operation : "Body vac\u00EDo";
+            op.Text = s.FaultBody ? "SOAP Fault" : s.Operation.Length > 0 ? s.Operation : I18n.T("Body vac\u00EDo", "Empty Body");
             op.Foreground = Ds.Brush(s.FaultBody ? red : pal.Label);
             op.ToolTip = s.Qualified.Length > 0 ? s.Qualified + (s.NsUri.Length > 0 ? "\n" + s.NsUri : "") + "\nSOAP " + s.Version : "SOAP " + s.Version;
             g.Children.Add(op);
@@ -93,7 +93,7 @@ namespace Stackshot
             if (fault)
             {
                 TextBlock msg = new TextBlock { FontSize = 13, Foreground = Ds.Brush(pal.Label), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(12, 0, 8, 0) };
-                msg.Text = faultText.Length > 0 ? faultText : "Sin mensaje";
+                msg.Text = faultText.Length > 0 ? faultText : I18n.T("Sin mensaje", "No message");
                 if (faultText.Length == 0) msg.Foreground = Ds.Brush(pal.Label2);
                 msg.ToolTip = (faultCode + "\n" + faultText).Trim();
                 Grid.SetColumn(msg, 1);
@@ -111,15 +111,15 @@ namespace Stackshot
             chip.BorderThickness = HcPaint.Edge;
             TextBlock ct = new TextBlock { FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Ds.Brush(fault ? red : green), TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 240 };
             ct.Text = fault ? "Fault" + (faultCode.Length > 0 ? " \u00B7 " + faultCode : "") : "OK";
-            chip.ToolTip = fault ? (faultCode.Length > 0 ? "C\u00F3digo del fallo: " + faultCode : "Respuesta con fallo") : "Sin SOAP Fault";
+            chip.ToolTip = fault ? (faultCode.Length > 0 ? I18n.Fmt("C\u00F3digo del fallo: {0}", "Fault code: {0}", faultCode) : I18n.T("Respuesta con fallo", "Fault response")) : I18n.T("Sin SOAP Fault", "No SOAP Fault");
             chip.Child = ct;
             Grid.SetColumn(chip, 3);
             g.Children.Add(chip);
 
             StackPanel nav = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            soapPrev = new DocIconButton("back", "XML anterior de la carpeta ([)", 26);
+            soapPrev = new DocIconButton("back", I18n.T("XML anterior de la carpeta ([)", "Previous XML in folder ([)"), 26);
             soapPrev.Click += delegate { Neighbour(-1); };
-            soapNext = new DocIconButton("right", "XML siguiente de la carpeta (])", 26) { Margin = new Thickness(2, 0, 0, 0) };
+            soapNext = new DocIconButton("right", I18n.T("XML siguiente de la carpeta (])", "Next XML in folder (])"), 26) { Margin = new Thickness(2, 0, 0, 0) };
             soapNext.Click += delegate { Neighbour(1); };
             nav.Children.Add(soapPrev);
             nav.Children.Add(soapNext);
