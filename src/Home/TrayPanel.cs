@@ -503,6 +503,7 @@ namespace Stackshot
             if (settings.XmlWatch) Add(KRow, "lastxml", I18n.T("Abrir el \u00FAltimo XML", "Open latest XML"), "doc", 3);
             Add(KRow, "closeall", I18n.T("Cerrar todas las miniaturas", "Close all thumbnails"), "stack", 3).Enabled = HasCards == null || HasCards();
             Add(KRow, "settings", I18n.T("Ajustes\u2026", "Settings\u2026"), "gear", 3);
+            Add(KRow, "language", I18n.Language == "es" ? "English" : I18n.Language == "en" ? "Deutsch" : "Espa\u00F1ol", "globe", 3);
             Add(KLine, null, null, null, 0);
             Add(KRow, "quit", I18n.T("Salir", "Quit"), "power", 4);
             statusAlert = recording;

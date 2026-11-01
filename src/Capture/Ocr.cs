@@ -174,12 +174,12 @@ namespace Stackshot
             return Color.FromArgb((c.R * a + 255 * (255 - a)) / 255, (c.G * a + 255 * (255 - a)) / 255, (c.B * a + 255 * (255 - a)) / 255);
         }
 
-        // The recognizer: Spanish when Windows has it (it reads English too, and knows ñ and accents), otherwise the
+        // The recognizer: matches the active language (Spanish or English) when Windows has it, otherwise the
         // user's languages, otherwise any.
         static OcrEngine Engine()
         {
             foreach (Windows.Globalization.Language l in OcrEngine.AvailableRecognizerLanguages)
-                if (l.LanguageTag.StartsWith("es", StringComparison.OrdinalIgnoreCase)) return OcrEngine.TryCreateFromLanguage(l);
+                if (l.LanguageTag.StartsWith(I18n.Language, StringComparison.OrdinalIgnoreCase)) return OcrEngine.TryCreateFromLanguage(l);
             OcrEngine e = OcrEngine.TryCreateFromUserProfileLanguages();
             if (e != null) return e;
             foreach (Windows.Globalization.Language l in OcrEngine.AvailableRecognizerLanguages) return OcrEngine.TryCreateFromLanguage(l);

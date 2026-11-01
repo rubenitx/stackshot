@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Stackshot
 {
-    public enum SensitiveKind { Dni, Nie, Nss, Iban, Card, Email, Phone }
+    public enum SensitiveKind { Dni, Nie, Nss, Iban, Card, Email, Phone, Ssn, Secret }
 
     // One piece of personal data: what it is, the text as read, where it is in its line of text and, found in an image,
     // the box to cover (its words, padded; image pixels).
@@ -100,12 +100,17 @@ namespace Stackshot
             if (string.IsNullOrEmpty(text)) return o;
             bool[] used = new bool[text.Length];
             Emails(text, used, o);
+            Secrets(text, used, o);
             Ibans(text, used, o);
             Nss(text, used, o);
             Cards(text, used, o);
+
+
             Nies(text, used, o);
             Dnis(text, used, o);
             Phones(text, used, o);
+            Ssns(text, used, o);
+
             o.Sort(delegate(SensitiveFinding a, SensitiveFinding b) { return a.Start.CompareTo(b.Start); });
             return o;
         }
@@ -263,11 +268,11 @@ namespace Stackshot
         }
 
         // Labels a number may be joined to by OCR.
-        static readonly HashSet<string> Glued = new HashSet<string> { "dni", "nif", "nie", "nss", "naf", "iban", "tel", "tlf", "telf", "tfno", "movil", "fax" };
+        static readonly HashSet<string> Glued = new HashSet<string> { "dni", "nif", "nie", "nss", "naf", "iban", "tel", "tlf", "telf", "tfno", "movil", "fax", "ssn", "phone" };
 
         // Words that say the number after them is a phone.
         static readonly HashSet<string> PhoneWords = new HashSet<string> { "tel", "telefono", "telefonos", "telf", "tfno", "tlf", "tlfno", "movil", "moviles", "fax",
-                                                                           "whatsapp", "llamar", "llama", "llamanos", "contacto", "phone", "mobile", "cel", "celular", "fijo" };
+                                                                           "whatsapp", "llamar", "llama", "llamanos", "contacto", "phone", "mobile", "cel", "celular", "fijo", "cell", "telephone" };
 
         // Words that say the number after them is an identifier, an amount or a code, not a phone or a card.
         static readonly HashSet<string> IdWords = new HashSet<string> { "factura", "fra", "n", "no", "num", "numero", "nro", "ref", "referencia", "pedido", "albaran",
@@ -381,6 +386,105 @@ namespace Stackshot
                 if (Latin(c)) letters++;
             }
             return letters >= 3;
+        }
+
+        // ---- Developer secrets and API tokens (GitHub tokens, OpenAI/Anthropic keys, AWS keys, private keys)
+
+        static readonly string[] SecretPrefixes = { "ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_", "sk-proj-", "sk-ant-", "sk-admin-", "sk-", "xoxb-", "xoxp-", "AKIA", "ASIA" };
+
+        static void Secrets(string t, bool[] used, List<SensitiveFinding> o)
+        {
+            int pk = t.IndexOf("-----BEGIN ");
+            while (pk >= 0)
+            {
+                int end = t.IndexOf("-----", pk + 11);
+                if (end > pk && end + 5 <= t.Length)
+                {
+                    string tag = t.Substring(pk, end + 5 - pk);
+                    if (tag.Contains("PRIVATE KEY") && Free(used, pk, end + 5))
+                    {
+                        Add(o, used, SensitiveKind.Secret, t, pk, end + 5, tag);
+                    }
+                }
+                pk = t.IndexOf("-----BEGIN ", pk + 11);
+            }
+
+            for (int i = 0; i < t.Length; i++)
+            {
+                if (!Starts(t, i)) continue;
+                foreach (string prefix in SecretPrefixes)
+                {
+                    if (i + prefix.Length >= t.Length || string.Compare(t, i, prefix, 0, prefix.Length, StringComparison.Ordinal) != 0) continue;
+                    int j = i + prefix.Length;
+                    if (prefix == "AKIA" || prefix == "ASIA")
+                    {
+                        while (j < t.Length && ((t[j] >= 'A' && t[j] <= 'Z') || (t[j] >= '0' && t[j] <= '9'))) j++;
+                        if (j - i == 20 && Ends(t, j) && Free(used, i, j))
+                        {
+                            Add(o, used, SensitiveKind.Secret, t, i, j, t.Substring(i, j - i));
+                        }
+                    }
+                    else if (prefix.StartsWith("gh", StringComparison.Ordinal))
+                    {
+                        while (j < t.Length && (Alnum(t[j]) || t[j] == '_')) j++;
+                        if ((j - i == 40 || (prefix == "github_pat_" && j - i >= 40)) && Ends(t, j) && Free(used, i, j))
+                        {
+                            Add(o, used, SensitiveKind.Secret, t, i, j, t.Substring(i, j - i));
+                        }
+                    }
+                    else if (prefix.StartsWith("sk-", StringComparison.Ordinal))
+                    {
+                        while (j < t.Length && (Alnum(t[j]) || t[j] == '_' || t[j] == '-')) j++;
+                        if (j - i >= 24 && Ends(t, j) && Free(used, i, j))
+                        {
+                            Add(o, used, SensitiveKind.Secret, t, i, j, t.Substring(i, j - i));
+                        }
+                    }
+                    else if (prefix.StartsWith("xox", StringComparison.Ordinal))
+                    {
+                        while (j < t.Length && (Alnum(t[j]) || t[j] == '-')) j++;
+                        if (j - i >= 20 && Ends(t, j) && Free(used, i, j))
+                        {
+                            Add(o, used, SensitiveKind.Secret, t, i, j, t.Substring(i, j - i));
+                        }
+                    }
+                }
+            }
+        }
+
+        // ---- US Social Security Numbers (SSN: 3-2-4 digits, checked against SSA area/group/serial rules)
+
+        static readonly HashSet<string> SsnWords = new HashSet<string> { "ssn", "ssn#", "social", "security" };
+
+        static bool SsnWordBefore(string t, int i)
+        {
+            foreach (string w in WordsBefore(t, i, 4)) if (SsnWords.Contains(w)) return true;
+            return false;
+        }
+
+        static void Ssns(string t, bool[] used, List<SensitiveFinding> o)
+        {
+            List<int> sizes = new List<int>();
+            for (int i = 0; i < t.Length; i++)
+            {
+                if (!Starts(t, i) || Digit(t[i]) < 0) continue;
+                sizes.Clear();
+                char sep;
+                int end = Groups(t, i, " -.", sizes, out sep);
+                if (sizes.Count != 3 || sizes[0] != 3 || sizes[1] != 2 || sizes[2] != 4) continue;
+                if (!Ends(t, end) || !Free(used, i, end)) continue;
+                if (sep != '-' && !SsnWordBefore(t, i)) continue;
+                int subs;
+                string digits = Digits(t, i, end, out subs);
+                if (digits.Length != 9 || !FewSubs(subs, 9)) continue;
+                int area = (digits[0] - '0') * 100 + (digits[1] - '0') * 10 + (digits[2] - '0');
+                if (area == 0 || area == 666 || area >= 900) continue;
+                int group = (digits[3] - '0') * 10 + (digits[4] - '0');
+                if (group == 0) continue;
+                int serial = (digits[5] - '0') * 1000 + (digits[6] - '0') * 100 + (digits[7] - '0') * 10 + (digits[8] - '0');
+                if (serial == 0) continue;
+                Add(o, used, SensitiveKind.Ssn, t, i, end, digits);
+            }
         }
 
         // ---- IBAN (ISO 13616, checked with ISO 7064 mod 97-10)
@@ -826,10 +930,11 @@ namespace Stackshot
                 {
                     List<int> g = sizes.GetRange(skip, sizes.Count - skip);
                     int start = prefixed ? i : After(sizes, j, skip), first = After(sizes, j, skip);
-                    if (Sum(g) != 9 || !PhoneShape(g) || !Real(t[first]) || !Free(used, start, end)) continue;
+                    int sum = Sum(g);
+                    if ((sum != 9 && sum != 10) || !PhoneShape(g) || !Real(t[first]) || !Free(used, start, end)) continue;
                     int subs;
                     string digits = Digits(t, first, end, out subs);
-                    if (digits.Length != 9 || digits[0] < '6' || !FewSubs(subs, 9)) continue;
+                    if (sum == 9) { if (digits.Length != 9 || digits[0] < '6' || !FewSubs(subs, 9)) continue; } else if (sum == 10) { if (digits.Length != 10 || digits[0] < '2' || digits[3] < '2' || !FewSubs(subs, 10)) continue; if (!(prefixed || PhoneWordBefore(t, start) || (start > 0 && t[start - 1] == '(')) || Amount(t, start, end) || sep == '.') continue; }
                     if (!prefixed)
                     {
                         bool labelled = PhoneWordBefore(t, start);
@@ -856,8 +961,8 @@ namespace Stackshot
             }
             else if (k + 2 <= t.Length && t[k] == '0' && t[k + 1] == '0') k += 2;
             else if (!paren) return false;
-            if (k + 2 > t.Length || t[k] != '3' || t[k + 1] != '4') return false;
-            k += 2;
+            if (k < t.Length && t[k] == '1' && (k + 1 >= t.Length || !Real(t[k + 1]))) { k++; } else if (k + 2 <= t.Length && ((t[k] == '3' && t[k + 1] == '4') || (t[k] == '4' && t[k + 1] == '4'))) { k += 2; } else return false;
+
             if (paren) { if (k >= t.Length || t[k] != ')') return false; k++; }
             if (k < t.Length && (t[k] == ' ' || t[k] == '-' || t[k] == '.')) k++;
             if (k >= t.Length || !Real(t[k])) return false;
@@ -872,7 +977,7 @@ namespace Stackshot
         // 91234 56 78): the groups break only where a usual layout does.
         static bool PhoneShape(List<int> g)
         {
-            if (g.Count == 1) return g[0] == 9;
+            if (g.Count == 1) return g[0] == 9 || g[0] == 10;
             List<int> breaks = new List<int>();
             int at = 0;
             for (int i = 0; i < g.Count - 1; i++) { at += g[i]; breaks.Add(at); }
@@ -883,12 +988,12 @@ namespace Stackshot
 
         // ---- Words for the user
 
-        static readonly string[] OneEs = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjeta", "correo", "tel\u00E9fono" };
-        static readonly string[] OneEn = { "ID (DNI)", "Foreigner ID (NIE)", "Social Security no.", "IBAN", "card", "email", "phone" };
+        static readonly string[] OneEs = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjeta", "correo", "tel\u00E9fono", "SSN", "clave secreta" };
+        static readonly string[] OneEn = { "ID (DNI)", "Foreigner ID (NIE)", "Social Security no.", "IBAN", "card", "email", "phone", "SSN", "secret key" };
         static string[] One { get { return I18n.IsSpanish ? OneEs : OneEn; } }
 
-        static readonly string[] ManyEs = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjetas", "correos", "tel\u00E9fonos" };
-        static readonly string[] ManyEn = { "IDs (DNI)", "Foreigner IDs (NIE)", "Social Security nos.", "IBANs", "cards", "emails", "phones" };
+        static readonly string[] ManyEs = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjetas", "correos", "tel\u00E9fonos", "SSNs", "claves secretas" };
+        static readonly string[] ManyEn = { "IDs (DNI)", "Foreigner IDs (NIE)", "Social Security nos.", "IBANs", "cards", "emails", "phones", "SSNs", "secret keys" };
         static string[] Many { get { return I18n.IsSpanish ? ManyEs : ManyEn; } }
 
         public static string Name(SensitiveKind k, int n) { return n == 1 ? One[(int)k] : Many[(int)k]; }

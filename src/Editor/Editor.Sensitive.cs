@@ -19,7 +19,7 @@ namespace Stackshot
         // the window is up.
         void SensitiveSetup()
         {
-            sensitiveItem = Button(I18n.T("Datos sensibles", "Sensitive data"), "shield", I18n.T("Buscar y tapar DNI, NIE, n.\u00BA de la Seguridad Social, IBAN, tarjetas, correos y tel\u00E9fonos. Se leen en tu equipo y puedes quitar cualquier marca  (Ctrl+May\u00FAs+X)", "Find and redact ID, SSN, card, IBAN, email and phone numbers. Read locally on your PC and any mark can be removed  (Ctrl+Shift+X)"), FindSensitive, true);
+            sensitiveItem = Button(I18n.T("Datos sensibles", "Sensitive data"), "shield", I18n.T("Buscar y tapar DNI, NIE, n.\u00BA de la Seguridad Social, IBAN, tarjetas, correos, tel\u00E9fonos, SSN y claves. Se leen en tu equipo y puedes quitar cualquier marca  (Ctrl+May\u00FAs+X)", "Find and redact ID, SSN, card, IBAN, email, phone numbers and secrets. Read locally on your PC and any mark can be removed  (Ctrl+Shift+X)"), FindSensitive, true);
             sensitiveItem.Alt = I18n.T("Buscando\u2026", "Searching\u2026");
             sensitiveItem.Optional = true; // Ctrl+Shift+X
             Shown += delegate { RestoreCovers(); };

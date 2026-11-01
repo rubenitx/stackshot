@@ -40,6 +40,8 @@ namespace Stackshot.Tests
                 T("notice-kinds-match-in-both-languages", NoticeKinds);
                 T("english-audit-of-every-page", EnglishAudit);
                 T("spanish-pages-unchanged-by-a-round-trip", RoundTrip);
+                T("editor-tool-keys-localized", EditorToolKeysLocalized);
+                T("german-localization-catalog", GermanLocalization);
             }
             finally
             {
@@ -146,7 +148,7 @@ namespace Stackshot.Tests
         // so is what Windows itself names in its own language (audio devices).
         static readonly Regex SpanishLetters = new Regex("[\u00E1\u00E9\u00ED\u00F3\u00FA\u00F1\u00C1\u00C9\u00CD\u00D3\u00DA\u00D1\u00BF\u00A1]");
         static readonly Regex SpanishWords = new Regex(@"\b(de|del|la|las|el|los|con|para|una|uno|que|por|sin|al|se|y|tu|tus|en|esta|este|hay|m\u00E1s|aqu\u00ED|nada|todo|captura|capturas|grabar|guardar|abrir|cerrar|ajustes|carpeta|archivo|ventana|pantalla|estilo|nivel|vaso|conmigo|recuperado|Captura|Capturas|Capturar|Grabar|Guardar|Abrir|Cerrar|Copiar|Pegar|Borrar|Quitar|Ajustes|Carpeta|Archivo|Ventana|Pantalla|Estilo|Nivel|Listo|Hecho|Buscar|Mostrar|Ocultar|Volver|Ver)\b");
-        static readonly string[] Allowed = { "Espa\u00F1ol", "Stackshot", "Kero-chan", "Le\u00F3n", "Pok\u00E9mon" };
+        static readonly string[] Allowed = { "Espa\u00F1ol", "Deutsch", "Stackshot", "Kero-chan", "Le\u00F3n", "Pok\u00E9mon" };
 
         internal static bool LooksSpanish(string s)
         {
@@ -427,6 +429,57 @@ namespace Stackshot.Tests
         {
             try { typeof(HomeWindow).GetMethod("SetPage", NP).Invoke(hw, new object[] { id, false }); }
             catch (TargetInvocationException ex) { throw new InvalidOperationException("page " + id + ": " + ex.InnerException, ex.InnerException); }
+        }
+
+        static void EditorToolKeysLocalized()
+        {
+            I18n.Apply("es");
+            Check(I18n.IsSpanish, "is spanish");
+            string[] keysEs = (string[])typeof(Editor).GetProperty("ToolKeys", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null, null);
+            Check(keysEs[0] == "F", "spanish arrow key is F");
+            Check(keysEs[7] == "O", "spanish spotlight key is O");
+
+            I18n.Apply("en");
+            Check(!I18n.IsSpanish, "is english");
+            string[] keysEn = (string[])typeof(Editor).GetProperty("ToolKeys", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null, null);
+            Check(keysEn[0] == "A", "english arrow key is A");
+            Check(keysEn[7] == "S", "english spotlight key is S");
+
+            I18n.Apply("de");
+            Check(I18n.IsGerman, "is german");
+            string[] keysDe = (string[])typeof(Editor).GetProperty("ToolKeys", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null, null);
+            Check(keysDe[0] == "A", "german arrow key is A");
+            Check(keysDe[7] == "S", "german spotlight key is S");
+        }
+
+        static void GermanLocalization()
+        {
+            I18n.Apply("de");
+            Check(I18n.IsGerman, "is german");
+            Check(!I18n.IsSpanish, "is not spanish");
+            Check(!I18n.IsEnglish, "is not english");
+
+            Check(I18n.Save == "Speichern", "Save is Speichern");
+            Check(I18n.Copy == "Kopieren", "Copy is Kopieren");
+            Check(I18n.Close == "Schlie\u00DFen", "Close is Schlie\u00DFen");
+            Check(I18n.Delete == "L\u00F6schen", "Delete is L\u00F6schen");
+            Check(I18n.Cancel == "Abbrechen", "Cancel is Abbrechen");
+            Check(I18n.Done == "Fertig", "Done is Fertig");
+            Check(I18n.Open == "\u00D6ffnen", "Open is \u00D6ffnen");
+            Check(I18n.Quit == "Beenden", "Quit is Beenden");
+            Check(I18n.SettingsText == "Einstellungen", "SettingsText is Einstellungen");
+
+            Check(I18n.T("Inicio", "Home") == "Startseite", "Home is Startseite");
+            Check(I18n.T("Atajos", "Shortcuts") == "Tastenk\u00FCrzel", "Shortcuts is Tastenk\u00FCrzel");
+            Check(I18n.T("Datos sensibles", "Sensitive data") == "Sensible Daten", "Sensitive data is Sensible Daten");
+            Check(I18n.T("Capturar pantalla completa", "Capture full screen") == "Vollbild aufnehmen", "Capture full screen is Vollbild aufnehmen");
+
+            Check(I18n.T("Uno", "One", "Eins") == "Eins", "three-arg T gives Eins in German");
+
+            Check(Notice.KindFor("Kino: verlustfrei, verifiziert") == NoticeKind.Success, "cinema is success");
+            Check(Notice.KindFor("Text kopiert") == NoticeKind.Success, "text copied is success");
+            Check(Notice.KindFor("Audio \u00FCbersteuert") == NoticeKind.Warning, "audio clipped is warning");
+            Check(Notice.KindFor("Konnte nicht speichern") == NoticeKind.Error, "could not save is error");
         }
 
         static void Layout(HomeWindow hw)

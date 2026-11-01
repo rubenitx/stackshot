@@ -11,8 +11,8 @@ using System.Windows.Forms;
 [assembly: AssemblyDescription("Capturas de pantalla, v\u00EDdeo y GIF para Windows, con miniaturas flotantes y editor r\u00E1pido")]
 [assembly: AssemblyCompany("rubenitx")]
 [assembly: AssemblyCopyright("Copyright \u00A9 2026 rubenitx \u00B7 MIT License")]
-[assembly: AssemblyVersion("2.2.1.0")]
-[assembly: AssemblyFileVersion("2.2.1.0")]
+[assembly: AssemblyVersion("2.2.2.0")]
+[assembly: AssemblyFileVersion("2.2.2.0")]
 
 namespace Stackshot
 {
@@ -196,6 +196,20 @@ namespace Stackshot
                     {
                         if (MessageBox.Show(I18n.Fmt("\u00BFActualizar Stackshot de la versi\u00F3n {0} a la {1}?", "Update Stackshot from version {0} to {1}?", Installer.InstalledVersion.ToString(3), Installer.MyVersion.ToString(3)), "Stackshot", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return 0;
                         if (!TryInstall(Installer.StartupEnabled)) return 1;
+                    }
+                    else if (Has("--replace") || Has("--reinstall"))
+                    {
+                        if (!TryInstall(Installer.StartupEnabled)) return 1;
+                    }
+                    else
+                    {
+                        string q = I18n.Fmt("Stackshot {0} ya est\u00E1 instalado en este equipo.\n\n\u00BFDeseas sustituirlo y actualizarlo con esta versi\u00F3n?",
+                                            "Stackshot {0} is already installed on this machine.\n\nDo you want to reinstall and replace it with this version?",
+                                            Installer.InstalledVersion.ToString(3));
+                        if (MessageBox.Show(q, "Stackshot", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                        {
+                            if (!TryInstall(Installer.StartupEnabled)) return 1;
+                        }
                     }
                     Start(Settings.InstalledExe, view != null ? "\"" + view + "\"" : null);
                     return 0;

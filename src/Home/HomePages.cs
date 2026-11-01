@@ -812,12 +812,12 @@ namespace Stackshot
             PaintProfileNote();
             Group(I18n.T("Apariencia", "Appearance"),
                 new SegRow(I18n.T("Idioma", "Language"),
-                           I18n.T("El idioma de la interfaz (autom\u00E1tico seg\u00FAn Windows, espa\u00F1ol o ingl\u00E9s).", "Interface language (automatic based on Windows, Spanish or English)."),
+                           I18n.T("El idioma de la interfaz (autom\u00E1tico seg\u00FAn Windows, espa\u00F1ol, ingl\u00E9s o alem\u00E1n).", "Interface language (automatic based on Windows, Spanish, English or German)."),
                            "globe", Mac.Teal, Mac.Blue,
-                           new string[] { I18n.T("Autom\u00E1tico", "Auto"), "Espa\u00F1ol", "English" },
-                           delegate { return settings.Language == "es" ? 1 : settings.Language == "en" ? 2 : 0; },
+                           new string[] { I18n.T("Autom\u00E1tico", "Auto"), "Espa\u00F1ol", "English", "Deutsch" },
+                           delegate { return settings.Language == "es" ? 1 : settings.Language == "en" ? 2 : settings.Language == "de" ? 3 : 0; },
                            delegate(int i) {
-                               string lang = i == 1 ? "es" : i == 2 ? "en" : "auto";
+                               string lang = i == 1 ? "es" : i == 2 ? "en" : i == 3 ? "de" : "auto";
                                settings.Language = lang;
                                settings.LanguageOffered = true;   // chosen by hand: nothing left to offer
                                settings.Save();
