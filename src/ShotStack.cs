@@ -418,6 +418,13 @@ namespace Stackshot
                     case "lastxml": OpenLatestXml(); break;
                     case "closeall": CloseAll(); break;
                     case "settings": ShowHome("general", false); break;
+                    case "language":
+                        string nextLang = I18n.Language == "es" ? "en" : I18n.Language == "en" ? "de" : "es";
+                        settings.Language = nextLang;
+                        settings.LanguageOffered = true;
+                        settings.Save();
+                        I18n.Apply(nextLang);
+                        break;
                     case "pause": Recorder.TogglePause(); break;
                     case "quit": TryQuit(QuitKind.User); break;
                     // A capture: the panel has already blinked, faded out and hidden (~210 ms after the click, and it is

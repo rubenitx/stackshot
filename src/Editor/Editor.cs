@@ -19,15 +19,21 @@ namespace Stackshot
         static readonly Tool[] ToolOrder = { Tool.Arrow, Tool.Line, Tool.Rect, Tool.Ellipse, Tool.Text, Tool.Counter, Tool.Highlight, Tool.Spotlight, Tool.Pixelate, Tool.Redact, Tool.Crop };
         static readonly string[] ToolNamesEs = { "Flecha", "L\u00EDnea", "Recuadro", "Elipse", "Texto", "N\u00FAmeros", "Resaltar", "Foco: oscurece el resto", "Pixelar", "Tapar (lo m\u00E1s seguro para datos)", "Recortar" };
         static readonly string[] ToolNamesEn = { "Arrow", "Line", "Rectangle", "Ellipse", "Text", "Numbers", "Highlight", "Spotlight: dims the rest", "Pixelate", "Redact (safest for sensitive data)", "Crop" };
-        static string[] ToolNames { get { return I18n.IsSpanish ? ToolNamesEs : ToolNamesEn; } }
-        static readonly string[] ToolKeys = { "F", "L", "R", "E", "T", "N", "H", "O", "P", "X", "C" };
+        static readonly string[] ToolNamesDe = { "Pfeil", "Linie", "Rechteck", "Ellipse", "Text", "Zahlen", "Hervorheben", "Scheinwerfer: dunkelt den Rest ab", "Verpixeln", "Schw\u00E4rzen (am sichersten f\u00FCr Daten)", "Zuschneiden" };
+        static string[] ToolNames { get { return I18n.IsSpanish ? ToolNamesEs : I18n.IsGerman ? ToolNamesDe : ToolNamesEn; } }
+        static readonly string[] ToolKeysEs = { "F", "L", "R", "E", "T", "N", "H", "O", "P", "X", "C" };
+        static readonly string[] ToolKeysEn = { "A", "L", "R", "E", "T", "N", "H", "S", "P", "X", "C" };
+        static readonly string[] ToolKeysDe = { "A", "L", "R", "E", "T", "N", "H", "S", "P", "X", "C" };
+        static string[] ToolKeys { get { return I18n.IsSpanish ? ToolKeysEs : I18n.IsGerman ? ToolKeysDe : ToolKeysEn; } }
         static readonly string[] ToolGlyphs = { "arrow", "line", "rect", "ellipse", "text", "counter", "highlight", "spotlight", "pixelate!", "redact!", "crop" };
         static readonly string[] WeightNamesEs = { "Fino", "Medio", "Grueso" };
         static readonly string[] WeightNamesEn = { "Thin", "Medium", "Thick" };
-        static string[] WeightNames { get { return I18n.IsSpanish ? WeightNamesEs : WeightNamesEn; } }
+        static readonly string[] WeightNamesDe = { "D\u00FCnn", "Mittel", "Dick" };
+        static string[] WeightNames { get { return I18n.IsSpanish ? WeightNamesEs : I18n.IsGerman ? WeightNamesDe : WeightNamesEn; } }
         static readonly string[] SizeNamesEs = { "Peque\u00F1o", "Mediano", "Grande" };
         static readonly string[] SizeNamesEn = { "Small", "Medium", "Large" };
-        static string[] SizeNames { get { return I18n.IsSpanish ? SizeNamesEs : SizeNamesEn; } }
+        static readonly string[] SizeNamesDe = { "Klein", "Mittel", "Gro\u00DF" };
+        static string[] SizeNames { get { return I18n.IsSpanish ? SizeNamesEs : I18n.IsGerman ? SizeNamesDe : SizeNamesEn; } }
         // Captures that already have the backdrop applied, so reopening them doesn't add a second one.
         static readonly HashSet<string> withBackdrop = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -675,9 +681,9 @@ namespace Stackshot
                     return true;
                 case Keys.Delete:
                 case Keys.Back: canvas.DeleteSelected(); return true;
-                case Keys.F: SetTool(Tool.Arrow); return true;
+                case Keys.F: case Keys.A: SetTool(Tool.Arrow); return true;
                 case Keys.L: SetTool(Tool.Line); return true;
-                case Keys.O: SetTool(Tool.Spotlight); return true;
+                case Keys.O: case Keys.S: SetTool(Tool.Spotlight); return true;
                 case Keys.R: SetTool(Tool.Rect); return true;
                 case Keys.E: SetTool(Tool.Ellipse); return true;
                 case Keys.T: SetTool(Tool.Text); return true;

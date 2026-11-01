@@ -67,7 +67,7 @@ namespace Stackshot
         public string BgStyles = "";    // styles saved from the editor's sidebar (BgPanel.Styles)
         // Main window and mascot.
         public int Appearance = 0;          // 0 follow Windows, 1 light, 2 dark
-        public string Language = "auto";    // auto, es, en
+        public string Language = "auto";    // auto, es, en, de
         public bool LanguageOffered;        // English was offered once (Spanish kept from before, Windows in another language)
         public bool AllInOne = false;       // area capture: adjust the area and choose image, video, GIF or scrolling before capturing
         public bool AdjustFirst = false;    // area capture: the area stays adjustable, with a live preview, until Enter or Capturar
@@ -263,7 +263,7 @@ namespace Stackshot
                         case "window": s.HotWindow = v; break;
                         case "scroll": s.HotScroll = v; break;
                         case "appearance": s.Appearance = Int(v, s.Appearance, 0, 2); break;
-                        case "language": { string l = v.ToLowerInvariant().Trim(); if (l == "auto" || l == "es" || l == "en") s.Language = l; hasLanguage = true; break; }
+                        case "language": { string l = v.ToLowerInvariant().Trim(); if (l == "auto" || l == "es" || l == "en" || l == "de") s.Language = l; hasLanguage = true; break; }
                         case "allinone": s.AllInOne = Bool(v, s.AllInOne); break;
                         case "adjustfirst": s.AdjustFirst = Bool(v, s.AdjustFirst); break;
                         case "capturedelay": { int cd = Int(v, s.CaptureDelay, 0, 60); s.CaptureDelay = cd == 3 || cd == 5 || cd == 10 ? cd : s.CaptureDelay; break; }
@@ -546,7 +546,7 @@ namespace Stackshot
             b.AppendLine("BgStyles = " + OneLine(BgStyles));
             b.AppendLine("# Tema: 0 como Windows, 1 claro, 2 oscuro");
             b.AppendLine("Appearance = " + Appearance);
-            b.AppendLine("# Idioma / Language: auto, es, en");
+            b.AppendLine("# Idioma / Language: auto, es, en, de");
             b.AppendLine("Language = " + OneLine(Language));
             b.AppendLine("LanguageOffered = " + (LanguageOffered ? "1" : "0"));
             b.AppendLine("AllInOne = " + (AllInOne ? "1" : "0"));
