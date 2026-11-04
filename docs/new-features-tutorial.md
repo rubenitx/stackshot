@@ -7,29 +7,28 @@ This guide provides a walkthrough of the new features added in the `feature/mult
 ## 1. Multiple Language Architecture & German (Deutsch) Support
 
 ### What it is
-Stackshot now features a comprehensive **multi-language localization engine** with first-class support for **German (Deutsch)** alongside English and Spanish. 
+Stackshot adds **German (Deutsch)** alongside English and Spanish. Some strings still appear in English.
 
-- **German Localization Engine** ([`src/I18n.German.cs`](file:///d:/GitHub/stackshot/src/I18n.German.cs)): Houses a dedicated translation catalog translating navigation items, settings pages, editor buttons, dialogs, notices, and toasts into natural German.
+- **German Localization Engine** ([`src/I18n.German.cs`](../src/I18n.German.cs)): Holds translations for navigation, settings, editor controls, dialogs, and notifications.
 - **Dynamic Language Detection**: In **Automático / Auto** mode, Stackshot automatically matches your Windows display language:
   - German Windows (`de-DE`, `de-AT`, `de-CH`) -> German (`de`)
   - Spanish Windows (`es-ES`, `es-MX`, `ca-ES`, `gl-ES`, `eu-ES`) -> Spanish (`es`)
   - All other display languages -> English (`en`)
-- **Settings Selector**: Under **Settings › General › Appearance › Language** (*Ajustes › General › Apariencia › Idioma* / *Einstellungen › Allgemein › Erscheinungsbild › Sprache*), you can explicitly choose between **Automático**, **Español**, **English**, and **Deutsch**.
+- **Settings Selector**: Under **Settings › General › Appearance › Language**, open the picker and search by name or language code. Choose a language and select **Apply language**.
+- **Preview languages**: French, Portuguese, Simplified Chinese, Hindi, Arabic and Bengali translate the picker and common controls. Other text appears in English. Select these languages manually. Automatic mode continues to choose Spanish, German or English based on Windows.
 
 ---
 
 ## 2. First-Run Language Selector (Welcome Screen)
 
 ### What it is
-When Stackshot is run for the first time or unpacked as a portable binary, it opens the **Welcome** onboarding sheet. Stackshot features an immediate **language selector control** prominently located right under the welcome banner.
+On first installation, the **Welcome** window offers a language selector under the welcome banner.
 
 ### How to use
-1. Launch [`Stackshot.exe`](file:///d:/GitHub/stackshot/bin/Stackshot.exe) on a fresh system or run it with `--welcome`.
-2. Notice the segmented language selector pill (`[ Español | English | Deutsch ]`) right beneath the title.
-3. Click **English**, **Español**, or **Deutsch** to switch the interface.
+1. Launch `Stackshot.exe` on a fresh system.
+2. Open the language button beneath the title.
+3. Search for a language, select it and apply your choice.
 4. The entire setup wizard re-renders immediately in the selected language, while preserving all your selected toggles (startup options, screenshot hotkeys, sound, and save paths).
-
-![Welcome Screen with Language Switcher](screens/welcome-language.png)
 
 ---
 
@@ -40,23 +39,21 @@ Switching languages no longer requires navigating through multiple settings tabs
 
 ### How to use
 1. Click the Stackshot icon in your Windows notification tray (next to the clock).
-2. Click the language button to cycle smoothly between **English**, **Deutsch**, and **Español**.
-3. Stackshot dynamically switches the active language across all surfaces—including open windows, editor toolbars, floating thumbnail cards, and background OCR services—**without requiring an application restart**.
-
-![System Tray Menu with Language Toggle](screens/tray-language.png)
+2. Click **Choose language…** to open the searchable picker.
+3. Settings, the tray, and the editor toolbar refresh automatically.
 
 ---
 
 ## 4. Developer Secrets & International PII Redaction
 
 ### What it is
-The **Sensitive Data Shield** ([`src/Capture/Sensitive.cs`](file:///d:/GitHub/stackshot/src/Capture/Sensitive.cs)) automatically identifies and redacts international personal data and developer secrets:
+The **Sensitive Data Shield** ([`src/Capture/Sensitive.cs`](../src/Capture/Sensitive.cs)) uses Windows OCR to look for these patterns:
 
 - **Cloud & API Secrets**:
   - **GitHub Personal Access Tokens**: Classic (`ghp_...`, `gho_...`, `ghu_...`, `ghs_...`, `ghr_...`) and Fine-Grained tokens (`github_pat_...`).
   - **OpenAI & Anthropic API Keys**: `sk-proj-...`, `sk-ant-...`, `sk-admin-...`, `sk-...`.
   - **Amazon Web Services (AWS)**: Access Key IDs (`AKIA...` and `ASIA...`).
-  - **Private Cryptographic Keys**: Headers and keys matching `-----BEGIN ... PRIVATE KEY-----`.
+  - **Private Cryptographic Keys**: PEM blocks whose opening marker `-----BEGIN ... PRIVATE KEY-----` is recognized by OCR. The cover spans the space between the recognized lines, so it can also cover nearby content in those rows.
   - **Slack Workspace Tokens**: `xoxb-...`, `xoxp-...`, `xapp-...`.
 - **International Personal Data (PII)**:
   - **US Social Security Numbers (SSN)**: Standard 3-2-4 layout (`XXX-XX-XXXX`) validated against official Social Security Administration rules.
@@ -69,20 +66,18 @@ The **Sensitive Data Shield** ([`src/Capture/Sensitive.cs`](file:///d:/GitHub/st
 1. Take a screenshot containing code, terminals, or documents: press <kbd>Print Screen</kbd>.
 2. In the floating thumbnail, click the **Edit** icon (or press <kbd>Ctrl</kbd> + <kbd>E</kbd>).
 3. In the Editor toolbar, click **Sensitive data** (the shield icon) or press the shortcut <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd>.
-4. All secrets, tokens, SSNs, and phone numbers are instantly covered with non-destructive black redaction boxes.
+4. Review the detected areas and cover any missed text manually before sharing. OCR can miss text, including tokens broken across words or lines.
 5. If you want to reveal a specific item, simply click its redaction box and press <kbd>Delete</kbd> or <kbd>Backspace</kbd>.
 
 > [!TIP]
-> **Automatic Background Redaction**: You can enable automatic redaction for every capture under **Settings › General › Sensitive data** (*Ajustes › General › Datos sensibles* / *Einstellungen › Allgemein › Sensible Daten*). When enabled, personal data and developer secrets are redacted before the screenshot even reaches your clipboard!
-
-![Developer Secrets & PII Redaction](screens/editor-sensitive-secrets.png)
+> **Automatic Background Redaction**: Enable it under **Settings › General › Sensitive data**. If OCR reports an error, Stackshot discards the capture without saving or copying it. When it detects credentials, it saves only the covered capture. For other detected personal data, Stackshot can keep an unredacted copy in its local data folder so that covers can be edited.
 
 ---
 
 ## 5. Localized Hotkeys & Dynamic Mnemonics in the Editor
 
 ### What it is
-Editor shortcuts adapt to your active language ([`src/Editor/Editor.cs`](file:///d:/GitHub/stackshot/src/Editor/Editor.cs)):
+Editor shortcuts adapt to your active language ([`src/Editor/Editor.cs`](../src/Editor/Editor.cs)):
 
 | Tool | English Key | Spanish Key | German Key | Description |
 |---|:---:|:---:|:---:|---|
@@ -108,7 +103,7 @@ Editor shortcuts adapt to your active language ([`src/Editor/Editor.cs`](file://
 ## 6. Dynamic UI-Aware OCR Engine
 
 ### What it is
-Stackshot integrates directly with Windows 10 and 11's built-in OCR subsystem ([`src/Capture/Ocr.cs`](file:///d:/GitHub/stackshot/src/Capture/Ocr.cs)). The recognition engine actively inspects your current UI setting:
+Stackshot integrates directly with Windows 10 and 11's built-in OCR subsystem ([`src/Capture/Ocr.cs`](../src/Capture/Ocr.cs)). The recognition engine uses your current UI setting:
 
 - In **German mode**, it prioritizes German OCR recognition (`de-DE`, `de-AT`, `de-CH`), accurately detecting umlauts (`ä`, `ö`, `ü`) and Eszett (`ß`).
 - In **English mode**, it prioritizes English OCR recognition (`en-US`, `en-GB`), improving accuracy for technical terms, camelCase code identifiers, and English prose.

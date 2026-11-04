@@ -10,15 +10,13 @@ namespace Stackshot
 {
     public partial class ShotStack
     {
-        bool coverErrorTold;
-
         [DllImport("user32.dll")] static extern uint GetClipboardSequenceNumber();
 
         // Whether new captures have their personal data covered before anything shows them.
         public static bool CoversCaptures(Settings s) { return s != null && s.SensitiveAuto; }
 
         // SaveCapture's step for SensitiveAuto. With it on, the capture is read and covered before anything shows it: the
-        // card starts blurred, the clipboard is emptied instead of getting the capture (a paste meanwhile pastes nothing,
+        // card starts with a solid placeholder, the clipboard is emptied instead of getting the capture (a paste meanwhile pastes nothing,
         // never the data), and a worker thread takes the capture over to read it, cover it, write it, copy it and show it.
         // The caller must not touch shot afterwards. Off: returns false and does nothing.
         bool CoverBeforeShowing(Bitmap shot, string path, ref Bitmap preview, ref Bitmap forClipboard)
@@ -38,6 +36,7 @@ namespace Stackshot
             job.Write = delegate(Bitmap img) { BeginWrite(path, img, delegate(Exception ex) { Ui(delegate { CoverWriteFailed(path, ex); }); }); };
             job.Done = delegate(CoverOutcome r)
             {
+                if (r.Error != null) DoneWriting(path);
                 if (exiting) { Discard(r); return; }
                 try { sync.BeginInvoke((Action)delegate { Covered(path, r, wantCopy, seq); }); }
                 catch (Exception ex) { Log("Ui: " + ex.Message); Discard(r); }
@@ -63,6 +62,15 @@ namespace Stackshot
         void Covered(string path, CoverOutcome r, bool wantCopy, uint seq)
         {
             if (exiting) { Discard(r); return; }
+            if (r.Error != null)
+            {
+                Discard(r);
+                RemoveByPath(path);
+                Notify(I18n.T("No se pudo guardar la captura", "Could not save capture"),
+                       I18n.T("Se ha descartado porque no se pudo revisar si conten\u00EDa datos sensibles.", "The capture was discarded because it could not be checked for sensitive data.") + " " + r.Error,
+                       NoticeKind.Error, null, null);
+                return;
+            }
             Card c = Find(path);
             if (r.Preview != null)
             {
@@ -79,12 +87,7 @@ namespace Stackshot
                 }
                 else r.Copy.Dispose();
             }
-            Log("Datos sensibles: " + System.IO.Path.GetFileName(path) + (r.Error != null ? " sin revisar (" + r.Error + ")" : ", " + r.Found.Count + " tapados") + " en " + r.Ms + " ms");
-            if (r.Error != null && !coverErrorTold)
-            {
-                coverErrorTold = true;
-                Notify(I18n.T("No se han revisado los datos sensibles", "Sensitive data not reviewed"), r.Error + (wantCopy ? I18n.T(" La captura no se ha copiado al portapapeles: c\u00F3piala t\u00FA si no tiene datos sensibles.", " The capture was not copied to clipboard: copy it manually if it contains no sensitive data.") : ""));
-            }
+            Log("Datos sensibles: " + System.IO.Path.GetFileName(path) + ", " + r.Found.Count + " tapados en " + r.Ms + " ms");
             // Captures deleted meanwhile (by hand, or swept) take their originals with them now, not at the next sweep.
             PruneOriginals();
         }

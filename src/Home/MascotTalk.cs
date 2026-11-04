@@ -35,6 +35,8 @@ namespace Stackshot
             int h = DateTime.Now.Hour;
             if (I18n.IsSpanish)
                 return h < 6 ? "\u00A1Buenas noches!" : h < 14 ? "\u00A1Buenos d\u00EDas!" : h < 21 ? "\u00A1Buenas tardes!" : "\u00A1Buenas noches!";
+            if (I18n.IsGerman)
+                return h < 6 ? "Gute Nacht!" : h < 11 ? "Guten Morgen!" : h < 18 ? "Guten Tag!" : "Guten Abend!";
             return h < 6 ? "Good evening!" : h < 12 ? "Good morning!" : h < 18 ? "Good afternoon!" : "Good evening!";
         }
 

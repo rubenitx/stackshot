@@ -17,7 +17,15 @@ namespace Stackshot
     {
         internal static readonly string[] ActionNamesEs = { "Capturar un \u00E1rea", "Repetir la \u00FAltima \u00E1rea", "Capturar la pantalla", "Capturar la ventana activa", "Captura con desplazamiento", "Copiar texto de la pantalla", "Grabar v\u00EDdeo", "Grabar GIF", "Ver y ordenar Markdown", "Capturar con temporizador" };
         internal static readonly string[] ActionNamesEn = { "Capture an area", "Repeat last area", "Capture full screen", "Capture active window", "Scrolling capture", "Copy screen text", "Record video", "Record GIF", "View and sort Markdown", "Timed capture" };
-        internal static string[] ActionNames { get { return I18n.IsSpanish ? ActionNamesEs : ActionNamesEn; } }
+        internal static string[] ActionNames
+        {
+            get
+            {
+                if (I18n.IsSpanish) return ActionNamesEs;
+                if (I18n.IsEnglish) return ActionNamesEn;
+                return Array.ConvertAll(ActionNamesEn, label => I18n.T(null, label));
+            }
+        }
 
         internal static readonly string[] ActionShortEs = { "Un \u00E1rea", "La \u00FAltima \u00E1rea", "Pantalla completa", "Una ventana", "Con desplazamiento", "Copiar texto", "V\u00EDdeo", "GIF animado", "Markdown", "Con temporizador" };
         internal static readonly string[] ActionShortEn = { "An area", "Last area", "Full screen", "A window", "Scrolling", "Copy text", "Video", "Animated GIF", "Markdown", "With timer" };
@@ -39,7 +47,8 @@ namespace Stackshot
         static readonly D.Color Gray1 = D.Color.FromArgb(152, 152, 157), Gray2 = D.Color.FromArgb(110, 110, 115);
         static readonly string[] ProfileNamesEs = { "Rendimiento", "Equilibrado", "Completo" };
         static readonly string[] ProfileNamesEn = { "Performance", "Balanced", "Full" };
-        static string[] ProfileNames { get { return I18n.IsSpanish ? ProfileNamesEs : ProfileNamesEn; } }
+        static readonly string[] ProfileNamesDe = { "Leistung", "Ausgewogen", "Vollständig" };
+        static string[] ProfileNames { get { return I18n.IsSpanish ? ProfileNamesEs : I18n.IsGerman ? ProfileNamesDe : ProfileNamesEn; } }
 
         string keysMoved;   // one-off note after a combo moved from one action to another
 
@@ -781,7 +790,7 @@ namespace Stackshot
             List<string> l = new List<string>();
             if (settings.ShowIntro != (p > 0)) l.Add(I18n.T("la animaci\u00F3n al abrir", "the launch animation"));
             if (settings.MascotTalks != (p > 0) && !Policy.MascotForced) l.Add(I18n.T("los saludos de la mascota", "mascot greetings"));
-            if (settings.MascotDesktop != (p == 2) && !Policy.MascotForced) l.Add(I18n.T("la mascota en el escritorio", "mascot on desktop"));
+            if (settings.MascotDesktop != (p == 2) && !Policy.MascotForced) l.Add(I18n.T("la mascota en el escritorio", "mascot on desktop", "das Maskottchen auf dem Desktop"));
             if (p == 0 && settings.WellToasts) l.Add(I18n.T("los avisos de pausas", "break reminders"));
             if (p == 0 && settings.HealthTalk) l.Add(I18n.T("los comentarios de actividad", "activity comments"));
             return l;
@@ -790,16 +799,17 @@ namespace Stackshot
         void BuildGeneral()
         {
             Header(I18n.T("General", "General"), I18n.T("C\u00F3mo arranca Stackshot y qu\u00E9 hace cada vez que capturas.", "How Stackshot starts and behaves when you capture."));
-            string[] pdesc = I18n.IsSpanish ? new string[]
+            string[] pdesc =
             {
-                "Lo justo para capturar: sin mascota (ni en la ventana ni en el escritorio, y sin gastar nada en ella), sin animaci\u00F3n al abrir y sin avisos por fuera. Ideal para equipos justos.",
-                "El equilibrio de siempre: animaciones suaves y la mascota solo dentro de Stackshot.",
-                "Todo activado: la mascota tambi\u00E9n paseando por el escritorio, sus saludos y los avisos de salud."
-            } : new string[]
-            {
-                "Essentials only: no mascot (not in window or desktop, 0% CPU footprint), no launch intro, no popups outside. Great for lightweight PCs.",
-                "The classic balance: smooth animations and mascot stays inside Stackshot.",
-                "Everything enabled: mascot roaming the desktop, greetings and wellness reminders."
+                I18n.T("Lo justo para capturar: sin mascota (ni en la ventana ni en el escritorio, y sin gastar nada en ella), sin animaci\u00F3n al abrir y sin avisos por fuera. Ideal para equipos justos.",
+                       "Essentials only: no mascot (not in window or desktop, 0% CPU footprint), no launch intro, no popups outside. Great for lightweight PCs.",
+                       "Nur die Aufnahmefunktionen. Maskottchen, Startanimation und externe Hinweise sind aus. Geeignet für leistungsschwächere PCs."),
+                I18n.T("El equilibrio de siempre: animaciones suaves y la mascota solo dentro de Stackshot.",
+                       "The classic balance: smooth animations and mascot stays inside Stackshot.",
+                       "Flüssige Animationen und ein Maskottchen, das im Stackshot-Fenster bleibt."),
+                I18n.T("Todo activado: la mascota tambi\u00E9n paseando por el escritorio, sus saludos y los avisos de salud.",
+                       "Everything enabled: mascot roaming the desktop, greetings and wellness reminders.",
+                       "Alle Funktionen sind aktiv. Das Maskottchen läuft auf dem Desktop umher, begrüßt dich und erinnert dich an Pausen.")
             };
             // Choosing a profile moves the switches it touches on this page too (no rebuild: the choice keeps sliding).
             Group(I18n.T("Perfil", "Profile"),
@@ -811,17 +821,12 @@ namespace Stackshot
             Add(profileNote);
             PaintProfileNote();
             Group(I18n.T("Apariencia", "Appearance"),
-                new SegRow(I18n.T("Idioma", "Language"),
-                           I18n.T("El idioma de la interfaz (autom\u00E1tico seg\u00FAn Windows, espa\u00F1ol, ingl\u00E9s o alem\u00E1n).", "Interface language (automatic based on Windows, Spanish, English or German)."),
-                           "globe", Mac.Teal, Mac.Blue,
-                           new string[] { I18n.T("Autom\u00E1tico", "Auto"), "Espa\u00F1ol", "English", "Deutsch" },
-                           delegate { return settings.Language == "es" ? 1 : settings.Language == "en" ? 2 : settings.Language == "de" ? 3 : 0; },
-                           delegate(int i) {
-                               string lang = i == 1 ? "es" : i == 2 ? "en" : i == 3 ? "de" : "auto";
-                               settings.Language = lang;
-                               settings.LanguageOffered = true;   // chosen by hand: nothing left to offer
-                               settings.Save();
-                               I18n.Apply(lang);
+                new ButtonRow(I18n.T("Idioma", "Language"),
+                           I18n.T("Busca y elige el idioma de Stackshot.", "Search for and choose the language for Stackshot."),
+                           "globe", Mac.Teal, Mac.Blue, LanguagePicker.DisplayName(settings.Language) + " \u203A",
+                           delegate {
+                               string lang = LanguagePicker.Choose(this, settings.Language);
+                               if (lang != null) LanguagePicker.Apply(settings, lang);
                            }),
                 new SegRow(I18n.T("Tema", "Theme"), I18n.T("Claro u oscuro, o el mismo que tenga Windows en cada momento.", "Light, dark, or follow Windows mode."), "sparkle", Mac.Indigo, Mac.Blue,
                            new string[] { I18n.T("Como Windows", "Follow Windows"), I18n.T("Claro", "Light"), I18n.T("Oscuro", "Dark") },
@@ -863,7 +868,8 @@ namespace Stackshot
                               delegate { return settings.HistorySearch; }, delegate(bool v) { settings.HistorySearch = v; HistoryIndex.Apply(settings); }),
                 HistoryIndexRowIfAny(),
                 new SegRow(I18n.T("Guardar las temporales", "Temporary captures retention"), I18n.T("Cu\u00E1nto duran las capturas que no guardas en tu carpeta.", "How long unsaved captures remain."), "stack", Mac.Teal, Mac.Blue,
-                           I18n.IsSpanish ? new string[] { "1 hora", "Al cerrar", "1 d\u00EDa", "7 d\u00EDas", "30 d\u00EDas" } : new string[] { "1 hour", "On close", "1 day", "7 days", "30 days" },
+                           new string[] { I18n.T("1 hora", "1 hour", "1 Stunde"), I18n.T("Al cerrar", "On close", "Beim Schließen"),
+                                          I18n.T("1 d\u00EDa", "1 day", "1 Tag"), I18n.T("7 d\u00EDas", "7 days", "7 Tage"), I18n.T("30 d\u00EDas", "30 days", "30 Tage") },
                            delegate { return settings.TempKeep; }, delegate(int i) { settings.TempKeep = i; owner.Sweep(); }),
                 new ButtonRow(I18n.T("Borrar recientes", "Clear recents"), I18n.T("Quita las capturas temporales; las de tu carpeta no se tocan.", "Removes temporary captures; saved files are untouched."), "trash", Mac.Red, Mac.Orange, I18n.T("Borrar", "Clear"), ClearRecent),
                 recovered);

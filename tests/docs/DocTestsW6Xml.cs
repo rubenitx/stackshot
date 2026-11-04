@@ -1092,6 +1092,9 @@ namespace Stackshot.Tests
             R5Set(owner, "kept", new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
             R5Set(owner, "cards", new List<Card>());
             R5Set(owner, "copyRuns", new CopyRuns());
+            var sync = new System.Windows.Forms.Control();
+            Check(sync.Handle != IntPtr.Zero, "UI dispatcher handle");
+            R5Set(owner, "sync", sync);
             Editor ed = new Editor(owner, png, ShotStack.LoadFull(png));
             try
             {
@@ -1102,7 +1105,7 @@ namespace Stackshot.Tests
                 Check(item.Tip.StartsWith("Conservarla en tu carpeta de capturas", StringComparison.Ordinal), "Guardar tip: " + item.Tip);
                 Call(ed, "KeepCopy");
                 string kept = Path.Combine(save, "r5-factura.png");
-                Check(File.Exists(kept), "Guardar did not keep a copy in the save folder");
+                Check(Until(delegate { return File.Exists(kept); }, 5000), "Guardar did not keep a copy in the save folder");
                 Check(File.Exists(png) && owner.IsKept(png), "the attachment is not marked as kept");
                 // A file in another folder under temp is still the user's own (unchanged).
                 Check(!Editor.IsTempCapture(Path.Combine(Settings.TempDir, "otra", "x.png"), Settings.TempDir), "a subfolder of temp counts as temp");
@@ -1112,6 +1115,7 @@ namespace Stackshot.Tests
                 R5Set(ed, "closeWithoutAsking", true);
                 try { ed.Close(); } catch { }
                 ed.Dispose();
+                sync.Dispose();
                 try { File.Delete(png); } catch { }
                 DeleteDir(save);
             }

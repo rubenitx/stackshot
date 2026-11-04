@@ -23,7 +23,7 @@ namespace Stackshot
         static readonly string[] PageIds = { "home", "history", "keys", "general", "editor", "record", "mascot", "about" };
         static readonly string[] PageNamesEs = { "Inicio", "Historial", "Atajos", "General", "Fondo y editor", "Grabaci\u00F3n", "Mascota", "Acerca de" };
         static readonly string[] PageNamesEn = { "Home", "History", "Shortcuts", "General", "Backdrop & editor", "Recording", "Mascot", "About" };
-        static string[] PageNames { get { return I18n.IsSpanish ? PageNamesEs : PageNamesEn; } }
+        static string PageName(int index) { return I18n.T(PageNamesEs[index], PageNamesEn[index]); }
         static readonly string[] PageIcons = { "home", "history", "keyboard", "gear", "photo", "video", "bot", "info" };
         static readonly D.Color[] PageColors = { D.Color.FromArgb(10, 132, 255), D.Color.FromArgb(94, 92, 230), D.Color.FromArgb(142, 142, 147), D.Color.FromArgb(142, 142, 147),
                                                  D.Color.FromArgb(175, 82, 222), D.Color.FromArgb(255, 59, 48), D.Color.FromArgb(255, 149, 0),
@@ -267,7 +267,7 @@ namespace Stackshot
             NavRow r = new NavRow { Id = PageIds[i], Fill = new SolidColorBrush(Colors.Transparent) };
             string id = r.Id;
             TapBorder b = new TapBorder { Height = 32, CornerRadius = new CornerRadius(7), Margin = new Thickness(0, 0, 0, 2), Cursor = Cursors.Hand, BorderThickness = HcPaint.Edge,
-                                          Background = r.Fill, Label = PageNames[i], Role = Access.TabItem, On = delegate { return r.On; },
+                                          Background = r.Fill, Label = PageName(i), Role = Access.TabItem, On = delegate { return r.On; },
                                           Do = delegate { if (page != id) SetPage(id, true); else SearchHide(); } };
             Grid g = new Grid();
             // A small accent bar at the left edge of the section you are in.
@@ -276,7 +276,7 @@ namespace Stackshot
             g.Children.Add(r.Bar);
             StackPanel row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
             row.Children.Add(new IconTile(PageIcons[i], 20, W(PageColors[i]), W(Darker(PageColors[i]))));
-            r.Name = Label(PageNames[i], Ds.Regular, 13, Ds.Brushes.Label, new Thickness(9, 0, 0, 0));
+            r.Name = Label(PageName(i), Ds.Regular, 13, Ds.Brushes.Label, new Thickness(9, 0, 0, 0));
             row.Children.Add(r.Name);
             g.Children.Add(row);
             b.Child = g;
@@ -471,7 +471,7 @@ namespace Stackshot
             pane.Background = Ds.Brush(Ds.Brushes.Window);
             toolbarTitle.Foreground = Ds.Brush(Ds.Brushes.Label);
             int pi = Array.IndexOf(PageIds, page == "mascotset" ? "mascot" : page);
-            toolbarTitle.Text = page == "mascotset" ? I18n.T("Ajustes de la mascota", "Mascot settings") : PageNames[Math.Max(0, pi)];
+            toolbarTitle.Text = page == "mascotset" ? I18n.T("Ajustes de la mascota", "Mascot settings") : PageName(Math.Max(0, pi));
             BuildToolbar();
             if (navRows.Count == 0) RefreshNav();
             else UpdateNav(IsVisible);

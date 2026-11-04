@@ -28,14 +28,15 @@ namespace Stackshot
         // Export options, shown as segmented controls in the header.
         static readonly string[] SpeedsEs = { "1\u00D7", "1,5\u00D7", "2\u00D7" };
         static readonly string[] SpeedsEn = { "1\u00D7", "1.5\u00D7", "2\u00D7" };
-        public static string[] Speeds { get { return I18n.IsSpanish ? SpeedsEs : SpeedsEn; } }
+        public static string[] Speeds { get { return I18n.IsSpanish || I18n.IsGerman ? SpeedsEs : SpeedsEn; } }
         public static readonly double[] SpeedValues = { 1, 1.5, 2 };
         public static readonly string[] Sizes = { "Original", "1080p", "720p" };
         public static readonly int[] SizeValues = { 0, 1080, 720 };
         // The last two fit a size: WhatsApp's 16 MB and the 25 MB most mail takes (VideoExport.TargetBytes).
         static readonly string[] QualitiesEs = { "M\u00E1xima", "Alta", "Ligera", "16 MB", "25 MB" };
         static readonly string[] QualitiesEn = { "Maximum", "High", "Light", "16 MB", "25 MB" };
-        public static string[] Qualities { get { return I18n.IsSpanish ? QualitiesEs : QualitiesEn; } }
+        static readonly string[] QualitiesDe = { "Maximum", "Hoch", "Leicht", "16 MB", "25 MB" };
+        public static string[] Qualities { get { return I18n.IsSpanish ? QualitiesEs : I18n.IsGerman ? QualitiesDe : QualitiesEn; } }
         public static readonly string[] Formats = { "MP4", "GIF" };
         public int Speed, OutSize, Quality, Format;
         readonly Rectangle[][] segs = new Rectangle[4][];

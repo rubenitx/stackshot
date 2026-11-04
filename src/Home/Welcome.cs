@@ -144,19 +144,18 @@ namespace Stackshot
                                  HorizontalAlignment.Center, new Thickness(0, 6, 0, compact ? 18 : 24));
             sub.TextAlignment = TextAlignment.Center;
             col.Children.Add(sub);
-            MacSegmented lang = new MacSegmented(new string[] { "Espa\u00F1ol", "English", "Deutsch" }, I18n.Language == "es" ? 0 : I18n.Language == "de" ? 2 : 1)
+            MacButton lang = new MacButton(I18n.T("Idioma", "Language") + " · " + LanguagePicker.DisplayName(settings.Language), ButtonKind.Secondary, "globe", null, 28)
             {
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Margin = new Thickness(0, 0, 0, compact ? 10 : 14)
             };
-            lang.Changed += delegate(int i)
+            lang.Click += delegate
             {
-                string next = i == 0 ? "es" : i == 2 ? "de" : "en";
-                settings.Language = next;
-                settings.LanguageOffered = true;
-                settings.Save();
-                I18n.Apply(next);
-                ThemeChanged();
+                string next = LanguagePicker.Choose(this, settings.Language);
+                if (next == null) return;
+                LanguagePicker.Apply(settings, next);
+                Remember();
+                Fit(WorkHeight());
             };
             col.Children.Add(lang);
 

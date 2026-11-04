@@ -154,7 +154,7 @@ namespace Stackshot
         static void Answer(NetworkStream s, int code, Mark mark, string title, string word, string text)
         {
             string icon = mark == Mark.Ok ? "M5 12.5l4.5 4.5L19 7.5" : mark == Mark.Off ? "M7.5 7.5l9 9M16.5 7.5l-9 9" : "M12 6.5v7M12 17.5v.01";
-            string html = "<!doctype html><html lang=" + I18n.T("es", "en") + "><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Stackshot</title><style>" +
+            string html = "<!doctype html><html lang=" + I18n.T("es", "en", "de") + "><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Stackshot</title><style>" +
                 ":root{color-scheme:light dark;--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--sub:#6e6e73;--line:#0000000f;--shade:#0000001a;--g1:#8b5cf6;--g2:#4f7bff;--g3:#0891cc}" +
                 "@media (prefers-color-scheme:dark){:root{--bg:#000;--card:#161618;--ink:#f5f5f7;--sub:#98989d;--line:#ffffff14;--shade:#00000080;--g1:#a78bfa;--g2:#6d8bff;--g3:#22c3ee}}" +
                 "*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg);color:var(--ink);" +

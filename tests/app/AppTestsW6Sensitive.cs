@@ -44,6 +44,7 @@ namespace Stackshot.Tests
                 AppTests.Test(SuiteName, "phones: Spanish numbers, prefixes, groups, labels and near misses", Phones);
                 AppTests.Test(SuiteName, "ssn: 3-2-4 layout, SSA rules and formats", Ssns);
                 AppTests.Test(SuiteName, "secrets: tokens, API keys and private keys", Secrets);
+                AppTests.Test(SuiteName, "secrets: Windows OCR covers the PEM body in the capture and editor", PemImage);
                 AppTests.Test(SuiteName, "ocr look-alikes only inside a number that otherwise fits", LookAlikes);
                 AppTests.Test(SuiteName, "no false alarms: dates, amounts, invoices, postcodes, times, versions", NoFalseAlarmsText);
                 AppTests.Test(SuiteName, "several in one line, tokens split into words, columns not joined", Lines);
@@ -59,7 +60,7 @@ namespace Stackshot.Tests
                 AppTests.Test(SuiteName, "editor: the Datos sensibles button covers, says so, and twice adds nothing", EditorButton);
                 AppTests.Test(SuiteName, "capture path: off by default, nothing runs; on: the veil hides the thumbnail", Gate);
                 AppTests.Test(SuiteName, "capture path on: file, thumbnail and clipboard copy get only covered pixels", CaptureJob);
-                AppTests.Test(SuiteName, "capture path on: OCR failure copies nothing, the capture still arrives", CaptureJobFailure);
+                AppTests.Test(SuiteName, "capture path on: OCR failure discards the capture", CaptureJobFailure);
                 AppTests.Test(SuiteName, "capture path on: a burst of captures is checked one after another, off the caller's thread", JobQueue);
                 AppTests.Test(SuiteName, "originals: kept privately, restored as marks, dropped when edited or gone", Originals);
                 AppTests.Test(SuiteName, "timings: 1080p and 4K synthetic captures", Timings);
@@ -84,6 +85,38 @@ namespace Stackshot.Tests
             {
                 CoverStore.Dir = storeBefore;
                 try { Directory.Delete(work, true); } catch { }
+            }
+        }
+
+        static void PemImage()
+        {
+            const int x = 20, y = 20, step = 32;
+            string[] lines = { "-----BEGIN RSA PRIVATE KEY-----", "SYNTHETICPEMPAYLOAD0123456789",
+                               "-----END RSA PRIVATE KEY-----", "Public note" };
+            using (Bitmap image = new Bitmap(650, 170))
+            {
+                using (Graphics g = Graphics.FromImage(image))
+                using (Font f = new Font("Consolas", 20f, GraphicsUnit.Pixel))
+                {
+                    g.Clear(Color.White);
+                    for (int i = 0; i < lines.Length; i++) g.DrawString(lines[i], f, Brushes.Black, x, y + step * i);
+                }
+                List<Ocr.Word> words = ReadWords(image);
+                List<SensitiveFinding> findings = Sensitive.Find(words, image.Size);
+                Check(findings.Count == 3, "OCR found all three PEM lines: " + Joined(words));
+                Bitmap written;
+                CoverOutcome result = RunJob(new Bitmap(image), Path.Combine(work, "pem.png"), false, out written);
+                if (result.Preview != null) result.Preview.Dispose();
+                using (written)
+                using (Canvas canvas = new Canvas(new Bitmap(image)))
+                {
+                    Check(result.Error == null && result.Found.Count == 3, "capture job covers all PEM lines");
+                    Check(!CoverStore.Has(Path.Combine(work, "pem.png")) && !File.Exists(Path.Combine(CoverStore.Dir, "pem.png")), "no unredacted copy of the key on disk");
+                    Check(written.GetPixel(50, 62).R < 32, "the payload is covered in the output");
+                    canvas.AddCovers(SensitiveCover.Boxes(findings));
+                    using (Bitmap output = canvas.Render())
+                        Check(SensitiveCover.SamePixels(output, written), "editor export matches automatic cover");
+                }
             }
         }
 
@@ -314,6 +347,9 @@ namespace Stackshot.Tests
 
         static void Phones()
         {
+            Yes("Phone: (202) 234-5678", SensitiveKind.Phone);
+            Yes("Phone: +1 (202) 234-5678", SensitiveKind.Phone);
+            Yes("Phone: +44 20 7946 0958", SensitiveKind.Phone);
             foreach (string p in new string[] { "600 123 456", "600123456", "700 123 456", "+34 600 123 456", "+34600123456", "+ 34 600 123 456", "0034 912 345 678", "0034912345678",
                                                 "(+34) 91 234 56 78", "912 34 56 78", "91 234 56 78", "600 12 34 56", "600-123-456", "912 345 678", "600 123456", "91 2345678" })
                 Yes(p, SensitiveKind.Phone);
@@ -362,10 +398,36 @@ namespace Stackshot.Tests
         static void Secrets()
         {
             Yes("ghp_123456789012345678901234567890123456", SensitiveKind.Secret);
+            Yes("ghp_1234567890123456 78901234567890123456", SensitiveKind.Secret);
             Yes("sk-proj-123456789012345678901234567890123456", SensitiveKind.Secret);
             Yes("AKIAIOSFODNN7EXAMPLE", SensitiveKind.Secret);
+            Yes("xapp-example-fake-synthetic-token", SensitiveKind.Secret);
             Yes("-----BEGIN RSA PRIVATE KEY-----", SensitiveKind.Secret);
             Check(Sensitive.Is("ghp_123456789012345678901234567890123456", SensitiveKind.Secret), "is Secret");
+
+            const string header = "-----BEGIN RSA PRIVATE KEY-----";
+            const string footer = "-----END RSA PRIVATE KEY-----";
+            const string payload = "SYNTHETICPEMPAYLOAD0123456789";
+            Check(Sensitive.Is(header + "\n" + payload + "\n" + footer, SensitiveKind.Secret), "one PEM block in text");
+            Ocr.Word[] words = { Word(header, 20, 20, 0), Word(payload, 20, 50, 1),
+                                 Word(footer, 20, 80, 2), Word("Public note", 20, 110, 3) };
+            using (Bitmap image = new Bitmap(400, 150))
+            {
+                using (Graphics g = Graphics.FromImage(image)) g.Clear(Color.White);
+                SensitiveCover.Paint(image, SensitiveCover.Boxes(Sensitive.Find(words, image.Size)));
+                for (int i = 0; i < 3; i++)
+                {
+                    Ocr.Word word = words[i];
+                    Check(image.GetPixel((int)word.Box.Right - 1, (int)word.Box.Bottom - 1).R < 32, "whole PEM line covered");
+                }
+                Check(image.GetPixel(20, 110).R == 255, "text after the PEM remains visible");
+                Check(Sensitive.Find(new[] { words[0], words[1] }, image.Size).Count == 2, "cropped PEM body still covered");
+                using (Graphics g = Graphics.FromImage(image)) g.Clear(Color.White);
+                var withoutPayload = Sensitive.Find(new[] { words[0], words[2], words[3] }, image.Size);
+                SensitiveCover.Paint(image, SensitiveCover.Boxes(withoutPayload));
+                Check(image.GetPixel(350, 55).R < 32, "cover the intervening pixels even when OCR omits the payload");
+                Check(image.GetPixel(20, 110).R == 255, "text below the PEM remains visible");
+            }
         }
 
         static void LookAlikes()
@@ -611,7 +673,7 @@ namespace Stackshot.Tests
                     at.Remove(key); // each once
                 }
                 Console.WriteLine("    " + hits + " words placed, missing: " + string.Join(", ", new List<string>(at.Keys).ToArray()));
-                Check(at.Count == 0, "not read: " + string.Join(", ", new List<string>(at.Keys).ToArray()));
+                Check(at.Count == 0, "not read: " + string.Join(", ", new List<string>(at.Keys).ToArray()) + " | OCR: " + Joined(words));
             }
         }
 
@@ -1044,12 +1106,10 @@ namespace Stackshot.Tests
                 {
                     Check(clip == null && job.WantCopy, "the uncovered copy for the clipboard is dropped, and wanted later");
                     Check(job.Shot == shot && job.Path == path && CoverStore.Has(path), "the job owns the capture; its original may come");
-                    using (Bitmap big = new Bitmap(preview, preview.Width * 3, preview.Height * 3))
-                    {
-                        string error;
-                        string read = Ocr.Read(big, out error) ?? "";
-                        Check(Norm(read).Length <= 3, "text readable in the veil: " + read);
-                    }
+                    int expected = Color.FromArgb(128, 128, 132).ToArgb();
+                    for (int y = 0; y < preview.Height; y++)
+                        for (int x = 0; x < preview.Width; x++)
+                            Check(preview.GetPixel(x, y).ToArgb() == expected, "pending thumbnail contains only opaque placeholder pixels");
                 }
                 finally
                 {
@@ -1146,7 +1206,7 @@ namespace Stackshot.Tests
 
         static void CaptureJobFailure()
         {
-            // A disposed image cannot be read: the job says so, writes what it has and copies nothing.
+            // A disposed image cannot be read: the job settles without exporting it.
             Bitmap shot = Screenshot(800, 400, true);
             using (Bitmap clone = new Bitmap(shot))
             {
@@ -1160,9 +1220,9 @@ namespace Stackshot.Tests
                 job.Write = delegate(Bitmap img) { wrote = true; };
                 job.Done = delegate(CoverOutcome r) { outcome = r; };
                 job.Run();
-                Check(wrote, "still written (the stack must never wait for it forever)");
+                Check(!wrote, "an unchecked capture must never be written");
                 Check(outcome != null && outcome.Error != null && outcome.Copy == null, "an error and no copy: " + (outcome == null ? "no answer" : outcome.Error));
-                Check(SensitiveCover.Note(outcome) == "Sin revisar", "note");
+                Check(outcome.Preview == null, "no unchecked preview");
                 Check(!CoverStore.Has(path), "settled after a failure");
             }
         }

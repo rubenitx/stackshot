@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Stackshot
 {
@@ -42,6 +43,8 @@ namespace Stackshot
                 if (!lines.TryGetValue(w.Line, out l)) { l = new List<Ocr.Word>(); lines[w.Line] = l; order.Add(w.Line); }
                 l.Add(w);
             }
+            string privateKeyLabel = null;
+            Rectangle previousPemLine = Rectangle.Empty;
             foreach (int key in order)
             {
                 List<Ocr.Word> line = lines[key];
@@ -58,7 +61,8 @@ namespace Stackshot
                     }
                     foreach (char c in line[i].Text) { text.Append(c); owner.Add(i); }
                 }
-                foreach (SensitiveFinding f in Scan(text.ToString()))
+                bool continuingPem = privateKeyLabel != null;
+                foreach (SensitiveFinding f in Scan(text.ToString(), ref privateKeyLabel, true))
                 {
                     RectangleF box = RectangleF.Empty;
                     float h = 0;
@@ -74,6 +78,21 @@ namespace Stackshot
                     }
                     if (box.IsEmpty || n == 0) continue;
                     f.Box = Pad(box, h / n, image);
+                    if (f.Kind == SensitiveKind.Secret && f.Text == "PEM" && !f.Box.IsEmpty)
+                    {
+                        Rectangle current = f.Box;
+                        if (continuingPem && !previousPemLine.IsEmpty && image.Width > 0 && image.Height > 0)
+                        {
+                            // OCR can omit an entire encoded line or only read part of it.
+                            // Cover the intervening image strip, even where it returned no words.
+                            Rectangle span = Rectangle.Union(previousPemLine, current);
+                            f.Box = line[0].Box.Equals(line[0].Upright)
+                                ? Rectangle.FromLTRB(0, span.Top, image.Width, span.Bottom)
+                                : Rectangle.FromLTRB(span.Left, 0, span.Right, image.Height);
+                        }
+                        previousPemLine = current;
+                        continuingPem = false;
+                    }
                     if (!f.Box.IsEmpty) found.Add(f);
                 }
             }
@@ -96,9 +115,16 @@ namespace Stackshot
         // E-mail addresses go first (they may hold digits), then the long numbers, then the short ones.
         public static List<SensitiveFinding> Scan(string text)
         {
+            string privateKeyLabel = null;
+            return Scan(text, ref privateKeyLabel, false);
+        }
+
+        static List<SensitiveFinding> Scan(string text, ref string privateKeyLabel, bool fromOcr)
+        {
             List<SensitiveFinding> o = new List<SensitiveFinding>();
             if (string.IsNullOrEmpty(text)) return o;
             bool[] used = new bool[text.Length];
+            PrivateKeys(text, used, o, ref privateKeyLabel, fromOcr);
             Emails(text, used, o);
             Secrets(text, used, o);
             Ibans(text, used, o);
@@ -390,25 +416,41 @@ namespace Stackshot
 
         // ---- Developer secrets and API tokens (GitHub tokens, OpenAI/Anthropic keys, AWS keys, private keys)
 
-        static readonly string[] SecretPrefixes = { "ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_", "sk-proj-", "sk-ant-", "sk-admin-", "sk-", "xoxb-", "xoxp-", "AKIA", "ASIA" };
+        static readonly string[] SecretPrefixes = { "ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_", "sk-proj-", "sk-ant-", "sk-admin-", "sk-", "xoxb-", "xoxp-", "xapp-", "AKIA", "ASIA" };
+
+        const string PemLabel = @"(BEGIN|END)[ \t]+((?:[A-Z0-9]+[ \t]+)*PRIVATE[ \t]+KEY)";
+        const RegexOptions PemOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        static readonly Regex PrivateKeyMarker = new Regex(@"(?:-[ \t]*){5}" + PemLabel + @"[ \t]*(?:-[ \t]*){4}-", PemOptions);
+        static readonly Regex OcrPrivateKeyMarker = new Regex(@"\A[- \t]*" + PemLabel + @"[- \t]*\z", PemOptions);
+
+        // Keep the matching label across OCR lines. A capture cropped before the footer
+        // still has its visible key body covered.
+        static void PrivateKeys(string t, bool[] used, List<SensitiveFinding> o, ref string label, bool fromOcr)
+        {
+            int start = 0;
+            MatchCollection markers = PrivateKeyMarker.Matches(t);
+            // Windows OCR can drop the decorative dashes. Accept a bare marker
+            // only when it occupies an entire OCR line.
+            if (fromOcr && markers.Count == 0) markers = OcrPrivateKeyMarker.Matches(t);
+            foreach (Match marker in markers)
+            {
+                string kind = Regex.Replace(marker.Groups[2].Value, "[ \\t]+", " ").ToUpperInvariant();
+                if (label == null && string.Equals(marker.Groups[1].Value, "BEGIN", StringComparison.OrdinalIgnoreCase))
+                {
+                    label = kind;
+                    start = marker.Index;
+                }
+                else if (label == kind && string.Equals(marker.Groups[1].Value, "END", StringComparison.OrdinalIgnoreCase))
+                {
+                    Add(o, used, SensitiveKind.Secret, t, start, marker.Index + marker.Length, "PEM");
+                    label = null;
+                }
+            }
+            if (label != null) Add(o, used, SensitiveKind.Secret, t, start, t.Length, "PEM");
+        }
 
         static void Secrets(string t, bool[] used, List<SensitiveFinding> o)
         {
-            int pk = t.IndexOf("-----BEGIN ");
-            while (pk >= 0)
-            {
-                int end = t.IndexOf("-----", pk + 11);
-                if (end > pk && end + 5 <= t.Length)
-                {
-                    string tag = t.Substring(pk, end + 5 - pk);
-                    if (tag.Contains("PRIVATE KEY") && Free(used, pk, end + 5))
-                    {
-                        Add(o, used, SensitiveKind.Secret, t, pk, end + 5, tag);
-                    }
-                }
-                pk = t.IndexOf("-----BEGIN ", pk + 11);
-            }
-
             for (int i = 0; i < t.Length; i++)
             {
                 if (!Starts(t, i)) continue;
@@ -427,7 +469,21 @@ namespace Stackshot
                     else if (prefix.StartsWith("gh", StringComparison.Ordinal))
                     {
                         while (j < t.Length && (Alnum(t[j]) || t[j] == '_')) j++;
-                        if ((j - i == 40 || (prefix == "github_pat_" && j - i >= 40)) && Ends(t, j) && Free(used, i, j))
+                        bool classic = prefix != "github_pat_";
+                        int length = j - i;
+                        // OCR sometimes inserts a word break in a classic token. Require
+                        // the exact length and never join across a line or column break.
+                        if (classic && length > prefix.Length && length < 40 && j < t.Length && t[j] == ' ')
+                        {
+                            int tail = j + 1;
+                            while (tail < t.Length && Alnum(t[tail])) tail++;
+                            if (length + tail - j - 1 == 40)
+                            {
+                                j = tail;
+                                length = 40;
+                            }
+                        }
+                        if ((classic ? length == 40 : length >= 40) && Ends(t, j) && Free(used, i, j))
                         {
                             Add(o, used, SensitiveKind.Secret, t, i, j, t.Substring(i, j - i));
                         }
@@ -440,7 +496,7 @@ namespace Stackshot
                             Add(o, used, SensitiveKind.Secret, t, i, j, t.Substring(i, j - i));
                         }
                     }
-                    else if (prefix.StartsWith("xox", StringComparison.Ordinal))
+                    else if (prefix.StartsWith("xox", StringComparison.Ordinal) || prefix == "xapp-")
                     {
                         while (j < t.Length && (Alnum(t[j]) || t[j] == '-')) j++;
                         if (j - i >= 20 && Ends(t, j) && Free(used, i, j))
@@ -911,6 +967,11 @@ namespace Stackshot
 
         static void Phones(string t, bool[] used, List<SensitiveFinding> o)
         {
+            foreach (Match phone in InternationalPhones.Matches(t))
+            {
+                if (Free(used, phone.Index, phone.Index + phone.Length))
+                    Add(o, used, SensitiveKind.Phone, t, phone.Index, phone.Index + phone.Length, null);
+            }
             List<int> sizes = new List<int>();
             int runEnd = 0;
             for (int i = 0; i < t.Length; i++)
@@ -947,6 +1008,10 @@ namespace Stackshot
                 }
             }
         }
+
+        static readonly Regex InternationalPhones = new Regex(
+            @"(?<![\p{L}\p{N}])(?:(?:\+1[ -]?)?\([2-9][0-9]{2}\)[ -]?[2-9][0-9]{2}[ -]?[0-9]{4}|\+44[ -]?[1-9](?:[ -]?[0-9]){9})(?![\p{L}\p{N}]|[ -][0-9])",
+            RegexOptions.CultureInvariant);
 
         // +34, + 34, 0034, (+34) or (34) and the space or dash after it. Moves j past it.
         static bool Prefix(string t, ref int j)
@@ -990,11 +1055,13 @@ namespace Stackshot
 
         static readonly string[] OneEs = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjeta", "correo", "tel\u00E9fono", "SSN", "clave secreta" };
         static readonly string[] OneEn = { "ID (DNI)", "Foreigner ID (NIE)", "Social Security no.", "IBAN", "card", "email", "phone", "SSN", "secret key" };
-        static string[] One { get { return I18n.IsSpanish ? OneEs : OneEn; } }
+        static readonly string[] OneDe = { "DNI", "NIE", "Sozialversicherungsnummer", "IBAN", "Karte", "E-Mail-Adresse", "Telefonnummer", "SSN", "geheimer Schl\u00FCssel" };
+        static string[] One { get { return I18n.IsSpanish ? OneEs : I18n.IsGerman ? OneDe : OneEn; } }
 
         static readonly string[] ManyEs = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjetas", "correos", "tel\u00E9fonos", "SSNs", "claves secretas" };
         static readonly string[] ManyEn = { "IDs (DNI)", "Foreigner IDs (NIE)", "Social Security nos.", "IBANs", "cards", "emails", "phones", "SSNs", "secret keys" };
-        static string[] Many { get { return I18n.IsSpanish ? ManyEs : ManyEn; } }
+        static readonly string[] ManyDe = { "DNI", "NIE", "Sozialversicherungsnummern", "IBANs", "Karten", "E-Mail-Adressen", "Telefonnummern", "SSNs", "geheime Schl\u00FCssel" };
+        static string[] Many { get { return I18n.IsSpanish ? ManyEs : I18n.IsGerman ? ManyDe : ManyEn; } }
 
         public static string Name(SensitiveKind k, int n) { return n == 1 ? One[(int)k] : Many[(int)k]; }
 

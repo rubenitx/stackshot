@@ -419,11 +419,8 @@ namespace Stackshot
                     case "closeall": CloseAll(); break;
                     case "settings": ShowHome("general", false); break;
                     case "language":
-                        string nextLang = I18n.Language == "es" ? "en" : I18n.Language == "en" ? "de" : "es";
-                        settings.Language = nextLang;
-                        settings.LanguageOffered = true;
-                        settings.Save();
-                        I18n.Apply(nextLang);
+                        string nextLang = LanguagePicker.Choose(home, settings.Language);
+                        if (nextLang != null) LanguagePicker.Apply(settings, nextLang);
                         break;
                     case "pause": Recorder.TogglePause(); break;
                     case "quit": TryQuit(QuitKind.User); break;

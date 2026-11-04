@@ -91,7 +91,7 @@ namespace Stackshot
 
         // ---- Parsing and the stored form
 
-        // "Ctrl+Shift+PrintScreen" -> modifiers + key. Spanish names are accepted too.
+        // "Ctrl+Shift+PrintScreen" -> modifiers + key. Spanish and German display names are accepted too.
         public static bool TryParse(string combo, out uint mods, out Keys key)
         {
             mods = 0;
@@ -101,8 +101,8 @@ namespace Stackshot
             {
                 string p = part.Trim().ToLowerInvariant();
                 if (p.Length == 0) continue;
-                if (p == "ctrl" || p == "control") mods |= MOD_CONTROL;
-                else if (p == "shift" || p == "may\u00FAs" || p == "mayus") mods |= MOD_SHIFT;
+                if (p == "ctrl" || p == "control" || p == "strg") mods |= MOD_CONTROL;
+                else if (p == "shift" || p == "may\u00FAs" || p == "mayus" || p == "umschalt") mods |= MOD_SHIFT;
                 else if (p == "alt") mods |= MOD_ALT;
                 else if (p == "altgr") mods |= MOD_CONTROL | MOD_ALT;
                 else if (p == "win" || p == "windows") mods |= MOD_WIN;
@@ -120,18 +120,21 @@ namespace Stackshot
         {
             switch (p)
             {
-                case "impr pant": case "imprpant": case "printscreen": case "prtsc": case "prtscn": return Keys.PrintScreen;
+                case "impr pant": case "imprpant": case "printscreen": case "prtsc": case "prtscn": case "druck": return Keys.PrintScreen;
                 case "esc": return Keys.Escape;
-                case "supr": return Keys.Delete;
-                case "espacio": return Keys.Space;
-                case "intro": case "enter": return Keys.Return;
-                case "retroceso": return Keys.Back;
+                case "supr": case "entf": return Keys.Delete;
+                case "espacio": case "leertaste": return Keys.Space;
+                case "intro": case "enter": case "eingabe": return Keys.Return;
+                case "retroceso": case "rücktaste": return Keys.Back;
                 case "pausa": return Keys.Pause;
-                case "inicio": return Keys.Home;
-                case "fin": return Keys.End;
-                case "ins": return Keys.Insert;
-                case "re p\u00E1g": return Keys.PageUp;
-                case "av p\u00E1g": return Keys.PageDown;
+                case "inicio": case "pos1": return Keys.Home;
+                case "fin": case "ende": return Keys.End;
+                case "ins": case "einfg": return Keys.Insert;
+                case "re p\u00E1g": case "bild auf": return Keys.PageUp;
+                case "av p\u00E1g": case "bild ab": return Keys.PageDown;
+                case "menü": return Keys.Apps;
+                case "feststelltaste": return Keys.Capital;
+                case "rollen": return Keys.Scroll;
             }
             if (p.Length == 1 && p[0] >= '0' && p[0] <= '9') return Keys.D0 + (p[0] - '0');
             if (char.IsDigit(p[0]) || p[0] == '-') return Keys.None; // Enum.TryParse would take any number
@@ -213,8 +216,8 @@ namespace Stackshot
         {
             List<string> s = new List<string>();
             if (win) s.Add("Win");
-            if (ctrl) s.Add("Ctrl");
-            if (shift) s.Add(I18n.IsSpanish ? "May\u00FAs" : "Shift");
+            if (ctrl) s.Add(I18n.IsGerman ? "Strg" : "Ctrl");
+            if (shift) s.Add(I18n.T("May\u00FAs", "Shift", "Umschalt"));
             if (alt) s.Add("Alt");
             if (key != Keys.None) s.Add(KeyName(key));
             return string.Join(" + ", s.ToArray());
@@ -229,6 +232,25 @@ namespace Stackshot
         // The name printed on the key, as on a Spanish keyboard; punctuation as the current layout prints it.
         public static string KeyName(Keys key)
         {
+            if (I18n.IsGerman)
+            {
+                switch (key)
+                {
+                    case Keys.PrintScreen: return "Druck";
+                    case Keys.Space: return "Leertaste";
+                    case Keys.Return: return "Eingabe";
+                    case Keys.Back: return "Rücktaste";
+                    case Keys.Delete: return "Entf";
+                    case Keys.Insert: return "Einfg";
+                    case Keys.Home: return "Pos1";
+                    case Keys.End: return "Ende";
+                    case Keys.PageUp: return "Bild auf";
+                    case Keys.PageDown: return "Bild ab";
+                    case Keys.Apps: return "Menü";
+                    case Keys.Capital: return "Feststelltaste";
+                    case Keys.Scroll: return "Rollen";
+                }
+            }
             if (I18n.IsSpanish)
             {
                 switch (key)

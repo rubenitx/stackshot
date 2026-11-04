@@ -42,6 +42,10 @@ namespace Stackshot.Tests
                 T("spanish-pages-unchanged-by-a-round-trip", RoundTrip);
                 T("editor-tool-keys-localized", EditorToolKeysLocalized);
                 T("german-localization-catalog", GermanLocalization);
+                T("german-editor-updates-while-open", GermanEditorUpdates);
+                T("german-document-viewer-updates-while-open", GermanDocumentUpdates);
+                T("german-settings-welcome-and-tray", GermanSurfaces);
+                T("language-picker-search-and-preview", LanguagePickerSearch);
             }
             finally
             {
@@ -55,7 +59,13 @@ namespace Stackshot.Tests
         static void AutoFollowsWindows()
         {
             string[] spanish = { "es-ES", "es-MX", "es-AR", "ca-ES", "gl-ES", "eu-ES" };
-            string[] english = { "en-US", "en-GB", "fr-FR", "de-DE", "pt-BR" };
+            string[] english = { "en-US", "en-GB", "fr-FR", "pt-BR" };
+            foreach (string c in new[] { "de-DE", "de-AT", "de-CH" })
+            {
+                Thread.CurrentThread.CurrentUICulture = new CultureInfo(c);
+                I18n.Apply("auto");
+                Check(I18n.IsGerman, "Windows in " + c + " should give German");
+            }
             foreach (string c in spanish)
             {
                 Thread.CurrentThread.CurrentUICulture = new CultureInfo(c);
@@ -66,7 +76,7 @@ namespace Stackshot.Tests
             {
                 Thread.CurrentThread.CurrentUICulture = new CultureInfo(c);
                 I18n.Apply("auto");
-                Check(!I18n.IsSpanish, "Windows in " + c + " should give English");
+                Check(I18n.IsEnglish, "Windows in " + c + " should give English");
             }
             // An explicit choice wins over Windows.
             I18n.Apply("es");
@@ -472,6 +482,22 @@ namespace Stackshot.Tests
             Check(I18n.T("Inicio", "Home") == "Startseite", "Home is Startseite");
             Check(I18n.T("Atajos", "Shortcuts") == "Tastenk\u00FCrzel", "Shortcuts is Tastenk\u00FCrzel");
             Check(I18n.T("Datos sensibles", "Sensitive data") == "Sensible Daten", "Sensitive data is Sensible Daten");
+            Check(I18n.T("Copiar valor", "Copy value") == "Wert kopieren", "XML value menu");
+            Check(I18n.T("Tipo desconocido: solo se puede guardar", "Unknown type: can only be saved").StartsWith("Unbekannter Dateityp"), "XML attachment warning");
+            Check(I18n.T("", "Export PDF\u2026") == "PDF exportieren\u2026", "document export action");
+            Check(I18n.Fmt("", "The attachment is too large (maximum {0} MB).", 8).Contains("8 MB"), "localized attachment size");
+            Check(I18n.T("", "Keep changes to capture?") == "Änderungen an der Aufnahme speichern?", "editor close prompt");
+            Check(MdHtml.Page("# Test", null).Contains("<html lang=\"de\">"), "exported HTML has the selected language tag");
+            Check(Timeline.Qualities[1] == "Hoch" && Timeline.Speeds[1] == "1,5\u00D7", "editor export options");
+            Check(I18n.T("", "Windows does not allow recording computer audio.") == "Windows erlaubt die Aufnahme des Systemtons nicht.", "audio permission warning");
+            Check(Hotkeys.DisplayOne("Ctrl+Shift+X") == "Strg + Umschalt + X", "localized recording shortcut display");
+            Check(Hotkeys.Normalize(Hotkeys.DisplayOne("Ctrl+Shift+PrintScreen")) == "Ctrl+Shift+PrintScreen", "German shortcut round-trip");
+            Check(Notice.KindFor(I18n.T("", "Recording without part of audio")) == NoticeKind.Warning, "recording audio warning remains a warning");
+            Check(Access.Shortcut(I18n.T("", "Heading (Ctrl+1 to Ctrl+6)")) == "Strg+1 bis Strg+6", "document shortcut range");
+            Check(I18n.T("Guardar todas las capturas", "Save all captures") == "Alle Aufnahmen speichern", "welcome save option");
+            Check(I18n.T("", "Interface language (automatic based on Windows, Spanish, English or German).").StartsWith("Sprache der Benutzeroberfl\u00E4che"), "language selector description");
+            Check(I18n.Fmt("{0} capturas hoy", "{0} captures today", 3) == "Heute 3 Aufnahmen", "tray counter");
+            Check(Editor.SensitiveResult(new List<SensitiveFinding> { new SensitiveFinding { Kind = SensitiveKind.Secret } }, 1).Contains("geschw\u00E4rzt"), "redaction feedback");
             Check(I18n.T("Capturar pantalla completa", "Capture full screen") == "Vollbild aufnehmen", "Capture full screen is Vollbild aufnehmen");
 
             Check(I18n.T("Uno", "One", "Eins") == "Eins", "three-arg T gives Eins in German");
@@ -480,6 +506,117 @@ namespace Stackshot.Tests
             Check(Notice.KindFor("Text kopiert") == NoticeKind.Success, "text copied is success");
             Check(Notice.KindFor("Audio \u00FCbersteuert") == NoticeKind.Warning, "audio clipped is warning");
             Check(Notice.KindFor("Konnte nicht speichern") == NoticeKind.Error, "could not save is error");
+        }
+
+        static void GermanEditorUpdates()
+        {
+            I18n.Apply("en");
+            using (Editor editor = new Editor(null, "language-test.png", new System.Drawing.Bitmap(320, 200)))
+            {
+                IntPtr handle = editor.Handle;
+                Bar bar = (Bar)typeof(Editor).GetField("bar", NP).GetValue(editor);
+                Bar.Item arrow = bar.Items.Find(it => it.Kind == Bar.Kind.Tool);
+                Bar.Item save = bar.Items.Find(it => it.Glyph == "save");
+                Check(arrow.Tip.StartsWith("Arrow") && save.Label == "Save", "English editor");
+                I18n.Apply("de");
+                Check(editor.Handle == handle && arrow.Tip == "Pfeil  (A)" && save.Label == "Speichern", "open toolbar updates in place");
+                Check(Access.Shortcut(save.Tip) == "Strg+S", "German shortcut exposed to accessibility");
+                I18n.Apply("es");
+                Check(arrow.Tip == "Flecha  (F)" && save.Label == "Guardar", "editor switches back to Spanish");
+            }
+        }
+
+        static void GermanSurfaces()
+        {
+            I18n.Apply("de");
+            HomeWindow hw = Make(1);
+            try
+            {
+                SetPage(hw, "general");
+                Layout(hw);
+                List<string> settings = new List<string>(Strings(hw.Content));
+                Check(settings.Contains("Suche und wähle die Sprache für Stackshot."), "German language row appears in Settings");
+                Check(settings.Contains("Alle Aufnahmen automatisch speichern"), "German save toggle appears in Settings");
+                Check(settings.Contains("Startseite") && settings.Contains("Hintergrund und Editor"), "German sidebar names");
+            }
+            finally { hw.Shutdown(); }
+            SetupWindow welcome = (SetupWindow)typeof(SetupWindow).GetConstructor(NP, null, new[] { typeof(Settings) }, null).Invoke(new object[] { new Settings() });
+            try
+            {
+                List<string> texts = new List<string>(Strings(welcome.Content));
+                Check(texts.Contains("Alle Aufnahmen speichern"), "German save toggle appears in Welcome");
+            }
+            finally { welcome.Close(); }
+            List<string> tray = AuditTray();
+            Check(tray.Contains("Bereich") && tray.Contains("Sprache auswählen\u2026"), "German actions appear in the tray");
+        }
+
+        static void GermanDocumentUpdates()
+        {
+            I18n.Apply("en");
+            var viewer = (MarkdownWindow)typeof(MarkdownWindow).GetConstructors(NP)[0].Invoke(new object[] { null });
+            try
+            {
+                viewer.UpdateLayout();
+                Check(Strings(viewer.Content).Contains("Open file\u2026"), "English viewer open action");
+                I18n.Apply("de");
+                viewer.UpdateLayout();
+                Check(Strings(viewer.Content).Contains("Datei \u00F6ffnen\u2026"), "same viewer updates to German");
+            }
+            finally { viewer.Close(); }
+        }
+
+        static void LanguagePickerSearch()
+        {
+            I18n.Apply("en");
+            Check(I18n.FilterLanguages("francais").Exists(o => o.Code == "fr"), "accent-insensitive search");
+            Check(I18n.FilterLanguages("mandarin").Exists(o => o.Code == "zh"), "search by alias");
+            Check(I18n.FilterLanguages("EN").Count == 1 && I18n.FilterLanguages("EN")[0].Code == "en", "exact code takes priority");
+            Check(I18n.FilterLanguages("العربية").Exists(o => o.Code == "ar"), "search by native name");
+            Check(I18n.FilterLanguages("not-a-language").Count == 0, "empty result");
+            var picker = (LanguagePicker)typeof(LanguagePicker).GetConstructor(NP, null, new[] { typeof(string) }, null).Invoke(new object[] { "de" });
+            try
+            {
+                var search = (TextBox)typeof(LanguagePicker).GetField("search", NP).GetValue(picker);
+                var list = (ListBox)typeof(LanguagePicker).GetField("list", NP).GetValue(picker);
+                Check((string)((ListBoxItem)list.SelectedItem).Tag == "de", "current language is selected");
+                search.Text = "francais";
+                Check(list.Items.Count == 1 && (string)((ListBoxItem)list.SelectedItem).Tag == "fr", "filter updates the visible list");
+                search.Text = "not-a-language";
+                Check(list.Items.Count == 0, "list shows no matches");
+                Check(I18n.IsEnglish, "searching does not change the application language");
+            }
+            finally { picker.Close(); }
+            I18n.Apply("ar");
+            var arabic = (LanguagePicker)typeof(LanguagePicker).GetConstructor(NP, null, new[] { typeof(string) }, null).Invoke(new object[] { "ar" });
+            try
+            {
+                var apply = (MacButton)typeof(LanguagePicker).GetField("apply", NP).GetValue(arabic);
+                Check(((FrameworkElement)apply.Parent).FlowDirection == FlowDirection.RightToLeft &&
+                      apply.FlowDirection == FlowDirection.LeftToRight, "Arabic layout does not mirror the custom button glyphs");
+            }
+            finally { arabic.Close(); }
+            string path = Path.Combine(Path.GetTempPath(), "stackshot-languages-" + Guid.NewGuid().ToString("N") + ".ini");
+            try
+            {
+                foreach (I18n.LanguageOption option in I18n.Languages)
+                {
+                    if (!option.Preview) continue;
+                    File.WriteAllText(path, "Language = " + option.Code);
+                    Check(Settings.Load(path).Language == option.Code, "settings read " + option.Code);
+                    I18n.Apply(option.Code);
+                    Check(I18n.Language == option.Code && I18n.Save != "Save", "preview core strings in " + option.Code);
+                    string redacted = SensitiveCover.Note(new CoverOutcome
+                    {
+                        Found = new List<SensitiveFinding> { new SensitiveFinding(), new SensitiveFinding() }
+                    });
+                    Check(redacted.Contains("2") && redacted != "2 items redacted", "localized redaction count in " + option.Code);
+                    string count = I18n.Fmt("{0} capturas hoy", "{0} captures today", 7);
+                    Check(count.Contains("7") && count != "7 captures today", "localized tray count in " + option.Code);
+                    Check(I18n.T("prueba", "fallback-test") == "fallback-test", "English fallback in " + option.Code);
+                }
+            }
+            finally { File.Delete(path); }
         }
 
         static void Layout(HomeWindow hw)

@@ -7,15 +7,12 @@ namespace Stackshot
 {
     public static partial class I18n
     {
-        public static string Mode = "auto"; // "auto", "es", "en", "de"
-        public static string Language { get; private set; } // "es", "en", "de"
+        public static string Mode = "auto";
+        public static string Language { get; private set; }
         public static bool IsSpanish { get { return Language == "es"; } }
         public static bool IsEnglish { get { return Language == "en"; } }
         public static bool IsGerman { get { return Language == "de"; } }
         public static event Action Changed;
-
-        public static readonly string[] SupportedLanguages = { "es", "en", "de" };
-        public static readonly string[] SupportedLanguageNames = { "Espa\u00F1ol", "English", "Deutsch" };
 
         static I18n()
         {
@@ -41,24 +38,13 @@ namespace Stackshot
         {
             if (string.IsNullOrEmpty(mode)) mode = "auto";
             mode = mode.Trim().ToLowerInvariant();
-            if (mode != "es" && mode != "en" && mode != "de") mode = "auto";
+            if (FindLanguage(mode) == null) mode = "auto";
 
             string wasLang = Language;
             string wasMode = Mode;
             Mode = mode;
 
-            if (mode == "es")
-            {
-                Language = "es";
-            }
-            else if (mode == "en")
-            {
-                Language = "en";
-            }
-            else if (mode == "de")
-            {
-                Language = "de";
-            }
+            if (mode != "auto") Language = mode;
             else
             {
                 try
@@ -91,34 +77,33 @@ namespace Stackshot
                 string de = LookupGerman(en, es);
                 if (de != null) return de;
             }
-            return en;
+            return PreviewText(en) ?? en;
         }
 
         public static string T(string es, string en, string de)
         {
             if (IsSpanish) return es;
             if (IsGerman && !string.IsNullOrEmpty(de)) return de;
-            return en;
+            return PreviewText(en) ?? en;
         }
 
         // Formats a localized string.
         public static string Fmt(string esFmt, string enFmt, params object[] args)
         {
-            string fmt = IsSpanish ? esFmt : (IsGerman ? (LookupGerman(enFmt, esFmt) ?? enFmt) : enFmt);
-            return string.Format(CultureInfo.CurrentCulture, fmt, args);
+            return string.Format(CultureInfo.CurrentCulture, T(esFmt, enFmt), args);
         }
 
 
 
         // Common UI verbs & labels
-        public static string Save { get { return IsSpanish ? "Guardar" : IsGerman ? "Speichern" : "Save"; } }
-        public static string Copy { get { return IsSpanish ? "Copiar" : IsGerman ? "Kopieren" : "Copy"; } }
-        public static string Close { get { return IsSpanish ? "Cerrar" : IsGerman ? "Schlie\u00DFen" : "Close"; } }
-        public static string Delete { get { return IsSpanish ? "Eliminar" : IsGerman ? "L\u00F6schen" : "Delete"; } }
-        public static string Cancel { get { return IsSpanish ? "Cancelar" : IsGerman ? "Abbrechen" : "Cancel"; } }
-        public static string Done { get { return IsSpanish ? "Listo" : IsGerman ? "Fertig" : "Done"; } }
-        public static string Open { get { return IsSpanish ? "Abrir" : IsGerman ? "\u00D6ffnen" : "Open"; } }
-        public static string Quit { get { return IsSpanish ? "Salir" : IsGerman ? "Beenden" : "Quit"; } }
-        public static string SettingsText { get { return IsSpanish ? "Ajustes" : IsGerman ? "Einstellungen" : "Settings"; } }
+        public static string Save { get { return T("Guardar", "Save"); } }
+        public static string Copy { get { return T("Copiar", "Copy"); } }
+        public static string Close { get { return T("Cerrar", "Close"); } }
+        public static string Delete { get { return T("Eliminar", "Delete"); } }
+        public static string Cancel { get { return T("Cancelar", "Cancel"); } }
+        public static string Done { get { return T("Listo", "Done"); } }
+        public static string Open { get { return T("Abrir", "Open"); } }
+        public static string Quit { get { return T("Salir", "Quit"); } }
+        public static string SettingsText { get { return T("Ajustes", "Settings"); } }
     }
 }
