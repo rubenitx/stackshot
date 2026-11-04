@@ -11,8 +11,8 @@ using System.Windows.Forms;
 [assembly: AssemblyDescription("Capturas de pantalla, v\u00EDdeo y GIF para Windows, con miniaturas flotantes y editor r\u00E1pido")]
 [assembly: AssemblyCompany("rubenitx")]
 [assembly: AssemblyCopyright("Copyright \u00A9 2026 rubenitx \u00B7 MIT License")]
-[assembly: AssemblyVersion("2.2.1.0")]
-[assembly: AssemblyFileVersion("2.2.1.0")]
+[assembly: AssemblyVersion("2.2.2.0")]
+[assembly: AssemblyFileVersion("2.2.2.0")]
 
 namespace Stackshot
 {
@@ -146,6 +146,7 @@ namespace Stackshot
 
             if (Has("--install"))
             {
+                if (Installer.ManagedByMsi) return 1;
                 string folder = Value("--folder");
                 if (folder != null)
                 {
@@ -185,9 +186,10 @@ namespace Stackshot
                     if (command != null) { Start(Settings.InstalledExe, CliCommand.Arguments(command, view)); return 0; }
                     // Already installed: update if this build is newer, otherwise open the installed one.
                     // MSI installs are updated through the MSI, never overwritten here.
-                    if (Installer.MyVersion > Installer.InstalledVersion && Installer.ManagedByMsi)
+                    if (Installer.ManagedByMsi)
                     {
-                        MessageBox.Show(I18n.Fmt("Este equipo tiene Stackshot {0} instalado con el paquete MSI.\n\nPara pasar a la {1}, instala Stackshot.msi de esa versi\u00F3n (o p\u00EDdeselo a inform\u00E1tica).",
+                        if (Installer.MyVersion > Installer.InstalledVersion)
+                            MessageBox.Show(I18n.Fmt("Este equipo tiene Stackshot {0} instalado con el paquete MSI.\n\nPara pasar a la {1}, instala Stackshot.msi de esa versi\u00F3n (o p\u00EDdeselo a inform\u00E1tica).",
                                                  "This machine has Stackshot {0} installed via MSI package.\n\nTo update to {1}, install Stackshot.msi for that version (or ask IT).",
                                                  Installer.InstalledVersion.ToString(3), Installer.MyVersion.ToString(3)),
                                         "Stackshot", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -195,6 +197,10 @@ namespace Stackshot
                     else if (Installer.MyVersion > Installer.InstalledVersion)
                     {
                         if (MessageBox.Show(I18n.Fmt("\u00BFActualizar Stackshot de la versi\u00F3n {0} a la {1}?", "Update Stackshot from version {0} to {1}?", Installer.InstalledVersion.ToString(3), Installer.MyVersion.ToString(3)), "Stackshot", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return 0;
+                        if (!TryInstall(Installer.StartupEnabled)) return 1;
+                    }
+                    else if (Installer.MyVersion == Installer.InstalledVersion && (Has("--replace") || Has("--reinstall")))
+                    {
                         if (!TryInstall(Installer.StartupEnabled)) return 1;
                     }
                     Start(Settings.InstalledExe, view != null ? "\"" + view + "\"" : null);

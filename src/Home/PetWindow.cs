@@ -1930,7 +1930,7 @@ namespace Stackshot
             }
             else
             {
-                double k = Math.Min(1, t / (MenuInMs / 1000.0)), p = 1 - Math.Exp(-t * 16);
+                double k = Math.Min(1, t / (MenuInMs / 1000.0)), p = k >= 1 ? 1 : 1 - Math.Exp(-t * 16);
                 a = 1 - Math.Pow(1 - k, 3);
                 sc = 0.94 + 0.06 * p;
                 rise = 8 * s * (1 - p);
@@ -1938,6 +1938,11 @@ namespace Stackshot
             float tailX = Math.Max(x + 22 * s, Math.Min(x + w - 22 * s, MidX));
             Bitmap card = MenuCard(list, box, hotRow, tailX);
             Rectangle at = new Rectangle((int)Math.Round(x) - CardPad, (int)Math.Round(y) - CardPad, card.Width, card.Height);
+            if (!away && sc == 1 && a == 1)
+            {
+                g.DrawImageUnscaled(card, at.Location);
+                return;
+            }
             GraphicsState st = g.Save();
             // Moved only while it settles: once there, it is copied pixel for pixel, with no transform left over that
             // would soften the text.
@@ -1958,8 +1963,8 @@ namespace Stackshot
             g.Restore(st);
         }
 
-        // The menu as one picture: its shadow, card, arrow and rows. Its text is drawn by the system as in its own menus
-        // (ClearType, sharp), which needs a solid background: the rows go on an opaque layer first, then onto the card.
+        // The menu as one picture: its shadow, card, arrow and rows. The text is grid-fitted on an opaque layer
+        // without subpixel colour fringes, so the same glyphs work on the normal and highlighted backgrounds.
         // Redrawn only when the row under the mouse, the choices, the place or the theme change; a frame just copies it.
         Bitmap menuCard;
         List<Choice> cardFor;
@@ -1989,7 +1994,7 @@ namespace Stackshot
             using (Graphics g = Graphics.FromImage(card))
             {
                 g.SmoothingMode = SmoothingMode.AntiAlias;
-                g.TranslateTransform(cp0 - x, cp0 - y);
+                g.TranslateTransform(cp0 - (float)Math.Round(x), cp0 - (float)Math.Round(y));
                 // Soft shadow: stacked rounded rectangles that fade out.
                 for (int i = pal.High ? 0 : 8; i >= 1; i--)
                 {
@@ -2029,11 +2034,15 @@ namespace Stackshot
                     {
                         lg.Clear(bg);
                         lg.SmoothingMode = SmoothingMode.AntiAlias;
-                        lg.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;   // the quality TextRenderer asks the system for
+                        lg.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                         lg.TranslateTransform(-lx, -ly);
                         PaintRows(lg, list, x, y, w, hotRow, bg, lx, ly, item, small, rowH, sepH, pad);
                     }
-                    g.DrawImage(layer, new Rectangle(lx, ly, layer.Width, layer.Height), 0, 0, layer.Width, layer.Height, GraphicsUnit.Pixel);
+                    // Composite the hinted text at a whole-pixel offset without sampling it.
+                    GraphicsState state = g.Save();
+                    g.ResetTransform();
+                    g.DrawImageUnscaled(layer, lx + cp0 - (int)Math.Round(x), ly + cp0 - (int)Math.Round(y));
+                    g.Restore(state);
                 }
             }
             if (menuCard != null) menuCard.Dispose();
@@ -2082,16 +2091,12 @@ namespace Stackshot
                 // The label never runs under the shortcut: a very long one ends in "…".
                 float labelW = c.R.Width - 36 * s - (c.Detail != null ? c.DetailW + 16 * s : 0);
                 Rectangle lr = new Rectangle((int)Math.Round(c.R.X + 33 * s) - ox, (int)c.R.Y - oy, (int)Math.Max(10 * s, labelW), (int)c.R.Height);
-                // White on the accent: ClearType's coloured edges would fringe on a saturated colour, so this row's text is
-                // hinted greyscale (still sharp on its whole pixels); the others stay ClearType.
-                if (hot) g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 TextRenderer.DrawText(g, c.Text, item, lr, Over(fg, under), Line | TextFormatFlags.EndEllipsis);
                 if (c.Detail != null)
                 {
                     Rectangle dr = new Rectangle((int)c.R.X - ox, (int)c.R.Y - oy, (int)(c.R.Width - 10 * s), (int)c.R.Height);
                     TextRenderer.DrawText(g, c.Detail, small, dr, Over(hot ? fg : label2, under), Line | TextFormatFlags.Right);
                 }
-                if (hot) g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
                 ry += rowH;
             }
         }

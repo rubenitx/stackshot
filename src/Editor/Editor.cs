@@ -19,15 +19,21 @@ namespace Stackshot
         static readonly Tool[] ToolOrder = { Tool.Arrow, Tool.Line, Tool.Rect, Tool.Ellipse, Tool.Text, Tool.Counter, Tool.Highlight, Tool.Spotlight, Tool.Pixelate, Tool.Redact, Tool.Crop };
         static readonly string[] ToolNamesEs = { "Flecha", "L\u00EDnea", "Recuadro", "Elipse", "Texto", "N\u00FAmeros", "Resaltar", "Foco: oscurece el resto", "Pixelar", "Tapar (lo m\u00E1s seguro para datos)", "Recortar" };
         static readonly string[] ToolNamesEn = { "Arrow", "Line", "Rectangle", "Ellipse", "Text", "Numbers", "Highlight", "Spotlight: dims the rest", "Pixelate", "Redact (safest for sensitive data)", "Crop" };
-        static string[] ToolNames { get { return I18n.IsSpanish ? ToolNamesEs : ToolNamesEn; } }
-        static readonly string[] ToolKeys = { "F", "L", "R", "E", "T", "N", "H", "O", "P", "X", "C" };
+        static readonly string[] ToolNamesDe = { "Pfeil", "Linie", "Rechteck", "Ellipse", "Text", "Zahlen", "Hervorheben", "Scheinwerfer: dunkelt den Rest ab", "Verpixeln", "Schw\u00E4rzen (am sichersten f\u00FCr Daten)", "Zuschneiden" };
+        static string[] ToolNames { get { return I18n.IsSpanish ? ToolNamesEs : I18n.IsGerman ? ToolNamesDe : ToolNamesEn; } }
+        static readonly string[] ToolKeysEs = { "F", "L", "R", "E", "T", "N", "H", "O", "P", "X", "C" };
+        static readonly string[] ToolKeysEn = { "A", "L", "R", "E", "T", "N", "H", "S", "P", "X", "C" };
+        static readonly string[] ToolKeysDe = { "A", "L", "R", "E", "T", "N", "H", "S", "P", "X", "C" };
+        static string[] ToolKeys { get { return I18n.IsSpanish ? ToolKeysEs : I18n.IsGerman ? ToolKeysDe : ToolKeysEn; } }
         static readonly string[] ToolGlyphs = { "arrow", "line", "rect", "ellipse", "text", "counter", "highlight", "spotlight", "pixelate!", "redact!", "crop" };
         static readonly string[] WeightNamesEs = { "Fino", "Medio", "Grueso" };
         static readonly string[] WeightNamesEn = { "Thin", "Medium", "Thick" };
-        static string[] WeightNames { get { return I18n.IsSpanish ? WeightNamesEs : WeightNamesEn; } }
+        static readonly string[] WeightNamesDe = { "D\u00FCnn", "Mittel", "Dick" };
+        static string[] WeightNames { get { return I18n.IsSpanish ? WeightNamesEs : I18n.IsGerman ? WeightNamesDe : WeightNamesEn; } }
         static readonly string[] SizeNamesEs = { "Peque\u00F1o", "Mediano", "Grande" };
         static readonly string[] SizeNamesEn = { "Small", "Medium", "Large" };
-        static string[] SizeNames { get { return I18n.IsSpanish ? SizeNamesEs : SizeNamesEn; } }
+        static readonly string[] SizeNamesDe = { "Klein", "Mittel", "Gro\u00DF" };
+        static string[] SizeNames { get { return I18n.IsSpanish ? SizeNamesEs : I18n.IsGerman ? SizeNamesDe : SizeNamesEn; } }
         // Captures that already have the backdrop applied, so reopening them doesn't add a second one.
         static readonly HashSet<string> withBackdrop = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -44,6 +50,7 @@ namespace Stackshot
         readonly Timer feedback = new Timer();
         readonly Dictionary<Tool, Bar.Item> toolItems = new Dictionary<Tool, Bar.Item>();
         readonly List<Bar.Item> colorItems = new List<Bar.Item>(), weightItems = new List<Bar.Item>();
+        readonly List<Action> toolbarText = new List<Action>();
         readonly Bar.Item undoItem, redoItem, copyItem, saveItem, bgItem, pdfItem;
         bool dirty, closeWithoutAsking;
         // The file had a backdrop baked in when the editor opened; the file was rewritten in this session.
@@ -119,11 +126,12 @@ namespace Stackshot
             for (int i = 0; i < ToolOrder.Length; i++)
             {
                 Tool t = ToolOrder[i];
+                int idx = i;
                 if (IsVideo && t == Tool.Pixelate) continue; // pixelating would need frame-by-frame tracking
                 Bar.Item it = bar.Add(Bar.Kind.Tool);
                 it.Tool = t;
                 it.Glyph = ToolGlyphs[i];
-                it.Tip = ToolNames[i] + "  (" + ToolKeys[i] + ")";
+                BindToolbarText(() => it.Tip = ToolNames[idx] + "  (" + ToolKeys[idx] + ")");
                 it.Do = delegate { SetTool(t); };
                 toolItems[t] = it;
             }
@@ -133,7 +141,7 @@ namespace Stackshot
                 int idx = i;
                 Bar.Item it = bar.Add(Bar.Kind.Swatch);
                 it.Swatch = Theme.Palette[i];
-                it.Tip = Theme.PaletteNames[i] + "  (" + (i + 1) + ")";
+                BindToolbarText(() => it.Tip = Theme.PaletteNames[idx] + "  (" + (idx + 1) + ")");
                 it.Group = 1;
                 it.Do = delegate { SetColor(idx); };
                 colorItems.Add(it);
@@ -145,50 +153,48 @@ namespace Stackshot
                 Bar.Item it = bar.Add(Bar.Kind.Weight);
                 it.Index = i;
                 it.Group = 2;
-                it.Tip = (I18n.IsSpanish ? "Grosor: " : "Thickness: ") + WeightNames[i] + "  (\u2212 / +)";
                 it.Do = delegate { SetWeight(idx); };
                 weightItems.Add(it);
             }
             bar.Add(Bar.Kind.Gap);
-            undoItem = Button(null, "undo", I18n.T("Deshacer  (Ctrl+Z)", "Undo  (Ctrl+Z)"), delegate { canvas.Undo(); }, false);
-            redoItem = Button(null, "redo", I18n.T("Rehacer  (Ctrl+Y)", "Redo  (Ctrl+Y)"), delegate { canvas.Redo(); }, false);
+            undoItem = LocalizedButton(null, "undo", () => I18n.T("Deshacer  (Ctrl+Z)", "Undo  (Ctrl+Z)"), delegate { canvas.Undo(); }, false);
+            redoItem = LocalizedButton(null, "redo", () => I18n.T("Rehacer  (Ctrl+Y)", "Redo  (Ctrl+Y)"), delegate { canvas.Redo(); }, false);
             bar.Add(Bar.Kind.Gap);
-            bgItem = Button(I18n.T("Fondo", "Backdrop"), "backdrop", I18n.T("Fondo de presentaci\u00F3n: degradados, im\u00E1genes, desenfocado o color liso, con margen, sombra y esquinas  (B)", "Presentation backdrop: gradients, images, blur or solid color, with padding, shadow and rounded corners  (B)"), ToggleBgPanel, false);
+            bgItem = LocalizedButton(() => I18n.T("Fondo", "Backdrop"), "backdrop", () => I18n.T("Fondo de presentaci\u00F3n: degradados, im\u00E1genes, desenfocado o color liso, con margen, sombra y esquinas  (B)", "Presentation backdrop: gradients, images, blur or solid color, with padding, shadow and rounded corners  (B)"), ToggleBgPanel, false);
 
             if (IsVideo)
             {
-                exportItem = Button(I18n.T("Exportar", "Export"), "share", ExportTip(), Done, true);
+                exportItem = LocalizedButton(() => I18n.T("Exportar", "Export"), "share", ExportTip, Done, true);
                 exportItem.Accent = true;
             }
             else
             {
                 SensitiveSetup();
-                Button(null, "pin", I18n.T("Fijar en pantalla: queda flotando encima de todo", "Pin to screen: stays floating on top"), PinOut, true);
-                pdfItem = Button("PDF", "doc", I18n.T("Guardar como PDF: las capturas largas se reparten en p\u00E1ginas sin perder nitidez  (Ctrl+P)", "Save as PDF: tall scrolling captures split across pages without losing crispness  (Ctrl+P)"), delegate { SaveAs(true); }, true);
+                LocalizedButton(null, "pin", () => I18n.T("Fijar en pantalla: queda flotando encima de todo", "Pin to screen: stays floating on top"), PinOut, true);
+                pdfItem = LocalizedButton(() => "PDF", "doc", () => I18n.T("Guardar como PDF: las capturas largas se reparten en p\u00E1ginas sin perder nitidez  (Ctrl+P)", "Save as PDF: tall scrolling captures split across pages without losing crispness  (Ctrl+P)"), delegate { SaveAs(true); }, true);
                 pdfItem.Alt = "PDF \u2713";
                 pdfItem.Optional = true; // Ctrl+P
-                Bar.Item drag = Button(I18n.T("Arrastrar", "Drag"), "share", I18n.T("Arr\u00E1strala al chat o a otra aplicaci\u00F3n", "Drag to chat or another application"), null, true);
+                Bar.Item drag = LocalizedButton(() => I18n.T("Arrastrar", "Drag"), "share", () => I18n.T("Arr\u00E1strala al chat o a otra aplicaci\u00F3n", "Drag to chat or another application"), null, true);
                 drag.DragOut = true;
                 drag.Optional = true;    // the thumbnail in the stack drags too
-                Bar.Item textItem = Button(I18n.T("Copiar texto", "Copy text"), "textscan", I18n.T("Copiar el texto de la imagen (reconocimiento de texto de Windows)  (Ctrl+May\u00FAs+C)", "Copy text from image (Windows OCR)  (Ctrl+Shift+C)"), CopyTextOut, true);
+                Bar.Item textItem = LocalizedButton(() => I18n.T("Copiar texto", "Copy text"), "textscan", () => I18n.T("Copiar el texto de la imagen (reconocimiento de texto de Windows)  (Ctrl+May\u00FAs+C)", "Copy text from image (Windows OCR)  (Ctrl+Shift+C)"), CopyTextOut, true);
                 textItem.Optional = true; // Ctrl+Shift+C
-                copyItem = Button(I18n.T("Copiar", "Copy"), "copy", I18n.T("Copiar al portapapeles  (Ctrl+C)", "Copy to clipboard  (Ctrl+C)"), CopyOut, true);
-                copyItem.Alt = I18n.T("Copiado \u2713", "Copied \u2713");
-                saveItem = Button(I18n.T("Guardar", "Save"), "save", InTemp ? I18n.T("Conservarla en tu carpeta de capturas  (Ctrl+S)", "Keep in your captures folder  (Ctrl+S)") : I18n.T("Guardar sobre la imagen  (Ctrl+S)", "Save over the image  (Ctrl+S)"), KeepCopy, true);
-                saveItem.Alt = I18n.T("Guardada \u2713", "Saved \u2713");
-                Bar.Item done = Button(I18n.T("Listo", "Done"), "check", I18n.T("Aplicar, copiar y cerrar  (Enter)", "Apply, copy and close  (Enter)"), Done, true);
+                copyItem = LocalizedButton(() => I18n.T("Copiar", "Copy"), "copy", () => I18n.T("Copiar al portapapeles  (Ctrl+C)", "Copy to clipboard  (Ctrl+C)"), CopyOut, true);
+                BindToolbarText(() => copyItem.Alt = I18n.T("Copiado \u2713", "Copied \u2713", "Kopiert \u2713"));
+                saveItem = LocalizedButton(() => I18n.T("Guardar", "Save"), "save", () => InTemp ? I18n.T("Conservarla en tu carpeta de capturas  (Ctrl+S)", "Keep in your captures folder  (Ctrl+S)") : I18n.T("Guardar sobre la imagen  (Ctrl+S)", "Save over the image  (Ctrl+S)"), KeepCopy, true);
+                BindToolbarText(() => saveItem.Alt = I18n.T("Guardada \u2713", "Saved \u2713", "Gespeichert \u2713"));
+                Bar.Item done = LocalizedButton(() => I18n.T("Listo", "Done"), "check", () => I18n.T("Aplicar, copiar y cerrar  (Enter)", "Apply, copy and close  (Enter)"), Done, true);
                 done.Accent = true;
                 bar.DragOut += StartDragOut;
             }
             // The toolbar is also the title bar: window buttons at the top right.
-            string[] captionTips = I18n.IsSpanish ? new string[] { "Minimizar", "Maximizar", "Cerrar" } : new string[] { "Minimize", "Maximize", "Close" };
             for (int i = 0; i < 3; i++)
             {
                 int idx = i;
                 Bar.Item cap = bar.Add(Bar.Kind.Caption);
                 cap.Index = i;
                 cap.Right = true;
-                cap.Tip = captionTips[i];
+                BindToolbarText(() => cap.Tip = Bar.AccessName(cap, bar.Maximized));
                 cap.Do = delegate { CaptionClick(idx); };
                 if (i == 1) maxItem = cap;
             }
@@ -480,15 +486,31 @@ namespace Stackshot
 
         int P(float v) { return (int)Math.Round(v * s); }
 
-        Bar.Item Button(string label, string glyph, string tip, Action act, bool right)
+        Bar.Item LocalizedButton(Func<string> label, string glyph, Func<string> tip, Action act, bool right)
         {
             Bar.Item it = bar.Add(Bar.Kind.Button);
-            it.Label = label;
             it.Glyph = glyph;
-            it.Tip = tip;
+            BindToolbarText(delegate { it.Label = label == null ? null : label(); it.Tip = tip(); });
             it.Do = act;
             it.Right = right;
             return it;
+        }
+
+        void BindToolbarText(Action refresh)
+        {
+            refresh();
+            toolbarText.Add(refresh);
+        }
+
+        void RefreshLanguage()
+        {
+            if (!IsHandleCreated || IsDisposed) return;
+            if (InvokeRequired) { BeginInvoke((Action)RefreshLanguage); return; }
+            EdTip.Cancel();
+            foreach (Action refresh in toolbarText) refresh();
+            UpdateUi();
+            MinimumSize = new Size(Math.Min(Screen.FromControl(this).WorkingArea.Width, bar.LayoutItems()), P(380));
+            bar.Invalidate();
         }
 
         void SetTool(Tool t)
@@ -550,7 +572,7 @@ namespace Stackshot
             {
                 weightItems[i].On = i == w;
                 weightItems[i].Sized = sized;
-                weightItems[i].Tip = (sized ? (I18n.IsSpanish ? "Tama\u00F1o: " : "Size: ") + SizeNames[i] : (I18n.IsSpanish ? "Grosor: " : "Thickness: ") + WeightNames[i]) + "  (\u2212 / +)";
+                weightItems[i].Tip = (sized ? I18n.T("Tama\u00F1o: ", "Size: ", "Gr\u00F6\u00DFe: ") + SizeNames[i] : I18n.T("Grosor: ", "Thickness: ", "Strichst\u00E4rke: ") + WeightNames[i]) + "  (\u2212 / +)";
             }
             undoItem.Enabled = canvas.CanUndo;
             redoItem.Enabled = canvas.CanRedo;
@@ -588,6 +610,14 @@ namespace Stackshot
         {
             base.OnHandleCreated(e);
             ApplyFrame();
+            I18n.Changed += RefreshLanguage;
+            if (hint != null && bgPanel != null) RefreshLanguage();
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            I18n.Changed -= RefreshLanguage;
+            base.OnHandleDestroyed(e);
         }
 
         // Frame drawn by Windows (border, shadow, rounded corners) in the app's light or dark mode.
@@ -675,9 +705,9 @@ namespace Stackshot
                     return true;
                 case Keys.Delete:
                 case Keys.Back: canvas.DeleteSelected(); return true;
-                case Keys.F: SetTool(Tool.Arrow); return true;
+                case Keys.F: case Keys.A: SetTool(Tool.Arrow); return true;
                 case Keys.L: SetTool(Tool.Line); return true;
-                case Keys.O: SetTool(Tool.Spotlight); return true;
+                case Keys.O: case Keys.S: SetTool(Tool.Spotlight); return true;
                 case Keys.R: SetTool(Tool.Rect); return true;
                 case Keys.E: SetTool(Tool.Ellipse); return true;
                 case Keys.T: SetTool(Tool.Text); return true;

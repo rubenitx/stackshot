@@ -61,13 +61,15 @@ namespace Stackshot
 
         // Spanish starts, then their English ones: a notice must be the same kind in both languages (the i18n suite checks
         // the titles that have one).
-        static readonly string[] ErrorStarts = { "No se pudo", "No se pudieron", "No se ha podido", "No se puede", "No se encuentra", "Could not", "Cannot", "Capture not found" };
+        static readonly string[] ErrorStarts = { "No se pudo", "No se pudieron", "No se ha podido", "No se puede", "No se encuentra", "Could not", "Cannot", "Capture not found", "Konnte nicht", "Kann nicht", "Aufnahme nicht gefunden" };
         static readonly string[] WarningStarts = { "No se han ", "Algunos atajos", "Grabando sin", "Grabaci\u00F3n detenida",
                                                    "La grabaci\u00F3n ha ido", "El sonido ha saturado", "Captura con desplazamiento",
                                                    "Sensitive data not", "Some shortcuts", "Recording without", "Recording stopped", "Recording was choppy",
-                                                   "Audio clipped", "Scrolling capture" };
+                                                   "Audio clipped", "Scrolling capture",
+                                                   "Sensible Daten nicht", "Einige Tastenk\u00FCrzel", "Aufnahme ohne", "Aufnahme gestoppt", "Aufnahme lief", "Audio \u00FCbersteuert" };
         static readonly string[] SuccessStarts = { "Texto copiado", "Grabaci\u00F3n recuperada", "Cine: sin p\u00E9rdidas", "Impr Pant ya es de Stackshot",
-                                                   "Text copied", "Recording recovered", "Cinema: lossless", "Print Screen now belongs to Stackshot" };
+                                                   "Text copied", "Recording recovered", "Cinema: lossless", "Print Screen now belongs to Stackshot",
+                                                   "Text kopiert", "Aufnahme wiederhergestellt", "Kino: verlustfrei", "Druck-Taste geh\u00F6rt" };
 
         // The kind of a notice raised without one (Notify and NotifyPage), from its title.
         public static NoticeKind KindFor(string title)

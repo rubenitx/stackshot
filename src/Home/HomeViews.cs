@@ -22,7 +22,8 @@ namespace Stackshot
     {
         static readonly string[] HomeStylesEs = { "Minimalista", "Widgets", "Escena" };
         static readonly string[] HomeStylesEn = { "Minimal", "Widgets", "Scene" };
-        static string[] HomeStyles { get { return I18n.IsSpanish ? HomeStylesEs : HomeStylesEn; } }
+        static readonly string[] HomeStylesDe = { "Minimal", "Widgets", "Szene" };
+        static string[] HomeStyles { get { return I18n.IsSpanish ? HomeStylesEs : I18n.IsGerman ? HomeStylesDe : HomeStylesEn; } }
         const double HomeSwitchTop = 44;          // top inset of the home content
 
         // Entrance: when Home is shown, its pieces fade and rise in turn. Rebuilds of the same view (theme, a new capture)
@@ -321,7 +322,15 @@ namespace Stackshot
 
         internal static readonly string[] ActionShortestEs = { "\u00C1rea", "Repetir", "Pantalla", "Ventana", "Desplazar", "Texto", "V\u00EDdeo", "GIF", "Markdown", "Temporizador" };
         internal static readonly string[] ActionShortestEn = { "Area", "Repeat", "Screen", "Window", "Scroll", "Text", "Video", "GIF", "Markdown", "Timer" };
-        internal static string[] ActionShortest { get { return I18n.IsSpanish ? ActionShortestEs : ActionShortestEn; } }
+        internal static string[] ActionShortest
+        {
+            get
+            {
+                if (I18n.IsSpanish) return ActionShortestEs;
+                if (I18n.IsEnglish) return ActionShortestEn;
+                return Array.ConvertAll(ActionShortestEn, label => I18n.T(null, label));
+            }
+        }
 
         // The capture modes in one capsule. A blue pill stays on the main mode (or Vídeo while recording); the mode under
         // the mouse or the keyboard gets a soft tint that fades in and out in place, so moving across the bar never sends
@@ -684,7 +693,7 @@ namespace Stackshot
             string hello = MascotTalk.Greeting().Replace("\u00A1", "").TrimEnd('!');
             if (!settings.MascotOn) return Label(hello, Ds.Regular, size, color);
             DockPanel row = new DockPanel();
-            TextBlock lead = Label(I18n.IsSpanish ? hello + ", soy" : hello + ", I'm", Ds.Regular, size, color);
+            TextBlock lead = Label(hello + I18n.T(", soy", ", I'm", ", ich bin"), Ds.Regular, size, color);
             DockPanel.SetDock(lead, Dock.Left);
             row.Children.Add(lead);
             FrameworkElement tag = HomeNameTag(Ds.Medium, size, Ds.Brushes.Label, false, room);

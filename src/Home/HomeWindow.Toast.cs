@@ -11,7 +11,7 @@ namespace Stackshot
         {
             if (page == "record") return I18n.T("Ajustes de grabaci\u00F3n", "Recording settings");
             int i = Array.IndexOf(PageIds, page);
-            return i < 0 ? I18n.T("Abrir Stackshot", "Open Stackshot") : I18n.Fmt("Abrir {0}", "Open {0}", PageNames[i]);
+            return i < 0 ? I18n.T("Abrir Stackshot", "Open Stackshot") : I18n.Fmt("Abrir {0}", "Open {0}", PageName(i));
         }
     }
 }

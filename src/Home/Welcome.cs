@@ -144,6 +144,20 @@ namespace Stackshot
                                  HorizontalAlignment.Center, new Thickness(0, 6, 0, compact ? 18 : 24));
             sub.TextAlignment = TextAlignment.Center;
             col.Children.Add(sub);
+            MacButton lang = new MacButton(I18n.T("Idioma", "Language") + " · " + LanguagePicker.DisplayName(settings.Language), ButtonKind.Secondary, "globe", null, 28)
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 0, 0, compact ? 10 : 14)
+            };
+            lang.Click += delegate
+            {
+                string next = LanguagePicker.Choose(this, settings.Language);
+                if (next == null) return;
+                LanguagePicker.Apply(settings, next);
+                Remember();
+                Fit(WorkHeight());
+            };
+            col.Children.Add(lang);
 
             // Grouped card like macOS Settings: switches and the folder, separated by hairlines.
             StackPanel list = new StackPanel();

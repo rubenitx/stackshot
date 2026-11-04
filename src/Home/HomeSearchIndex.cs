@@ -296,7 +296,7 @@ namespace Stackshot
         {
             if (id == "mascotset") return I18n.T("Ajustes de la mascota", "Mascot settings");
             int i = Array.IndexOf(PageIds, id);
-            return i >= 0 ? PageNames[i] : id;
+            return i >= 0 ? PageName(i) : id;
         }
 
         // ---- What the pages register while they are built

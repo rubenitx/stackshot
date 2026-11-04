@@ -135,6 +135,7 @@ namespace Stackshot
             }
             string ext = t.Ext;
             string what = I18n.IsSpanish ? (t.Kind == AttachKind.Excel || t.Kind == AttachKind.PowerPoint ? "Es una " : "Es un ") + t.Label
+                                         : I18n.IsGerman ? t.Label
                                          : (t.Label.Length > 0 && "AEIOUaeiou".IndexOf(t.Label[0]) >= 0 ? "an " : "a ") + t.Label;
             int r = DocAlert.Ask(this, I18n.Fmt("\u00BFAbrir el adjunto \u00AB{0}\u00BB?", "Open attachment \u201C{0}\u201D?", shown),
                                  I18n.Fmt("{0} que viene dentro del XML. Se abrir\u00E1 con el programa que Windows tenga para los archivos {1}.", "It's {0} that came inside the XML. It will open with the program Windows uses for {1} files.", what, ext),

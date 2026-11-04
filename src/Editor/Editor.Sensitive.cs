@@ -19,8 +19,8 @@ namespace Stackshot
         // the window is up.
         void SensitiveSetup()
         {
-            sensitiveItem = Button(I18n.T("Datos sensibles", "Sensitive data"), "shield", I18n.T("Buscar y tapar DNI, NIE, n.\u00BA de la Seguridad Social, IBAN, tarjetas, correos y tel\u00E9fonos. Se leen en tu equipo y puedes quitar cualquier marca  (Ctrl+May\u00FAs+X)", "Find and redact ID, SSN, card, IBAN, email and phone numbers. Read locally on your PC and any mark can be removed  (Ctrl+Shift+X)"), FindSensitive, true);
-            sensitiveItem.Alt = I18n.T("Buscando\u2026", "Searching\u2026");
+            sensitiveItem = LocalizedButton(() => I18n.T("Datos sensibles", "Sensitive data"), "shield", () => I18n.T("Buscar y tapar DNI, NIE, n.\u00BA de la Seguridad Social, IBAN, tarjetas, correos, tel\u00E9fonos, SSN y claves. Se leen en tu equipo y puedes quitar cualquier marca  (Ctrl+May\u00FAs+X)", "Find and redact ID, SSN, card, IBAN, email, phone numbers and secrets. Read locally on your PC and any mark can be removed  (Ctrl+Shift+X)"), FindSensitive, true);
+            BindToolbarText(() => sensitiveItem.Alt = I18n.T("Buscando\u2026", "Searching\u2026"));
             sensitiveItem.Optional = true; // Ctrl+Shift+X
             Shown += delegate { RestoreCovers(); };
             FormClosed += delegate
@@ -134,6 +134,17 @@ namespace Stackshot
         // What the hint strip says after a search. added: how many of found this search covered (the rest already were).
         internal static string SensitiveResult(IList<SensitiveFinding> found, int added)
         {
+            if (I18n.IsGerman)
+            {
+                if (found.Count == 0) return "Keine sensiblen Daten gefunden.";
+                if (added == 0) return "Die sensiblen Daten sind bereits geschw\u00E4rzt.";
+                int already = found.Count - added;
+                if (already > 0)
+                    return (added == 1 ? "Eine weitere Stelle geschw\u00E4rzt. " : added + " weitere Stellen geschw\u00E4rzt. ") +
+                           (already == 1 ? "Eine Stelle war bereits geschw\u00E4rzt." : already + " Stellen waren bereits geschw\u00E4rzt.");
+                return (added == 1 ? "Eine Stelle geschw\u00E4rzt: " : added + " Stellen geschw\u00E4rzt: ") +
+                       Sensitive.Summary(found) + ". Du kannst die Markierungen entfernen.";
+            }
             if (I18n.IsSpanish)
             {
                 if (found.Count == 0) return "No he encontrado datos sensibles.";

@@ -174,12 +174,12 @@ namespace Stackshot
             return Color.FromArgb((c.R * a + 255 * (255 - a)) / 255, (c.G * a + 255 * (255 - a)) / 255, (c.B * a + 255 * (255 - a)) / 255);
         }
 
-        // The recognizer: Spanish when Windows has it (it reads English too, and knows ñ and accents), otherwise the
+        // The recognizer: matches the active language (Spanish or English) when Windows has it, otherwise the
         // user's languages, otherwise any.
         static OcrEngine Engine()
         {
             foreach (Windows.Globalization.Language l in OcrEngine.AvailableRecognizerLanguages)
-                if (l.LanguageTag.StartsWith("es", StringComparison.OrdinalIgnoreCase)) return OcrEngine.TryCreateFromLanguage(l);
+                if (l.LanguageTag.StartsWith(I18n.Language, StringComparison.OrdinalIgnoreCase)) return OcrEngine.TryCreateFromLanguage(l);
             OcrEngine e = OcrEngine.TryCreateFromUserProfileLanguages();
             if (e != null) return e;
             foreach (Windows.Globalization.Language l in OcrEngine.AvailableRecognizerLanguages) return OcrEngine.TryCreateFromLanguage(l);
@@ -235,6 +235,9 @@ namespace Stackshot
         static Reading Best(OcrEngine engine, Bitmap image)
         {
             double k = Scale(image.Width);
+            // In tall pieces 2x can split letters in otherwise readable lines.
+            // Keep the extra pixels for smaller images where they help fine text.
+            if (image.Height > Band) k = Math.Min(k, 1.5);
             Reading text = Pass(engine, image, k);
             // Doubling helps small screen text but can lose big text (a lone 20 pt word read as "" or "H Ola"). Nothing at
             // all: read again at its own size, then halfway.
@@ -554,6 +557,7 @@ namespace Stackshot
                 int cut = char.IsHighSurrogate(flat[87]) ? 87 : 88;
                 flat = flat.Substring(0, cut).TrimEnd() + "\u2026";
             }
+            if (I18n.IsGerman) return n + (n == 1 ? " Zeile: „" : " Zeilen: „") + flat + "“";
             string count = I18n.IsSpanish ? (n == 1 ? "1 l\u00EDnea" : n + " l\u00EDneas") : (n == 1 ? "1 line" : n + " lines");
             return I18n.IsSpanish ? count + ": \u00AB" + flat + "\u00BB" : count + ": \u201C" + flat + "\u201D";
         }

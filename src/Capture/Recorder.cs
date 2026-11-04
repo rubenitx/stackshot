@@ -130,7 +130,8 @@ namespace Stackshot
 
         static readonly string[] QualityNamesEs = { "Est\u00E1ndar", "M\u00E1xima", "Alta", "Cine" };
         static readonly string[] QualityNamesEn = { "Standard", "Maximum", "High", "Cinema" };
-        internal static string[] QualityNames { get { return I18n.IsSpanish ? QualityNamesEs : QualityNamesEn; } }
+        static readonly string[] QualityNamesDe = { "Standard", "Maximum", "Hoch", "Kino" };
+        internal static string[] QualityNames { get { return I18n.IsSpanish ? QualityNamesEs : I18n.IsGerman ? QualityNamesDe : QualityNamesEn; } }
 
         // The frame rate a take will record at, as Session picks it.
         internal static int TargetFps(Settings s, bool gif, int cineFps)
@@ -2142,7 +2143,7 @@ namespace Stackshot
         internal static void AudioNote(List<string> notes, string name, AudioCapture a)
         {
             if (a == null) return;
-            if (!I18n.IsSpanish) { AudioNoteEn(notes, name, a); return; }
+            if (!I18n.IsSpanish) { AudioNoteTranslated(notes, name, a); return; }
             if (a.ClipEvents > 0)
                 notes.Add(name + ": " + ClipText(a) + ". La grabaci\u00F3n lo guarda tal cual; si se oye distorsionado, baja el volumen de esa fuente antes de grabar.");
             if (a.OverlapFrames > 0 || a.Duplicated > 0 || a.Removed > 0 || a.Converted)
@@ -2160,23 +2161,31 @@ namespace Stackshot
                           AudioCapture.JoinFrames * 1000 / AudioCapture.Rate + " ms para que el corte no se oiga.");
         }
 
-        static void AudioNoteEn(List<string> notes, string name, AudioCapture a)
+        static void AudioNoteTranslated(List<string> notes, string name, AudioCapture a)
         {
             if (a.ClipEvents > 0)
-                notes.Add(name + ": " + ClipText(a) + ". The recording keeps it as it is; if it sounds distorted, turn that source down before recording.");
+                notes.Add(name + ": " + ClipText(a) + I18n.T("", ". The recording keeps it as it is; if it sounds distorted, turn that source down before recording.",
+                                                            ". Senke bei verzerrtem Ton vor der nächsten Aufnahme die Lautstärke dieser Quelle."));
             if (a.OverlapFrames > 0 || a.Duplicated > 0 || a.Removed > 0 || a.Converted)
             {
                 string t = name + ": ";
-                if (a.OverlapFrames > 0) t += a.OverlapFrames + " overlapping samples discarded. ";
-                if (a.Duplicated + a.Removed > 0) t += "Sound clock adjustment: " + a.Duplicated + " samples duplicated and " + a.Removed + " removed. ";
-                if (a.Converted) t += "The device does not deliver 48 kHz floating-point stereo: Stackshot converted it (not an exact copy). ";
+                if (a.OverlapFrames > 0) t += a.OverlapFrames + I18n.T("", " overlapping samples discarded. ", " überlappende Abtastwerte verworfen. ");
+                if (a.Duplicated + a.Removed > 0) t += I18n.Fmt("", "Sound clock adjustment: {0} samples duplicated and {1} removed. ", a.Duplicated, a.Removed);
+                if (a.Converted) t += I18n.T("", "The device does not deliver 48 kHz floating-point stereo: Stackshot converted it (not an exact copy). ",
+                                              "Stackshot hat das Tonsignal des Geräts in 48 kHz Stereo mit Gleitkommawerten umgewandelt. ");
                 notes.Add(t.Trim());
             }
             if (a.SilenceFrames > 0)
-                notes.Add(name + ": " + (a.SilenceFrames / (double)AudioCapture.Rate).ToString("0.0", CultureInfo.InvariantCulture) + " s of silence inserted (gaps, or nothing playing).");
+                notes.Add(name + ": " + (a.SilenceFrames / (double)AudioCapture.Rate).ToString("0.0", I18n.IsGerman ? CultureInfo.GetCultureInfo("de-DE") : CultureInfo.InvariantCulture) +
+                          I18n.T("", " s of silence inserted (gaps, or nothing playing).", " s Stille eingefügt (Lücken oder keine Wiedergabe)."));
             if (a.Joins > 0)
-                notes.Add(name + ": when resuming after " + (a.Joins == 1 ? "the pause" : "each of the " + a.Joins + " pauses") + ", the sound fades for " +
-                          AudioCapture.JoinFrames * 1000 / AudioCapture.Rate + " ms so the cut is not heard.");
+            {
+                int fadeMs = AudioCapture.JoinFrames * 1000 / AudioCapture.Rate;
+                string pause = a.Joins == 1 ? "the pause" : "each of the " + a.Joins + " pauses";
+                notes.Add(name + ": " + (I18n.IsGerman
+                    ? "Beim Fortsetzen nach " + (a.Joins == 1 ? "der Pause" : "jeder der " + a.Joins + " Pausen") + " wird der Ton " + fadeMs + " ms überblendet."
+                    : "when resuming after " + pause + ", the sound fades for " + fadeMs + " ms so the cut is not heard."));
+            }
         }
 
         // "saturó en 3 momentos (el primero a 0:12, 40 ms a fondo de escala)"
@@ -2188,6 +2197,8 @@ namespace Stackshot
                                          : total.ToString("0.0", I18n.IsSpanish ? CultureInfo.CurrentCulture : CultureInfo.InvariantCulture) + " s";
             string when = first >= 3600 ? (first / 3600) + ":" + (first / 60 % 60).ToString("00") + ":" + (first % 60).ToString("00")
                                         : (first / 60) + ":" + (first % 60).ToString("00");
+            if (I18n.IsGerman)
+                return (a.ClipEvents == 1 ? "einmal übersteuert (bei " : a.ClipEvents + "-mal übersteuert (zuerst bei ") + when + ", " + held + " am Maximalpegel)";
             if (!I18n.IsSpanish)
                 return "clipped " + (a.ClipEvents == 1 ? "once" : a.ClipEvents + " times") + " (" + (a.ClipEvents == 1 ? "at " : "first at ") + when +
                        ", held at full scale for " + held + ")";
@@ -2199,11 +2210,11 @@ namespace Stackshot
         internal static string Saturation(AudioCapture sys, AudioCapture mic)
         {
             List<string> parts = new List<string>();
-            if (sys != null && sys.ClipEvents > 0) parts.Add((I18n.IsSpanish ? "el sonido del equipo " : "system audio ") + ClipText(sys));
-            if (mic != null && mic.ClipEvents > 0) parts.Add((I18n.IsSpanish ? "el micr\u00F3fono " : "microphone ") + ClipText(mic));
+            if (sys != null && sys.ClipEvents > 0) parts.Add(I18n.T("el sonido del equipo ", "system audio ", "Systemton ") + ClipText(sys));
+            if (mic != null && mic.ClipEvents > 0) parts.Add(I18n.T("el micr\u00F3fono ", "microphone ", "Mikrofon ") + ClipText(mic));
             if (parts.Count == 0) return null;
-            string t = string.Join(I18n.IsSpanish ? " y " : " and ", parts.ToArray());
-            return (I18n.IsSpanish ? "Ojo: " : "Note: ") + t + ".";
+            string t = string.Join(I18n.T(" y ", " and ", " und "), parts.ToArray());
+            return I18n.T("Ojo: ", "Note: ", "Hinweis: ") + t + ".";
         }
 
         void MakeCine(double seconds)

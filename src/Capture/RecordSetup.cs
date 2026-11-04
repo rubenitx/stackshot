@@ -40,7 +40,14 @@ namespace Stackshot
             "Lossless while recording and very high quality MP4 when finished; takes a moment to save.",
             "Lossless master verified frame by frame (.mkv); takes up significant space."
         };
-        static string[] QualityNotes { get { return I18n.IsSpanish ? QualityNotesEs : QualityNotesEn; } }
+        static readonly string[] QualityNotesDe =
+        {
+            "Kleine Dateien, die schnell geteilt werden können.",
+            "60 Bilder pro Sekunde mit hoher Detailtreue. Wird sofort gespeichert.",
+            "Verlustfreie Aufnahme und MP4 mit sehr hoher Qualität. Das Speichern dauert einen Moment.",
+            "Verlustfreie, bildweise geprüfte Masterdatei (.mkv) mit hohem Speicherbedarf."
+        };
+        static string[] QualityNotes { get { return I18n.IsSpanish ? QualityNotesEs : I18n.IsGerman ? QualityNotesDe : QualityNotesEn; } }
 
         // Maxima is not lossless on areas above 1920x1200 at 60 fps: they go through NV12 (4:2:0) on the graphics card.
         internal static string QualityNote(int quality, D.Rectangle area)
@@ -183,7 +190,7 @@ namespace Stackshot
                 f.Changed += delegate(int i) { gifFps = GifFpsOptions[i]; };
                 Row(rows, I18n.T("Fotogramas", "Frame rate"), f, I18n.T("por segundo", "per second"));
             }
-            MacSegmented cd = new MacSegmented(new string[] { I18n.T("No", "None"), "3 s", "5 s", "10 s" }, Math.Max(0, Array.IndexOf(Countdowns, countdown)));
+            MacSegmented cd = new MacSegmented(new string[] { I18n.T("No", "None", "Aus"), "3 s", "5 s", "10 s" }, Math.Max(0, Array.IndexOf(Countdowns, countdown)));
             cd.Changed += delegate(int i) { countdown = Countdowns[i]; };
             Row(rows, I18n.T("Cuenta atr\u00E1s", "Countdown"), cd, null);
 

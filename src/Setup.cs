@@ -76,6 +76,7 @@ namespace Stackshot
 
         public static void Install(bool startup)
         {
+            if (ManagedByMsi) throw new InvalidOperationException("Stackshot.msi must service this installation.");
             SweepParked();
             Directory.CreateDirectory(Settings.InstallDir);
             if (!RunningInstalled)

@@ -173,6 +173,8 @@ namespace Stackshot
             return open;
         }
 
+        bool languageWindowClosed;
+
         MarkdownWindow(ShotStack owner)
         {
             this.owner = owner;
@@ -200,13 +202,23 @@ namespace Stackshot
             Activated += delegate { if (file != null && file.Path != null) checkLater.Restart(); };
             Closed += delegate
             {
+                languageWindowClosed = true;
+                I18n.Changed -= RefreshLanguage;
                 debounce.Stop(); fade.Stop(); searchLater.Stop(); syncLater.Stop(); checkLater.Stop();
                 token++; parseToken++; formatToken++;
                 Unwatch();
                 if (open == this) open = null;
             };
             Build();
+            I18n.Changed += RefreshLanguage;
             Loaded += delegate { if (quiet) quiet = false; else Enter(Root, 0); };
+        }
+
+        void RefreshLanguage()
+        {
+            if (languageWindowClosed) return;
+            if (!Dispatcher.CheckAccess()) { Dispatcher.BeginInvoke((Action)RefreshLanguage); return; }
+            Build();
         }
 
         // Resizing is done by hit-testing the edges ourselves: a resizable frame makes DWM paint its own caption buttons over ours.

@@ -734,7 +734,8 @@ namespace Stackshot
         // Floating zoom control at the bottom right: out, percentage (click: actual size), in, and fit.
         static readonly string[] PillTipsEs = { "Alejar  (Ctrl+\u2212)", "Tama\u00F1o real  (Ctrl+1)", "Acercar  (Ctrl++)", "Ajustar a la ventana  (Ctrl+0)" };
         static readonly string[] PillTipsEn = { "Zoom out  (Ctrl+\u2212)", "Actual size  (Ctrl+1)", "Zoom in  (Ctrl++)", "Fit to window  (Ctrl+0)" };
-        static string[] PillTips { get { return I18n.IsSpanish ? PillTipsEs : PillTipsEn; } }
+        static readonly string[] PillTipsDe = { "Verkleinern  (Strg+\u2212)", "Originalgröße  (Strg+1)", "Vergrößern  (Strg++)", "An Fenster anpassen  (Strg+0)" };
+        static string[] PillTips { get { return I18n.IsSpanish ? PillTipsEs : I18n.IsGerman ? PillTipsDe : PillTipsEn; } }
         static string PillFitText { get { return I18n.T("Ajustar", "Fit"); } }
         int pillHot = -1, pillDown = -1;
 

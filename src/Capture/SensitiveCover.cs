@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
@@ -57,41 +56,22 @@ namespace Stackshot
             return job;
         }
 
-        // A thumbnail too blurred to read anything in, shown while the capture is checked. Takes the preview over.
+        // The pending thumbnail has no source pixels. Takes the preview over.
         public static Bitmap Veil(Bitmap preview)
         {
-            int w = preview.Width, h = preview.Height;
-            Bitmap o = null;
+            Bitmap placeholder = null;
             try
             {
-                o = new Bitmap(w, h, PixelFormat.Format32bppPArgb);
-                using (Bitmap tiny = new Bitmap(Math.Max(1, w / 28), Math.Max(1, h / 28), PixelFormat.Format32bppPArgb))
-                {
-                    using (Graphics g = Graphics.FromImage(tiny))
-                    {
-                        g.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                        g.DrawImage(preview, new Rectangle(0, 0, tiny.Width, tiny.Height));
-                    }
-                    using (Graphics g = Graphics.FromImage(o))
-                    using (ImageAttributes ia = new ImageAttributes())
-                    {
-                        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                        g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                        ia.SetWrapMode(WrapMode.TileFlipXY);
-                        g.DrawImage(tiny, new Rectangle(0, 0, w, h), 0, 0, tiny.Width, tiny.Height, GraphicsUnit.Pixel, ia);
-                    }
-                }
+                placeholder = new Bitmap(preview.Width, preview.Height, PixelFormat.Format32bppPArgb);
+                using (Graphics g = Graphics.FromImage(placeholder)) g.Clear(Color.FromArgb(128, 128, 132));
+                return placeholder;
             }
-            catch (Exception ex)
+            catch
             {
-                // Out of memory: a plain grey face, never the capture itself.
-                ShotStack.Log("Datos sensibles, miniatura: " + ex.Message);
-                if (o != null) o.Dispose();
-                o = new Bitmap(16, 9, PixelFormat.Format32bppPArgb);
-                using (Graphics g = Graphics.FromImage(o)) g.Clear(Color.FromArgb(128, 128, 132));
+                if (placeholder != null) placeholder.Dispose();
+                throw;
             }
-            preview.Dispose();
-            return o;
+            finally { preview.Dispose(); }
         }
 
         // The note on a capture's thumbnail: "2 datos tapados", or that it could not be checked.
@@ -100,7 +80,7 @@ namespace Stackshot
             if (r == null) return null;
             if (r.Error != null) return I18n.T("Sin revisar", "Unchecked");
             int n = r.Found.Count;
-            return n == 0 ? null : n == 1 ? I18n.T("1 dato tapado", "1 piece of data redacted") : (I18n.IsSpanish ? n + " datos tapados" : n + " items redacted");
+            return n == 0 ? null : n == 1 ? I18n.T("1 dato tapado", "1 piece of data redacted") : I18n.Fmt("{0} datos tapados", "{0} items redacted", n);
         }
 
         // Same pixels, a pixel fully transparent in both counting as the same whatever its colour.
@@ -246,9 +226,13 @@ namespace Stackshot
                         r.Found = Sensitive.Find(words, Shot.Size);
                         if (r.Found.Count > 0)
                         {
-                            // Without memory for the original the capture is still covered (the covers just can't be removed).
-                            try { original = TrackedData.DeepCopy(Shot); }
-                            catch (Exception ex) { ShotStack.Log("Datos sensibles, original: " + ex.Message); }
+                            // Keep reversible covers for personal data, but never persist
+                            // an unredacted original when the scan found a credential.
+                            if (!r.Found.Exists(delegate(SensitiveFinding f) { return f.Kind == SensitiveKind.Secret; }))
+                            {
+                                try { original = TrackedData.DeepCopy(Shot); }
+                                catch (Exception ex) { ShotStack.Log("Datos sensibles, original: " + ex.Message); }
+                            }
                             SensitiveCover.Paint(Shot, SensitiveCover.Boxes(r.Found));
                         }
                     }
@@ -259,15 +243,18 @@ namespace Stackshot
                     r.Error = ex is OutOfMemoryException ? I18n.T("No hay memoria suficiente para revisar una imagen tan grande.", "Not enough memory to check such a large image.")
                                                          : I18n.T("No se ha podido revisar la imagen.", "Could not check the image.");
                 }
-                try { r.Preview = ShotStack.Preview(Shot, 600); }
-                catch (Exception ex) { ShotStack.Log("Datos sensibles, miniatura: " + ex.Message); }
-                if (WantCopy && r.Error == null)
+                if (r.Error == null)
                 {
-                    try { r.Copy = TrackedData.DeepCopy(Shot); }
-                    catch (Exception ex) { ShotStack.Log("Datos sensibles, portapapeles: " + ex.Message); }
+                    try { r.Preview = ShotStack.Preview(Shot, 600); }
+                    catch (Exception ex) { ShotStack.Log("Datos sensibles, miniatura: " + ex.Message); }
+                    if (WantCopy)
+                    {
+                        try { r.Copy = TrackedData.DeepCopy(Shot); }
+                        catch (Exception ex) { ShotStack.Log("Datos sensibles, portapapeles: " + ex.Message); }
+                    }
                 }
                 written = true;
-                if (Write != null) Write(Shot);
+                if (r.Error == null && Write != null) Write(Shot);
                 else Shot.Dispose();
                 Checked(Path);
                 r.Ms = sw.ElapsedMilliseconds;
@@ -284,11 +271,12 @@ namespace Stackshot
             catch (Exception ex)
             {
                 ShotStack.Log("Datos sensibles: " + ex);
-                if (!written) { if (Write != null) Write(Shot); else Shot.Dispose(); }
+                if (!written) Shot.Dispose();
                 // Whoever waits for the answer always gets one; nothing goes to the clipboard after a failure.
                 if (!answered && Done != null)
                 {
                     if (r.Copy != null) { r.Copy.Dispose(); r.Copy = null; }
+                    if (r.Preview != null) { r.Preview.Dispose(); r.Preview = null; }
                     if (r.Error == null) r.Error = I18n.T("No se ha podido revisar la imagen.", "Could not check the image.");
                     try { Done(r); }
                     catch (Exception again) { ShotStack.Log("Datos sensibles: " + again.Message); }
