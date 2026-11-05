@@ -104,7 +104,7 @@ Editor shortcuts adapt to your active language ([`src/Editor/Editor.cs`](../src/
 Stackshot integrates directly with Windows 10 and 11's built-in OCR subsystem ([`src/Capture/Ocr.cs`](../src/Capture/Ocr.cs)). The recognizer is chosen once per session, independently of the interface language, so the same capture always reads and redacts the same:
 
 - **Spanish first**: when Windows has a Spanish recognizer, it is used. It also reads English well and knows `ñ`, accented vowels (`á`, `é`, `í`, `ó`, `ú`) and inverted punctuation (`¿`, `¡`).
-- **Then any other Latin-script recognizer** (English, German, French, Italian, Portuguese...), sorted by tag so the choice never depends on the order Windows lists them in.
+- **Then your own Windows languages among the Latin-script recognizers** (a French user with en-US and fr-FR reads with fr-FR), then any other Latin-script recognizer (English, German, Italian, Portuguese...), sorted by tag so the choice never depends on the order Windows lists them in.
 - **Copy text and the history search** go on from there: the interface language, your Windows languages, and finally any recognizer installed. On a Windows whose only recognizer is non-Latin, copy text and history still work.
 - **Redaction (sensitive data) stops there and never uses a non-Latin recognizer** (Arabic, Chinese, Hindi, Bengali...): it would read Latin screen text so badly that redaction would miss everything — which is worse than having no OCR at all, so Stackshot stays fail-closed instead.
 

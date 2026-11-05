@@ -897,11 +897,11 @@ namespace Stackshot
                 new ToggleRow(I18n.T("Incluir el puntero", "Include mouse cursor"), I18n.T("El puntero del rat\u00F3n aparece en la captura, donde estaba al empezarla.", "The mouse cursor is captured where it was when capture started."), "cursor", Mac.Blue, Mac.Indigo,
                               delegate { return settings.CaptureCursor; }, delegate(bool v) { settings.CaptureCursor = v; }),
                 print);
+            HookOcrWarm();
             Group(I18n.T("Datos sensibles", "Sensitive data"),
                 new ToggleRow(PolicyTitles.Sensitive, I18n.T("DNI, NIE, n\u00FAmero de la Seguridad Social, IBAN, tarjetas, correos y tel\u00E9fonos se tapan solos en cada captura. Se leen en tu equipo; nada sale de \u00E9l.", "National IDs, Social Security numbers, IBANs, cards, emails and phone numbers are covered automatically in every capture. They are read on your computer; nothing leaves it."), "redact!", Mac.Red, Mac.Orange,
                               delegate { return settings.SensitiveAuto; }, delegate(bool v) { SetSensitiveAuto(settings, v); })
-                    { When = delegate { return SensitiveToggleEnabled(settings); }, WhenOff = OcrMissingNote() });
-            Note(I18n.T("Apagado, decides t\u00FA: en el editor, \u00ABDatos sensibles\u00BB los tapa con marcas que puedes quitar.", "When off, you decide: in the editor, \u201CSensitive data\u201D covers them with marks you can remove."));
+                    { When = delegate { return SensitiveToggleEnabled(settings); }, WhenOff = OcrMissingNote() });            Note(I18n.T("Apagado, decides t\u00FA: en el editor, \u00ABDatos sensibles\u00BB los tapa con marcas que puedes quitar.", "When off, you decide: in the editor, \u201CSensitive data\u201D covers them with marks you can remove."));
             Group(I18n.T("Capturas guardadas", "Saved captures"),
                 new ToggleRow(I18n.T("Guardar todas las capturas", "Automatically save all captures"), I18n.T("Cada captura y grabaci\u00F3n va tambi\u00E9n a tu carpeta. Apagado, solo las que guardas con Guardar.", "Every capture and recording is saved to your folder. When off, only those manually kept."), "folder", Mac.Blue, Mac.Teal,
                               delegate { return settings.SaveAll; }, delegate(bool v) { settings.SaveAll = v; }),
@@ -914,10 +914,25 @@ namespace Stackshot
         // The sensitive-data setting needs OCR to be turned on: without it the switch is off limits and says how to get
         // one. One already on stays reachable (the user must be able to turn it off, or every capture would be lost
         // with no way back); the setter still refuses to turn it on while OCR is missing. What a policy forces is
-        // handled above, where the row is locked and says who decides.
+        // handled above, where the row is locked and says who decides. Missing reads the answer the background probe
+        // left at startup; it never runs the search on the UI thread.
         internal static bool SensitiveToggleEnabled(Settings s) { return !Ocr.Missing || s.SensitiveAuto; }
 
         internal static void SetSensitiveAuto(Settings s, bool v) { if (v && Ocr.Missing) return; s.SensitiveAuto = v; }
+
+        // When the background probe answers after the page was built (a rare, very early open), the rows sync again.
+        bool ocrWarmHooked;
+
+        void HookOcrWarm()
+        {
+            if (ocrWarmHooked) return;
+            ocrWarmHooked = true;
+            Ocr.Warmed += delegate
+            {
+                try { Dispatcher.BeginInvoke((Action)delegate { SyncRows(); }); }
+                catch (Exception ex) { ShotStack.Log("OCR: " + ex.Message); }
+            };
+        }
 
         static string OcrMissingNote()
         {

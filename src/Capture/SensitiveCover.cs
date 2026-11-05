@@ -142,7 +142,7 @@ namespace Stackshot
 
         // Jobs run one after another on their own thread: a burst of captures waits its turn instead of running several
         // OCRs at once or holding pool threads the PNG writes need.
-        static readonly Queue<CoverJob> queue = new Queue<CoverJob>();
+        static readonly List<CoverJob> queue = new List<CoverJob>();
         static bool running;
 
         // Captures started and not yet handed to Write: their file is not even on its way.
@@ -188,7 +188,7 @@ namespace Stackshot
             if (Path != null) lock (checking) checking.Add(Path);
             lock (queue)
             {
-                queue.Enqueue(this);
+                queue.Add(this);
                 if (running) return;
                 running = true;
             }
@@ -200,7 +200,8 @@ namespace Stackshot
                     lock (queue)
                     {
                         if (queue.Count == 0) { running = false; return; }
-                        next = queue.Dequeue();
+                        next = queue[0];
+                        queue.RemoveAt(0);
                     }
                     try { next.Run(); }
                     catch (Exception ex) { ShotStack.Log("Datos sensibles: " + ex); }
@@ -209,7 +210,47 @@ namespace Stackshot
             t.IsBackground = true;
             t.SetApartmentState(ApartmentState.MTA);
             t.Name = "Datos sensibles";
-            t.Start();
+            try
+            {
+                if (StartHook != null) StartHook();
+                t.Start();
+            }
+            catch (Exception ex)
+            {
+                // The worker is gone before it took anything: every job waiting is answered as failed and let go, so no
+                // card stays at «Revisando datos…» until restart and the next capture can start a worker again.
+                ShotStack.Log("Datos sensibles: " + ex.Message);
+                List<CoverJob> dropped;
+                lock (queue)
+                {
+                    dropped = new List<CoverJob>(queue);
+                    queue.Clear();
+                    running = false;
+                }
+                foreach (CoverJob j in dropped) j.Fail(ex);
+            }
+        }
+
+        // Tests make starting the worker fail (as when the memory runs out) without needing a machine out of memory.
+        internal static Action StartHook = null;
+
+        // Everything the job held is let go, and whoever waits is answered as if the check had failed.
+        void Fail(Exception ex)
+        {
+            try
+            {
+                if (Shot != null) Shot.Dispose();
+                Checked(Path);
+                CoverStore.Settle(Path);
+                if (Done != null)
+                {
+                    CoverOutcome r = new CoverOutcome();
+                    r.Error = I18n.T("No se ha podido revisar la imagen.", "Could not check the image.");
+                    try { Done(r); }
+                    catch (Exception again) { ShotStack.Log("Datos sensibles: " + again.Message); }
+                }
+            }
+            catch (Exception e) { ShotStack.Log("Datos sensibles: " + e.Message); }
         }
 
         // A job that never got to run (starting its thread failed, for instance with no memory): everything it held is

@@ -371,7 +371,7 @@ namespace Stackshot.Tests
                 new[] { "ShotStack.OpenArrivedXml", null },         // ... only through TellArrivedXml
                 new[] { "ShotStack.RescueOrphans", folder },        // recovered recording: its folder
                 new[] { "ShotStack.OpenLatestXml", plain },
-                new[] { "ShotStack.Covered", button },               // sensitive data not checked: error notice with kind (and the one-per-session OCR warning)
+                new[] { "ShotStack.Covered", button },               // capture not checked for sensitive data: fail-closed discard notice, with kind
                 new[] { "ShotStack.WarnOcrMissing", button },        // without OCR: one warning per session
                 new[] { "ShotStack.DiscardCaptureNotice", button },  // the fail-closed discard (veil, hand-over)
                 new[] { "Session.Outcome", page },                  // recording stopped or choppy: Grabación

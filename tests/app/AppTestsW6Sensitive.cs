@@ -66,6 +66,7 @@ namespace Stackshot.Tests
                 AppTests.Test(SuiteName, "redaction: the same findings with the interface in Spanish, English and German", LanguageIndependent);
                 AppTests.Test(SuiteName, "redaction: 8 readers at once all read, none is told there is no OCR", EngineUnderThreads);
                 AppTests.Test(SuiteName, "redaction: without OCR an already-on switch stays reachable and cannot be turned on", SensitiveToggleGate);
+                AppTests.Test(SuiteName, "capture path on: the worker failing to start answers its jobs and the next capture recovers", StartFailureRecovers);
                 AppTests.Test(SuiteName, "capture path on: a burst of captures is checked one after another, off the caller's thread", JobQueue);
                 AppTests.Test(SuiteName, "originals: kept privately, restored as marks, dropped when edited or gone", Originals);
                 AppTests.Test(SuiteName, "timings: 1080p and 4K synthetic captures", Timings);
@@ -1390,6 +1391,7 @@ namespace Stackshot.Tests
                         else Check(joined == baseKinds, lang + " reads differently: " + joined + " vs " + baseKinds);
                         // The engine itself cannot change with the language: the same recognizer reads in all three.
                         FieldInfo engineLang = typeof(Ocr).GetField("redactionLanguage", BindingFlags.NonPublic | BindingFlags.Static);
+                        Check(engineLang != null, "the recognizer-language field must exist");
                         if (engineLang != null)
                         {
                             string tag = TagOf(engineLang.GetValue(null));
@@ -1465,8 +1467,8 @@ namespace Stackshot.Tests
                     for (int i = 0; i < N; i++) shots[i] = new Bitmap(b);   // one per reader: Bitmap's copy ctor is not for concurrent use
                 }
                 ManualResetEvent go = new ManualResetEvent(false);
-                bool[] unavailable = new bool[N];
-                string[] read = new string[N];
+                Ocr.ReadError[] status = new Ocr.ReadError[N];
+                int[] words = new int[N];
                 Thread[] threads = new Thread[N];
                 for (int i = 0; i < N; i++)
                 {
@@ -1474,10 +1476,10 @@ namespace Stackshot.Tests
                     threads[n] = new Thread(delegate()
                     {
                         go.WaitOne();
-                        Ocr.ReadError status;
-                        List<Ocr.Word> words = Ocr.ReadWords(shots[n], out status);
-                        unavailable[n] = status == Ocr.ReadError.Unavailable;
-                        read[n] = words == null ? "<null>" : words.Count + " words";
+                        Ocr.ReadError st;
+                        List<Ocr.Word> got = Ocr.ReadWords(shots[n], out st);
+                        status[n] = st;
+                        words[n] = got == null ? -1 : got.Count;
                     });
                     threads[n].IsBackground = true;
                     threads[n].SetApartmentState(ApartmentState.MTA);
@@ -1485,8 +1487,8 @@ namespace Stackshot.Tests
                 }
                 Thread.Sleep(500);   // all of them waiting at the barrier
                 go.Set();
-                foreach (Thread t in threads) t.Join(120000);
-                Check(Array.TrueForAll(unavailable, delegate(bool u) { return !u; }), "a concurrent reader was told there is no OCR: " + string.Join(",", Array.ConvertAll(read, delegate(string r) { return r ?? "-"; })));
+                for (int i = 0; i < N; i++) Check(threads[i].Join(120000), "reader " + i + " never finished");
+                for (int i = 0; i < N; i++) Check(status[i] == Ocr.ReadError.None && words[i] >= 0, "reader " + i + " did not read: status " + status[i] + ", words " + words[i]);
                 Check(!Ocr.Missing, "the machine got marked as without OCR");
             }
             finally
@@ -1494,6 +1496,44 @@ namespace Stackshot.Tests
                 for (int i = 0; i < fields.Length; i++) if (fields[i] != null) fields[i].SetValue(null, was2[i]);
                 Ocr.MissingOverride = was;
             }
+        }
+
+        static void StartFailureRecovers()
+        {
+            // The worker thread failing to start (no memory, say) must not leave cards at «Revisando datos…» until
+            // restart: the queued jobs are answered as failed, everything is let go, and the next capture gets a
+            // worker again.
+            Action was = CoverJob.StartHook;
+            try
+            {
+                string path = Path.Combine(work, "arranque.png");
+                CoverJob job = new CoverJob();
+                job.Shot = Screenshot(400, 200, false);
+                job.Path = path;
+                bool answered = false;
+                CoverOutcome outcome = null;
+                job.Write = delegate(Bitmap img) { };
+                job.Done = delegate(CoverOutcome r) { answered = true; outcome = r; };
+                CoverJob.StartHook = delegate { throw new OutOfMemoryException(); };
+                job.Start();
+                Check(answered && outcome != null && outcome.Error != null, "the job is answered as failed: " + (outcome == null ? "no answer" : outcome.Error ?? "no error"));
+                Check(!CoverJob.IsChecking(path) && !CoverStore.Has(path), "nothing held after the failure");
+                // The worker is really gone, not just this job: a new capture starts one and is checked.
+                CoverJob.StartHook = null;
+                string path2 = Path.Combine(work, "arranque-2.png");
+                CoverJob job2 = new CoverJob();
+                job2.Shot = Screenshot(400, 200, true);
+                job2.Path = path2;
+                bool answered2 = false, wrote = false;
+                CoverOutcome outcome2 = null;
+                job2.Write = delegate(Bitmap img) { wrote = true; img.Dispose(); };
+                job2.Done = delegate(CoverOutcome r) { answered2 = true; outcome2 = r; };
+                job2.Start();
+                Stopwatch sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < 60000 && !answered2) Thread.Sleep(20);
+                Check(answered2 && outcome2 != null && outcome2.Error == null && wrote, "the next capture is checked normally");
+            }
+            finally { CoverJob.StartHook = was; }
         }
 
         static void JobQueue()

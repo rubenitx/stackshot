@@ -70,6 +70,9 @@ namespace Stackshot
             upChip = new Chip(this, -1);
             downChip = new Chip(this, 1);
             Ds.Changed += delegate { Ui(Restyle); };
+            // The recognizer languages are looked for once in the background, so the settings never run the search on
+            // the UI thread.
+            Ocr.Warm();
 
             // Watch the temp folder to refresh a card when its file changes (the editor rewrites it) and drop it if the
             // file is deleted or moved.
