@@ -22,7 +22,7 @@ For Windows 10 and 11 · Version 2.1.0 · Also as an [MSI package](https://githu
 **Contents:** [Three steps](#three-steps-no-menus) · [What's new](#whats-new-in-21) · [Features](#features-at-a-glance) · [Modes](#seven-ways-to-capture) · [Capture](#select-snap-done) · [Mark up](#mark-it-up-in-seconds) · [Hide data](#hide-it-before-you-share-it) · [Scrolling](#capture-the-whole-page) · [Record](#record-your-screen-with-sound) · [History](#find-it-by-what-it-said) · [XML and Markdown](#xml-and-markdown-upgraded) · [Main window](#one-window-your-way) · [Pixel](#meet-pixel-39-costumes) · [More](#and-so-much-more) · [Performance](#small-fast-private) · [Installation](#installation) · [Command line](#command-line-and-it-policies) · [Shortcuts](#keyboard-shortcuts) · [Privacy](#privacy-and-security) · [FAQ](#faq) · [Build](#building-from-source) · [License](#license)
 
 > [!NOTE]
-> In builds from this branch, select **한국어** in **Settings › General › Appearance › Language**, or leave Language on **Auto** to follow the Windows display language. The screenshots below show the Spanish interface.
+> The user interface is in Spanish, English, German and Korean: a new installation follows your Windows language (Automatic), and **Settings › General › Appearance › Language** changes it at any time. Screenshots on this page show the Spanish interface.
 
 ## Three steps, no menus
 
@@ -43,9 +43,9 @@ For Windows 10 and 11 · Version 2.1.0 · Also as an [MSI package](https://githu
 
 Version 2.1 is out. Here is what it adds; every change is in the [changelog](CHANGELOG.md).
 
-- **Find a capture by what it said.** [Historial](#find-it-by-what-it-said) lists every capture, video and GIF by day, and its search also reads the text inside the images, on your computer.
+- **Find a capture by what it said.** [History](#find-it-by-what-it-said) lists every capture, video and GIF by day, and its search also reads the text inside the images, on your computer.
 - **Cover sensitive data.** One click in the editor, or automatically on every capture, [covers ID numbers, IBANs, cards, e-mails and phones](#hide-it-before-you-share-it).
-- **More control over captures.** The [mouse pointer](#select-snap-done) can appear in captures, file names are built from a template, saved captures can go into monthly folders, and **Repetir área** captures the last area again.
+- **More control over captures.** The [mouse pointer](#select-snap-done) can appear in captures, file names are built from a template, saved captures can go into monthly folders, and **Repeat area** captures the last area again.
 - **Recording upgrades.** [Pause and resume](#record-like-a-pro), show clicks and keyboard shortcuts, test the microphone with a live meter, choose options and a countdown before recording, and turn any marked piece of a video into a GIF.
 - **A verified lossless "Cine" master and a built-in player.** Cine decodes the file after recording and compares it frame by frame; videos open in [Stackshot's own player](#trim-it-speed-it-up-share-it), and MP4 exports can target 16 MB or 25 MB.
 - **Copy text from the screen.** [Select an area and its text goes to the clipboard](#and-so-much-more), using the OCR built into Windows.
@@ -84,7 +84,7 @@ Version 2.1 is out. Here is what it adds; every change is in the [changelog](CHA
 | History with search inside the images | The text index can be turned off or deleted |
 | Video (MP4) and GIF recording | FFmpeg is downloaded the first time you record, after you accept |
 | Computer sound, microphone and webcam bubble | Chosen device for each |
-| Lossless "Cine" master, verified after recording | A quality option in Grabación |
+| Lossless "Cine" master, verified after recording | A quality option in Recording |
 | Pause, show clicks and keys, microphone meter | Clicks and keys are off by default |
 | Built-in video player, trim, join, MP4 and GIF export | Plays MP4, MOV, MKV, WebM, AVI, WMV, TS and more |
 | Markdown viewer and editor, with PDF export | |
@@ -124,9 +124,9 @@ An area, the whole screen, a window, a long page, a video, a GIF or a Markdown d
 <br>
 
 - **Precise selection.** The screen freezes instantly. Drag an area with live dimensions, or hover a window to highlight it and click to capture it, rounded Windows 11 corners included.
-- **Repeat the last area.** **Repetir área** captures the same area again without choosing it, from the tray or from **Atajos** (no shortcut by default; you can assign one). If a monitor it touched has changed, the usual picker opens instead.
-- **Names and folders your way.** In General > Capturas guardadas, build file names from the type, date, time, app, window title, year, month, day or a counter that never repeats, with a live example. **Subcarpetas** keeps saved captures in one folder per month (`2026-10`) or per year and month (`2026\10`). The default gives the same names as before.
-- **The mouse pointer, if you want it.** General > Al capturar > **Incluir el puntero** draws the pointer, as it was when the capture started, into area, screen and window captures. Off by default.
+- **Repeat the last area.** **Repeat area** captures the same area again without choosing it, from the tray or from **Shortcuts** (no shortcut by default; you can assign one). If a monitor it touched has changed, the usual picker opens instead.
+- **Names and folders your way.** In General > Saved captures, build file names from the type, date, time, app, window title, year, month, day or a counter that never repeats, with a live example. **Subcarpetas** keeps saved captures in one folder per month (`2026-10`) or per year and month (`2026\10`). The default gives the same names as before.
+- **The mouse pointer, if you want it.** General > When capturing > **Include mouse cursor** draws the pointer, as it was when the capture started, into area, screen and window captures. Off by default.
 </details>
 
 ### Drag it anywhere.
@@ -137,7 +137,7 @@ An area, the whole screen, a window, a long page, a video, a GIF or a Markdown d
 <summary>How it works</summary>
 <br>
 
-- **Floating stack.** Every capture appears as a thumbnail in the corner. Hover it for **Copiar** and **Guardar** (Copy and Save), drag it into any app, swipe it away, or scroll through up to 20. It follows the mouse across monitors and never shows up in screen sharing.
+- **Floating stack.** Every capture appears as a thumbnail in the corner. Hover it for **Copy** and **Save**, drag it into any app, swipe it away, or scroll through up to 20. It follows the mouse across monitors and never shows up in screen sharing.
 - **Straight to the clipboard.** Each screenshot is copied as soon as it is taken, ready for <kbd>Ctrl</kbd>+<kbd>V</kbd> (videos and GIFs are copied as files). It is never synced through the Windows cloud clipboard.
 </details>
 
@@ -173,14 +173,14 @@ An area, the whole screen, a window, a long page, a video, a GIF or a Markdown d
 **One click finds IDs, IBANs, cards, e-mails and phone numbers, and covers them.**
 
 <div align="center">
-<img src="docs/clips/en/sensitive.webp" alt="The Datos sensibles button in the editor finding and covering an ID number, an IBAN, an e-mail address and a phone number in a screenshot, each with a mark that can be removed" width="100%">
+<img src="docs/clips/en/sensitive.webp" alt="The Sensitive data button in the editor finding and covering an ID number, an IBAN, an e-mail address and a phone number in a screenshot, each with a mark that can be removed" width="100%">
 </div>
 
 <details>
 <summary>How it works</summary>
 <br>
 
-Share a screenshot without sharing what shouldn't be in it. The editor's **Datos sensibles** button (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>) finds Spanish DNI and NIE numbers, Social Security numbers, IBANs, card numbers, e-mail addresses and phone numbers, and covers each one with a redaction mark you can remove. It checks control digits, so invoice numbers, amounts and dates are left alone.
+Share a screenshot without sharing what shouldn't be in it. The editor's **Sensitive data** button (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>) finds Spanish DNI and NIE numbers, Social Security numbers, IBANs, card numbers, e-mail addresses and phone numbers, and covers each one with a redaction mark you can remove. It checks control digits, so invoice numbers, amounts and dates are left alone.
 
 Detection can miss data, so look over the result before you share it.
 </details>
@@ -193,7 +193,7 @@ Detection can miss data, so look over the result before you share it.
 <summary>How it works</summary>
 <br>
 
-To do it on every capture, turn on General > Datos sensibles > **Tapar los datos sensibles al capturar**. The thumbnail says "Revisando datos…" for a moment (about 0.4 s at 1080p), and the clipboard, the file and the thumbnail only ever get the covered image. It is **off by default**, everything is read on your computer, and the uncovered original is kept in `%LOCALAPPDATA%\Stackshot\originales` only while the capture exists, so a cover can still be removed in the editor.
+To do it on every capture, turn on General > Sensitive data > **Auto-redact sensitive data on capture**. The thumbnail says "Checking data…" for a moment (about 0.4 s at 1080p), and the clipboard, the file and the thumbnail only ever get the covered image. It is **off by default**, everything is read on your computer, and the uncovered original is kept in `%LOCALAPPDATA%\Stackshot\originales` only while the capture exists, so a cover can still be removed in the editor.
 
 Detection can miss data, so look over the result before you share it.
 </details>
@@ -227,7 +227,7 @@ Select an area and scroll, or let Stackshot scroll for you. The frames are stitc
 
 Record an area as **MP4 or GIF**, with the cursor, at up to 60 fps. Add the computer's sound and your microphone, each from the device you choose and in sync with the image, and your webcam in a round or square bubble. The first time you record, Stackshot offers to download FFmpeg (see [Privacy and security](#privacy-and-security)).
 
-Before recording, a small window lets you adjust the options (quality, frame rate, sound, microphone, camera) and starts a countdown of 3 seconds by default (0, 3, 5 or 10; it never appears in the video). **Grabación > Antes de grabar** turns the window off or changes the countdown.
+Before recording, a small window lets you adjust the options (quality, frame rate, sound, microphone, camera) and starts a countdown of 3 seconds by default (0, 3, 5 or 10; it never appears in the video). **Recording > Before recording** turns the window off or changes the countdown.
 
 Quality goes from light and fast to **Cine** (Cinema): a truly lossless master (RGB H.264 + PCM in MKV) that Stackshot decodes after recording and checks frame by frame against what it captured. Areas above 1920 × 1200 at 60 fps ask before starting. If the computer cannot keep up, or the disk is filling, the recording stops cleanly and keeps what it has, and anything that fails afterwards is moved to `%LOCALAPPDATA%\Stackshot\recuperado`.
 </details>
@@ -240,9 +240,9 @@ Quality goes from light and fast to **Cine** (Cinema): a truly lossless master (
 <summary>How it works</summary>
 <br>
 
-When you stop, trim the start and end with the yellow handles, add more videos, change the speed (1.5× or 2×), the size (1080p or 720p), the format or the quality, add marks and a backdrop, and export. MP4 quality can be **Máxima** (default), **Alta**, **Ligera**, or fit a size: **16 MB (WhatsApp)** or **25 MB (correo)**, encoded in two passes (a video too long to fit with decent quality is refused, saying how long fits). Every MP4 is checked before it's handed to you.
+When you stop, trim the start and end with the yellow handles, add more videos, change the speed (1.5× or 2×), the size (1080p or 720p), the format or the quality, add marks and a backdrop, and export. MP4 quality can be **Maximum** (default), **High**, **Light**, or fit a size: **16 MB (WhatsApp)** or **25 MB (email)**, encoded in two passes (a video too long to fit with decent quality is refused, saying how long fits). Every MP4 is checked before it's handed to you.
 
-**Built-in video player.** Videos open in Stackshot's own player, with no VLC and no extra codecs: Cine masters always, other videos by default (Grabación > Después de grabar). It plays MP4, MOV, MKV, WebM, AVI, WMV, TS and more, with speed from 0.25× to 2× keeping the pitch, frame-by-frame stepping, a choice of sound track and an info panel. Videos open at their real size when the window fits on screen, and a video longer than two minutes opens where you left off. <kbd>C</kbd> saves the frame on screen as a picture. General > Archivos can offer Stackshot for `.mkv` files, which Windows' own player cannot decode.
+**Built-in video player.** Videos open in Stackshot's own player, with no VLC and no extra codecs: Cine masters always, other videos by default (Recording > After recording). It plays MP4, MOV, MKV, WebM, AVI, WMV, TS and more, with speed from 0.25× to 2× keeping the pitch, frame-by-frame stepping, a choice of sound track and an info panel. Videos open at their real size when the window fits on screen, and a video longer than two minutes opens where you left off. <kbd>C</kbd> saves the frame on screen as a picture. General > Files can offer Stackshot for `.mkv` files, which Windows' own player cannot decode.
 </details>
 
 ## Record like a pro.
@@ -258,8 +258,8 @@ When you stop, trim the start and end with the yellow handles, add more videos, 
 <br>
 
 - **Pause and resume** from the recording bar, the tray or the command line, in every quality. What happens during a pause is not in the file, and sound and image stay in sync.
-- **Show clicks and keys (optional).** Grabación > Clics y teclas draws a ring where you click (blue for left, orange for right) and shows shortcuts such as "Ctrl + C" at the bottom of the video. What you type is never shown, so passwords don't end up in the video. Both are off by default, and the keyboard and mouse are only watched while a recording with one of them on is running.
-- **Test the microphone.** **Probar micrófono** and the **Nivel de entrada** meter show the live level, warn when it clips (**Saturando**) and say when no microphone is available. A recording also reports when the sound clipped.
+- **Show clicks and keys (optional).** Recording > Clicks & keys draws a ring where you click (blue for left, orange for right) and shows shortcuts such as "Ctrl + C" at the bottom of the video. What you type is never shown, so passwords don't end up in the video. Both are off by default, and the keyboard and mouse are only watched while a recording with one of them on is running.
+- **Test the microphone.** **Test microphone** and the **Input level** meter show the live level, warn when it clips (**Clipping**) and say when no microphone is available. A recording also reports when the sound clipped.
 - **A GIF of a piece.** In the player, mark a piece with <kbd>E</kbd> and <kbd>S</kbd> and press <kbd>G</kbd> to make a GIF of just that part.
 </details>
 
@@ -269,8 +269,8 @@ When you stop, trim the start and end with the yellow handles, add more videos, 
 
 <table>
 <tr>
-<td width="50%" valign="top"><img src="docs/clips/en/history.webp" alt="The Historial page filtering captures, videos and GIFs by day while a search term finds a screenshot by the text written inside it" width="100%"></td>
-<td width="50%" valign="top"><img src="docs/screens/history-search.png" alt="Historial searching for the word factura: invoice captures found by the text inside them, with the match highlighted, grouped under Hoy and Ayer" width="100%"></td>
+<td width="50%" valign="top"><img src="docs/clips/en/history.webp" alt="The History page filtering captures, videos and GIFs by day while a search term finds a screenshot by the text written inside it" width="100%"></td>
+<td width="50%" valign="top"><img src="docs/screens/history-search.png" alt="History searching for the word factura: invoice captures found by the text inside them, with the match highlighted, grouped under Hoy and Ayer" width="100%"></td>
 </tr>
 </table>
 
@@ -278,9 +278,9 @@ When you stop, trim the start and end with the yellow handles, add more videos, 
 <summary>How it works</summary>
 <br>
 
-The **Historial** section lists every capture, video and GIF by day, with thumbnails, filters (Todo, Capturas, Vídeos, GIF) and a search that also looks inside the images. Stackshot reads the text of each capture in the background with the OCR built into Windows, on your computer (paused while you capture or record), so you can find last week's error message by typing a word that was in it. Matches are highlighted in a snippet of what the capture said.
+The **History** section lists every capture, video and GIF by day, with thumbnails, filters (All, Captures, Videos, GIF) and a search that also looks inside the images. Stackshot reads the text of each capture in the background with the OCR built into Windows, on your computer (paused while you capture or record), so you can find last week's error message by typing a word that was in it. Matches are highlighted in a snippet of what the capture said.
 
-The history covers the newest 5,000 captures, saved ones and dated subfolders included. The text index lives in `%LOCALAPPDATA%\Stackshot\historial`; General > Recientes turns the reading off and deletes it (**Buscar por el texto de las capturas**), and **Borrar el índice de texto** empties it.
+The history covers the newest 5,000 captures, saved ones and dated subfolders included. The text index lives in `%LOCALAPPDATA%\Stackshot\historial`; General > Recents turns the reading off and deletes it (**Search captures by OCR text**), and **Delete text index** empties it.
 </details>
 
 ## XML and Markdown, upgraded.
@@ -303,7 +303,7 @@ Open `.md` and `.xml` files from Explorer (optional; Windows keeps the final cho
 **XML and SOAP**
 
 - **SOAP summary bar.** A SOAP message shows its operation, time and size and an OK or **Fault** chip with the fault's code and message in red, with buttons for the XML before and after in the folder.
-- **Compare two XML files.** **Comparar con el XML anterior de la carpeta** or **Comparar con otro archivo…** shows changed, added and removed nodes in the tree, ignoring whitespace, attribute order and namespace prefixes. <kbd>F7</kbd> and <kbd>Shift</kbd>+<kbd>F7</kbd> go through the differences, and "only differences" hides the rest.
+- **Compare two XML files.** **Compare with previous XML in folder** or **Compare with another file…** shows changed, added and removed nodes in the tree, ignoring whitespace, attribute order and namespace prefixes. <kbd>F7</kbd> and <kbd>Shift</kbd>+<kbd>F7</kbd> go through the differences, and "only differences" hides the rest.
 - **Copy as value or JSON.** Right-click a node to copy its value, an attribute's value or the whole branch as JSON.
 - **Escaped XML and base64 attachments.** XML escaped inside a field opens as one more branch of the tree, and a file carried in base64 opens or saves with one click. Programs, scripts, shortcuts, ZIP files and Office files with macros are only saved, never opened.
 
@@ -317,7 +317,7 @@ General > Avanzado can watch a folder: every new XML that appears in it opens by
 
 - **Pictures.** Paste or drop a picture into a saved document and it is stored in an `imagenes` folder next to it, with the link inserted. Pictures on other computers or on the web are never loaded just by opening a document.
 - **Spreadsheet tables.** Paste cells from Excel, LibreOffice or Google Sheets and they become a Markdown table (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> pastes plain text). Pressing <kbd>Enter</kbd> in a numbered list renumbers the items below it.
-- **Outline.** The **Índice** button opens a side panel with the H1 to H3 headings that jumps to each one and follows where you are.
+- **Outline.** The **Contents** button opens a side panel with the H1 to H3 headings that jumps to each one and follows where you are.
 - **PDF with real text.** **Exportar PDF…** writes A4 pages with selectable text, embedded fonts, page numbers and bookmarks.
 </details>
 
@@ -340,12 +340,12 @@ General > Avanzado can watch a folder: every new XML that appears in it opens by
 <summary>How it works</summary>
 <br>
 
-Every capture mode, shortcut and setting in one place: Inicio, Historial, Atajos, General, Fondo y editor, Grabación, Mascota and Acerca de. Choose how home looks: **Minimalista** (the mascot, one question and every mode), **Widgets** (today at a glance: the last capture, captures per day, recording and the folder) or **Escena** (Scene). Quick profiles (**Rendimiento**, **Equilibrado**, **Completo**: Performance, Balanced, Complete) set everything in one click.
+Every capture mode, shortcut and setting in one place: Home, History, Shortcuts, General, Backdrop & editor, Recording, Mascot and About. Choose how home looks: **Minimal** (the mascot, one question and every mode), **Widgets** (today at a glance: the last capture, captures per day, recording and the folder) or **Scene**. Quick profiles (**Performance**, **Balanced**, **Full**) set everything in one click.
 
-**Find any setting.** A search field at the top of the sidebar (<kbd>Ctrl</kbd>+<kbd>F</kbd>) finds any setting as you type, ignoring accents and case, with every word in any order and the usual synonyms (typing "micro" finds the microphone). Results are grouped by section; <kbd>Enter</kbd> opens one and the row glows for a moment. The long General and Grabación pages start with chips that jump to each group.
+**Find any setting.** A search field at the top of the sidebar (<kbd>Ctrl</kbd>+<kbd>F</kbd>) finds any setting as you type, ignoring accents and case, with every word in any order and the usual synonyms (typing "micro" finds the microphone). Results are grouped by section; <kbd>Enter</kbd> opens one and the row glows for a moment. The long General and Recording pages start with chips that jump to each group.
 
 <div align="center">
-<img src="docs/screens/settings-search.png" alt="The settings search field in the sidebar: typing micro shows the Microfono setting under Grabación with the matching words highlighted" width="720">
+<img src="docs/screens/settings-search.png" alt="The settings search field in the sidebar: typing micro shows the Microphone setting under Recording with the matching words highlighted" width="720">
 </div>
 
 **Accessible and readable.** Screen readers (Narrator, NVDA) can read and use every control, everything works from the keyboard with a visible focus ring, and Windows contrast themes are followed. Stackshot's own notices, with action buttons where they help, replace the Windows tray balloons; they never take focus and stay out of captures and screen sharing.
@@ -391,7 +391,7 @@ The **Personajes** (Characters) section dresses it up as fan tributes to charact
 
 <table>
 <tr>
-<td width="50%" valign="top"><img src="docs/clips/en/aio.webp" alt="All-in-one mode: the selected area with handles and a bar with Capturar, Vídeo, GIF and Desplazar; choosing Vídeo starts recording that same area" width="100%"><br><b>Select first, decide after.</b> Adjust the area, then capture, record or scroll.</td>
+<td width="50%" valign="top"><img src="docs/clips/en/aio.webp" alt="All-in-one mode: the selected area with handles and a bar with Capture, Video, GIF and Scroll; choosing Video starts recording that same area" width="100%"><br><b>Select first, decide after.</b> Adjust the area, then capture, record or scroll.</td>
 <td width="50%" valign="top"><img src="docs/clips/en/pin.webp" alt="A capture pinned from its thumbnail floats above the windows, zooms with the wheel and fades with Ctrl and the wheel" width="100%"><br><b>Pin it above everything.</b> Wheel to zoom, Ctrl + wheel to fade it.</td>
 </tr>
 </table>
@@ -400,11 +400,11 @@ The **Personajes** (Characters) section dresses it up as fan tributes to charact
 <summary>How it works</summary>
 <br>
 
-**Select first, decide after.** Turn on **all-in-one mode** (General > Al capturar > Después de seleccionar un área > **Mostrar opciones**) and the area stays on screen after you select it, with handles to move and resize it (the arrow keys work too) and a bar to choose **Capturar**, **Vídeo**, **GIF** or **Desplazar** (capture, video, GIF or scrolling). <kbd>Enter</kbd> or a double click captures.
+**Select first, decide after.** Turn on **all-in-one mode** (General > When capturing > After selecting an area > **Show options**) and the area stays on screen after you select it, with handles to move and resize it (the arrow keys work too) and a bar to choose **Capture**, **Video**, **GIF** or **Scroll** (capture, video, GIF or scrolling). <kbd>Enter</kbd> or a double click captures.
 
 **Pin it above everything.** Pin any capture from its thumbnail and it floats above every window: the wheel zooms it, <kbd>Ctrl</kbd>+wheel changes its opacity, dragging moves it, and a double click or <kbd>Esc</kbd> closes it. Perfect for copying values from one window to another.
 
-**Copy text with OCR.** Select an area with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> and its text goes to the clipboard, ready to paste. Also from the **Texto** button on every thumbnail, in the editor (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>, **Copiar texto**) or on a pinned image. It uses the text recognition built into Windows 10 and 11, so nothing is downloaded and nothing leaves the computer. It prefers Spanish when that recognizer is installed; after that it prefers your own Windows languages among the Latin-script recognizers (a French user with en-US and fr-FR reads with fr-FR), then any other installed Latin-script recognizer in alphabetical order, then the interface language, your Windows profile languages, and finally any recognizer installed, so it works on every Windows that has text recognition at all. It reads small screen text and whole scrolling captures, line by line. If your Windows has no text recognition installed, Stackshot says so. (The sensitive-data redaction is stricter: it stops before anything non-Latin, because a bad reading there could let data through unchecked.)
+**Copy text with OCR.** Select an area with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd> and its text goes to the clipboard, ready to paste. Also from the **Text** button on every thumbnail, in the editor (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>, **Copy text**) or on a pinned image. It uses the text recognition built into Windows 10 and 11, so nothing is downloaded and nothing leaves the computer. It prefers Spanish when that recognizer is installed; after that it prefers your own Windows languages among the Latin-script recognizers (a French user with en-US and fr-FR reads with fr-FR), then any other installed Latin-script recognizer in alphabetical order, then the interface language, your Windows profile languages, and finally any recognizer installed, so it works on every Windows that has text recognition at all. It reads small screen text and whole scrolling captures, line by line. If your Windows has no text recognition installed, Stackshot says so. (The sensitive-data redaction is stricter: it stops before anything non-Latin, because a bad reading there could let data through unchecked.)
 
 **Command line.** A keypad button, a shortcut or a script can start any mode: see [Command line and IT policies](#command-line-and-it-policies).
 </details>
@@ -482,7 +482,7 @@ Stackshot.exe --open-home           # open the main window
 Stackshot.exe --last-xml            # open the newest XML of the watched folder
 ```
 
-Values under `HKLM\SOFTWARE\Policies\Stackshot` (or `HKCU`) let an IT department set up Stackshot for everyone. The user's own choices are kept for when a policy goes, and forced rows show **Lo decide tu organización** in the settings.
+Values under `HKLM\SOFTWARE\Policies\Stackshot` (or `HKCU`) let an IT department set up Stackshot for everyone. The user's own choices are kept for when a policy goes, and forced rows show **Managed by your organization** in the settings.
 
 | Value | Effect |
 |---|---|
@@ -507,9 +507,9 @@ Every option, exit code and a ready-to-import `.reg` example are in [docs/it-pol
 | <kbd>Shift</kbd>+<kbd>Print Screen</kbd> | Record video (press again to stop) |
 | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Print Screen</kbd> | Record a GIF |
 | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Alt</kbd>+<kbd>M</kbd> | Open the Markdown and XML viewer |
-| (none by default) | Repeat the last area; assign a key in **Atajos** |
+| (none by default) | Repeat the last area; assign a key in **Shortcuts** |
 
-All shortcuts can be changed in the **Atajos** (Shortcuts) section of the main window. If Windows 11 reserves <kbd>Print Screen</kbd> for the Snipping Tool, Stackshot takes it back for the current user.
+All shortcuts can be changed in the **Shortcuts** section of the main window. If Windows 11 reserves <kbd>Print Screen</kbd> for the Snipping Tool, Stackshot takes it back for the current user.
 
 <details>
 <summary>Editor shortcuts</summary>
@@ -538,7 +538,7 @@ All shortcuts can be changed in the **Atajos** (Shortcuts) section of the main w
 | <kbd>E</kbd> <kbd>S</kbd>, <kbd>G</kbd>, <kbd>C</kbd> | Player: mark start and end of a piece, GIF of the piece, save the current frame |
 | <kbd>F7</kbd>, <kbd>Shift</kbd>+<kbd>F7</kbd> | XML comparison: next or previous difference |
 | <kbd>[</kbd> <kbd>]</kbd> | XML viewer: previous or next XML in the folder |
-| <kbd>Ctrl</kbd>+<kbd>F</kbd> | Main window: search settings (on Historial, search the history) |
+| <kbd>Ctrl</kbd>+<kbd>F</kbd> | Main window: search settings (on History, search the history) |
 </details>
 
 ## Privacy and security
@@ -552,7 +552,7 @@ All shortcuts can be changed in the **Atajos** (Shortcuts) section of the main w
 - Updates installed from the app are verified: they must match the SHA-256 GitHub reports and carry a valid RSA-PSS signature made with the maintainer's key, which is never stored in the repository; otherwise they are discarded. Automatic installation is off by default and never cuts a recording short.
 - SmartScreen warns the first time the executable runs because it is not code-signed yet, not because of anything the file does. Every release is built by GitHub Actions and published with a SHA-256 checksum and a signed build provenance attestation, so you can check what you downloaded (see the [FAQ](#faq)).
 - Captures copied by Stackshot are never synced to other devices through the cloud clipboard.
-- The text of your captures (for Historial's search and for covering sensitive data) is read with Windows' own OCR and stays in `%LOCALAPPDATA%\Stackshot`; the index can be turned off or deleted at any time.
+- The text of your captures (for History's search and for covering sensitive data) is read with Windows' own OCR and stays in `%LOCALAPPDATA%\Stackshot`; the index can be turned off or deleted at any time.
 - Showing clicks and keyboard shortcuts in recordings watches the mouse and keyboard only while such a recording runs, and never shows or stores what you type.
 - Files inside XML documents are decoded only when you ask, and programs, scripts and macro files are never opened. Pictures in Markdown documents are only loaded from the local disk or the same server as the document.
 - Temporary captures live in `%LOCALAPPDATA%\Stackshot\temp` and are removed after an hour by default (configurable), never while they are still on screen.
@@ -600,7 +600,7 @@ Stackshot needs no administrator rights, and its source code is open for anyone 
 <summary><b>Does it send my captures anywhere?</b></summary>
 <br>
 
-No. There are no accounts, no cloud and no telemetry. Your captures stay on your computer, and so does the text it reads to search them in Historial.
+No. There are no accounts, no cloud and no telemetry. Your captures stay on your computer, and so does the text it reads to search them in History.
 </details>
 
 <details>
@@ -635,7 +635,7 @@ Yes. Capturing, editing, copying text, the history, the viewers and the player n
 <summary><b>Where are my screenshots saved?</b></summary>
 <br>
 
-Captures you save (the **Guardar** button on a thumbnail, or from the editor) go to `Pictures\Stackshot` by default; change it in General > Capturas guardadas, or an organization can fix it with a policy. Captures you don't save are temporary: they live in `%LOCALAPPDATA%\Stackshot\temp` and are removed after an hour by default (General > Recientes). Settings are in `%LOCALAPPDATA%\Stackshot\settings.ini`.
+Captures you save (the **Save** button on a thumbnail, or from the editor) go to `Pictures\Stackshot` by default; change it in General > Saved captures, or an organization can fix it with a policy. Captures you don't save are temporary: they live in `%LOCALAPPDATA%\Stackshot\temp` and are removed after an hour by default (General > Recientes). Settings are in `%LOCALAPPDATA%\Stackshot\settings.ini`.
 </details>
 
 <details>
@@ -649,7 +649,7 @@ Running `Stackshot.exe` offers to install it for your user (no administrator rig
 <summary><b>Is there an English interface?</b></summary>
 <br>
 
-The development build offers Spanish, English, German (partial), and Korean, plus previews of French, Portuguese, Simplified Chinese, Hindi, Arabic and Bengali. A new installation on Korean Windows starts in Korean. Automatic mode also recognizes Spanish (including Catalan, Galician and Basque Windows) and German, with English elsewhere. Choose a language in **Settings › General › Appearance › Language**, at setup, or from the tray. Your choice takes effect immediately and is remembered. Existing profiles without a language keep Spanish until you choose another language. Missing Korean UI strings use English. The English translation was contributed by [@altmashnaveed](https://github.com/altmashnaveed).
+Yes. Stackshot speaks Spanish, English, German and Korean. A new installation follows the Windows display language (Korean on a Korean Windows; Spanish on a Spanish, Catalan, Galician or Basque Windows; German on a German one; English everywhere else), and **Settings › General › Appearance › Language** switches it at once (Automatic, Español, English, Deutsch, 한국어), at setup or from the tray. Those who already used Stackshot keep Spanish until they choose otherwise. French, Portuguese, Simplified Chinese, Hindi, Arabic and Bengali are offered as previews: they translate the language picker and the common controls, and the rest stays in English; any Korean text still missing is shown in English. The English translation was contributed by [@altmashnaveed](https://github.com/altmashnaveed) and the Korean one by [@Hobeom](https://github.com/Hobeom); German and the secrets redaction came from PR #13 by [@aamershahzad2](https://github.com/aamershahzad2).
 </details>
 
 ## Building from source

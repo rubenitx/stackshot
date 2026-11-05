@@ -7,15 +7,16 @@ This guide provides a walkthrough of the new features added in the `feature/mult
 ## 1. Multiple Language Architecture & German (Deutsch) Support
 
 ### What it is
-Stackshot adds **German (Deutsch)** alongside English and Spanish. Some strings still appear in English.
+Stackshot adds **German (Deutsch)** alongside English and Spanish, and it is complete: the whole app is translated. Korean (한국어), contributed by @Hobeom, is available too.
 
 - **German Localization Engine** ([`src/I18n.German.cs`](../src/I18n.German.cs)): Holds translations for navigation, settings, editor controls, dialogs, and notifications.
 - **Dynamic Language Detection**: In **Automático / Auto** mode, Stackshot automatically matches your Windows display language:
   - German Windows (`de-DE`, `de-AT`, `de-CH`) -> German (`de`)
+  - Korean Windows (`ko-KR`) -> Korean (`ko`)
   - Spanish Windows (`es-ES`, `es-MX`, `ca-ES`, `gl-ES`, `eu-ES`) -> Spanish (`es`)
   - All other display languages -> English (`en`)
 - **Settings Selector**: Under **Settings › General › Appearance › Language**, open the picker and search by name or language code. Choose a language and select **Apply language**.
-- **Preview languages**: French, Portuguese, Simplified Chinese, Hindi, Arabic and Bengali translate the picker and common controls. Other text appears in English. Select these languages manually. Automatic mode continues to choose Spanish, German or English based on Windows.
+- **Preview languages**: French, Portuguese, Simplified Chinese, Hindi, Arabic and Bengali translate the picker and common controls. Other text appears in English. Select these languages manually. Automatic mode continues to choose Spanish, German, Korean or English based on Windows.
 
 ---
 

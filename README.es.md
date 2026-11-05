@@ -22,7 +22,7 @@ Para Windows 10 y 11 · Versión 2.1.0 · También como [paquete MSI](https://gi
 **Contenido:** [Tres pasos](#tres-pasos-ningún-menú) · [Novedades](#novedades-de-la-21) · [Funciones](#funciones-de-un-vistazo) · [Modos](#siete-formas-de-capturar) · [Capturar](#selecciona-captura-listo) · [Marcar](#márcala-en-segundos) · [Datos sensibles](#tápalo-antes-de-compartir) · [Desplazamiento](#captura-la-página-entera) · [Grabar](#graba-la-pantalla-con-sonido) · [Historial](#encuéntrala-por-lo-que-decía) · [XML y Markdown](#xml-y-markdown-a-otro-nivel) · [Ventana principal](#una-ventana-a-tu-manera) · [Pixel](#conoce-a-pixel-39-disfraces) · [Más](#y-mucho-más) · [Rendimiento](#ligera-rápida-privada) · [Instalación](#instalación) · [Línea de órdenes](#línea-de-órdenes-y-directivas-de-empresa) · [Atajos](#atajos-de-teclado) · [Privacidad](#privacidad-y-seguridad) · [Preguntas frecuentes](#preguntas-frecuentes) · [Compilar](#compilar-desde-el-código) · [Licencia](#licencia)
 
 > [!NOTE]
-> En las compilaciones de esta rama, elige **한국어** en **Ajustes › General › Apariencia › Idioma**, o deja **Automático** para seguir el idioma de Windows. Las capturas de esta página muestran la interfaz en español.
+> La interfaz de Stackshot está en español, inglés, alemán y coreano: una instalación nueva sigue el idioma de Windows (Automático) y se cambia cuando quieras en **Ajustes › General › Apariencia › Idioma**. Las capturas de esta página muestran la interfaz en español.
 
 ## Tres pasos, ningún menú
 
@@ -649,7 +649,7 @@ Al abrir `Stackshot.exe` te ofrece instalarlo para tu usuario (sin permisos de a
 <summary><b>¿Tiene la interfaz en español?</b></summary>
 <br>
 
-La versión de desarrollo ofrece español, inglés, alemán (parcial) y coreano, además de traducciones preliminares al francés, portugués, chino simplificado, hindi, árabe y bengalí. En modo automático, Windows en coreano usa coreano, Windows en español, catalán, gallego o euskera usa español, y Windows en alemán usa alemán. En los demás casos se usa inglés. Puedes elegir el idioma en **Ajustes › General › Apariencia › Idioma**, durante la instalación o desde la bandeja. La elección se aplica al momento y se conserva al reiniciar. Los perfiles anteriores sin idioma siguen en español hasta que elijas otro. Los textos que falten en coreano se muestran en inglés. La traducción al inglés la aportó [@altmashnaveed](https://github.com/altmashnaveed).
+Sí: en español, inglés, alemán y coreano. Una instalación nueva sigue el idioma de Windows (coreano en un Windows en coreano; español en un Windows en español, catalán, gallego o euskera; alemán en uno alemán; inglés en los demás), y **Ajustes › General › Apariencia › Idioma** lo cambia al momento (Automático, Español, English, Deutsch, 한국어), durante la instalación o desde la bandeja. Quien ya usaba Stackshot sigue en español mientras no elija otro. Francés, portugués, chino simplificado, hindi, árabe y bengalí se ofrecen como vista previa: traducen el selector de idioma y los controles comunes, y el resto queda en inglés; los textos que falten en coreano se muestran en inglés. La traducción al inglés la aportó [@altmashnaveed](https://github.com/altmashnaveed) y la del coreano [@Hobeom](https://github.com/Hobeom); el alemán y la redacción de claves vinieron de la PR #13 de [@aamershahzad2](https://github.com/aamershahzad2).
 </details>
 
 ## Compilar desde el código

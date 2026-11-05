@@ -3,7 +3,7 @@
 A screenshot tool for Windows in the spirit of CleanShot X: its own capture (scrolling capture too), a stack of floating
 thumbnails, a quick editor with a presentation backdrop, video and GIF through FFmpeg, a main window with a customizable
 mascot, and a per-user installation. A single `.exe` (about 2.2 MB) written in C# 5 + WinForms and WPF on .NET Framework 4.8.
-Windows 10 and 11 only. The UI language registry is in `src/I18n.Languages.cs`; code comments are in English.
+Windows 10 and 11 only. The user interface is in Spanish, English, German and Korean (the language registry is in `src/I18n.Languages.cs`, the German catalog is split by area into `src/I18n.German.<Area>.cs` and the Korean one into `src/I18n.Korean*.cs`); code comments are in English.
 
 ## Build and test
 
@@ -70,12 +70,23 @@ Windows 10 and 11 only. The UI language registry is in `src/I18n.Languages.cs`; 
 ## Code rules
 
 - **C# 5 only**: no `$""`, `?.`, `nameof`, expression-bodied members, `out var` or auto-property initializers.
-- **Localize visible text.** What the user reads or hears goes through `I18n.T("español", "English")`, or
-  `I18n.Fmt(...)` when it carries values (same `{0}` placeholders in both); Korean translations in `src/I18n.Korean*.cs` use the exact English source string as their key, including whitespace and format placeholders. Missing keys display English. For lists, select the language at use time and pass the English array through `I18n.LocalizeList`. Keep shortcut bindings separate from labels. Never initialize a static label with `I18n.T`, which would freeze the language at startup.
-  Logs, settings keys, file names on disk and anything compared to decide behaviour stay as they are: never decide by a
-  translated text (use an id or a flag). A notice's kind comes from its title's first words (`Notice.KindFor`): give a new
-  title a start of the same kind in both languages. `tests\app\run-tests.ps1 i18n` checks that Automatic follows Windows
-  and that no page shows Spanish in English.
+- **Every text in all four languages.** What the user reads or hears goes through `I18n.T("español", "English")`, or
+  `I18n.Fmt(...)` when it carries values (the same `{0}` placeholders in all of them); lists are `XxxEs`/`XxxEn`/`XxxDe`
+  arrays behind a property that picks one by `I18n.IsSpanish` / `IsGerman` and passes the English array through
+  `I18n.LocalizeList` for the rest, never a static field that calls `I18n.T` (it would freeze the language at startup).
+  German lives in one catalog file per area (`src/I18n.German.<Area>.cs`), registered as `reg(en, es, de)` from the
+  English key (the Spanish one when it differs); when one line needs its own German, use the three-argument
+  `I18n.T(es, en, de)` right at the call site. Korean translations in `src/I18n.Korean*.cs` use the exact English source
+  string as their key, including whitespace and format placeholders, and a missing key displays English: when you change
+  an English text, change its Korean key too, and build a sentence with `{0}` placeholders instead of gluing translated
+  pieces together. Keep shortcut bindings separate from labels. The in-app news are the same for the four languages
+  (`docs/novedades.md` and its `.en`, `.de` and `.ko` twins, embedded by `build.ps1`): a version that brings user-visible
+  changes adds its section to all four. Logs, settings keys, file names on disk and anything compared to decide behaviour
+  stay as they are: never decide by a translated text (use an id or a flag). A notice's kind comes from its English key
+  (`I18n.EnglishKey`), not from the words of one language: give a new title a start of the same kind in all languages.
+  `tests\app\run-tests.ps1 i18n` checks that Automatic follows Windows and that no page shows Spanish in English, and
+  `tests\app\run-tests.ps1 news` checks that the four news files carry the same versions and that the program's version
+  is the newest one.
 - **ASCII literals**: accented characters in strings are Unicode escapes. Some editing tools turn them into real
   characters; after editing, `perl tools/escape-literals.pl <file>` escapes them again.
 - The process is per-monitor DPI aware (PerMonitorV2 manifest): sizes are in physical pixels and scaled with
@@ -164,8 +175,8 @@ Windows 10 and 11 only. The UI language registry is in `src/I18n.Languages.cs`; 
 
 ## Releasing a version
 
-Bump `AssemblyVersion` / `AssemblyFileVersion` in `src/Program.cs`, record the changes in `CHANGELOG.md`, then create and
-push the tag `vX.Y.Z`. The workflow `.github/workflows/build.yml` builds and attaches `Stackshot.exe`, `Stackshot.msi`,
+Bump `AssemblyVersion` / `AssemblyFileVersion` in `src/Program.cs`, record the changes in `CHANGELOG.md` and in the app's
+news (`docs/novedades.md`, with its `novedades.en.md`, `novedades.de.md` and `novedades.ko.md` twins), then create and push the tag `vX.Y.Z`. The workflow `.github/workflows/build.yml` builds and attaches `Stackshot.exe`, `Stackshot.msi`,
 their `.sha256` files and a build provenance attestation to the release. A published version is never rebuilt: every
 change is a new version. Installed copies (1.3.0 and later) check GitHub once a day and show the new version in the tray,
 on the home page and under About.
