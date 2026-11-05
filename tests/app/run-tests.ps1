@@ -17,6 +17,9 @@ $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (-not (Test-Path $csc)) { $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe' }
 if (-not (Test-Path $csc)) { Write-Host 'No encuentro csc.exe de .NET Framework 4.'; exit 1 }
 
+# The source-level i18n tests read src\*.cs at test time: the exe lives in %TEMP%, so the runner hands over the root.
+$env:STACKSHOT_TESTS_ROOT = $root
+
 $sources = @()
 $sources += Get-ChildItem $srcDir -Recurse -Filter *.cs | ForEach-Object { $_.FullName }
 $sources += Get-ChildItem $appDir -Filter '*.cs' | ForEach-Object { $_.FullName }

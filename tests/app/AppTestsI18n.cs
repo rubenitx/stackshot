@@ -21,8 +21,8 @@ namespace Stackshot.Tests
     static class AppTestsI18n
     {
         const string Suite_ = "i18n";
-        const BindingFlags NP = BindingFlags.NonPublic | BindingFlags.Instance;
-        static readonly string[] Pages = { "home", "history", "keys", "general", "editor", "record", "mascot", "mascotset", "about" };
+        internal const BindingFlags NP = BindingFlags.NonPublic | BindingFlags.Instance;
+        internal static readonly string[] Pages = { "home", "history", "keys", "general", "editor", "record", "mascot", "mascotset", "about" };
 
         static void T(string name, Action body) { AppTests.Test(Suite_, name, body); }
         static void Check(bool ok, string what) { if (!ok) throw new InvalidOperationException(what); }
@@ -39,6 +39,12 @@ namespace Stackshot.Tests
                 T("english-offered-once-on-another-windows", EnglishOffered);
                 T("notice-kinds-match-in-both-languages", NoticeKinds);
                 T("english-audit-of-every-page", EnglishAudit);
+                T("german-audit-of-every-page", AppTestsI18nGerman.GermanAudit);
+                T("audit-covers-the-other-windows", AppTestsI18nGerman.ExtraWindowsAudit);
+                T("catalog-covers-every-call-site", AppTestsI18nCoverage.CatalogCoversEveryCallSite);
+                T("no-unwrapped-spanish-in-ui", AppTestsI18nCoverage.NoUnwrappedSpanish);
+                T("german-placeholders-match", AppTestsI18nCoverage.GermanPlaceholdersMatch);
+                T("no-duplicate-german-keys", AppTestsI18nCoverage.NoDuplicateGermanKeys);
                 T("spanish-pages-unchanged-by-a-round-trip", RoundTrip);
                 T("editor-tool-keys-localized", EditorToolKeysLocalized);
                 T("german-localization-catalog", GermanLocalization);
@@ -183,7 +189,7 @@ namespace Stackshot.Tests
         }
 
         // The German catalog's English key → shown German text, read by reflection (it is I18n's private Lazy).
-        static Dictionary<string, string> GermanByEnglish()
+        internal static Dictionary<string, string> GermanByEnglish()
         {
             FieldInfo f = typeof(I18n).GetField("GermanCatalog", BindingFlags.NonPublic | BindingFlags.Static);
             var lazy = (Lazy<Tuple<Dictionary<string, string>, Dictionary<string, string>>>)f.GetValue(null);
@@ -196,7 +202,7 @@ namespace Stackshot.Tests
         // so is what Windows itself names in its own language (audio devices).
         static readonly Regex SpanishLetters = new Regex("[\u00E1\u00E9\u00ED\u00F3\u00FA\u00F1\u00C1\u00C9\u00CD\u00D3\u00DA\u00D1\u00BF\u00A1]");
         static readonly Regex SpanishWords = new Regex(@"\b(de|del|la|las|el|los|con|para|una|uno|que|por|sin|al|se|y|tu|tus|en|esta|este|hay|m\u00E1s|aqu\u00ED|nada|todo|captura|capturas|grabar|guardar|abrir|cerrar|ajustes|carpeta|archivo|ventana|pantalla|estilo|nivel|vaso|conmigo|recuperado|Captura|Capturas|Capturar|Grabar|Guardar|Abrir|Cerrar|Copiar|Pegar|Borrar|Quitar|Ajustes|Carpeta|Archivo|Ventana|Pantalla|Estilo|Nivel|Listo|Hecho|Buscar|Mostrar|Ocultar|Volver|Ver)\b");
-        static readonly string[] Allowed = { "Espa\u00F1ol", "Deutsch", "Stackshot", "Kero-chan", "Le\u00F3n", "Pok\u00E9mon" };
+        internal static readonly string[] Allowed = { "Espa\u00F1ol", "Deutsch", "Stackshot", "Kero-chan", "Le\u00F3n", "Pok\u00E9mon" };
 
         internal static bool LooksSpanish(string s)
         {
@@ -236,7 +242,7 @@ namespace Stackshot.Tests
         }
 
         // least: what that window shows at the very least, so one that hands over (almost) nothing does not pass unseen.
-        static void Other(List<string> found, string where, int least, Func<List<string>> texts)
+        internal static void Other(List<string> found, string where, int least, Func<List<string>> texts)
         {
             List<string> all;
             try { all = texts(); }
@@ -247,7 +253,7 @@ namespace Stackshot.Tests
         }
 
         // The Markdown/XML window empty, then with a Markdown document (read and edit) and an XML one.
-        static List<string> AuditMarkdown()
+        internal static List<string> AuditMarkdown()
         {
             string dir = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-docs");
             Directory.CreateDirectory(dir);
@@ -304,12 +310,14 @@ namespace Stackshot.Tests
             }
         }
 
-        static List<string> AuditEditor()
+        internal static List<string> AuditEditor()
         {
-            string png = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-editor.png");
+            // A unique file each call: the audit runs in several languages and the Editor keeps the bitmap open.
+            string png = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-editor-" + Guid.NewGuid().ToString("N") + ".png");
             Directory.CreateDirectory(Path.GetDirectoryName(png));
             using (System.Drawing.Bitmap b = new System.Drawing.Bitmap(320, 200)) b.Save(png, System.Drawing.Imaging.ImageFormat.Png);
-            System.Drawing.Bitmap img = new System.Drawing.Bitmap(png);
+            System.Drawing.Bitmap img;
+            using (System.Drawing.Bitmap load = new System.Drawing.Bitmap(png)) img = new System.Drawing.Bitmap(load);
             Editor e = new Editor(null, png, img);
             try
             {
@@ -329,7 +337,7 @@ namespace Stackshot.Tests
         }
 
         // The tray menu: what its rows say and what a screen reader hears.
-        static List<string> AuditTray()
+        internal static List<string> AuditTray()
         {
             TrayPanel t = new TrayPanel(new Settings());
             try
@@ -347,9 +355,9 @@ namespace Stackshot.Tests
         }
 
         // A capture's floating card and its buttons.
-        static List<string> AuditCard()
+        internal static List<string> AuditCard()
         {
-            string png = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-card.png");
+            string png = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-card-" + Guid.NewGuid().ToString("N") + ".png");
             Directory.CreateDirectory(Path.GetDirectoryName(png));
             using (System.Drawing.Bitmap b = new System.Drawing.Bitmap(320, 200)) b.Save(png, System.Drawing.Imaging.ImageFormat.Png);
             Card c = new Card(null, png);
@@ -362,7 +370,7 @@ namespace Stackshot.Tests
         }
 
         // What screen readers get from a WinForms window Stackshot draws itself: names, descriptions, help and values.
-        static List<string> Accessible(System.Windows.Forms.Control c)
+        internal static List<string> Accessible(System.Windows.Forms.Control c)
         {
             List<string> acc = new List<string>();
             AccessibleWalk(c.AccessibilityObject, acc, 0);
@@ -411,11 +419,11 @@ namespace Stackshot.Tests
             finally { hw.Shutdown(); }
         }
 
-        static void Add(List<string> found, string s) { if (!found.Contains(s)) found.Add(s); }
+        internal static void Add(List<string> found, string s) { if (!found.Contains(s)) found.Add(s); }
 
         // What a user can read or hear: text and runs, tooltips, and the names screen readers announce for the controls
         // Stackshot draws itself (segments, buttons, switches).
-        static List<string> Strings(object root)
+        internal static List<string> Strings(object root)
         {
             List<string> acc = new List<string>();
             HashSet<DependencyObject> seen = new HashSet<DependencyObject>();
@@ -460,7 +468,7 @@ namespace Stackshot.Tests
                 for (int i = 0; i < VisualTreeHelper.GetChildrenCount(d); i++) Walk(VisualTreeHelper.GetChild(d, i), seen, visit);
         }
 
-        static HomeWindow Make(int appearance)
+        internal static HomeWindow Make(int appearance)
         {
             Ds.Apply(appearance);
             Settings s = new Settings();
@@ -473,7 +481,7 @@ namespace Stackshot.Tests
             return new HomeWindow(owner, s);
         }
 
-        static void SetPage(HomeWindow hw, string id)
+        internal static void SetPage(HomeWindow hw, string id)
         {
             try { typeof(HomeWindow).GetMethod("SetPage", NP).Invoke(hw, new object[] { id, false }); }
             catch (TargetInvocationException ex) { throw new InvalidOperationException("page " + id + ": " + ex.InnerException, ex.InnerException); }
@@ -855,7 +863,7 @@ namespace Stackshot.Tests
             Check(AuditTray().Contains("\uC601\uC5ED"), "Korean capture action in tray");
         }
 
-        static void Layout(HomeWindow hw)
+        internal static void Layout(HomeWindow hw)
         {
             UIElement root = (UIElement)hw.Content;
             root.Measure(new Size(980, 660));
