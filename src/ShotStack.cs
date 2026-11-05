@@ -1511,9 +1511,10 @@ namespace Stackshot
             WorkFiles.Rescued last = moved[moved.Count - 1];
             // Spanish as it always was; English with the month spelled out (3/11 reads differently in the US).
             string when = last.Started == DateTime.MinValue ? "" : I18n.IsKorean
-                ? " (" + last.Started.ToString(last.Started.Date == DateTime.Today ? "HH:mm" : "M/d HH:mm") + ")" : I18n.IsSpanish
-                ? " (la de las " + last.Started.ToString("HH:mm") + (last.Started.Date != DateTime.Today ? " del " + last.Started.ToString("d/M") : "") + ")"
-                : " (the one from " + last.Started.ToString("HH:mm") + (last.Started.Date != DateTime.Today ? " on " + last.Started.ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture) : "") + ")";
+                ? " (" + last.Started.ToString(last.Started.Date == DateTime.Today ? "HH:mm" : "M/d HH:mm") + ")"
+                : I18n.Fmt(" (la de las {0}{1})", " (the one from {0}{1})",
+                last.Started.ToString("HH:mm"),
+                last.Started.Date != DateTime.Today ? I18n.Fmt(" del {0}", " on {0}", last.Started.ToString(I18n.IsSpanish ? "d/M" : I18n.IsGerman ? "d. MMM" : "MMM d", I18n.IsSpanish ? System.Globalization.CultureInfo.InvariantCulture : I18n.Culture)) : "");
             string text = (moved.Count == 1 ? I18n.Fmt("Stackshot se cerr\u00F3 mientras grababa{0}. Lo grabado est\u00E1 a salvo", "Stackshot closed while recording{0}. The recording is safe", when) : I18n.Fmt("Stackshot se cerr\u00F3 durante {0} grabaciones. Lo grabado est\u00E1 a salvo", "Stackshot closed during {0} recordings. The recordings are safe", moved.Count)) +
                           " " + I18n.T("en la carpeta \u00ABrecuperado\u00BB.", "in the \u201Crecuperado\u201D folder.");
             string dir = moved.Count == 1 ? last.Folder : RecoveredDir;
@@ -1890,7 +1891,7 @@ namespace Stackshot
             {
                 Log("Pegada: " + Path.GetFileName(td.FilePath));
                 Card c = Find(td.FilePath);
-                if (c != null) c.Used("Pegada", delegate { Remove(c); });
+                if (c != null) c.Used(I18n.T("Pegada", "Pasted"), delegate { Remove(c); });
                 else Log("Pegada sin miniatura en la pila (" + cards.Count + " miniaturas)");
             });
         }

@@ -60,6 +60,21 @@ namespace Stackshot
             this.owner = owner;
             FilePath = path;
             IsMedia = ShotStack.IsMediaFile(path);
+            I18n.Changed += OnLanguageChanged;
+        }
+
+        // A thumbnail can stay on screen for days: its corner buttons and pills follow the language.
+        void OnLanguageChanged()
+        {
+            if (IsDisposed || Leaving) return;
+            BuildButtons();
+            Redraw();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            I18n.Changed -= OnLanguageChanged;
+            base.OnClosed(e);
         }
 
         protected override void OnHandleCreated(EventArgs e)

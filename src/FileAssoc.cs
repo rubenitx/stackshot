@@ -12,7 +12,7 @@ namespace Stackshot
         public readonly string ProgId, FriendlyEs, FriendlyEn;
         public readonly string[] Exts;
         // The type's name as Explorer shows it, in the language in use when it is registered.
-        public string Friendly { get { return I18n.IsSpanish ? FriendlyEs : I18n.Localize(FriendlyEn); } }
+        public string Friendly { get { return I18n.T(FriendlyEs, FriendlyEn); } }
         public AssocKind(string progId, string friendlyEs, string friendlyEn, params string[] exts) { ProgId = progId; FriendlyEs = friendlyEs; FriendlyEn = friendlyEn; Exts = exts; }
     }
 

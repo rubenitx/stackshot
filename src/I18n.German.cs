@@ -128,7 +128,6 @@ namespace Stackshot
             reg("Record the screen", null, "Bildschirm aufnehmen");
             reg("on thumbnail to edit it", null, "auf die Miniaturansicht zum Bearbeiten");
             reg("Install & get started", null, "Installieren und loslegen");
-            reg("Where captures are saved", "D\u00F3nde se guardan las capturas", "Speicherort f\u00FCr Aufnahmen.");
             reg("Where your saved captures go.", "Donde van las capturas que guardas.", "Hier werden deine gespeicherten Aufnahmen abgelegt.");
             reg("Where do you want to save your captures?", "\u00BFD\u00F3nde quieres guardar las capturas que conserves?", "Wo m\u00F6chtest du deine Aufnahmen speichern?");
 
@@ -301,13 +300,8 @@ namespace Stackshot
             reg("Change my outfit", null, "Mein Outfit ändern");
             reg("Go home", null, "Nach Hause gehen");
             reg("Capture full screen", "Capturar pantalla completa", "Vollbild aufnehmen");
-            reg("Capture region", "Capturar regi\u00F3n", "Bereich aufnehmen");
-            reg("Capture window", "Capturar ventana", "Fenster aufnehmen");
-            reg("Record screen", "Grabar pantalla", "Bildschirm aufnehmen");
             reg("Open folder", "Abrir carpeta", "Ordner \u00F6ffnen");
             reg("Open video\u2026", "Abrir v\u00EDdeo\u2026", "Video \u00F6ffnen\u2026");
-            reg("Latest XML", "\u00DAltimo XML", "Neuestes XML");
-            reg("Close all", "Cerrar todo", "Alle schlie\u00DFen");
             reg("Pause recording", "Pausar grabaci\u00F3n", "Aufnahme pausieren");
             reg("Resume recording", "Reanudar grabaci\u00F3n", "Aufnahme fortsetzen");
             reg("Stop recording", "Detener grabaci\u00F3n", "Aufnahme beenden");
@@ -377,10 +371,8 @@ namespace Stackshot
             reg("Text copied", "Texto copiado", "Text kopiert");
             reg("Image copied", "Imagen copiada", "Bild kopiert");
             reg("Saved", "Guardado", "Gespeichert");
-            reg("Capture saved", "Captura guardada", "Aufnahme gespeichert");
             reg("Audio clipped", "El sonido ha saturado", "Audio \u00FCbersteuert");
             reg("Cinema: lossless, verified", "Cine: sin p\u00E9rdidas, verificado", "Kino: verlustfrei, verifiziert");
-            reg("Sensitive data not reviewed", "No se han revisado los datos sensibles", "Sensible Daten nicht \u00FCberpr\u00FCft");
             reg("Could not combine", "No se pudieron unir", "Konnte nicht zusammengef\u00FCgt werden");
             reg("Recording was choppy", "La grabaci\u00F3n ha ido a tirones", "Aufnahme lief unruhig");
             reg("Print Screen now belongs to Stackshot", "Impr Pant ya es de Stackshot", "Druck-Taste geh\u00F6rt jetzt zu Stackshot");

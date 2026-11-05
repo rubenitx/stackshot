@@ -91,7 +91,7 @@ namespace Stackshot
             // notice (which itself waits through presentations and full-screen apps).
             if (Native.IdleMs() >= Wellness.ActiveIdleMs) return;
             DateTime local = due.DueUtc.ToLocalTime();
-            string late = DateTime.UtcNow - due.DueUtc > TimeSpan.FromMinutes(3) ? I18n.Fmt("Era para {0}: ", "Was for {0}: ", WhenText(local).Replace("ma\u00F1ana ", "").Replace("tomorrow ", "")) : "";
+            string late = DateTime.UtcNow - due.DueUtc > TimeSpan.FromMinutes(3) ? I18n.Fmt("Era para {0}: ", "Was for {0}: ", WhenText(local).Replace(I18n.T("ma\u00F1ana ", "tomorrow "), "")) : "";
             Teller teller = TellerFor(ref remindWait, 60000);
             if (teller == Teller.Wait) return;
             if (teller == Teller.Pet)
