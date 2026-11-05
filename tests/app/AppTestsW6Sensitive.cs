@@ -64,6 +64,8 @@ namespace Stackshot.Tests
                 AppTests.Test(SuiteName, "capture path on: out of memory making the veil discards the capture, with a notice", VeilOutOfMemory);
                 AppTests.Test(SuiteName, "capture path on: without OCR the capture is discarded and one warning per session says why", OcrMissingDiscards);
                 AppTests.Test(SuiteName, "redaction: the same findings with the interface in Spanish, English and German", LanguageIndependent);
+                AppTests.Test(SuiteName, "redaction: 8 readers at once all read, none is told there is no OCR", EngineUnderThreads);
+                AppTests.Test(SuiteName, "redaction: without OCR an already-on switch stays reachable and cannot be turned on", SensitiveToggleGate);
                 AppTests.Test(SuiteName, "capture path on: a burst of captures is checked one after another, off the caller's thread", JobQueue);
                 AppTests.Test(SuiteName, "originals: kept privately, restored as marks, dropped when edited or gone", Originals);
                 AppTests.Test(SuiteName, "timings: 1080p and 4K synthetic captures", Timings);
@@ -96,35 +98,69 @@ namespace Stackshot.Tests
             const int x = 20, y = 20, step = 32;
             string[] lines = { "-----BEGIN RSA PRIVATE KEY-----", "SYNTHETICPEMPAYLOAD0123456789",
                                "-----END RSA PRIVATE KEY-----", "Public note" };
-            using (Bitmap image = new Bitmap(650, 170))
+            using (Bitmap image = new Bitmap(650, 210))
             {
                 using (Graphics g = Graphics.FromImage(image))
                 using (Font f = new Font("Consolas", 20f, GraphicsUnit.Pixel))
                 {
                     g.Clear(Color.White);
                     for (int i = 0; i < lines.Length; i++) g.DrawString(lines[i], f, Brushes.Black, x, y + step * i);
+                    g.DrawString("DNI: " + Dni(45872391), f, Brushes.Black, x, y + step * lines.Length);
                 }
                 List<Ocr.Word> words = ReadWords(image);
                 List<SensitiveFinding> findings = Sensitive.Find(words, image.Size);
-                Check(findings.Count == 3, "OCR found all three PEM lines: " + Joined(words));
+                Check(findings.Count == 4, "OCR found the PEM lines and the DNI: " + Joined(words));
                 Bitmap written;
                 CoverOutcome result = RunJob(new Bitmap(image), Path.Combine(work, "pem.png"), false, out written);
                 if (result.Preview != null) result.Preview.Dispose();
+                List<Rectangle> secrets = result.Found.FindAll(delegate(SensitiveFinding f2) { return f2.Kind == SensitiveKind.Secret; }).ConvertAll(delegate(SensitiveFinding f2) { return f2.Box; });
+                Check(secrets.Count == 3, "the three PEM findings are the secrets");
                 using (written)
                 using (Canvas canvas = new Canvas(new Bitmap(image)))
                 {
-                    Check(result.Error == null && result.Found.Count == 3, "capture job covers all PEM lines");
-                    // The original kept in CoverStore has the credential painted over: no unredacted copy on disk, and
-                    // the cover stays as removable as any other.
+                    Check(result.Error == null && result.Found.Count == 4, "capture job covers all findings");
+                    // The original kept in CoverStore has the credential painted over (its whole boxes, not a pixel):
+                    // no unredacted copy on disk, and the other covers stay reversible.
                     Check(File.Exists(Path.Combine(CoverStore.Dir, "pem.png")), "the original is kept with the key painted over");
                     using (Bitmap kept = new Bitmap(Path.Combine(CoverStore.Dir, "pem.png")))
+                    {
+                        foreach (Rectangle r in secrets) Check(SolidlyCovered(kept, r), "every pixel of the key is covered in the kept original");
                         Check(kept.GetPixel(50, 62).R < 32, "no unredacted copy of the key on disk");
+                    }
                     Check(written.GetPixel(50, 62).R < 32, "the payload is covered in the output");
                     canvas.AddCovers(SensitiveCover.Boxes(findings));
                     using (Bitmap output = canvas.Render())
                         Check(SensitiveCover.SamePixels(output, written), "editor export matches automatic cover");
+                    // The kept original comes back as marks: the credential stays painted in it (it can never come
+                    // back), the other cover is restorable pixel for pixel.
+                    string pemPath = Path.Combine(work, "pem.png");
+                    ShotStack.BeginWrite(pemPath, written, null);
+                    ShotStack.WaitWritten(pemPath);
+                    List<Rectangle> boxes;
+                    Bitmap orig = CoverStore.Restore(pemPath, out boxes);
+                    Check(orig != null && boxes.Count == SensitiveCover.Boxes(result.Found).Count, "the kept original restores with every box");
+                    using (orig)
+                    using (Bitmap expected = TrackedData.DeepCopy(image))
+                    {
+                        SensitiveCover.Paint(expected, secrets);
+                        Check(SensitiveCover.SamePixels(orig, expected), "restorable: exactly the capture with just the secret painted");
+                        foreach (Rectangle r in secrets) Check(SolidlyCovered(orig, r), "the secret stays covered after a restore");
+                    }
+                    CoverStore.Forget(pemPath);
                 }
             }
+        }
+
+        // Every pixel of the box is the Redact fill: nothing of what was underneath survives anywhere in it.
+        static bool SolidlyCovered(Bitmap b, Rectangle r)
+        {
+            for (int y = r.Top; y < r.Bottom; y++)
+                for (int x = r.Left; x < r.Right; x++)
+                {
+                    Color c = b.GetPixel(x, y);
+                    if (c.A != 255 || c.R != 22 || c.G != 22 || c.B != 26) return false;
+                }
+            return true;
         }
 
         static string Group(string d)
@@ -1259,7 +1295,16 @@ namespace Stackshot.Tests
                         string got = st.SaveCapture(shot, "Prueba", new ShotStack.CaptureStart());
                         Check(got == null, "no card is added");
                         Pump(200);
-                        Check(!File.Exists(path) && !CoverJob.IsChecking(path), "nothing written or held");
+                        Check(!CoverJob.IsChecking(path), "nothing held");
+                        // The discard is checked by what is (not) there, not by one name: no capture file or leftover
+                        // can exist, the writing register is empty and the stack has no card.
+                        foreach (string f in Directory.GetFiles(temp)) Check(!f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) && !f.EndsWith(".part", StringComparison.OrdinalIgnoreCase), "nothing written: " + f);
+                        HashSet<string> w = (HashSet<string>)typeof(ShotStack).GetField("writing", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+                        List<string> left;
+                        lock (w) left = new List<string>(w);
+                        Check(left.Count == 0, "nothing left as being written: " + string.Join(", ", left.ToArray()));
+                        List<Card> cards = (List<Card>)typeof(ShotStack).GetField("cards", Priv).GetValue(st);
+                        Check(cards.Count == 0, "no card in the stack");
                     }
                     bool told = false;
                     foreach (Notice n in ShotStack.Recorded) if (n.Kind == NoticeKind.Error) told = true;
@@ -1280,6 +1325,8 @@ namespace Stackshot.Tests
             bool? was = Ocr.MissingOverride;
             bool wasWarned = ShotStack.OcrMissingWarned;
             bool wasTest = ShotStack.Test;
+            FieldInfo searchState = typeof(Ocr).GetField("redactionSearched", BindingFlags.NonPublic | BindingFlags.Static);
+            object searchWas = searchState != null ? searchState.GetValue(null) : null;
             ShotStack.OcrMissingWarned = false;
             ShotStack.Test = true;   // the warning is recorded, never shown
             try
@@ -1311,6 +1358,10 @@ namespace Stackshot.Tests
                 }
             }
             finally { Ocr.MissingOverride = was; ShotStack.OcrMissingWarned = wasWarned; ShotStack.Test = wasTest; }
+            // The override must never poison the real OCR state: the search is exactly where it was, and the machine
+            // is not remembered as without OCR.
+            if (searchState != null) Check(Equals(searchState.GetValue(null), searchWas), "the real engine search did not run under the override");
+            Check(!Ocr.Missing, "the machine is not remembered as without OCR");
         }
 
         static void LanguageIndependent()
@@ -1318,6 +1369,7 @@ namespace Stackshot.Tests
             // The recognizer must not follow the interface language: the same capture gives the same findings whatever
             // language the app shows (the engine is chosen once, Spanish first).
             string was = I18n.Mode;
+            string chosenTag = null;
             try
             {
                 string baseKinds = null;
@@ -1336,10 +1388,112 @@ namespace Stackshot.Tests
                         string joined = string.Join(",", kinds);
                         if (baseKinds == null) baseKinds = joined;
                         else Check(joined == baseKinds, lang + " reads differently: " + joined + " vs " + baseKinds);
+                        // The engine itself cannot change with the language: the same recognizer reads in all three.
+                        FieldInfo engineLang = typeof(Ocr).GetField("redactionLanguage", BindingFlags.NonPublic | BindingFlags.Static);
+                        if (engineLang != null)
+                        {
+                            string tag = TagOf(engineLang.GetValue(null));
+                            if (chosenTag == null) chosenTag = tag;
+                            else Check(tag == chosenTag, "the recognizer changed with the language: " + tag + " vs " + chosenTag);
+                        }
                     }
                 }
             }
             finally { I18n.Apply(was); }
+        }
+
+        static string TagOf(object language) { return language == null ? null : (string)language.GetType().GetProperty("LanguageTag").GetValue(language, null); }
+
+        static void SensitiveToggleGate()
+        {
+            // Without OCR the switch cannot be turned on, but one already on (settings.ini, or on from before) stays
+            // reachable: the user must be able to turn it off, or every capture would be lost with no way back.
+            bool? was = Ocr.MissingOverride;
+            try
+            {
+                Ocr.MissingOverride = true;
+                Settings s = new Settings();
+                Check(!HomeWindow.SensitiveToggleEnabled(s), "off and no OCR: the row is locked");
+                s.SensitiveAuto = true;
+                Check(HomeWindow.SensitiveToggleEnabled(s), "already on: the row stays enabled so it can be turned off");
+                HomeWindow.SetSensitiveAuto(s, false);
+                Check(!s.SensitiveAuto, "toggling off succeeds");
+                HomeWindow.SetSensitiveAuto(s, true);
+                Check(!s.SensitiveAuto, "toggling on while OCR is missing is refused");
+                Ocr.MissingOverride = null;
+                HomeWindow.SetSensitiveAuto(s, true);
+                Check(s.SensitiveAuto, "with OCR the switch turns on");
+                Check(HomeWindow.SensitiveToggleEnabled(s), "and the row is enabled");
+            }
+            finally { Ocr.MissingOverride = was; }
+        }
+
+        static void EngineUnderThreads()
+        {
+            // The engine choice is made once, under a lock, and every read makes its own recognizer from it: 8 readers
+            // starting together all read, none is told there is no OCR, and the machine is not marked as without one.
+            bool? was = Ocr.MissingOverride;
+            FieldInfo[] fields =
+            {
+                typeof(Ocr).GetField("redactionSearched", BindingFlags.NonPublic | BindingFlags.Static),
+                typeof(Ocr).GetField("textSearched", BindingFlags.NonPublic | BindingFlags.Static),
+                typeof(Ocr).GetField("redactionLanguage", BindingFlags.NonPublic | BindingFlags.Static),
+                typeof(Ocr).GetField("textLanguage", BindingFlags.NonPublic | BindingFlags.Static),
+                typeof(Ocr).GetField("redactionFailedAt", BindingFlags.NonPublic | BindingFlags.Static),
+                typeof(Ocr).GetField("textFailedAt", BindingFlags.NonPublic | BindingFlags.Static),
+                typeof(Ocr).GetField("engineSearched", BindingFlags.NonPublic | BindingFlags.Static),   // older shapes
+                typeof(Ocr).GetField("engine", BindingFlags.NonPublic | BindingFlags.Static),
+                typeof(Ocr).GetField("missing", BindingFlags.NonPublic | BindingFlags.Static)
+            };
+            object[] was2 = new object[fields.Length];
+            try
+            {
+                Ocr.MissingOverride = null;
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    if (fields[i] == null) continue;
+                    was2[i] = fields[i].GetValue(null);
+                    fields[i].SetValue(null, fields[i].FieldType == typeof(DateTime) ? (object)DateTime.MinValue : fields[i].FieldType.IsValueType && fields[i].FieldType != typeof(bool) ? Activator.CreateInstance(fields[i].FieldType) : (fields[i].FieldType == typeof(bool) ? (object)false : null));
+                }
+                const int N = 8;
+                Bitmap[] shots = new Bitmap[N];
+                using (Bitmap b = Page(420, 160))
+                {
+                    using (Graphics g = Graphics.FromImage(b))
+                    using (Font f = new Font("Segoe UI", 22f, GraphicsUnit.Pixel))
+                        g.DrawString("Palabra clara", f, Brushes.Black, 20, 40);
+                    for (int i = 0; i < N; i++) shots[i] = new Bitmap(b);   // one per reader: Bitmap's copy ctor is not for concurrent use
+                }
+                ManualResetEvent go = new ManualResetEvent(false);
+                bool[] unavailable = new bool[N];
+                string[] read = new string[N];
+                Thread[] threads = new Thread[N];
+                for (int i = 0; i < N; i++)
+                {
+                    int n = i;
+                    threads[n] = new Thread(delegate()
+                    {
+                        go.WaitOne();
+                        Ocr.ReadError status;
+                        List<Ocr.Word> words = Ocr.ReadWords(shots[n], out status);
+                        unavailable[n] = status == Ocr.ReadError.Unavailable;
+                        read[n] = words == null ? "<null>" : words.Count + " words";
+                    });
+                    threads[n].IsBackground = true;
+                    threads[n].SetApartmentState(ApartmentState.MTA);
+                    threads[n].Start();
+                }
+                Thread.Sleep(500);   // all of them waiting at the barrier
+                go.Set();
+                foreach (Thread t in threads) t.Join(120000);
+                Check(Array.TrueForAll(unavailable, delegate(bool u) { return !u; }), "a concurrent reader was told there is no OCR: " + string.Join(",", Array.ConvertAll(read, delegate(string r) { return r ?? "-"; })));
+                Check(!Ocr.Missing, "the machine got marked as without OCR");
+            }
+            finally
+            {
+                for (int i = 0; i < fields.Length; i++) if (fields[i] != null) fields[i].SetValue(null, was2[i]);
+                Ocr.MissingOverride = was;
+            }
         }
 
         static void JobQueue()

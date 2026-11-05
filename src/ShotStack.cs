@@ -872,6 +872,7 @@ namespace Stackshot
             Bitmap preview = Preview(shot, 600);
             Bitmap forClipboard = settings.CopyToClipboard && !Test ? TrackedData.DeepCopy(shot) : null;
             bool covering;
+            CoverDiscarded = false;
             try { covering = CoverBeforeShowing(shot, path, ref preview, ref forClipboard); }
             catch (OutOfMemoryException ex)
             {
@@ -881,9 +882,13 @@ namespace Stackshot
                 if (preview != null) preview.Dispose();
                 if (forClipboard != null) forClipboard.Dispose();
                 shot.Dispose();
-                Notify(I18n.T("No se pudo revisar la captura", "The capture could not be checked", "Die Aufnahme konnte nicht geprüft werden"),
-                       I18n.T("No hay memoria suficiente para tapar sus datos sensibles: se ha descartado sin mostrarla ni guardarla.", "There is not enough memory to cover its sensitive data: it was discarded without being shown or saved.", "Es ist nicht genug Arbeitsspeicher vorhanden, um die sensiblen Daten zu verdecken: Sie wurde verworfen, ohne gezeigt oder gespeichert zu werden."),
-                       NoticeKind.Error, null, null);
+                DiscardCaptureNotice();
+                return null;
+            }
+            if (covering && CoverDiscarded)
+            {
+                // The covering step itself had to discard the capture: nothing to add, and the veil goes with it.
+                if (preview != null) preview.Dispose();
                 return null;
             }
             if (!covering) BeginWrite(path, shot, delegate(Exception ex)

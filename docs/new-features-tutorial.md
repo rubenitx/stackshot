@@ -105,8 +105,11 @@ Stackshot integrates directly with Windows 10 and 11's built-in OCR subsystem ([
 
 - **Spanish first**: when Windows has a Spanish recognizer, it is used. It also reads English well and knows `ñ`, accented vowels (`á`, `é`, `í`, `ó`, `ú`) and inverted punctuation (`¿`, `¡`).
 - **Then any other Latin-script recognizer** (English, German, French, Italian, Portuguese...), sorted by tag so the choice never depends on the order Windows lists them in.
-- **Then the user's profile languages**, as long as they are Latin-script.
-- **Never a non-Latin recognizer** (Arabic, Chinese, Hindi, Bengali...): it would read Latin screen text so badly that redaction would miss everything — which is worse than having no OCR at all, so Stackshot stays fail-closed instead.
+- **Copy text and the history search** go on from there: the interface language, your Windows languages, and finally any recognizer installed. On a Windows whose only recognizer is non-Latin, copy text and history still work.
+- **Redaction (sensitive data) stops there and never uses a non-Latin recognizer** (Arabic, Chinese, Hindi, Bengali...): it would read Latin screen text so badly that redaction would miss everything — which is worse than having no OCR at all, so Stackshot stays fail-closed instead.
+
+### The sensitive-data switch without OCR
+Without a (Latin-script) recognizer the switch under **Settings › General › Sensitive data** is greyed out with an explanation of how to install an OCR language. A switch already on stays reachable, so it can always be turned off; it cannot be turned back on until an OCR language is installed. If your organization forces the option by policy, captures are discarded and one warning per session says so and points to the OCR language pack (or IT).
 
 ### Installing an OCR language
 Windows Settings › Apps › Optional features › Add a language pack with text recognition. Stackshot detects it and offers the sensitive-data option again.

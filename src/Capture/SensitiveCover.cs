@@ -212,6 +212,15 @@ namespace Stackshot
             t.Start();
         }
 
+        // A job that never got to run (starting its thread failed, for instance with no memory): everything it held is
+        // let go, so nothing waits for a check that will never happen. The caller answers for the capture.
+        internal void Abort()
+        {
+            if (Shot != null) Shot.Dispose();
+            Checked(Path);
+            CoverStore.Settle(Path);
+        }
+
         public void Run()
         {
             Stopwatch sw = Stopwatch.StartNew();

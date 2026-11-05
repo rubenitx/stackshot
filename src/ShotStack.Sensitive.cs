@@ -22,33 +22,59 @@ namespace Stackshot
         bool CoverBeforeShowing(Bitmap shot, string path, ref Bitmap preview, ref Bitmap forClipboard)
         {
             if (!CoversCaptures(settings)) return false;
+            CoverDiscarded = false;
             // Anything that needs the file (drag, editor, copy, save) waits for the covered one.
             lock (writing) writing.Add(path);
             CoverJob job = SensitiveCover.Prepare(shot, path, ref preview, ref forClipboard);
-            bool wantCopy = job.WantCopy;
-            uint seq = 0;
-            if (wantCopy)
+            try
             {
-                try { Clipboard.Clear(); }
-                catch (Exception ex) { Log("Portapapeles: " + ex.Message); }
-                seq = GetClipboardSequenceNumber();
+                bool wantCopy = job.WantCopy;
+                uint seq = 0;
+                if (wantCopy)
+                {
+                    try { Clipboard.Clear(); }
+                    catch (Exception ex) { Log("Portapapeles: " + ex.Message); }
+                    seq = GetClipboardSequenceNumber();
+                }
+                job.Write = delegate(Bitmap img) { BeginWrite(path, img, delegate(Exception ex) { Ui(delegate { CoverWriteFailed(path, ex); }); }); };
+                job.Done = delegate(CoverOutcome r)
+                {
+                    if (r.Error != null) DoneWriting(path);
+                    if (exiting) { Discard(r); return; }
+                    try { sync.BeginInvoke((Action)delegate { Covered(path, r, wantCopy, seq); }); }
+                    catch (Exception ex) { Log("Ui: " + ex.Message); Discard(r); }
+                };
+                // Runs after SaveCapture has added the card.
+                Ui(delegate
+                {
+                    Card c = Find(path);
+                    if (c != null) c.CoverNote(I18n.T("Revisando datos\u2026", "Checking data\u2026"));
+                });
+                job.Start();
             }
-            job.Write = delegate(Bitmap img) { BeginWrite(path, img, delegate(Exception ex) { Ui(delegate { CoverWriteFailed(path, ex); }); }); };
-            job.Done = delegate(CoverOutcome r)
+            catch (Exception ex)
             {
-                if (r.Error != null) DoneWriting(path);
-                if (exiting) { Discard(r); return; }
-                try { sync.BeginInvoke((Action)delegate { Covered(path, r, wantCopy, seq); }); }
-                catch (Exception ex) { Log("Ui: " + ex.Message); Discard(r); }
-            };
-            // Runs after SaveCapture has added the card.
-            Ui(delegate
-            {
-                Card c = Find(path);
-                if (c != null) c.CoverNote(I18n.T("Revisando datos\u2026", "Checking data\u2026"));
-            });
-            job.Start();
+                // The capture is the job's already: a failure handing it over is fail-closed too (never shown, copied or
+                // written), with everything the job held let go.
+                Log("Datos sensibles: " + ex.Message);
+                job.Abort();
+                lock (writing) writing.Remove(path);
+                CoverDiscarded = true;
+                DiscardCaptureNotice();
+            }
             return true;
+        }
+
+        // Set when the covering step itself had to discard the capture (it could not even be handed over): SaveCapture
+        // must not add a card for it.
+        internal bool CoverDiscarded;
+
+        // The fail-closed notice when a capture cannot be covered at all.
+        void DiscardCaptureNotice()
+        {
+            Notify(I18n.T("No se pudo revisar la captura", "The capture could not be checked", "Die Aufnahme konnte nicht gepr\u00FCft werden"),
+                   I18n.T("No se pudieron tapar sus datos sensibles, as\u00ED que se ha descartado: nunca se muestra ni se guarda sin revisar.", "Its sensitive data could not be covered, so it was discarded: it is never shown or saved unchecked.", "Ihre sensiblen Daten konnten nicht geschw\u00E4rzt werden, deshalb wurde sie verworfen: Sie wird nie ungepr\u00FCft gezeigt oder gespeichert."),
+                   NoticeKind.Error, null, null);
         }
 
         static void Discard(CoverOutcome r)
@@ -66,10 +92,18 @@ namespace Stackshot
         {
             if (OcrMissingWarned) return;
             OcrMissingWarned = true;
+            // The switch is named by its own setting title, so the quoted words are the ones the user sees in whatever
+            // language (the German one comes from the same catalog key, never retyped here).
+            string title = PolicyTitles.Sensitive;
+            // What a policy forces cannot be turned off: say who requires it instead of naming a way out the user has.
             Notify(I18n.T("Las capturas se descartan: no hay reconocimiento de texto (OCR)", "Captures are discarded: no text recognition (OCR)", "Aufnahmen werden verworfen: keine Texterkennung (OCR)"),
-                   I18n.T("Con \u00ABTapar los datos sensibles al capturar\u00BB activado, cada captura se revisa antes de mostrarla y este Windows no tiene OCR instalado, as\u00ED que se descarta para que nada se muestre sin revisar. Instala un idioma de OCR (Configuraci\u00F3n de Windows > Aplicaciones > Caracter\u00EDsticas opcionales) o desactiva la opci\u00F3n.",
-                          "With \u201CAuto-redact sensitive data on capture\u201D on, every capture is checked before it is shown, and this Windows has no OCR installed, so captures are discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or turn the option off.",
-                          "Mit aktiviertem \u201ESensible Daten bei der Aufnahme automatisch schw\u00E4rzen\u201C wird jede Aufnahme gepr\u00FCft, bevor sie gezeigt wird, und dieses Windows hat keine OCR installiert, daher werden Aufnahmen verworfen, statt ungepr\u00FCft gezeigt zu werden. Installiere eine OCR-Sprache (Windows-Einstellungen > Apps > Optionale Features) oder schalte die Option aus."),
+                   Policy.SensitiveForced
+                       ? I18n.T("Tu organizaci\u00F3n exige \u00AB" + title + "\u00BB, pero este Windows no tiene OCR instalado, as\u00ED que cada captura se descarta para que nada se muestre sin revisar. Instala un idioma de OCR (Configuraci\u00F3n de Windows > Aplicaciones > Caracter\u00EDsticas opcionales) o consulta con inform\u00E1tica.",
+                                "Your organization requires \u201C" + title + "\u201D, but this Windows has no OCR installed, so every capture is discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or contact IT.",
+                                "Deine Organisation verlangt \u201E" + title + "\u201C, aber dieses Windows hat keine OCR installiert, daher wird jede Aufnahme verworfen, statt ungepr\u00FCft gezeigt zu werden. Installiere eine OCR-Sprache (Windows-Einstellungen > Apps > Optionale Features) oder wende dich an die IT.")
+                       : I18n.T("Con \u00AB" + title + "\u00BB activado, cada captura se revisa antes de mostrarla y este Windows no tiene OCR instalado, as\u00ED que se descarta para que nada se muestre sin revisar. Instala un idioma de OCR (Configuraci\u00F3n de Windows > Aplicaciones > Caracter\u00EDsticas opcionales) o desactiva la opci\u00F3n.",
+                                "With \u201C" + title + "\u201D on, every capture is checked before it is shown, and this Windows has no OCR installed, so captures are discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or turn the option off.",
+                                "Mit \u201E" + title + "\u201C aktiviert wird jede Aufnahme gepr\u00FCft, bevor sie gezeigt wird, und dieses Windows hat keine OCR installiert, daher werden Aufnahmen verworfen, statt ungepr\u00FCft gezeigt zu werden. Installiere eine OCR-Sprache (Windows-Einstellungen > Apps > Optionale Features) oder schalte die Option aus."),
                    NoticeKind.Warning, null, null);
         }
 

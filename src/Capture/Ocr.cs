@@ -239,56 +239,99 @@ namespace Stackshot
             return LatinLanguages.Contains(dash > 0 ? tag.Substring(0, dash) : tag);
         }
 
-        // The recognizer, chosen once and kept: Spanish when Windows has it (it reads English too, and knows ñ and
-        // accents), then any other Latin-script one (English, German, French, Italian, Portuguese...), then the user's
-        // languages, otherwise none. It does not follow the interface language: the data to find is the same whatever
-        // language the app shows.
-        static OcrEngine engine;
-        static bool engineSearched;
+        // The language each purpose recognizes with, searched once and kept: redaction never uses a non-Latin one, copy
+        // text and the history index fall back to anything installed. Each read creates its own OcrEngine from the
+        // chosen language, so no engine is ever shared between threads (Windows.Media.Ocr does not promise a shared one
+        // is safe to recognize with from two threads at once).
+        static Windows.Globalization.Language redactionLanguage, textLanguage;
+        static bool redactionSearched, textSearched;
+        static DateTime redactionFailedAt = DateTime.MinValue, textFailedAt = DateTime.MinValue;
+        static readonly object engineLock = new object();
 
-        // Tests cut the OCR off (or pin it on) without needing a Windows without it.
+        // A search that fails or finds nothing is retried after a while, never cached for good: a language pack can be
+        // installed (or the answer change) while Stackshot runs.
+        static readonly TimeSpan RetryAfter = TimeSpan.FromSeconds(30);
+
+        // Tests cut the OCR off with true: every read answers Unavailable and Missing is on. False runs the real search
+        // exactly like no override at all (it never pins a machine without OCR as having one, nor leaves anything
+        // behind when the override goes).
         internal static bool? MissingOverride = null;
 
-        // Whether this Windows has no text recognizer at all: looked for once, and kept, so the settings and the notices
-        // can react without trying every time. A read that ends Unavailable remembers it too.
-        static bool? missing;
-
+        // Whether redaction has no usable recognizer on this Windows: the Latin-script search runs once and its answer
+        // is kept (a failed one is retried after a while). The settings and the notices read this; it never depends on
+        // the interface language.
         public static bool Missing
         {
             get
             {
                 if (MissingOverride != null) return MissingOverride.Value;
-                if (missing == null)
-                {
-                    try { missing = Engine() == null; }
-                    catch (Exception ex) { ShotStack.Log("OCR: " + ex.Message); missing = true; }
-                }
-                return missing.Value;
+                return Chosen(true) == null;
             }
         }
 
-        static OcrEngine Engine()
+        // The language the recognizers of one purpose are created from, or null when there is none. The search runs
+        // once under the lock (two readers starting together must both see the same answer, never a half-made one).
+        static Windows.Globalization.Language Chosen(bool redaction)
         {
-            if (MissingOverride != null) return MissingOverride.Value ? null : engine;
-            if (engineSearched) return engine;
-            engineSearched = true;
-            try { engine = FindEngine(); }
-            catch (Exception ex) { ShotStack.Log("OCR: " + ex.Message); engine = null; }
-            return engine;
+            if (MissingOverride == true) return null;
+            lock (engineLock)
+            {
+                if (redaction)
+                {
+                    if (redactionSearched && (redactionLanguage != null || DateTime.UtcNow - redactionFailedAt < RetryAfter)) return redactionLanguage;
+                    try { redactionLanguage = Search(true); }
+                    catch (Exception ex) { ShotStack.Log("OCR: " + ex.Message); redactionLanguage = null; }
+                    redactionSearched = true;
+                    if (redactionLanguage == null) redactionFailedAt = DateTime.UtcNow;
+                    return redactionLanguage;
+                }
+                if (textSearched && (textLanguage != null || DateTime.UtcNow - textFailedAt < RetryAfter)) return textLanguage;
+                try { textLanguage = Search(false); }
+                catch (Exception ex) { ShotStack.Log("OCR: " + ex.Message); textLanguage = null; }
+                textSearched = true;
+                if (textLanguage == null) textFailedAt = DateTime.UtcNow;
+                return textLanguage;
+            }
         }
 
-        static OcrEngine FindEngine()
+        // The engine of one read: its own, created from the language chosen once for its purpose.
+        static OcrEngine Engine(bool redaction)
+        {
+            if (MissingOverride == true) return null;
+            Windows.Globalization.Language l = Chosen(redaction);
+            return l == null ? null : OcrEngine.TryCreateFromLanguage(l);
+        }
+
+        // The language to recognize with: Spanish first (it reads English too, and knows ñ and accents), then any
+        // other Latin-script one, sorted so the choice never depends on the order Windows lists them in. Redaction
+        // stops there: a non-Latin recognizer would read our screens so badly that every capture would go through
+        // unchecked, which is worse than having no OCR at all. Copy text and the history index go on to the interface
+        // language, the user's languages and any recognizer installed, as they always did.
+        static Windows.Globalization.Language Search(bool latinOnly)
         {
             List<Windows.Globalization.Language> available = new List<Windows.Globalization.Language>();
-            foreach (Windows.Globalization.Language l in OcrEngine.AvailableRecognizerLanguages) available.Add(l);
+            foreach (Windows.Globalization.Language al in OcrEngine.AvailableRecognizerLanguages) available.Add(al);
             // Sorted, so the choice never depends on the order Windows lists them in.
             available.Sort(delegate(Windows.Globalization.Language a, Windows.Globalization.Language b) { return string.Compare(a.LanguageTag, b.LanguageTag, StringComparison.OrdinalIgnoreCase); });
-            foreach (Windows.Globalization.Language l in available)
-                if (Latin(l) && l.LanguageTag.StartsWith("es", StringComparison.OrdinalIgnoreCase)) return OcrEngine.TryCreateFromLanguage(l);
-            foreach (Windows.Globalization.Language l in available)
-                if (Latin(l)) return OcrEngine.TryCreateFromLanguage(l);
-            OcrEngine e = OcrEngine.TryCreateFromUserProfileLanguages();
-            if (e != null && Latin(e.RecognizerLanguage)) return e;
+            Windows.Globalization.Language l = First(available, delegate(Windows.Globalization.Language a) { return Latin(a) && a.LanguageTag.StartsWith("es", StringComparison.OrdinalIgnoreCase); });
+            if (l != null) return l;
+            l = First(available, Latin);
+            if (l != null) return l;
+            if (latinOnly) return null;
+            l = First(available, delegate(Windows.Globalization.Language a) { return a.LanguageTag.StartsWith(I18n.Language, StringComparison.OrdinalIgnoreCase); });
+            if (l != null) return l;
+            try
+            {
+                OcrEngine e = OcrEngine.TryCreateFromUserProfileLanguages();
+                if (e != null) return e.RecognizerLanguage;
+            }
+            catch (Exception ex) { ShotStack.Log("OCR: " + ex.Message); }
+            return available.Count > 0 ? available[0] : null;
+        }
+
+        static Windows.Globalization.Language First(List<Windows.Globalization.Language> list, Predicate<Windows.Globalization.Language> ok)
+        {
+            foreach (Windows.Globalization.Language l in list) if (ok(l)) return l;
             return null;
         }
 
@@ -300,8 +343,8 @@ namespace Stackshot
         {
             error = null;
             status = ReadError.None;
-            OcrEngine engine = Engine();
-            if (engine == null) { error = Unavailable; status = ReadError.Unavailable; missing = true; return null; }
+            OcrEngine engine = Engine(false);   // copy text and the history: any recognizer will do
+            if (engine == null) { error = Unavailable; status = ReadError.Unavailable; return null; }
             return Best(engine, image).Text;
         }
 
@@ -311,8 +354,8 @@ namespace Stackshot
         {
             error = null;
             status = ReadError.None;
-            OcrEngine engine = Engine();
-            if (engine == null) { error = Unavailable; status = ReadError.Unavailable; missing = true; return null; }
+            OcrEngine engine = Engine(true);   // redaction: Latin-script only, so nothing goes through unchecked
+            if (engine == null) { error = Unavailable; status = ReadError.Unavailable; return null; }
             Reading r = Best(engine, image);
             List<Word> o = new List<Word>();
             int line = 0;
