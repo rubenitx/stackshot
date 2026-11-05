@@ -395,6 +395,11 @@ namespace Stackshot
             RegisterGermanDocuments(reg);
 
             RegisterGermanCapture(reg);
+            RegisterGermanMascotTalk(reg);
+            RegisterGermanMascotCast(reg);
+            RegisterGermanMascotHome(reg);
+            RegisterGermanHome(reg);
+            RegisterGermanApp(reg);
 
             return Tuple.Create(enMap, esMap);
         }
