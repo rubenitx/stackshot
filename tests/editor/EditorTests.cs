@@ -148,6 +148,7 @@ namespace Stackshot.Tests
                 p.StartInfo.CreateNoWindow = true;
                 p.StartInfo.RedirectStandardError = true;
                 p.StartInfo.RedirectStandardOutput = true;
+                p.StartInfo.StandardErrorEncoding = Encoding.UTF8;
                 p.ErrorDataReceived += delegate(object o, DataReceivedEventArgs e) { if (e.Data != null) lock (err) err.AppendLine(e.Data); };
                 p.OutputDataReceived += delegate { };
                 p.Start();
