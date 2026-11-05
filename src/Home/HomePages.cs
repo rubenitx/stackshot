@@ -899,7 +899,8 @@ namespace Stackshot
                 print);
             Group(I18n.T("Datos sensibles", "Sensitive data"),
                 new ToggleRow(PolicyTitles.Sensitive, I18n.T("DNI, NIE, n\u00FAmero de la Seguridad Social, IBAN, tarjetas, correos y tel\u00E9fonos se tapan solos en cada captura. Se leen en tu equipo; nada sale de \u00E9l.", "National IDs, Social Security numbers, IBANs, cards, emails and phone numbers are covered automatically in every capture. They are read on your computer; nothing leaves it."), "redact!", Mac.Red, Mac.Orange,
-                              delegate { return settings.SensitiveAuto; }, delegate(bool v) { settings.SensitiveAuto = v; }));
+                              delegate { return settings.SensitiveAuto; }, delegate(bool v) { if (v && Ocr.Missing) return; settings.SensitiveAuto = v; })
+                    { When = NoOcr, WhenOff = OcrMissingNote() });
             Note(I18n.T("Apagado, decides t\u00FA: en el editor, \u00ABDatos sensibles\u00BB los tapa con marcas que puedes quitar.", "When off, you decide: in the editor, \u201CSensitive data\u201D covers them with marks you can remove."));
             Group(I18n.T("Capturas guardadas", "Saved captures"),
                 new ToggleRow(I18n.T("Guardar todas las capturas", "Automatically save all captures"), I18n.T("Cada captura y grabaci\u00F3n va tambi\u00E9n a tu carpeta. Apagado, solo las que guardas con Guardar.", "Every capture and recording is saved to your folder. When off, only those manually kept."), "folder", Mac.Blue, Mac.Teal,
@@ -910,6 +911,16 @@ namespace Stackshot
         }
 
         // The folder watch: only where it is already set up or the organization sets its folder; elsewhere nothing at all.
+        // The sensitive-data setting needs OCR: without it the toggle is off limits and says how to get one.
+        static Func<bool> NoOcr = delegate { return !Ocr.Missing; };
+
+        static string OcrMissingNote()
+        {
+            return I18n.T("Este Windows no tiene reconocimiento de texto (OCR): no se puede activar, porque cada captura se descartar\u00EDa sin revisar. Instala un idioma de OCR en Configuraci\u00F3n de Windows > Aplicaciones > Caracter\u00EDsticas opcionales.",
+                          "This Windows has no text recognition (OCR): it cannot be turned on, because every capture would be discarded unchecked. Install an OCR language under Windows Settings > Apps > Optional features.",
+                          "Dieses Windows hat keine Texterkennung (OCR): Sie l\u00E4sst sich nicht einschalten, weil jede Aufnahme ungepr\u00FCft verworfen w\u00FCrde. Installiere eine OCR-Sprache unter Windows-Einstellungen > Apps > Optionale Features.");
+        }
+
         void BuildAdvanced()
         {
             if (!XmlWatch.Offered(settings)) return;

@@ -61,6 +61,9 @@ namespace Stackshot.Tests
                 AppTests.Test(SuiteName, "capture path: off by default, nothing runs; on: the veil hides the thumbnail", Gate);
                 AppTests.Test(SuiteName, "capture path on: file, thumbnail and clipboard copy get only covered pixels", CaptureJob);
                 AppTests.Test(SuiteName, "capture path on: OCR failure discards the capture", CaptureJobFailure);
+                AppTests.Test(SuiteName, "capture path on: out of memory making the veil discards the capture, with a notice", VeilOutOfMemory);
+                AppTests.Test(SuiteName, "capture path on: without OCR the capture is discarded and one warning per session says why", OcrMissingDiscards);
+                AppTests.Test(SuiteName, "redaction: the same findings with the interface in Spanish, English and German", LanguageIndependent);
                 AppTests.Test(SuiteName, "capture path on: a burst of captures is checked one after another, off the caller's thread", JobQueue);
                 AppTests.Test(SuiteName, "originals: kept privately, restored as marks, dropped when edited or gone", Originals);
                 AppTests.Test(SuiteName, "timings: 1080p and 4K synthetic captures", Timings);
@@ -111,7 +114,11 @@ namespace Stackshot.Tests
                 using (Canvas canvas = new Canvas(new Bitmap(image)))
                 {
                     Check(result.Error == null && result.Found.Count == 3, "capture job covers all PEM lines");
-                    Check(!CoverStore.Has(Path.Combine(work, "pem.png")) && !File.Exists(Path.Combine(CoverStore.Dir, "pem.png")), "no unredacted copy of the key on disk");
+                    // The original kept in CoverStore has the credential painted over: no unredacted copy on disk, and
+                    // the cover stays as removable as any other.
+                    Check(File.Exists(Path.Combine(CoverStore.Dir, "pem.png")), "the original is kept with the key painted over");
+                    using (Bitmap kept = new Bitmap(Path.Combine(CoverStore.Dir, "pem.png")))
+                        Check(kept.GetPixel(50, 62).R < 32, "no unredacted copy of the key on disk");
                     Check(written.GetPixel(50, 62).R < 32, "the payload is covered in the output");
                     canvas.AddCovers(SensitiveCover.Boxes(findings));
                     using (Bitmap output = canvas.Render())
@@ -817,7 +824,7 @@ namespace Stackshot.Tests
                         }
                     }
                     Check(f.Count <= 7, name + ": more findings than data: " + Show(f));
-                    Check(kinds.Count >= ((string)c[0] == "Consolas" ? 3 : 5), name + ": only " + kinds.Count + " of 7 kinds");
+                    Check(kinds.Count >= 5, name + ": only " + kinds.Count + " of 7 kinds");
                     Console.WriteLine("    " + name + ": " + f.Count + " of 7" + (f.Count < 7 ? "  read: " + Joined(words) : ""));
                 }
             }
@@ -1227,6 +1234,114 @@ namespace Stackshot.Tests
             }
         }
 
+        static void VeilOutOfMemory()
+        {
+            // Out of memory making the veil: SaveCapture discards the capture fail-closed (nothing shown, copied or
+            // written) and says so, instead of crashing or handing out the uncovered capture.
+            Settings s = new Settings();
+            s.SensitiveAuto = true;
+            string temp = Path.Combine(work, "rev-velo");
+            Directory.CreateDirectory(temp);
+            Func<Bitmap, Bitmap> was = SensitiveCover.VeilHook;
+            bool wasTest = ShotStack.Test;
+            SensitiveCover.VeilHook = delegate(Bitmap p) { throw new OutOfMemoryException(); };
+            ShotStack.Test = true;   // the notice is recorded, never shown
+            try
+            {
+                using (Control ui = new Control())
+                {
+                    ui.CreateControl();
+                    ShotStack st = Stack(s, temp, ui);
+                    ShotStack.ForgetRecorded();
+                    using (Bitmap shot = Screenshot(800, 400, true))
+                    {
+                        string path = Path.Combine(temp, "Captura 2026-10-12 16.00.00.png");
+                        string got = st.SaveCapture(shot, "Prueba", new ShotStack.CaptureStart());
+                        Check(got == null, "no card is added");
+                        Pump(200);
+                        Check(!File.Exists(path) && !CoverJob.IsChecking(path), "nothing written or held");
+                    }
+                    bool told = false;
+                    foreach (Notice n in ShotStack.Recorded) if (n.Kind == NoticeKind.Error) told = true;
+                    Check(told, "a notice explains the discard");
+                }
+            }
+            finally { SensitiveCover.VeilHook = was; ShotStack.Test = wasTest; }
+        }
+
+        static void OcrMissingDiscards()
+        {
+            // Without OCR and covering on (by choice or by policy), every capture is discarded fail-closed; ONE
+            // warning per session explains it, instead of a silent loss per capture.
+            Settings s = new Settings();
+            s.SensitiveAuto = true;
+            string temp = Path.Combine(work, "rev-sin-ocr");
+            Directory.CreateDirectory(temp);
+            bool? was = Ocr.MissingOverride;
+            bool wasWarned = ShotStack.OcrMissingWarned;
+            bool wasTest = ShotStack.Test;
+            ShotStack.OcrMissingWarned = false;
+            ShotStack.Test = true;   // the warning is recorded, never shown
+            try
+            {
+                Ocr.MissingOverride = true;
+                using (Control ui = new Control())
+                {
+                    ui.CreateControl();
+                    ShotStack st = Stack(s, temp, ui);
+                    MethodInfo step = typeof(ShotStack).GetMethod("CoverBeforeShowing", Priv);
+                    ShotStack.ForgetRecorded();
+                    for (int i = 0; i < 2; i++)
+                    {
+                        string path = Path.Combine(temp, "Captura 2026-10-12 15.0" + i + ".00.png");
+                        Bitmap shot = Screenshot(800, 400, true);
+                        Bitmap preview = ShotStack.Preview(shot, 600);
+                        object[] args = { shot, path, preview, null };
+                        Check((bool)step.Invoke(st, args), "the covering step takes the capture over");
+                        ((Bitmap)args[2]).Dispose();
+                        Stopwatch sw = Stopwatch.StartNew();
+                        while (sw.ElapsedMilliseconds < 20000 && CoverJob.IsChecking(path)) Pump(20);
+                        Pump(200);
+                        Check(!File.Exists(path), "nothing was written uncovered");
+                        Check(!CoverJob.IsChecking(path), "the job settled");
+                    }
+                    int warnings = 0;
+                    foreach (Notice n in ShotStack.Recorded) if (n.Kind == NoticeKind.Warning) warnings++;
+                    Check(warnings == 1, "one warning per session, not per capture: " + warnings);
+                }
+            }
+            finally { Ocr.MissingOverride = was; ShotStack.OcrMissingWarned = wasWarned; ShotStack.Test = wasTest; }
+        }
+
+        static void LanguageIndependent()
+        {
+            // The recognizer must not follow the interface language: the same capture gives the same findings whatever
+            // language the app shows (the engine is chosen once, Spanish first).
+            string was = I18n.Mode;
+            try
+            {
+                string baseKinds = null;
+                foreach (string lang in new string[] { "es", "en", "de" })
+                {
+                    I18n.Apply(lang);
+                    Bitmap values;
+                    string[] drawn;
+                    using (Bitmap b = Form("Segoe UI", 9f, 1f, out values, out drawn))
+                    using (values)
+                    {
+                        List<SensitiveFinding> f = Sensitive.Find(ReadWords(b), b.Size);
+                        Check(f.Count >= 5, lang + ": only " + f.Count + " findings");
+                        string[] kinds = new string[f.Count];
+                        for (int i = 0; i < f.Count; i++) kinds[i] = f[i].Kind.ToString();
+                        string joined = string.Join(",", kinds);
+                        if (baseKinds == null) baseKinds = joined;
+                        else Check(joined == baseKinds, lang + " reads differently: " + joined + " vs " + baseKinds);
+                    }
+                }
+            }
+            finally { I18n.Apply(was); }
+        }
+
         static void JobQueue()
         {
             const int N = 4;
@@ -1421,6 +1536,7 @@ namespace Stackshot.Tests
             SetField(st, "sync", ui);
             SetField(st, "cards", new List<Card>());
             SetField(st, "editors", new Dictionary<string, Editor>(StringComparer.OrdinalIgnoreCase));
+            SetField(st, "takenAt", new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase));   // SaveCapture's own name register
             return st;
         }
 
@@ -1500,7 +1616,7 @@ namespace Stackshot.Tests
                     string read = Ocr.Read(file, out error) ?? "";
                     string norm = Norm(read);
                     Check(Sensitive.Scan(read.Replace("\n", " ")).Count == 0 && !read.Contains("@") && !norm.Contains("45872391") && !norm.Contains("21000418"), "the index would read: " + read);
-                    Check(norm.Contains("observaci") || norm.Contains("obsetvaci"), "the rest of the capture should still read: " + read);
+                    Check(norm.Contains("observaci"), "the rest of the capture should still read: " + read);
                 }
                 // The capture goes: so does its original, at the stack's next prune.
                 File.Delete(path);

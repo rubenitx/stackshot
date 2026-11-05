@@ -20,7 +20,29 @@ namespace Stackshot
 {
     public static class Ocr
     {
-        public static string Unavailable { get { return I18n.T("Este Windows no tiene el reconocimiento de texto (OCR) instalado.", "This Windows does not have text recognition (OCR) installed."); } }
+        // Why a read gave no text: None when it read (even nothing), Unavailable when this Windows has no text
+        // recognizer at all, Failed for any other problem.
+        public enum ReadError { None, Unavailable, Failed }
+
+        // Every form the "no OCR" message has ever had is remembered here: the words are localized and the interface
+        // language can change between the read and whoever asks, so the error is recognized by its kind, never by
+        // comparing words again.
+        static readonly HashSet<string> unavailableTexts = new HashSet<string>(StringComparer.Ordinal);
+
+        public static string Unavailable { get { return MarkUnavailable(I18n.T("Este Windows no tiene el reconocimiento de texto (OCR) instalado.", "This Windows does not have text recognition (OCR) installed.")); } }
+
+        static string MarkUnavailable(string text)
+        {
+            lock (unavailableTexts) unavailableTexts.Add(text);
+            return text;
+        }
+
+        // Whether this error means the computer has no OCR at all (and not, say, that one image could not be read).
+        public static bool IsUnavailable(string error)
+        {
+            if (error == null) return false;
+            lock (unavailableTexts) return unavailableTexts.Contains(error);
+        }
         public const int MaxSide = 10000;     // OcrEngine.MaxImageDimension on Windows 10 and 11
         const int Margin = 20;                // around each piece, in the prepared image
         // Tall images are read in pieces this high (source pixels), overlapping: Windows' engine misses lines on big
@@ -70,21 +92,37 @@ namespace Stackshot
         // the UI thread.
         public static string Read(Bitmap image, out string error)
         {
+            ReadError status;
+            return Read(image, out error, out status);
+        }
+
+        // The same, with the kind of the failure apart from its words: Unavailable when this Windows has no text
+        // recognizer (it stays so until one is installed), Failed otherwise, None when it read.
+        public static string Read(Bitmap image, out ReadError status)
+        {
+            string error;
+            return Read(image, out error, out status);
+        }
+
+        static string Read(Bitmap image, out string error, out ReadError status)
+        {
             error = null;
-            try { return Recognize(image, out error); }
+            status = ReadError.None;
+            try { return Recognize(image, out error, out status); }
             catch (Exception ex)
             {
                 ShotStack.Log("OCR: " + ex);
-                error = Failure(ex);
+                error = Failure(ex, out status);
                 return null;
             }
         }
 
         // TypeLoadException and friends: a Windows without the API.
-        static string Failure(Exception ex)
+        static string Failure(Exception ex, out ReadError status)
         {
-            return ex is TypeLoadException || ex is FileNotFoundException || ex is System.Runtime.InteropServices.COMException && ((System.Runtime.InteropServices.COMException)ex).ErrorCode == unchecked((int)0x80040154)
-                ? Unavailable : I18n.T("No se ha podido leer el texto: ", "Could not read the text: ") + ex.Message;
+            status = ex is TypeLoadException || ex is FileNotFoundException || ex is System.Runtime.InteropServices.COMException && ((System.Runtime.InteropServices.COMException)ex).ErrorCode == unchecked((int)0x80040154)
+                ? ReadError.Unavailable : ReadError.Failed;
+            return status == ReadError.Unavailable ? Unavailable : I18n.T("No se ha podido leer el texto: ", "Could not read the text: ") + ex.Message;
         }
 
         // A word read from an image: Box is where it is in the image given (pixels), Upright the same box where the text
@@ -101,12 +139,26 @@ namespace Stackshot
         // turns). Empty when there is no text, null with error when it could not be read. Blocks: call it off the UI thread.
         public static List<Word> ReadWords(Bitmap image, out string error)
         {
+            ReadError status;
+            return ReadWords(image, out error, out status);
+        }
+
+        // The same, with the kind of the failure apart from its words (see Read).
+        public static List<Word> ReadWords(Bitmap image, out ReadError status)
+        {
+            string error;
+            return ReadWords(image, out error, out status);
+        }
+
+        public static List<Word> ReadWords(Bitmap image, out string error, out ReadError status)
+        {
             error = null;
-            try { return RecognizeWords(image, out error); }
+            status = ReadError.None;
+            try { return RecognizeWords(image, out error, out status); }
             catch (Exception ex)
             {
                 ShotStack.Log("OCR: " + ex);
-                error = Failure(ex);
+                error = Failure(ex, out status);
                 return null;
             }
         }
@@ -174,15 +226,69 @@ namespace Stackshot
             return Color.FromArgb((c.R * a + 255 * (255 - a)) / 255, (c.G * a + 255 * (255 - a)) / 255, (c.B * a + 255 * (255 - a)) / 255);
         }
 
-        // The recognizer: matches the active language (Spanish or English) when Windows has it, otherwise the
-        // user's languages, otherwise any.
+        // Languages whose writing is Latin: the Windows recognizers that read our screens' text well. A non-Latin one
+        // (Arabic, Chinese, Hindi, Bengali...) reads Latin text so badly that redacting with it would find nothing and
+        // let every capture through uncovered, which is worse than having no OCR at all: it is never picked.
+        static readonly HashSet<string> LatinLanguages = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        { "es", "en", "de", "fr", "it", "pt", "nl", "ca", "eu", "gl", "sv", "da", "nb", "no", "nn", "fi", "is", "pl", "cs", "sk", "sl", "hr", "hu", "ro", "tr", "et", "lv", "lt", "sq", "vi", "id", "ms", "fil", "sw", "cy", "ga", "mt" };
+
+        static bool Latin(Windows.Globalization.Language l)
+        {
+            string tag = l.LanguageTag;
+            int dash = tag.IndexOf('-');
+            return LatinLanguages.Contains(dash > 0 ? tag.Substring(0, dash) : tag);
+        }
+
+        // The recognizer, chosen once and kept: Spanish when Windows has it (it reads English too, and knows ñ and
+        // accents), then any other Latin-script one (English, German, French, Italian, Portuguese...), then the user's
+        // languages, otherwise none. It does not follow the interface language: the data to find is the same whatever
+        // language the app shows.
+        static OcrEngine engine;
+        static bool engineSearched;
+
+        // Tests cut the OCR off (or pin it on) without needing a Windows without it.
+        internal static bool? MissingOverride = null;
+
+        // Whether this Windows has no text recognizer at all: looked for once, and kept, so the settings and the notices
+        // can react without trying every time. A read that ends Unavailable remembers it too.
+        static bool? missing;
+
+        public static bool Missing
+        {
+            get
+            {
+                if (MissingOverride != null) return MissingOverride.Value;
+                if (missing == null)
+                {
+                    try { missing = Engine() == null; }
+                    catch (Exception ex) { ShotStack.Log("OCR: " + ex.Message); missing = true; }
+                }
+                return missing.Value;
+            }
+        }
+
         static OcrEngine Engine()
         {
-            foreach (Windows.Globalization.Language l in OcrEngine.AvailableRecognizerLanguages)
-                if (l.LanguageTag.StartsWith(I18n.Language, StringComparison.OrdinalIgnoreCase)) return OcrEngine.TryCreateFromLanguage(l);
+            if (MissingOverride != null) return MissingOverride.Value ? null : engine;
+            if (engineSearched) return engine;
+            engineSearched = true;
+            try { engine = FindEngine(); }
+            catch (Exception ex) { ShotStack.Log("OCR: " + ex.Message); engine = null; }
+            return engine;
+        }
+
+        static OcrEngine FindEngine()
+        {
+            List<Windows.Globalization.Language> available = new List<Windows.Globalization.Language>();
+            foreach (Windows.Globalization.Language l in OcrEngine.AvailableRecognizerLanguages) available.Add(l);
+            // Sorted, so the choice never depends on the order Windows lists them in.
+            available.Sort(delegate(Windows.Globalization.Language a, Windows.Globalization.Language b) { return string.Compare(a.LanguageTag, b.LanguageTag, StringComparison.OrdinalIgnoreCase); });
+            foreach (Windows.Globalization.Language l in available)
+                if (Latin(l) && l.LanguageTag.StartsWith("es", StringComparison.OrdinalIgnoreCase)) return OcrEngine.TryCreateFromLanguage(l);
+            foreach (Windows.Globalization.Language l in available)
+                if (Latin(l)) return OcrEngine.TryCreateFromLanguage(l);
             OcrEngine e = OcrEngine.TryCreateFromUserProfileLanguages();
-            if (e != null) return e;
-            foreach (Windows.Globalization.Language l in OcrEngine.AvailableRecognizerLanguages) return OcrEngine.TryCreateFromLanguage(l);
+            if (e != null && Latin(e.RecognizerLanguage)) return e;
             return null;
         }
 
@@ -190,21 +296,23 @@ namespace Stackshot
         // belongs to the piece whose own part (its rows minus half the overlap at a shared edge) holds its centre, so the
         // overlap never gives a line twice and a line cut by a piece's edge is read whole from the other.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static string Recognize(Bitmap image, out string error)
+        static string Recognize(Bitmap image, out string error, out ReadError status)
         {
             error = null;
+            status = ReadError.None;
             OcrEngine engine = Engine();
-            if (engine == null) { error = Unavailable; return null; }
+            if (engine == null) { error = Unavailable; status = ReadError.Unavailable; missing = true; return null; }
             return Best(engine, image).Text;
         }
 
         // The words of the reading Recognize keeps, their boxes turned back to the image as given.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static List<Word> RecognizeWords(Bitmap image, out string error)
+        static List<Word> RecognizeWords(Bitmap image, out string error, out ReadError status)
         {
             error = null;
+            status = ReadError.None;
             OcrEngine engine = Engine();
-            if (engine == null) { error = Unavailable; return null; }
+            if (engine == null) { error = Unavailable; status = ReadError.Unavailable; missing = true; return null; }
             Reading r = Best(engine, image);
             List<Word> o = new List<Word>();
             int line = 0;

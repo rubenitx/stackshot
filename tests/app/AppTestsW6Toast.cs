@@ -371,7 +371,7 @@ namespace Stackshot.Tests
                 new[] { "ShotStack.OpenArrivedXml", null },         // ... only through TellArrivedXml
                 new[] { "ShotStack.RescueOrphans", folder },        // recovered recording: its folder
                 new[] { "ShotStack.OpenLatestXml", plain },
-                new[] { "ShotStack.Covered", plain },               // sensitive data not checked
+                new[] { "ShotStack.Covered", button },               // sensitive data not checked: error notice with kind (and the one-per-session OCR warning)
                 new[] { "Session.Outcome", page },                  // recording stopped or choppy: Grabación
                 new[] { "Session.CineOutcome", plain },
                 new[] { "ScrollCapture.Start", plain },

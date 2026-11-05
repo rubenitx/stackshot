@@ -871,7 +871,21 @@ namespace Stackshot
             Size size = shot.Size;
             Bitmap preview = Preview(shot, 600);
             Bitmap forClipboard = settings.CopyToClipboard && !Test ? TrackedData.DeepCopy(shot) : null;
-            bool covering = CoverBeforeShowing(shot, path, ref preview, ref forClipboard);
+            bool covering;
+            try { covering = CoverBeforeShowing(shot, path, ref preview, ref forClipboard); }
+            catch (OutOfMemoryException ex)
+            {
+                // Fail closed: without the veil the capture must never be shown, copied or written uncovered.
+                Log("Datos sensibles, velo: " + ex.Message);
+                lock (writing) writing.Remove(path);
+                if (preview != null) preview.Dispose();
+                if (forClipboard != null) forClipboard.Dispose();
+                shot.Dispose();
+                Notify(I18n.T("No se pudo revisar la captura", "The capture could not be checked", "Die Aufnahme konnte nicht geprüft werden"),
+                       I18n.T("No hay memoria suficiente para tapar sus datos sensibles: se ha descartado sin mostrarla ni guardarla.", "There is not enough memory to cover its sensitive data: it was discarded without being shown or saved.", "Es ist nicht genug Arbeitsspeicher vorhanden, um die sensiblen Daten zu verdecken: Sie wurde verworfen, ohne gezeigt oder gespeichert zu werden."),
+                       NoticeKind.Error, null, null);
+                return null;
+            }
             if (!covering) BeginWrite(path, shot, delegate(Exception ex)
             {
                 Ui(delegate

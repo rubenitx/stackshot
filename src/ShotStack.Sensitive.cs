@@ -57,6 +57,22 @@ namespace Stackshot
             if (r.Copy != null) r.Copy.Dispose();
         }
 
+        // Said already in this session: the warning about captures blocked without OCR shows once, not per capture.
+        internal static bool OcrMissingWarned;
+
+        // One clear warning per session while covering is on (by choice or by policy) and this Windows has no OCR: the
+        // captures are discarded fail-closed, and here is why.
+        void WarnOcrMissing()
+        {
+            if (OcrMissingWarned) return;
+            OcrMissingWarned = true;
+            Notify(I18n.T("Las capturas se descartan: no hay reconocimiento de texto (OCR)", "Captures are discarded: no text recognition (OCR)", "Aufnahmen werden verworfen: keine Texterkennung (OCR)"),
+                   I18n.T("Con \u00ABTapar los datos sensibles al capturar\u00BB activado, cada captura se revisa antes de mostrarla y este Windows no tiene OCR instalado, as\u00ED que se descarta para que nada se muestre sin revisar. Instala un idioma de OCR (Configuraci\u00F3n de Windows > Aplicaciones > Caracter\u00EDsticas opcionales) o desactiva la opci\u00F3n.",
+                          "With \u201CAuto-redact sensitive data on capture\u201D on, every capture is checked before it is shown, and this Windows has no OCR installed, so captures are discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or turn the option off.",
+                          "Mit aktiviertem \u201ESensible Daten bei der Aufnahme automatisch schw\u00E4rzen\u201C wird jede Aufnahme gepr\u00FCft, bevor sie gezeigt wird, und dieses Windows hat keine OCR installiert, daher werden Aufnahmen verworfen, statt ungepr\u00FCft gezeigt zu werden. Installiere eine OCR-Sprache (Windows-Einstellungen > Apps > Optionale Features) oder schalte die Option aus."),
+                   NoticeKind.Warning, null, null);
+        }
+
         // The check is over: the card shows the capture as it is now with a note, and the copy goes to the clipboard
         // unless something else was copied meanwhile.
         void Covered(string path, CoverOutcome r, bool wantCopy, uint seq)
@@ -66,9 +82,12 @@ namespace Stackshot
             {
                 Discard(r);
                 RemoveByPath(path);
-                Notify(I18n.T("No se pudo guardar la captura", "Could not save capture"),
-                       I18n.T("Se ha descartado porque no se pudo revisar si conten\u00EDa datos sensibles.", "The capture was discarded because it could not be checked for sensitive data.") + " " + r.Error,
-                       NoticeKind.Error, null, null);
+                // Without OCR every capture is blocked, not just this one: one clear warning per session, instead of
+                // the same loss repeated silently (or once per capture) with no explanation.
+                if (r.OcrMissing) WarnOcrMissing();
+                else Notify(I18n.T("No se pudo guardar la captura", "Could not save capture"),
+                            I18n.T("Se ha descartado porque no se pudo revisar si conten\u00EDa datos sensibles.", "The capture was discarded because it could not be checked for sensitive data.") + " " + r.Error,
+                            NoticeKind.Error, null, null);
                 return;
             }
             Card c = Find(path);

@@ -70,7 +70,7 @@ The **Sensitive Data Shield** ([`src/Capture/Sensitive.cs`](../src/Capture/Sensi
 5. If you want to reveal a specific item, simply click its redaction box and press <kbd>Delete</kbd> or <kbd>Backspace</kbd>.
 
 > [!TIP]
-> **Automatic Background Redaction**: Enable it under **Settings › General › Sensitive data**. If OCR reports an error, Stackshot discards the capture without saving or copying it. When it detects credentials, it saves only the covered capture. For other detected personal data, Stackshot can keep an unredacted copy in its local data folder so that covers can be edited.
+> **Automatic Background Redaction**: Enable it under **Settings › General › Sensitive data**. The switch needs Windows' OCR installed: without it, it is greyed out with an explanation of how to install an OCR language (Windows Settings › Apps › Optional features). If OCR reports an error, Stackshot discards the capture without saving or copying it (without OCR, once per session a warning says captures are blocked and why). When it detects credentials, it saves only the covered capture: the copy it keeps locally in its data folder already has the credential painted over, so no unredacted pixel of a key ever reaches the disk, and covers of other data stay removable. For other detected personal data, Stackshot can keep an unredacted copy in its local data folder so that covers can be edited.
 
 ---
 
@@ -96,16 +96,17 @@ Editor shortcuts adapt to your active language ([`src/Editor/Editor.cs`](../src/
 > [!NOTE]
 > All hotkeys (<kbd>A</kbd>/<kbd>F</kbd> for Arrow, <kbd>S</kbd>/<kbd>O</kbd> for Spotlight) work seamlessly across all language modes.
 
-![Localized Editor Tool Hotkeys](screens/editor-hotkeys.png)
-
 ---
 
-## 6. Dynamic UI-Aware OCR Engine
+## 6. The OCR Engine (and why it does not follow the UI language)
 
 ### What it is
-Stackshot integrates directly with Windows 10 and 11's built-in OCR subsystem ([`src/Capture/Ocr.cs`](../src/Capture/Ocr.cs)). The recognition engine uses your current UI setting:
+Stackshot integrates directly with Windows 10 and 11's built-in OCR subsystem ([`src/Capture/Ocr.cs`](../src/Capture/Ocr.cs)). The recognizer is chosen once per session, independently of the interface language, so the same capture always reads and redacts the same:
 
-- In **German mode**, it prioritizes German OCR recognition (`de-DE`, `de-AT`, `de-CH`), accurately detecting umlauts (`ä`, `ö`, `ü`) and Eszett (`ß`).
-- In **English mode**, it prioritizes English OCR recognition (`en-US`, `en-GB`), improving accuracy for technical terms, camelCase code identifiers, and English prose.
-- In **Spanish mode**, it prioritizes Spanish recognizers (`es-ES`, `es-MX`), accurately detecting characters like `ñ`, accented vowels (`á`, `é`, `í`, `ó`, `ú`), and inverted punctuation (`¿`, `¡`).
-- When a language pack is not installed on Windows, it gracefully falls back to the user's installed profile languages.
+- **Spanish first**: when Windows has a Spanish recognizer, it is used. It also reads English well and knows `ñ`, accented vowels (`á`, `é`, `í`, `ó`, `ú`) and inverted punctuation (`¿`, `¡`).
+- **Then any other Latin-script recognizer** (English, German, French, Italian, Portuguese...), sorted by tag so the choice never depends on the order Windows lists them in.
+- **Then the user's profile languages**, as long as they are Latin-script.
+- **Never a non-Latin recognizer** (Arabic, Chinese, Hindi, Bengali...): it would read Latin screen text so badly that redaction would miss everything — which is worse than having no OCR at all, so Stackshot stays fail-closed instead.
+
+### Installing an OCR language
+Windows Settings › Apps › Optional features › Add a language pack with text recognition. Stackshot detects it and offers the sensitive-data option again.

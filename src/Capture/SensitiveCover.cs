@@ -57,11 +57,15 @@ namespace Stackshot
         }
 
         // The pending thumbnail has no source pixels. Takes the preview over.
+        // Tests make the veil fail (as when the memory runs out) without needing a machine out of memory.
+        internal static Func<Bitmap, Bitmap> VeilHook = null;
+
         public static Bitmap Veil(Bitmap preview)
         {
             Bitmap placeholder = null;
             try
             {
+                if (VeilHook != null) return VeilHook(preview);
                 placeholder = new Bitmap(preview.Width, preview.Height, PixelFormat.Format32bppPArgb);
                 using (Graphics g = Graphics.FromImage(placeholder)) g.Clear(Color.FromArgb(128, 128, 132));
                 return placeholder;
@@ -112,11 +116,13 @@ namespace Stackshot
 
     // What checking one capture gave: what was found (nothing when it could not be read: Error says why), the thumbnail
     // and the copy for the clipboard of the image as it is now (both the receiver's to dispose; Copy is null when it
-    // wasn't asked for or the capture could not be checked), and how long it took.
+    // wasn't asked for or the capture could not be checked), and how long it took. OcrMissing says the capture was
+    // discarded because this Windows has no OCR at all (one warning per session, not one per capture).
     public sealed class CoverOutcome
     {
         public List<SensitiveFinding> Found = new List<SensitiveFinding>();
         public string Error;
+        public bool OcrMissing;
         public Bitmap Preview, Copy;
         public Size Size;
         public long Ms;
@@ -219,19 +225,33 @@ namespace Stackshot
                     r.Size = Shot.Size;
                     CoverStore.DropStale(Path);
                     string error;
-                    List<Ocr.Word> words = Ocr.ReadWords(Shot, out error);
-                    if (words == null) r.Error = error ?? I18n.T("No se ha podido leer la imagen.", "Could not read the image.");
+                    Ocr.ReadError status;
+                    List<Ocr.Word> words = Ocr.ReadWords(Shot, out error, out status);
+                    if (words == null)
+                    {
+                        r.Error = error ?? I18n.T("No se ha podido leer la imagen.", "Could not read the image.");
+                        r.OcrMissing = status == Ocr.ReadError.Unavailable;
+                    }
                     else
                     {
                         r.Found = Sensitive.Find(words, Shot.Size);
                         if (r.Found.Count > 0)
                         {
-                            // Keep reversible covers for personal data, but never persist
-                            // an unredacted original when the scan found a credential.
-                            if (!r.Found.Exists(delegate(SensitiveFinding f) { return f.Kind == SensitiveKind.Secret; }))
+                            // The original is kept so the covers stay reversible marks. When the scan found a credential,
+                            // the kept copy has just those boxes painted over: no unredacted pixel of a key ever reaches
+                            // the disk, and the other covers can still be undone in the editor.
+                            List<Rectangle> secrets = new List<Rectangle>();
+                            foreach (SensitiveFinding f in r.Found) if (f.Kind == SensitiveKind.Secret && !f.Box.IsEmpty) secrets.Add(f.Box);
+                            try
                             {
-                                try { original = TrackedData.DeepCopy(Shot); }
-                                catch (Exception ex) { ShotStack.Log("Datos sensibles, original: " + ex.Message); }
+                                original = TrackedData.DeepCopy(Shot);
+                                SensitiveCover.Paint(original, secrets);
+                            }
+                            catch (Exception ex)
+                            {
+                                if (original != null) original.Dispose();
+                                original = null;
+                                ShotStack.Log("Datos sensibles, original: " + ex.Message);
                             }
                             SensitiveCover.Paint(Shot, SensitiveCover.Boxes(r.Found));
                         }

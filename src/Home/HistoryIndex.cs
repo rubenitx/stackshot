@@ -595,7 +595,7 @@ namespace Stackshot
                                 text = Clean(text);
                                 state = Read;
                             }
-                            else if (error == Ocr.Unavailable)
+                            else if (Ocr.IsUnavailable(error))
                             {
                                 // Nothing to read with: the pass stops, and the history is searched by name only.
                                 lock (gate) unavailable = true;
