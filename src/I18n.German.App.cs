@@ -371,6 +371,7 @@ namespace Stackshot
 
             // Updater
             reg("Could not start update. ", "No se pudo iniciar la actualizaci\u00F3n. ", "Das Update konnte nicht gestartet werden. ");
+            reg("too large", "demasiado grande", "zu gro\u00DF");   // the download-size guard, shown in the failed-update notice
             reg("code ", "c\u00F3digo ", "Code ");
             reg("Installation did not complete{0}. Try again or download from GitHub.", "La instalaci\u00F3n no se ha completado{0}. Vuelve a intentarlo o desc\u00E1rgala desde GitHub.", "Die Installation wurde nicht abgeschlossen{0}. Versuch es erneut oder lade sie von GitHub herunter.");
             reg("Installing {0} did not complete. Try again or download it from GitHub.", "La instalaci\u00F3n de la {0} no se complet\u00F3. Vuelve a intentarlo o desc\u00E1rgala desde GitHub.", "Die Installation von {0} wurde nicht abgeschlossen. Versuch es erneut oder lade sie von GitHub herunter.");
@@ -477,6 +478,9 @@ namespace Stackshot
             reg("# State: what Stackshot remembers on its own (no need to touch it)",
                 "# Estado: lo que Stackshot recuerda por su cuenta (no hace falta tocarlo)",
                 "# Zustand: was Stackshot sich selbst merkt (muss nicht ge\u00E4ndert werden)");
+
+            // Welcome
+            reg("Press {0} to capture.", "Pulsa {0} y listo.", "Dr\u00FCcke {0} und fertig.");   // Welcome subtitle line; the caller prepends the line break
 
             // QuickWindow extras
             reg("Whatever you want to note", "Lo que quieras apuntar", "Was du notieren willst");

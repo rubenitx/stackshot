@@ -19,8 +19,14 @@ namespace Stackshot.Tests
 
         sealed class Site { public string File; public int Line; public string En; }
 
-        // Each allowlist entry is "file|text|reason": a string that reads Spanish but is a name, id or file mask.
-        static readonly string[] UiAllowList = { };
+        // Each allowlist entry is "file|text|reason": a string that reads Spanish but is a name, id, file mask, or a
+        // wording the app shows on purpose in that language.
+        static readonly string[] UiAllowList =
+        {
+            // ShotStack.Language.cs: the offer of English is shown only to users whose interface is Spanish, on purpose
+            // in English, and it names the settings route in their language so they can find it.
+            "ShotStack.Language.cs|. Switch Stackshot to English? You can change it any time in Ajustes \u203A General \u203A Apariencia \u203A Idioma (Settings \u203A General \u203A Appearance \u203A Language).|the English offer names the route in the user's current (Spanish) interface on purpose"
+        };
 
         const int Cap = 60;
 
@@ -157,7 +163,14 @@ namespace Stackshot.Tests
             {
                 Branch x = BranchOf(parts[0]), y = BranchOf(parts[1]);
                 if (x.Kind <= 1 || y.Kind <= 1)
-                    issues.Add(f.Rel + ":" + line + ": 2-way IsSpanish text ternary: '" + Show(parts[0]) + "' / '" + Show(parts[1]) + "'");
+                {
+                    // Date/time formats ("d MMM" vs "MMM d") and culture names ("es-ES" vs "en-US") are locale logic,
+                    // not translatable text; only a German branch can change them, so they are reported, not failed.
+                    if (x.Kind == 0 && y.Kind == 0 && LocaleLiteral(x.Text) && LocaleLiteral(y.Text))
+                        Console.WriteLine("    ternary-locale: " + f.Rel + ":" + line + ": '" + x.Text + "' / '" + y.Text + "'");
+                    else
+                        issues.Add(f.Rel + ":" + line + ": 2-way IsSpanish text ternary: '" + Show(parts[0]) + "' / '" + Show(parts[1]) + "'");
+                }
                 return;
             }
             if (parts.Count != 3) return;
@@ -172,6 +185,7 @@ namespace Stackshot.Tests
                 return;
             }
             Branch bmid = BranchOf(mid.GetRange(q + 1, mid.Count - q - 1));
+            if (a.Kind == 0 && bmid.Kind == 0 && c.Kind == 0) return;   // a 3-way Es/En/De chain: German is handled
             if (a.Kind == 0 || bmid.Kind == 0 || c.Kind == 0)
             {
                 issues.Add(f.Rel + ":" + line + ": IsSpanish chain mixes a literal with arrays: '" + Show(parts[0]) + "' / '" + Show(mid) + "' / '" + Show(parts[2]) + "'");
@@ -215,6 +229,21 @@ namespace Stackshot.Tests
             if (ident && part.Count == 1) { br.Kind = 2; br.Ident = part[0].S; return br; }
             br.Kind = 3;
             return br;
+        }
+
+        // A date/time format string (custom specifiers and quoted literals only) or a culture name like "es-ES".
+        static bool LocaleLiteral(string v)
+        {
+            if (string.IsNullOrEmpty(v)) return false;
+            if (Regex.IsMatch(v, "^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,4}){0,2}$")) return true;
+            v = v.Replace("'", "\u0001");
+            int quotes = 0;
+            foreach (char c in v) if (c == '\u0001') quotes++;
+            if (quotes % 2 != 0) return false;
+            v = Regex.Replace(v, "\u0001[^\u0001]*\u0001", "");   // quoted text may hold anything
+            const string Spec = "dDfFgGhHKmMoOrRstTuUyYzZ/,.: %";
+            foreach (char c in v) if (Spec.IndexOf(c) < 0) return false;
+            return true;
         }
 
         static int ArrayLengthOf(string ident)
@@ -545,8 +574,8 @@ namespace Stackshot.Tests
                 if (t.Str)
                 {
                     string v = t.S.Trim();
-                    if (v.Length > 2 && HasLetters(v) && AppTestsI18n.LooksSpanish(t.S) && !AllowedIn(rel, t.S) &&
-                        (AnySink(frames) || (prev1 == "=" && prev2 != "=" && prev2 != null && Array.IndexOf(SinkProps, prev2) >= 0)))
+                    if (v.Length > 2 && HasLetters(v) && AppTestsI18n.LooksSpanish(t.S) && !AllowedIn(rel, t.S) && !Wrapped(frames) &&
+                        (SinkBeforeLog(frames) || (prev1 == "=" && prev2 != "=" && prev2 != null && Array.IndexOf(SinkProps, prev2) >= 0)))
                         found.Add(rel + ":" + t.Line + ": " + v);
                 }
                 else if (t.S == "(") frames.Add(QualifiedName(toks, i));
@@ -556,9 +585,29 @@ namespace Stackshot.Tests
             }
         }
 
+        // A literal inside I18n.T / I18n.Fmt is translated however the enclosing sink uses it (multi-line calls and
+        // ternaries inside the arguments included): only literals that reach the sink outside any I18n call count.
+        static bool Wrapped(List<string> frames)
+        {
+            foreach (string f in frames) if (f == "I18n.T" || f == "I18n.Fmt") return true;
+            return false;
+        }
+
         static bool AnySink(List<string> frames)
         {
             foreach (string f in frames) if (IsSink(f)) return true;
+            return false;
+        }
+
+        // A literal is a sink argument only when a sink call encloses it before any log call does: a Log(…) inside a
+        // sink's callback delegate (Notify("…", delegate { Log("es"); })) is log-only, not user-visible.
+        static bool SinkBeforeLog(List<string> frames)
+        {
+            for (int i = frames.Count - 1; i >= 0; i--)
+            {
+                if (IsSink(frames[i])) return true;
+                if (frames[i].IndexOf("Log", StringComparison.Ordinal) >= 0) return false;
+            }
             return false;
         }
 

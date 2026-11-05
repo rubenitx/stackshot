@@ -23,19 +23,24 @@ namespace Stackshot.Tests
         // happen to be English (articles, "fast" = almost) are stripped first, and so are the nouns both languages share
         // and the anglicisms German uses on its own ("Screenshot", "Update").
         static readonly Regex EnglishWords = new Regex(@"\b(the|and|of|to|with|your|you|is|are|open|save|close|settings|capture|captures|record|recording|shortcut|shortcuts|folder|file|files|show|hide|copy|paste|delete|cancel|choose|select|edit|undo|redo|search|remove|retry|clear|screen|window|windows|history|page|pages|click|image|text|size|color|style|quality|menu|button|from|for|not|can|when|where|what|this|that|here|there|now|new|more|than|then|them|they|its|on|off|at|by|or|if|out|up|down|back|next|previous|first|last|name|names|value|values|title|count|number|time|date|today|yesterday|week|month|year|version|language|appearance|dark|light|theme|keyboard|mouse|print|share|browse|apply|reset|default|defaults|warning|error|done|ready|please|wait|minute|minutes|second|seconds|hour|hours|day|days|home|about|help|tip|tips|latest|recent|saved|saving|change|changed|free|install|installed|available|enabled|disabled)\b", RegexOptions.IgnoreCase);
-        static readonly string[] SharedNouns = { "Editor", "Timer", "Video", "Videos", "Standard", "Pause", "Position", "Name", "Names", "Start", "Status", "Format", "Tipp", "Test", "Monitor", "Moment", "Layer", "Sort", "Plan", "Marker", "Zoom", "Highlight", "Screenshot", "Screenshots", "Download", "Downloads", "Upload", "Update", "Updates", "Layout", "Player", "Stop", "Printer", "Scanner", "Onboarding", "Windows", "Version", "Text", "Design", "Speaker", "Favorit", "Filter", "Export", "Import", "Sortier", "Spool" };
+        static readonly string[] SharedNouns = { "Editor", "Timer", "Video", "Videos", "Standard", "Pause", "Position", "Name", "Names", "Start", "Status", "Format", "Tipp", "Test", "Monitor", "Moment", "Layer", "Sort", "Plan", "Marker", "Zoom", "Highlight", "Screenshot", "Screenshots", "Download", "Downloads", "Upload", "Update", "Updates", "Layout", "Player", "Stop", "Printer", "Scanner", "Onboarding", "Windows", "Version", "Text", "Design", "Speaker", "Favorit", "Filter", "Export", "Import", "Sortier", "Spool", "Minute", "Minuten" };
+        // Proper names the mascot may quote: a series title, not a sentence to translate.
+        static readonly string[] ProperNames = { "Adventure Time" };
         static readonly Regex SharedFunctionWords = new Regex(@"\b(die|hat|fast|all|so|war|will|man|an|in|was|bis|most)\b", RegexOptions.IgnoreCase);
         static readonly Regex NameTemplateTokens = new Regex(@"\{[^}]*\}");
 
         // What no German page may show: Spanish that did not get translated, or English that fell back to its key.
-        // Device lines start with "Windows default: ": Windows names its devices in its own language (the English audit
-        // exempts them for the same reason); their German wording is checked by the call-site coverage test instead.
+        // Lines from the audio-device list start with the localized "Windows default" prefix: Windows names its devices
+        // in the operating system's own language, which no catalog entry can change (the English audit exempts the
+        // English prefix for the same reason).
         internal static string WhyBad(string s)
         {
             if (string.IsNullOrEmpty(s)) return null;
             if (s.StartsWith("Windows default: ", StringComparison.Ordinal)) return null;
+            if (s.StartsWith(I18n.Fmt("El de Windows: {0}", "Windows default: {0}", "").TrimEnd(), StringComparison.Ordinal)) return null;
             if (AppTestsI18n.LooksSpanish(s)) return "es";
             foreach (string a in AppTestsI18n.Allowed) s = s.Replace(a, "");
+            foreach (string p in ProperNames) s = s.Replace(p, "");
             foreach (string w in SharedNouns) s = s.Replace(w, "");
             s = NameTemplateTokens.Replace(s, " ");   // {date}, {window}…: the tokens the file-name templates keep in English
             s = SharedFunctionWords.Replace(s, " ");

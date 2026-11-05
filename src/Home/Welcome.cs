@@ -139,7 +139,7 @@ namespace Stackshot
             head.Children.Add(logo);
             col.Children.Add(head);
             col.Children.Add(Text(I18n.T("Te damos la bienvenida", "Welcome to Stackshot"), Ds.Title, compact ? 25 : 28, pal.Label, HorizontalAlignment.Center, new Thickness(0, compact ? 10 : 14, 0, 0)));
-            string key = Hotkeys.Split(settings.HotRegion).Count > 0 ? I18n.Fmt("\nPulsa {0} y listo.", "\nPress {0} to capture.", Hotkeys.Display(settings.HotRegion)) : "";
+            string key = Hotkeys.Split(settings.HotRegion).Count > 0 ? "\n" + I18n.Fmt("Pulsa {0} y listo.", "Press {0} to capture.", Hotkeys.Display(settings.HotRegion)) : "";
             TextBlock sub = Text(I18n.T("Captura, marca y comparte en segundos.", "Capture, markup and share in seconds.") + key, Ds.Regular, 14, pal.Label2,
                                  HorizontalAlignment.Center, new Thickness(0, 6, 0, compact ? 18 : 24));
             sub.TextAlignment = TextAlignment.Center;
