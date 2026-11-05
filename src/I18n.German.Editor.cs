@@ -232,7 +232,23 @@ namespace Stackshot
             reg("Added: {0} videos", null, "{0} Videos hinzugefügt");
             reg("Could not open as video:\n\n", null, "Die Datei konnte nicht als Video geöffnet werden.\n\n");
             reg("No segment remains within crop.", null, "Im gewählten Ausschnitt liegt kein Segment mehr.");
-            reg("Nothing to export: video is already ready to share as is.", null, "Das Video ist bereits zum Teilen bereit.");
+            reg("Nothing to export: video is already ready to share as is.", null, "Nichts zu exportieren: Das Video ist bereits so zum Teilen bereit.");
+            reg("The file cannot be found.", null, "Die Datei wurde nicht gefunden.");
+            reg("This file cannot be played: FFmpeg does not find a video to show.", null, "Diese Datei lässt sich nicht wiedergeben: FFmpeg findet kein abspielbares Video.");
+            reg("Frame ", null, "Einzelbild ");
+            reg("Open video", null, "Video öffnen");
+            reg("The duration of this video is unknown, so it cannot be fit to {0}. Mark a clip (E and S) or choose another quality in More options > Quality when exporting.", null, "Die Dauer dieses Videos ist unbekannt. Die Größe lässt sich daher nicht auf {0} ausrichten. Markiere einen Ausschnitt (E und S) oder wähle unter „Weitere Optionen“ > „Qualität beim Export“ eine andere.");
+            reg("It is too long to fit in {0} with good quality ({1} fit). Mark a shorter clip (E and S) or choose another quality in More options > Quality when exporting.", null, "Er ist zu lang, um mit guter Qualität in {0} zu passen ({1} passen hinein). Markiere einen kürzeren Ausschnitt (E und S) oder wähle unter „Weitere Optionen“ > „Qualität beim Export“ eine andere.");
+            reg("Creating the MP4… 0%  ·  Esc cancels", null, "MP4 wird erstellt… 0 %  ·  Esc bricht ab");
+            reg("Creating the MP4… {0}%  ·  Esc cancels", null, "MP4 wird erstellt… {0} %  ·  Esc bricht ab");
+            reg("Checking the video…  ·  Esc cancels", null, "Video wird geprüft…  ·  Esc bricht ab");
+            reg("Export quality: ", null, "Exportqualität: ");
+            reg(" (email)", null, " (E-Mail)");
+            reg("FAIL ", null, "FEHLER ");
+            reg("none", null, "keine");
+            reg(" %", null, " %");
+            reg("Clip is {0} long: such a long GIF has a large file size and takes time to create. For such a clip, “Export clip” (MP4) is usually better.\n\nCreate GIF anyway?", null, "Der Ausschnitt dauert {0}: Ein so langes GIF wird sehr groß und braucht lange. Für so einen Ausschnitt passt meist „Ausschnitt exportieren“ (MP4) besser.\n\nGIF trotzdem erstellen?");
+            reg("Arrows: frame by frame. Shift and arrows: second by second. Home and End: start and end of the trim.", null, "Pfeile: Einzelbild für Einzelbild. Umschalt und Pfeile: sekundenweise. Pos1 und Ende: Anfang und Ende des Zuschnitts.");
             reg("Could not prepare video: ", null, "Das Video konnte nicht vorbereitet werden: ");
             reg("The duration of this video is unknown, so it cannot be fit to {0}. Choose Maximum, High or Light in Quality.", null, "Die Dauer dieses Videos ist unbekannt. Die Dateigröße lässt sich daher nicht auf {0} begrenzen. Wähle unter „Qualität“ die Option „Maximum“, „Hoch“ oder „Leicht“.");
             reg("Too long to fit into {0} with good quality (holds {1}). Crop the video, increase speed or choose 720p or lower in Size.", null, "Das Video ist zu lang, um mit guter Qualität in {0} zu passen (Platz für {1}). Kürze es, erhöhe die Geschwindigkeit oder wähle 720p oder weniger.");
@@ -297,10 +313,8 @@ namespace Stackshot
             reg("Thick", "Grueso", "Dick");
             reg("Small", "Peque\u00F1o", "Klein");
             reg("Large", "Grande", "Gro\u00DF");
-            reg("Backdrop color", "Color de fondo", "Hintergrundfarbe");
             reg("Padding", "Relleno", "Abstand");
             reg("Shadow", "Sombra", "Schatten");
-            reg("Corner radius", "Borde redondeado", "Eckenradius");
             reg("Saved styles", null, "Gespeicherte Stile");
             reg("Save this style", null, "Diesen Stil speichern");
             reg("None", null, "Keine");
@@ -321,10 +335,7 @@ namespace Stackshot
             reg("Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif|All files|*.*", null, "Bilder|*.png;*.jpg;*.jpeg;*.bmp;*.gif|Alle Dateien|*.*");
             reg("Could not open that image.", null, "Das Bild konnte nicht geöffnet werden.");
             reg("Remove this background", null, "Diesen Hintergrund entfernen");
-            reg("Copy image", "Copiar imagen", "Bild kopieren");
-            reg("Save image", "Guardar imagen", "Bild speichern");
             reg("Save as\u2026", "Guardar como\u2026", "Speichern unter\u2026");
-            reg("Share", "Compartir", "Teilen");
             reg("Export", "Exportar", "Exportieren");
             reg("Sensitive data", "Datos sensibles", "Sensible Daten");
             reg("Find and redact ID, SSN, card, IBAN, email, phone numbers and secrets. Read locally on your PC and any mark can be removed  (Ctrl+Shift+X)",

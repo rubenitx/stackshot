@@ -79,7 +79,7 @@ namespace Stackshot
                     if (x.Id == "mute" && !vol.IsEmpty)
                     {
                         PartAccessible v = NewPart(into, I18n.T("Volumen", "Volume"), AccessibleRole.Slider, w.vol);
-                        v.PartValue = Math.Round(w.volume * 100).ToString(CultureInfo.CurrentCulture) + (I18n.IsSpanish ? " %" : "%");
+                        v.PartValue = Math.Round(w.volume * 100).ToString(CultureInfo.CurrentCulture) + I18n.T(" %", "%");
                         v.PartKeys = I18n.T("Arriba / Abajo", "Up / Down");
                         v.SetValue = delegate(string s)
                         {

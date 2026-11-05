@@ -252,6 +252,70 @@ namespace Stackshot
             reg("Frames per second", "Fotogramas por segundo", "Bilder pro Sekunde");
             reg("Scrolling capture", "Capturando con desplazamiento", "Scroll-Aufnahme");
             reg("Keep editing", "Seguir editando", "Weiter bearbeiten");
+
+            // Recorder
+            reg("{0}: not even one minute fits in {1}.\n\nFree up space or choose a lighter quality.", null, "{0}: in {1} passt nicht einmal eine Minute.\n\nGib Speicherplatz frei oder wähle eine leichtere Qualität.");
+            reg("{0}: {1} holds {2}, depending on motion.", null, "{0}: in {1} passen {2}, je nach Bewegung.");
+            reg("recording stops automatically before disk is full and keeps what was recorded", null, "die Aufnahme stoppt von selbst, bevor der Speicher voll ist, und sichert das Aufgenommene");
+            reg("\n\nOK: record anyway ({0}).\nCancel: do not record.", null, "\n\nOK: trotzdem aufnehmen ({0}).\nAbbrechen: nicht aufnehmen.");
+            reg("\n\nYes: record in {0} (holds {1}).\nNo: record in {2} anyway ({3}).\nCancel: do not record.", null, "\n\nJa: in {0} aufnehmen (fasst {1}).\nNein: trotzdem in {2} aufnehmen ({3}).\nAbbrechen: nicht aufnehmen.");
+            reg("Windows does not allow screen capture right now (locked screen or a security prompt). Try again from the desktop.", null, "Windows erlaubt die Bildschirmaufnahme gerade nicht (gesperrter Bildschirm oder Sicherheitsabfrage). Versuch es vom Desktop aus erneut.");
+            reg("This area cannot be recorded with Windows screen capture ({0}): fallback (GDI) would be used, which cannot see hardware-accelerated content (videos, games, some apps) and may not be frame-accurate.\n\nRecord in Cinema mode anyway?", null, "Dieser Bereich lässt sich nicht mit der Windows-Bildschirmaufnahme aufnehmen ({0}): Stattdessen würde die Ersatzmethode (GDI) verwendet, die hardwarebeschleunigte Inhalte (Videos, Spiele, manche Apps) nicht sieht und nicht bildgenau ist.\n\nTrotzdem im Modus „Kino“ aufnehmen?");
+            reg("The area spans {0} monitors. Frames match the primary display rate ({1} Hz){2}\n\nRecord in Cinema mode anyway?", null, "Der Bereich erstreckt sich über {0} Bildschirme. Die Einzelbilder folgen der Bildrate des primären Bildschirms ({1} Hz){2}\n\nTrotzdem im Modus „Kino“ aufnehmen?");
+            reg("You cancelled the check: the file was saved unverified as “{0}”.", null, "Du hast die Prüfung abgebrochen. Die Datei wurde ungeprüft als „{0}“ gespeichert.");
+            reg("The check found differences: the file was saved as “{0}”.", null, "Die Prüfung hat Abweichungen gefunden. Die Datei wurde als „{0}“ gespeichert.");
+            reg("{0} frames identical to captured. To share, open and export to MP4 (that copy compresses).", null, "{0} Einzelbilder stimmen mit der Aufnahme überein. Zum Teilen öffne sie und exportiere sie als MP4 (diese Kopie wird komprimiert).");
+            reg("\n\nTry recording at 30 fps, smaller area or more memory for motion peaks (Recording > Cinema).", null, "\n\nNimm mit 30 fps, einem kleineren Bereich oder mehr Arbeitsspeicher für Bewegungsspitzen auf (Aufnahme > Kino).");
+            reg(" min disk space", null, " min Speicherplatz");
+            reg("up to {0}", null, "bis zu {0}");
+            reg("about {0}", null, "etwa {0}");
+            reg("between {0} and {1}", null, "zwischen {0} und {1}");
+            reg("Your computer couldn't keep up: {0} frames ({1}%) were late or repeated.", null, "Dein Computer konnte nicht mithalten: {0} Einzelbilder ({1} %) kamen zu spät oder wurden wiederholt.");
+            reg("Your computer hitched for a moment ({0} s) and some frames may have repeated.", null, "Dein Computer hat kurz geruckelt ({0} s) und manches Einzelbild könnte wiederholt worden sein.");
+            reg(" Try to ", null, " Mögliche Abhilfe: ");
+            reg(" or ", null, " oder ");
+
+            // Cine summary and preflight
+            reg("Cinema: {0} × {1} at {2} fps, {3} s, {4} frames.", null, "Cine: {0} × {1} mit {2} fps, {3} s, {4} Einzelbilder.");
+            reg("File: ", null, "Datei: ");
+            reg("The recording stopped early: {0}. What was recorded up to then has been saved.", null, "Die Aufnahme wurde vorzeitig beendet: {0}. Der bis dahin aufgenommene Teil wurde gespeichert.");
+            reg("- Paused once: what happened during the pause is not in the file.", null, "- Einmal pausiert: Was während der Pause geschah, ist nicht in der Datei.");
+            reg("- Paused {0} times: what happened during the pauses is not in the file.", null, "- {0}-mal pausiert: Was während der Pausen geschah, ist nicht in der Datei.");
+            reg("- 1 frame has clicks or pressed keys drawn on them (Recording > Clicks and keys).", null, "- In 1 Einzelbild sind die Klicks oder gedrückten Tasten eingezeichnet (Aufnahme > Klicks und Tasten).");
+            reg("- {0} frames have clicks or pressed keys drawn on them (Recording > Clicks and keys).", null, "- In {0} Einzelbildern sind die Klicks oder gedrückten Tasten eingezeichnet (Aufnahme > Klicks und Tasten).");
+            reg("- {0} frames may have taken the wrong screen image (the computer was too slow).", null, "- {0} Einzelbilder zeigen möglicherweise ein falsches Bild des Bildschirms (der Computer war zu langsam).");
+            reg("- {0} frames repeat the one before because the screen could not be read.", null, "- {0} Einzelbilder wiederholen das vorherige, weil der Bildschirm nicht gelesen werden konnte.");
+            reg("- {0} black frames at the start because the screen could not be read.", null, "- {0} schwarze Einzelbilder am Anfang, weil der Bildschirm nicht gelesen werden konnte.");
+            reg("- {0} captured frames were never written.", null, "- {0} aufgenommene Einzelbilder wurden nie geschrieben.");
+            reg("- Screen capture was interrupted once ({0} ms with no new image).", null, "- Die Bildschirmaufnahme wurde einmal unterbrochen ({0} ms ohne neues Bild).");
+            reg("- Screen capture was interrupted {1} times ({0} ms with no new image).", null, "- Die Bildschirmaufnahme wurde {1}-mal unterbrochen ({0} ms ohne neues Bild).");
+            reg("- In {0} images Windows hid protected windows or windows excluded from capture on that screen (Stackshot’s too); any inside the area is missing or black.", null, "- In {0} Bildern hat Windows geschützte oder von der Aufnahme ausgenommene Fenster auf diesem Bildschirm versteckt (auch die von Stackshot); jedes davon im Bereich fehlt oder ist schwarz.");
+            reg("- The fallback capture (GDI) was used: it does not see hardware-accelerated content.", null, "- Die Ersatzaufnahme (GDI) wurde verwendet: Sie sieht hardwarebeschleunigte Inhalte nicht.");
+            reg("- The screen is in HDR: Windows hands over the image converted to SDR.", null, "- Der Bildschirm läuft in HDR: Windows liefert das in SDR umgewandelte Bild.");
+            reg("- The monitor runs at {0} Hz and recording is at {1} fps: {2} screen images are not in any frame.", null, "- Der Monitor läuft mit {0} Hz, aufgenommen wird mit {1} fps: {2} Bilder des Bildschirms erscheinen in keinem Einzelbild.");
+            reg("The master was not created: ", null, "Die Masterdatei wurde nicht erstellt: ");
+            reg("What was recorded is in: ", null, "Die Aufnahme liegt in: ");
+            reg("Check: not done.", null, "Prüfung: nicht durchgeführt.");
+            reg("Check: passed, {0} frames identical to the ones sent to the encoder.", null, "Prüfung: bestanden, {0} Einzelbilder stimmen mit denen überein, die an den Encoder übergeben wurden.");
+            reg("Check: FAILED.", null, "Prüfung: FEHLGESCHLAGEN.");
+            reg("This version of FFmpeg does not include the lossless encoder (libx264rgb), required for Cinema quality.\n\nUpdate it from Stackshot settings or choose another quality.", null, "Diese FFmpeg-Version enthält den verlustfreien Encoder (libx264rgb) nicht, den die Qualität „Kino“ braucht.\n\nAktualisiere FFmpeg in den Stackshot-Einstellungen oder wähle eine andere Qualität.");
+            reg("Not enough disk space for lossless recording: {0} GB left, need at least {1} GB (a minute takes from several MBs up to multiple GBs depending on motion).", null, "Für eine verlustfreie Aufnahme ist nicht genug Speicherplatz frei: {0} GB verfügbar, benötigt werden mindestens {1} GB (eine Minute belegt je nach Bewegung von einigen MB bis mehreren GB).");
+            reg("The area of {0} × {1} is too large to encode losslessly at 60 fps on most computers.\n\nYes: record at 30 fps, lossless.\nNo: try at 60 fps (if the PC cannot keep up, recording stops and saved portion is kept).\nCancel: do not record.", null, "Der Bereich von {0} × {1} ist zu groß, um ihn auf den meisten Computern mit 60 fps verlustfrei zu kodieren.\n\nJa: mit 30 fps verlustfrei aufnehmen.\nNein: mit 60 fps versuchen (kommt der Computer nicht hinterher, stoppt die Aufnahme und der bisher aufgenommene Teil bleibt erhalten).\nAbbrechen: nicht aufnehmen.");
+            reg("{0} track of 32-bit PCM, 48 kHz, stereo.", null, "1 Tonspur mit 32-Bit-PCM, 48 kHz, Stereo.");
+            reg("{0} tracks of 32-bit PCM, 48 kHz, stereo.", null, "{0} Tonspuren mit 32-Bit-PCM, 48 kHz, Stereo.");
+            reg("Expected {0} tracks of 32-bit PCM at 48 kHz stereo and there are {1} (or in another format).", null, "Erwartet wurden {0} Tonspuren mit 32-Bit-PCM bei 48 kHz Stereo, gefunden wurden {1} (oder ein anderes Format).");
+
+            // Audio, FFmpeg setup, scroll capture, region picker hints
+            reg("Windows does not allow using the microphone. Enable it in Settings > Privacy & security > Microphone (“Let desktop apps access your microphone”).", null, "Windows erlaubt die Verwendung des Mikrofons nicht. Aktiviere es unter Einstellungen > Datenschutz und Sicherheit > Mikrofon („Desktop-Apps Zugriff auf das Mikrofon erlauben“).");
+            reg("To record and play video, Stackshot uses FFmpeg {0}, a free open-source program under its own license (GPL). It is downloaded once (about 110 MB) ", null, "Zum Aufnehmen und Wiedergeben von Video verwendet Stackshot FFmpeg {0}, ein freies Open-Source-Programm mit eigener Lizenz (GPL). Es wird einmalig heruntergeladen (etwa 110 MB) ");
+            reg(" screens", null, " Bildschirmhöhen");
+            reg("Drag an area or click a window  ·  Then choose what to do  ·  C: color  ·  Shift: measure  ·  Esc: cancel", null, "Bereich aufziehen oder Fenster anklicken  ·  Danach wählst du, was passieren soll  ·  C: Farbe  ·  Umschalt: messen  ·  Esc: abbrechen");
+            reg("Drag an area or click a window  ·  Then adjust it  ·  C: color  ·  Shift: measure  ·  Esc: cancel", null, "Bereich aufziehen oder Fenster anklicken  ·  Danach passt du ihn an  ·  C: Farbe  ·  Umschalt: messen  ·  Esc: abbrechen");
+            reg("Drag to capture an area  ·  Click: window or full screen  ·  C: color  ·  Shift: measure  ·  Esc: cancel", null, "Ziehe einen Bereich auf, um ihn aufzunehmen  ·  Klick: Fenster oder ganzer Bildschirm  ·  C: Farbe  ·  Umschalt: messen  ·  Esc: abbrechen");
+            reg("Record video  ·  Drag an area or click a window  ·  Esc: cancel", null, "Video aufnehmen  ·  Bereich aufziehen oder Fenster anklicken  ·  Esc: abbrechen");
+            reg("Copy text  ·  Drag over text or click a window  ·  Esc: cancel", null, "Text kopieren  ·  Über den Text ziehen oder ein Fenster anklicken  ·  Esc: abbrechen");
+            reg("Record GIF  ·  Drag an area or click a window  ·  Esc: cancel", null, "GIF aufnehmen  ·  Bereich aufziehen oder Fenster anklicken  ·  Esc: abbrechen");
+            reg("Scrolling capture  ·  Drag over the scrolling area, excluding fixed header  ·  Esc: cancel", null, "Scroll-Aufnahme  ·  Über den bewegten Bereich ziehen, ohne den festen Kopfbereich  ·  Esc: abbrechen");
         }
     }
 }

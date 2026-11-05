@@ -210,8 +210,8 @@ namespace Stackshot
 
         string MissingVideoMessage()
         {
-            return !File.Exists(path) ? I18n.T("No se encuentra el archivo.", "File not found.")
-                : I18n.T("No se puede reproducir este archivo: FFmpeg no encuentra un v\u00EDdeo que mostrar.", "FFmpeg could not find a video stream to play in this file.");
+            return !File.Exists(path) ? I18n.T("No se encuentra el archivo.", "The file cannot be found.")
+                : I18n.T("No se puede reproducir este archivo: FFmpeg no encuentra un v\u00EDdeo que mostrar.", "This file cannot be played: FFmpeg does not find a video to show.");
         }
 
         void RefreshInfoRows()
@@ -566,7 +566,7 @@ namespace Stackshot
                     string name = Path.GetFileNameWithoutExtension(src);
                     if (owner != null)
                     {
-                        if (owner.SaveCapture(bmp, (I18n.IsSpanish ? "Fotograma " : "Frame ") + name) != null) Flash(I18n.Fmt("Fotograma de {0} en la pila", "Frame at {0} added to stack", PlayerKit.Clock(t)));
+                        if (owner.SaveCapture(bmp, I18n.T("Fotograma ", "Frame ") + name) != null) Flash(I18n.Fmt("Fotograma de {0} en la pila", "Frame at {0} added to stack", PlayerKit.Clock(t)));
                         return;
                     }
                     try
@@ -672,14 +672,14 @@ namespace Stackshot
             {
                 ShotStack.Unreserve(output);
                 Alert(I18n.Fmt("No se sabe cu\u00E1nto dura este v\u00EDdeo, as\u00ED que no se puede ajustar a {0}. Marca un tramo (E y S) o elige otra calidad en M\u00E1s opciones > Calidad al exportar.",
-                               "Cannot fit a video of unknown duration into {0}. Mark a clip (E and S) or change More options > Export quality.", Timeline.Qualities[spec.Level]));
+                               "The duration of this video is unknown, so it cannot be fit to {0}. Mark a clip (E and S) or choose another quality in More options > Quality when exporting.", Timeline.Qualities[spec.Level]));
                 return;
             }
             if (VideoExport.TargetBytes(spec.Level) > 0 && VideoExport.TargetKbps(spec) < VideoExport.TargetMinKbps)
             {
                 ShotStack.Unreserve(output);
                 Alert(I18n.Fmt("Es demasiado largo para caber en {0} con buena calidad (caben {1}). Marca un tramo m\u00E1s corto (E y S) o elige otra calidad en M\u00E1s opciones > Calidad al exportar.",
-                               "Too long to fit into {0} at good quality (limit: {1}). Mark a shorter clip (E and S) or change More options > Export quality.",
+                               "It is too long to fit in {0} with good quality ({1} fit). Mark a shorter clip (E and S) or choose another quality in More options > Quality when exporting.",
                                Timeline.Qualities[spec.Level], VideoExport.MaxLength(spec.Level, spec.HasAudio)));
                 return;
             }
@@ -713,7 +713,7 @@ namespace Stackshot
                 ShareReport rep = null;
                 if (!ab.Set && code == 0 && File.Exists(output))
                 {
-                    OnUi(delegate { if (exportAbort == ab) { exportText = I18n.T("Comprobando el v\u00EDdeo\u2026  \u00B7  Esc cancela", "Checking video\u2026  \u00B7  Esc cancels"); Invalidate(); } });
+                    OnUi(delegate { if (exportAbort == ab) { exportText = I18n.T("Comprobando el v\u00EDdeo\u2026  \u00B7  Esc cancela", "Checking the video\u2026  \u00B7  Esc cancels"); Invalidate(); } });
                     rep = ShareCheck.Validate(ff, output, expect);
                 }
                 OnUi(delegate { ExportDone(ab, output, code, err, rep); });
@@ -770,7 +770,7 @@ namespace Stackshot
 
         static string Mp4Progress(int percent)
         {
-            return I18n.Fmt("Creando el MP4\u2026 {0} %  \u00B7  Esc cancela", "Creating MP4\u2026 {0}%  \u00B7  Esc cancels", percent);
+            return I18n.Fmt("Creando el MP4\u2026 {0} %  \u00B7  Esc cancela", "Creating the MP4\u2026 {0}%  \u00B7  Esc cancels", percent);
         }
 
         void Alert(string text)

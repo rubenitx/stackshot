@@ -50,7 +50,7 @@ namespace Stackshot
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            foreach (Check c in Checks) sb.Append(c.Passed ? "ok    " : "FALLO ").Append(c.Name).Append(": ").Append(c.Detail).Append('\n');
+            foreach (Check c in Checks) sb.Append(c.Passed ? "ok    " : I18n.T("FALLO ", "FAIL ")).Append(c.Name).Append(": ").Append(c.Detail).Append('\n');
             return sb.ToString().TrimEnd('\n');
         }
     }

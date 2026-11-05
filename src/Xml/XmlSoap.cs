@@ -48,7 +48,7 @@ namespace Stackshot
         // When a file was written, as the bar shows it: "12/10 10:31:22" (local time).
         public static string When(DateTime utc)
         {
-            return utc.ToLocalTime().ToString(I18n.IsSpanish ? "dd/MM HH:mm:ss" : I18n.IsKorean ? "MM-dd HH:mm:ss" : "MMM d HH:mm:ss", CultureInfo.InvariantCulture);
+            return utc.ToLocalTime().ToString(I18n.IsGerman ? "dd.MM. HH:mm:ss" : I18n.IsKorean ? "MM-dd HH:mm:ss" : I18n.T("dd/MM HH:mm:ss", "MMM d HH:mm:ss"), I18n.Culture);
         }
     }
 }

@@ -36,16 +36,15 @@ namespace Stackshot
         internal const string TitleMix = "Mezcla (equipo + micr\u00F3fono)";
         internal const string TitleSystem = "Sonido del equipo (original)";
         internal const string TitleMic = "Micr\u00F3fono (original)";
-        const string Comment = "Stackshot Cine: v\u00EDdeo H.264 RGB sin p\u00E9rdidas y sonido PCM de 32 bits";
+        internal static string Comment { get { return I18n.T("Stackshot Cine: v\u00EDdeo H.264 RGB sin p\u00E9rdidas y sonido PCM de 32 bits", "Stackshot Cine: lossless H.264 RGB video and 32-bit PCM audio", "Stackshot Cine: verlustfreies H.264-RGB-Video mit 32-Bit-PCM-Ton"); } }
         const string AudioIn = " -f f32le -sample_rate 48000 -ch_layout stereo -i ";
 
         // The track titles stay in the file as they are (container metadata); this is how they read on screen.
         public static string TrackName(string title)
         {
-            if (I18n.IsSpanish || title == null) return title;
-            if (title == TitleMix) return I18n.Localize("Mix (computer + microphone)");
-            if (title == TitleSystem) return I18n.Localize("Computer sound (original)");
-            if (title == TitleMic) return I18n.Localize("Microphone (original)");
+            if (title == TitleMix) return I18n.T("Mezcla (equipo + micr\u00F3fono)", "Mix (computer + microphone)", "Mix (Systemton + Mikrofon)");
+            if (title == TitleSystem) return I18n.T("Sonido del equipo (original)", "Computer sound (original)", "Systemton (Original)");
+            if (title == TitleMic) return I18n.T("Micr\u00F3fono (original)", "Microphone (original)", "Mikrofon (Original)");
             return title;
         }
 
@@ -833,9 +832,10 @@ namespace Stackshot
             foreach (string a in audios) if (!a.StartsWith("pcm_f32le", StringComparison.Ordinal) || !a.Contains("48000 Hz") || !a.Contains("stereo")) audioOk = false;
             if (expect.Audio.Count > 0 || audios.Count > 0)
                 Add(v, I18n.T("Pistas de sonido", "Sound tracks"), audioOk,
-                    audioOk ? (I18n.IsKorean ? I18n.Fmt("", "{0} tracks of 32-bit PCM, 48 kHz, stereo.", audios.Count)
-                                              : I18n.IsSpanish ? audios.Count + (audios.Count == 1 ? " pista" : " pistas") + " PCM de 32 bits, 48 kHz, est\u00E9reo."
-                                              : audios.Count + (audios.Count == 1 ? " track" : " tracks") + " of 32-bit PCM, 48 kHz, stereo.")
+                    audioOk ? I18n.Fmt(audios.Count == 1 ? "{0} pista de PCM de 32 bits, 48 kHz, est\u00E9reo."
+                                                        : "{0} pistas de PCM de 32 bits, 48 kHz, est\u00E9reo.",
+                                      audios.Count == 1 ? "{0} track of 32-bit PCM, 48 kHz, stereo."
+                                                        : "{0} tracks of 32-bit PCM, 48 kHz, stereo.", audios.Count)
                             : I18n.Fmt("Se esperaban {0} pistas PCM de 32 bits a 48 kHz est\u00E9reo y hay {1} (o con otro formato).",
                                        "Expected {0} tracks of 32-bit PCM at 48 kHz stereo and there are {1} (or in another format).", expect.Audio.Count, audios.Count));
 
@@ -1102,63 +1102,54 @@ namespace Stackshot
 
         public string Summary()
         {
-            if (!I18n.IsSpanish) return SummaryEn();
             StringBuilder sb = new StringBuilder();
             double fps = FpsDen > 0 ? FpsNum / (double)FpsDen : 0;
-            sb.AppendLine("Cine: " + Width + " \u00D7 " + Height + " a " + N(fps, "0.##") + " fps, " + N(RecordSeconds, "0.0") + " s, " + FramesWritten + " fotogramas.");
-            if (!string.IsNullOrEmpty(File)) sb.AppendLine("Archivo: " + System.IO.Path.GetFileName(File) + (FileBytes > 0 ? " (" + N(FileBytes / 1048576.0, "0.0") + " MB)" : ""));
-            if (StopReason != null) sb.AppendLine("La grabaci\u00F3n se detuvo antes de tiempo: " + StopReason + ". Se ha guardado lo grabado hasta ese momento.");
-            if (Pauses > 0) sb.AppendLine("- Se paus\u00F3 " + (Pauses == 1 ? "una vez" : Pauses + " veces") + ": lo que pas\u00F3 en " + (Pauses == 1 ? "la pausa" : "las pausas") + " no est\u00E1 en el archivo.");
-            if (OverlayFrames > 0) sb.AppendLine("- " + (OverlayFrames == 1 ? "1 fotograma lleva" : OverlayFrames + " fotogramas llevan") + " dibujados los clics o las teclas pulsadas (Grabaci\u00F3n > Clics y teclas).");
-            if (HistoryMisses > 0) sb.AppendLine("- " + HistoryMisses + " fotogramas pudieron tomar una imagen de pantalla equivocada (el equipo fue demasiado lento).");
-            if (FramesRepeatedFailed > 0) sb.AppendLine("- " + FramesRepeatedFailed + " fotogramas repiten el anterior porque no se pudo leer la pantalla.");
-            if (FramesBlack > 0) sb.AppendLine("- " + FramesBlack + " fotogramas negros al principio porque no se pudo leer la pantalla.");
-            if (Discarded > 0) sb.AppendLine("- " + Discarded + " fotogramas tomados no llegaron a escribirse.");
-            if (LostEvents > 0) sb.AppendLine("- La captura de pantalla se interrumpi\u00F3 " + LostEvents + (LostEvents == 1 ? " vez" : " veces") + " (" + N(LostMs, "0") + " ms sin imagen nueva).");
+            sb.AppendLine(I18n.Fmt("Cine: {0} \u00D7 {1} a {2} fps, {3} s, {4} fotogramas.",
+                                   "Cinema: {0} \u00D7 {1} at {2} fps, {3} s, {4} frames.",
+                                   Width, Height, N(fps, "0.##"), N(RecordSeconds, "0.0"), FramesWritten));
+            if (!string.IsNullOrEmpty(File)) sb.AppendLine(I18n.T("Archivo: ", "File: ") + System.IO.Path.GetFileName(File) + (FileBytes > 0 ? " (" + N(FileBytes / 1048576.0, "0.0") + " MB)" : ""));
+            if (StopReason != null) sb.AppendLine(I18n.Fmt("La grabaci\u00F3n se detuvo antes de tiempo: {0}. Se ha guardado lo grabado hasta ese momento.",
+                                                          "The recording stopped early: {0}. What was recorded up to then has been saved.", StopReason));
+            if (Pauses > 0) sb.AppendLine(I18n.Fmt(Pauses == 1 ? "- Se paus\u00F3 una vez: lo que pas\u00F3 en la pausa no est\u00E1 en el archivo."
+                                                              : "- Se paus\u00F3 {0} veces: lo que pas\u00F3 en las pausas no est\u00E1 en el archivo.",
+                                                   Pauses == 1 ? "- Paused once: what happened during the pause is not in the file."
+                                                              : "- Paused {0} times: what happened during the pauses is not in the file.", Pauses));
+            if (OverlayFrames > 0) sb.AppendLine(I18n.Fmt(OverlayFrames == 1 ? "- 1 fotograma lleva dibujados los clics o las teclas pulsadas (Grabaci\u00F3n > Clics y teclas)."
+                                                                           : "- {0} fotogramas llevan dibujados los clics o las teclas pulsadas (Grabaci\u00F3n > Clics y teclas).",
+                                                                OverlayFrames == 1 ? "- 1 frame has clicks or pressed keys drawn on them (Recording > Clicks and keys)."
+                                                                                 : "- {0} frames have clicks or pressed keys drawn on them (Recording > Clicks and keys).", OverlayFrames));
+            if (HistoryMisses > 0) sb.AppendLine(I18n.Fmt("- {0} fotogramas pudieron tomar una imagen de pantalla equivocada (el equipo fue demasiado lento).",
+                                                          "- {0} frames may have taken the wrong screen image (the computer was too slow).", HistoryMisses));
+            if (FramesRepeatedFailed > 0) sb.AppendLine(I18n.Fmt("- {0} fotogramas repiten el anterior porque no se pudo leer la pantalla.",
+                                                                 "- {0} frames repeat the one before because the screen could not be read.", FramesRepeatedFailed));
+            if (FramesBlack > 0) sb.AppendLine(I18n.Fmt("- {0} fotogramas negros al principio porque no se pudo leer la pantalla.",
+                                                        "- {0} black frames at the start because the screen could not be read.", FramesBlack));
+            if (Discarded > 0) sb.AppendLine(I18n.Fmt("- {0} fotogramas tomados no llegaron a escribirse.",
+                                                      "- {0} captured frames were never written.", Discarded));
+            if (LostEvents > 0) sb.AppendLine(I18n.Fmt(LostEvents == 1 ? "- La captura de pantalla se interrumpi\u00F3 una vez ({0} ms sin imagen nueva)."
+                                                                     : "- La captura de pantalla se interrumpi\u00F3 {1} veces ({0} ms sin imagen nueva).",
+                                                          LostEvents == 1 ? "- Screen capture was interrupted once ({0} ms with no new image)."
+                                                                         : "- Screen capture was interrupted {1} times ({0} ms with no new image).",
+                                                          N(LostMs, "0"), LostEvents));
             // Windows raises this for any window hidden from captures anywhere on the monitor (Stackshot's own too).
-            if (Protected > 0) sb.AppendLine("- En " + Protected + " im\u00E1genes Windows ocult\u00F3 ventanas protegidas o excluidas de la captura en esa pantalla (tambi\u00E9n las de Stackshot); si alguna estaba dentro del \u00E1rea, no aparece o sale en negro.");
-            if (Gdi) sb.AppendLine("- Se ha usado la captura de reserva (GDI): no ve contenido acelerado por hardware.");
-            if (Hdr) sb.AppendLine("- La pantalla est\u00E1 en HDR: Windows entrega la imagen convertida a SDR.");
-            if (RefreshHz > 0 && fps > 0 && RefreshHz > fps * 1.02) sb.AppendLine("- El monitor va a " + N(RefreshHz, "0.#") + " Hz y se graba a " + N(fps, "0.##") + " fps: " + ImagesUnused + " im\u00E1genes de pantalla no aparecen en ning\u00FAn fotograma.");
+            if (Protected > 0) sb.AppendLine(I18n.Fmt("- En {0} im\u00E1genes Windows ocult\u00F3 ventanas protegidas o excluidas de la captura en esa pantalla (tambi\u00E9n las de Stackshot); si alguna estaba dentro del \u00E1rea, no aparece o sale en negro.",
+                                                      "- In {0} images Windows hid protected windows or windows excluded from capture on that screen (Stackshot\u2019s too); any inside the area is missing or black.", Protected));
+            if (Gdi) sb.AppendLine(I18n.T("- Se ha usado la captura de reserva (GDI): no ve contenido acelerado por hardware.",
+                                          "- The fallback capture (GDI) was used: it does not see hardware-accelerated content."));
+            if (Hdr) sb.AppendLine(I18n.T("- La pantalla est\u00E1 en HDR: Windows entrega la imagen convertida a SDR.",
+                                          "- The screen is in HDR: Windows hands over the image converted to SDR."));
+            if (RefreshHz > 0 && fps > 0 && RefreshHz > fps * 1.02) sb.AppendLine(I18n.Fmt("- El monitor va a {0} Hz y se graba a {1} fps: {2} im\u00E1genes de pantalla no aparecen en ning\u00FAn fotograma.",
+                                                                                          "- The monitor runs at {0} Hz and recording is at {1} fps: {2} screen images are not in any frame.",
+                                                                                          N(RefreshHz, "0.#"), N(fps, "0.##"), ImagesUnused));
             if (AudioNotes != null) foreach (string a in AudioNotes) sb.AppendLine("- " + a);
-            if (!string.IsNullOrEmpty(Error)) sb.AppendLine("No se ha creado el m\u00E1ster: " + Error.Replace("\r", "").Replace("\n\n", " ").Replace("\n", " "));
-            if (!string.IsNullOrEmpty(Rescued)) sb.AppendLine("Lo grabado est\u00E1 en: " + Rescued);
-            if (Verification == null) sb.AppendLine("Comprobaci\u00F3n: no se ha hecho.");
-            else if (Verification.Passed) sb.AppendLine("Comprobaci\u00F3n: correcta, " + Verification.FramesMatched + " fotogramas id\u00E9nticos a los enviados al codificador.");
+            if (!string.IsNullOrEmpty(Error)) sb.AppendLine(I18n.T("No se ha creado el m\u00E1ster: ", "The master was not created: ") + Error.Replace("\r", "").Replace("\n\n", " ").Replace("\n", " "));
+            if (!string.IsNullOrEmpty(Rescued)) sb.AppendLine(I18n.T("Lo grabado est\u00E1 en: ", "What was recorded is in: ") + Rescued);
+            if (Verification == null) sb.AppendLine(I18n.T("Comprobaci\u00F3n: no se ha hecho.", "Check: not done."));
+            else if (Verification.Passed) sb.AppendLine(I18n.Fmt("Comprobaci\u00F3n: correcta, {0} fotogramas id\u00E9nticos a los enviados al codificador.",
+                                                                 "Check: passed, {0} frames identical to the ones sent to the encoder.", Verification.FramesMatched));
             else
             {
-                sb.AppendLine("Comprobaci\u00F3n: HA FALLADO.");
-                foreach (CineCheck c in Verification.Checks) if (!c.Passed) sb.AppendLine("- " + c.Name + ": " + c.Detail);
-            }
-            return sb.ToString().TrimEnd();
-        }
-
-        string SummaryEn()
-        {
-            StringBuilder sb = new StringBuilder();
-            double fps = FpsDen > 0 ? FpsNum / (double)FpsDen : 0;
-            sb.AppendLine(I18n.Fmt("", "Cinema: {0} \u00D7 {1} at {2} fps, {3} s, {4} frames.", Width, Height, N(fps, "0.##"), N(RecordSeconds, "0.0"), FramesWritten));
-            if (!string.IsNullOrEmpty(File)) sb.AppendLine(I18n.Localize("File: ") + System.IO.Path.GetFileName(File) + (FileBytes > 0 ? " (" + N(FileBytes / 1048576.0, "0.0") + " MB)" : ""));
-            if (StopReason != null) sb.AppendLine(I18n.Fmt("", "The recording stopped early: {0}. What was recorded up to then has been saved.", StopReason));
-            if (Pauses > 0) sb.AppendLine(Pauses == 1 ? I18n.Localize("- Paused once: what happened during the pause is not in the file.") : I18n.Fmt("", "- Paused {0} times: what happened during the pauses is not in the file.", Pauses));
-            if (OverlayFrames > 0) sb.AppendLine(OverlayFrames == 1 ? I18n.Localize("- 1 frame has clicks or pressed keys drawn on them (Recording > Clicks and keys).") : I18n.Fmt("", "- {0} frames have clicks or pressed keys drawn on them (Recording > Clicks and keys).", OverlayFrames));
-            if (HistoryMisses > 0) sb.AppendLine(I18n.Fmt("", "- {0} frames may have taken the wrong screen image (the computer was too slow).", HistoryMisses));
-            if (FramesRepeatedFailed > 0) sb.AppendLine(I18n.Fmt("", "- {0} frames repeat the one before because the screen could not be read.", FramesRepeatedFailed));
-            if (FramesBlack > 0) sb.AppendLine(I18n.Fmt("", "- {0} black frames at the start because the screen could not be read.", FramesBlack));
-            if (Discarded > 0) sb.AppendLine(I18n.Fmt("", "- {0} captured frames were never written.", Discarded));
-            if (LostEvents > 0) sb.AppendLine(I18n.Fmt("", LostEvents == 1 ? "- Screen capture was interrupted {0} time ({1} ms with no new image)." : "- Screen capture was interrupted {0} times ({1} ms with no new image).", LostEvents, N(LostMs, "0")));
-            if (Protected > 0) sb.AppendLine(I18n.Fmt("", "- In {0} images Windows hid protected windows or windows excluded from capture on that screen (Stackshot's too); any inside the area is missing or black.", Protected));
-            if (Gdi) sb.AppendLine(I18n.Localize("- The fallback capture (GDI) was used: it does not see hardware-accelerated content."));
-            if (Hdr) sb.AppendLine(I18n.Localize("- The screen is in HDR: Windows hands over the image converted to SDR."));
-            if (RefreshHz > 0 && fps > 0 && RefreshHz > fps * 1.02) sb.AppendLine(I18n.Fmt("", "- The monitor runs at {0} Hz and recording is at {1} fps: {2} screen images are not in any frame.", N(RefreshHz, "0.#"), N(fps, "0.##"), ImagesUnused));
-            if (AudioNotes != null) foreach (string a in AudioNotes) sb.AppendLine("- " + a);
-            if (!string.IsNullOrEmpty(Error)) sb.AppendLine(I18n.Localize("The master was not created: ") + Error.Replace("\r", "").Replace("\n\n", " ").Replace("\n", " "));
-            if (!string.IsNullOrEmpty(Rescued)) sb.AppendLine(I18n.Localize("What was recorded is in: ") + Rescued);
-            if (Verification == null) sb.AppendLine(I18n.Localize("Check: not done."));
-            else if (Verification.Passed) sb.AppendLine(I18n.Fmt("", "Check: passed, {0} frames identical to the ones sent to the encoder.", Verification.FramesMatched));
-            else
-            {
-                sb.AppendLine(I18n.Localize("Check: FAILED."));
+                sb.AppendLine(I18n.T("Comprobaci\u00F3n: HA FALLADO.", "Check: FAILED."));
                 foreach (CineCheck c in Verification.Checks) if (!c.Passed) sb.AppendLine("- " + c.Name + ": " + c.Detail);
             }
             return sb.ToString().TrimEnd();

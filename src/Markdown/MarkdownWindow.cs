@@ -589,7 +589,7 @@ namespace Stackshot
             {
                 string p = r.Path;
                 bool current = onDisk && string.Equals(p, file.Path, StringComparison.OrdinalIgnoreCase);
-                string when = r.Written.ToString(r.Written.Date == DateTime.Today ? "HH:mm:ss" : I18n.T("dd/MM HH:mm", "MMM d HH:mm"), I18n.IsSpanish ? System.Globalization.CultureInfo.CurrentCulture : System.Globalization.CultureInfo.InvariantCulture);
+                string when = r.Written.ToString(r.Written.Date == DateTime.Today ? "HH:mm:ss" : I18n.IsGerman ? "dd.MM. HH:mm" : I18n.T("dd/MM HH:mm", "MMM d HH:mm"), I18n.Culture);
                 MenuEntry e = MenuEntry.Item(when + "   " + (r.Operation.Length > 0 ? r.Operation : System.IO.Path.GetFileName(p)), null, current, delegate { LoadFile(p); });
                 e.Detail = System.IO.Path.GetFileName(p);
                 m.Add(e);
