@@ -4,7 +4,6 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Windows.Forms;
 using M = System.Windows.Media;
 
@@ -324,12 +323,10 @@ namespace Stackshot
         float X(double t) { Rectangle r = Strip; return r.X + (float)(r.Width * (Duration > 0 ? t / Duration : 0)); }
         double T(int x) { Rectangle r = Strip; return Math.Max(0, Math.Min(Duration, (x - r.X) / (double)Math.Max(1, r.Width) * Duration)); }
 
-        static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-ES");
-
         public static string Clock(double t)
         {
             int m = (int)(t / 60);
-            return m + ":" + (t - m * 60).ToString("00.0", I18n.IsSpanish ? Spanish : CultureInfo.InvariantCulture);
+            return m + ":" + (t - m * 60).ToString("00.0", I18n.Culture);
         }
 
         protected override void OnPaint(PaintEventArgs e)

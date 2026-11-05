@@ -21,8 +21,8 @@ namespace Stackshot
 
         static string Today { get { return DateTime.Today.ToString("yyyy-MM-dd"); } }
 
-        // 4.343 in Spanish, 4,343 in English.
-        static string N0(int n) { return n.ToString("N0", I18n.IsSpanish ? Es : CultureInfo.InvariantCulture); }
+        // 4.343 in Spanish and German, 4,343 in English: the separators of the interface language.
+        static string N0(int n) { return n.ToString("N0", I18n.Culture); }
 
         void StartHealth()
         {
@@ -112,7 +112,7 @@ namespace Stackshot
             if ((want & Settings.SummaryFocus) != 0 && settings.FocusBlocks > 0)
                 parts.Add(I18n.Fmt(settings.FocusBlocks == 1 ? "{0} bloque de concentraci\u00F3n ({1})" : "{0} bloques de concentraci\u00F3n ({1})", settings.FocusBlocks == 1 ? "{0} focus block ({1})" : "{0} focus blocks ({1})", settings.FocusBlocks, FocusClock.Minutes(settings.FocusMinutes)));
             if ((want & Settings.SummarySteps) != 0 && GoogleHealth.Connected && watch != null && watch.ReadAt.Date == DateTime.Today && watch.Steps > 0)
-                parts.Add(watch.Steps.ToString("N0", I18n.IsSpanish ? Es : CultureInfo.InvariantCulture) + I18n.T(" pasos", " steps"));
+                parts.Add(watch.Steps.ToString("N0", I18n.Culture) + I18n.T(" pasos", " steps"));
             StatsDayCheck();
             if ((want & Settings.SummaryCaptures) != 0 && settings.StatsCaptures > 0)
                 parts.Add(I18n.Fmt(settings.StatsCaptures == 1 ? "{0} captura" : "{0} capturas", settings.StatsCaptures == 1 ? "{0} capture" : "{0} captures", settings.StatsCaptures));

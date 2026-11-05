@@ -1263,7 +1263,7 @@ namespace Stackshot
                 if (r != 0) return false;
                 lock (file) { file.AcceptLoss(); ok = file.Save(text, target, out err); if (!ok) file.Lossy = true; }
             }
-            if (!ok && err != null && DocFile.IsCharsetError(err))
+            if (!ok && file.CharsetRefused)
             {
                 int r = DocAlert.Ask(this, err, I18n.T("Puedo guardarlo en UTF-8, que admite cualquier car\u00E1cter.", "I can save it in UTF-8, which supports any character."),
                                      new string[] { I18n.T("Guardar en UTF-8", "Save in UTF-8"), I18n.T("Cancelar", "Cancel") }, 0, 1);

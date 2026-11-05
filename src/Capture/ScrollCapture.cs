@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -855,7 +854,6 @@ namespace Stackshot
     // Floating HUD capsule next to the area, with a soft shadow (per-pixel window). Excluded from the capture.
     class ScrollCaptureBar : FloatWindow
     {
-        static readonly CultureInfo Es = CultureInfo.GetCultureInfo("es-ES");
         readonly ScrollSession session;
         bool saving;
         int hot = -1, shownHeight = -1;
@@ -927,8 +925,8 @@ namespace Stackshot
         {
             if (h <= 0) return I18n.T("Preparando\u2026", "Preparing\u2026");
             double screens = (double)h / Math.Max(1, session.AreaHeight);
-            string sc = screens < 1.05 ? I18n.T("1 pantalla", "1 screen") : screens.ToString("0.#", I18n.IsSpanish ? Es : CultureInfo.InvariantCulture) + I18n.T(" pantallas", " screens");
-            return sc + " \u00B7 " + h.ToString("N0", I18n.IsSpanish ? Es : CultureInfo.InvariantCulture) + " px";
+            string sc = screens < 1.05 ? I18n.T("1 pantalla", "1 screen") : screens.ToString("0.#", I18n.Culture) + I18n.T(" pantallas", " screens");
+            return sc + " \u00B7 " + h.ToString("N0", I18n.Culture) + " px";
         }
 
         // Layout in body coordinates.

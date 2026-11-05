@@ -50,6 +50,9 @@ namespace Stackshot.Tests
                 T("korean-format-fields", KoreanFormatFields);
                 T("korean-selection-fallback-and-persistence", KoreanSelection);
                 T("korean-settings-search-and-tray", KoreanSurfaces);
+                T("numbers-follow-the-language", NumberCulture);
+                T("changed-listeners-are-independent", ChangedListeners);
+                T("reader-seek-parses-any-language", ReaderSeek);
             }
             finally
             {
@@ -97,12 +100,15 @@ namespace Stackshot.Tests
             Directory.CreateDirectory(dir);
             try
             {
-                string old = Path.Combine(dir, "old.ini"), chosen = Path.Combine(dir, "chosen.ini"), none = Path.Combine(dir, "none.ini");
+                string old = Path.Combine(dir, "old.ini"), chosen = Path.Combine(dir, "chosen.ini"), none = Path.Combine(dir, "none.ini"),
+                        bad = Path.Combine(dir, "bad.ini");
                 File.WriteAllText(old, "# Ajustes de Stackshot\nFirstRunDone = 1\nSound = 0\n");
                 File.WriteAllText(chosen, "FirstRunDone = 1\nLanguage = en\n");
+                File.WriteAllText(bad, "FirstRunDone = 1\nLanguage = xx\n");
                 Check(Settings.Load(old).Language == "es", "a file without Language should keep Spanish, not " + Settings.Load(old).Language);
                 Check(Settings.Load(chosen).Language == "en", "a chosen language is read back");
                 Check(Settings.Load(none).Language == "auto", "a new install (no file) follows Windows");
+                Check(Settings.Load(bad).Language == "es", "a file with an invalid Language keeps the legacy Spanish, not " + Settings.Load(bad).Language);
             }
             finally { try { Directory.Delete(dir, true); } catch { } }
         }
@@ -154,6 +160,33 @@ namespace Stackshot.Tests
             for (int i = 0; i < pairs.GetLength(0); i++)
                 Check(Notice.KindFor(pairs[i, 0]) == Notice.KindFor(pairs[i, 1]),
                       "'" + pairs[i, 0] + "' is " + Notice.KindFor(pairs[i, 0]) + " but '" + pairs[i, 1] + "' is " + Notice.KindFor(pairs[i, 1]));
+
+            // German too: its titles put the verb at the end ("Die Aufnahme konnte nicht gespeichert werden."), so a
+            // prefix of the shown words cannot carry the kind; it must come from the English key the title translates.
+            string[,] german =
+            {
+                { "Die Aufnahme konnte nicht gespeichert werden.", "Could not save the recording." },
+                { "Scroll-Aufnahme", "Scrolling capture" },
+            };
+            for (int i = 0; i < german.GetLength(0); i++)
+                Check(Notice.KindFor(german[i, 0]) == Notice.KindFor(german[i, 1]),
+                      "'" + german[i, 0] + "' is " + Notice.KindFor(german[i, 0]) + " but '" + german[i, 1] + "' is " + Notice.KindFor(german[i, 1]));
+            // And every catalog entry whose English key carries a kind shows the same kind in German.
+            foreach (KeyValuePair<string, string> e in GermanByEnglish())
+            {
+                NoticeKind k = Notice.KindFor(e.Key);
+                if (k == NoticeKind.Info) continue;
+                Check(Notice.KindFor(e.Value) == k,
+                      "'" + e.Value + "' is " + Notice.KindFor(e.Value) + " but its English key '" + e.Key + "' is " + k);
+            }
+        }
+
+        // The German catalog's English key → shown German text, read by reflection (it is I18n's private Lazy).
+        static Dictionary<string, string> GermanByEnglish()
+        {
+            FieldInfo f = typeof(I18n).GetField("GermanCatalog", BindingFlags.NonPublic | BindingFlags.Static);
+            var lazy = (Lazy<Tuple<Dictionary<string, string>, Dictionary<string, string>>>)f.GetValue(null);
+            return lazy.Value.Item1;
         }
 
         // ---- The audit
@@ -602,6 +635,48 @@ namespace Stackshot.Tests
                 Check(Strings(viewer.Content).Contains("Datei \u00F6ffnen\u2026"), "same viewer updates to German");
             }
             finally { viewer.Close(); }
+        }
+
+        // Shown numbers take the separators of the interface language, whatever Windows this runs on.
+        static void NumberCulture()
+        {
+            I18n.Apply("en");
+            Check(I18n.Culture.Name == "en-US", "English numbers are en-US, not " + I18n.Culture.Name);
+            Check(Timeline.Clock(0.5) == "0:00.5", "English clock keeps the dot, got " + Timeline.Clock(0.5));
+            I18n.Apply("de");
+            Check(I18n.Culture.Name == "de-DE", "German numbers are de-DE, not " + I18n.Culture.Name);
+            Check(Timeline.Clock(0.5) == "0:00,5", "German clock uses the comma, got " + Timeline.Clock(0.5));
+            I18n.Apply("es");
+            Check(I18n.Culture.Name == "es-ES", "Spanish numbers are es-ES, not " + I18n.Culture.Name);
+            Check(Timeline.Clock(0.5) == "0:00,5", "Spanish clock keeps the comma, got " + Timeline.Clock(0.5));
+        }
+
+        // One listener that throws must not take the others (their live relocalization) down with it.
+        static void ChangedListeners()
+        {
+            I18n.Apply("es");
+            int ran = 0;
+            Action broken = delegate { ran++; throw new InvalidOperationException("oyente roto"); };
+            Action healthy = delegate { ran++; };
+            I18n.Changed += broken;
+            I18n.Changed += healthy;
+            try { I18n.Apply("en"); }
+            finally { I18n.Changed -= broken; I18n.Changed -= healthy; }
+            Check(ran == 2, "a failing listener must not stop the others, ran " + ran);
+            I18n.Apply("es");
+        }
+
+        // The reader types a position into the slider's value ("0:05 de 1:00", "0:05 von 1:00"): the leading time
+        // counts whatever word the interface puts after it.
+        static void ReaderSeek()
+        {
+            MethodInfo m = typeof(PlayerWindow).GetMethod("AccessTime", BindingFlags.NonPublic | BindingFlags.Static);
+            foreach (object[] case_ in new object[][] { new object[] { "0:05 de 1:00", 5.0 }, new object[] { "0:05 von 1:00", 5.0 }, new object[] { "0:05 of 1:00", 5.0 }, new object[] { "1:05", 65.0 }, new object[] { "65", 65.0 } })
+            {
+                object[] args = { case_[0], 0.0 };
+                Check((bool)m.Invoke(null, args) && (double)args[1] == (double)case_[1],
+                      "'" + case_[0] + "' should be " + case_[1] + " seconds, got " + args[1]);
+            }
         }
 
         static void LanguagePickerSearch()

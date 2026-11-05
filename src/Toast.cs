@@ -86,13 +86,23 @@ namespace Stackshot
             "Cinema: lossless, verified", "Print Screen now belongs to Stackshot"
         };
 
-        // The kind of a notice raised without one (Notify and NotifyPage), from its title.
+        // The kind of a notice raised without one (Notify and NotifyPage), from its title: the prefixes of the language
+        // it is shown in first, and when none matches (German puts the verb at the end, so a prefix rarely carries the
+        // kind) the English key the title translates, from I18n's reverse lookup. Explicit kinds never come here.
         public static NoticeKind KindFor(string title)
         {
             string t = (title ?? "").Trim();
             if (I18n.IsKorean)
                 foreach (string source in NoticeTitles)
                     if (t == I18n.Localize(source)) { t = source; break; }
+            NoticeKind k = KindOf(t);
+            if (k != NoticeKind.Info) return k;
+            string key = I18n.EnglishKey(t);
+            return key != null && key.Trim() != t ? KindOf(key.Trim()) : NoticeKind.Info;
+        }
+
+        static NoticeKind KindOf(string t)
+        {
             if (Starts(t, ErrorStarts)) return NoticeKind.Error;
             if (Starts(t, WarningStarts)) return NoticeKind.Warning;
             if (Starts(t, SuccessStarts)) return NoticeKind.Success;
