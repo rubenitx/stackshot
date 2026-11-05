@@ -67,7 +67,7 @@ namespace Stackshot
             map["Starting slowly is starting best."] = "\uCC9C\uCC9C\uD788 \uC2DC\uC791\uD558\uB294 \uAC8C \uCD5C\uACE0\uC9C0.";
             map["One day at a time."] = "\uD558\uB8E8\uC529 \uCC28\uADFC\uCC28\uADFC.";
             map["Had breakfast yet or what?"] = "\uC544\uCE68\uC740 \uBA39\uC5C8\uC5B4?";
-            map["Those eyes say \"needs coffee\"."] = "\uB208\uB9CC \uBD10\uB3C4 \uCEE4\uD53C\uAC00 \uD544\uC694\uD558\uACA0\uB294\uB370.";
+            map["Those eyes say \u201Cneeds coffee\u201D."] = "\uB208\uB9CC \uBD10\uB3C4 \uCEE4\uD53C\uAC00 \uD544\uC694\uD558\uACA0\uB294\uB370.";
             map["Early hours, early memes."] = "\uC544\uCE68\uBD80\uD130 \uC6C3\uAE34 \uAC70 \uBCF4\uB294 \uC911?";
             map["Had lunch yet?"] = "\uC810\uC2EC \uBA39\uC5C8\uC5B4?";
             map["Nap time is getting close."] = "\uC2AC\uC2AC \uB0AE\uC7A0 \uC798 \uC2DC\uAC04\uC774\uB124.";
