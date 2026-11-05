@@ -88,6 +88,7 @@ namespace Stackshot
         int menuWell = -1, session = -1, sessionReps;
         bool menuSticky;            // the menu stays a minute and ignores clicks elsewhere (news after an update)
         bool menuFocus;             // the menu is a focus-mode question
+        Action reopenMenu;          // reopens the open menu with the same choices (a language change under it)
         int sessionSerial;
         bool sessionStretch;
 
@@ -111,6 +112,17 @@ namespace Stackshot
             timer.Tick += delegate { SafeTick(false); };
             // Files and text can be dropped on it (only where it is drawn: the rest of the window lets everything through).
             AllowDrop = true;
+            I18n.Changed += Relocalize;
+        }
+
+        // The desktop mascot outlives a language change: the bubble, the pill and the session lines are re-localized as
+        // they are drawn every frame; an open menu is reopened with the same choices, and closed ones rebuild on demand.
+        void Relocalize()
+        {
+            if (IsDisposed || menu == null || reopenMenu == null) return;
+            if (!IsHandleCreated) return;
+            Action reopen = reopenMenu;
+            BeginInvoke(reopen);
         }
 
         void SafeTick(bool fromPacer)
@@ -599,6 +611,7 @@ namespace Stackshot
             menuRect = RectangleF.Empty;
             menuHot = -1;
             menuWell = kind;
+            reopenMenu = delegate { Remind(kind, text); };
             nextIdea = Anim.Now + 8000;
         }
 
@@ -619,6 +632,7 @@ namespace Stackshot
             }
             AddSep();
             Add("gear", I18n.T("Ajustar los avisos", "Adjust reminders"), null, delegate { owner.ShowHome("mascotset", false); });
+            reopenMenu = OpenBreaks;
             menuAt = menuSeen = Anim.Now;
             menuGone = null;
             Halt();
@@ -643,6 +657,7 @@ namespace Stackshot
             Halt();
             // Like a reminder, it stays while you work (clicks elsewhere don't close it) and goes after a minute.
             menuSticky = true;
+            reopenMenu = delegate { AnnounceNews(version, headline, open); };
             menuArmed = false;
             menuRect = RectangleF.Empty;
             menuHot = -1;
@@ -665,6 +680,7 @@ namespace Stackshot
             string today = owner.FocusToday();
             m.Perform(MascotCmd.Cheer);
             FocusPrompt(I18n.Fmt("\u00A1Bloque {0} de {1} hecho!", "Block {0} of {1} done!", f.Block, f.Rounds) + (today != null ? " " + today + "." : "") + (levelUp != null ? " " + levelUp : ""));
+            reopenMenu = delegate { FocusAskWork(levelUp); };
             AddFocusChoices(f);
         }
 
@@ -675,6 +691,7 @@ namespace Stackshot
             int next = f.Block >= f.Rounds || f.LongBreak ? 1 : f.Block + 1;
             m.Perform(MascotCmd.Wave);
             FocusPrompt(I18n.Fmt("Fin del descanso. \u00BFSeguimos con el bloque {0} de {1}?", "Break's over. Shall we go on with block {0} of {1}?", next, f.Rounds));
+            reopenMenu = FocusAskBreak;
             AddFocusChoices(f);
         }
 
@@ -683,6 +700,7 @@ namespace Stackshot
         {
             m.Hop(1.0);
             FocusPrompt(text);
+            reopenMenu = delegate { FocusAskBack(text); };
             AddFocusChoices(owner.FocusState);
         }
 
@@ -712,6 +730,7 @@ namespace Stackshot
             if (cheer) m.Perform(MascotCmd.Cheer);
             FocusPrompt(text);
             menuFocus = false;
+            reopenMenu = delegate { HealthTell(text, cheer); };
             Add("check", I18n.T("Gracias", "Thanks"), null, delegate { });
         }
 
@@ -719,6 +738,7 @@ namespace Stackshot
         {
             FocusPrompt(text);
             menuFocus = false;
+            reopenMenu = delegate { HealthAskMove(text); };
             Add(WellKind.Glyphs[WellKind.Move], I18n.T("Estiramos las piernas", "Let's stretch our legs"), null, delegate { StartSession(WellKind.Move); });
             Add("clock", I18n.T("Luego", "Later"), null, delegate { m.Say(I18n.T("Vale, luego nos movemos.", "OK, we'll move later."), 2600); });
         }
@@ -728,6 +748,7 @@ namespace Stackshot
         {
             FocusPrompt(text);
             menuFocus = false;
+            reopenMenu = delegate { HealthAskWalk(text); };
             Add("walk", I18n.T("Voy a dar un paseo", "I'll go for a walk"), null, delegate
             {
                 owner.WalkStarted();
@@ -739,7 +760,15 @@ namespace Stackshot
 
         static readonly string[] OpeningEs = { "\u00A1Marchando!", "\u00A1Te lo abro!", "\u00A1Ah\u00ED va!", "\u00A1Hecho!" };
         static readonly string[] OpeningEn = { "Coming right up!", "Opening it!", "Here it goes!", "Done!" };
-        static string[] Opening { get { return I18n.IsSpanish ? OpeningEs : I18n.LocalizeList(OpeningEn); } }
+        static string[] Opening
+        {
+            get
+            {
+                string[] r = new string[OpeningEn.Length];
+                for (int i = 0; i < r.Length; i++) r[i] = I18n.T(OpeningEs[i], OpeningEn[i]);
+                return r;
+            }
+        }
 
         void OpenLink(QuickLink l)
         {
@@ -792,6 +821,7 @@ namespace Stackshot
             m.Perform(MascotCmd.Wave);
             FocusPrompt(I18n.T("Recordatorio: ", "Reminder: ") + text);
             menuFocus = false;
+            reopenMenu = delegate { ReminderCard(text, later); };
             Add("check", I18n.T("Hecho", "Done"), null, delegate { m.Hop(0.8); });
             Add("clock", I18n.T("Recu\u00E9rdamelo en 10 min", "Remind me in 10 min"), null, delegate { later(10); m.Say(I18n.T("Vale, en 10 minutos.", "OK, in 10 minutes."), 2600); });
             Add("clock", I18n.T("En 1 hora", "In 1 hour"), null, delegate { later(60); m.Say(I18n.T("Vale, dentro de una hora.", "OK, in an hour."), 2600); });
@@ -802,6 +832,7 @@ namespace Stackshot
             m.Hop(1.0);
             FocusPrompt(text);
             menuFocus = false;
+            reopenMenu = delegate { FaultCard(text, open); };
             Add("open", I18n.T("Abrir el XML", "Open the XML"), null, open);
             Add("check", I18n.T("Vale", "OK"), null, delegate { });
         }
@@ -875,6 +906,7 @@ namespace Stackshot
             m.Perform(MascotCmd.Wave);
             FocusPrompt(text);
             menuFocus = false;
+            reopenMenu = delegate { WatchOffer(text, connect, never); };
             Add("google", I18n.T("Conectar mi reloj", "Connect my watch"), null, delegate { connect(); m.Say(I18n.T("Te abro el inicio de sesi\u00F3n en el navegador.", "Opening the sign-in page in your browser."), 3600); });
             Add("clock", I18n.T("Luego", "Later"), null, delegate { m.Say(I18n.T("Vale, otro d\u00EDa te lo vuelvo a preguntar.", "OK, I'll ask you again another day."), 3000); });
             Add("close", I18n.T("No tengo reloj", "I don't have a watch"), null, delegate { never(); m.Say(I18n.T("\u00A1Entendido! Sin reloj tambi\u00E9n te acompa\u00F1o.", "Got it! I'll keep you company without a watch too."), 3000); });
@@ -921,7 +953,7 @@ namespace Stackshot
             }
             else
             {
-                Add("pause", I18n.T("Pausar", "Pause"), null, owner.FocusPause);
+                Add("pause", I18n.T("Pausar", "Pause", "Pausieren"), null, owner.FocusPause);
                 if (f.Now == FocusClock.Phase.Break) Add("play", I18n.T("Saltar el descanso", "Skip the break"), null, delegate { owner.FocusWork(false); });
                 Add("close", I18n.T("Terminar la concentraci\u00F3n", "End focus"), null, owner.FocusStop);
             }
@@ -1121,17 +1153,18 @@ namespace Stackshot
                 case WellKind.Eyes:
                 {
                     int left = (int)Math.Ceiling(Math.Max(0, 20000 - t) / 1000);
-                    line = left > 0 ? I18n.T("Mira algo lejano, a m\u00E1s de 6 metros\u2026 ", "Look at something far away, over 20 feet\u2026 ") + left : I18n.T("\u00A1Listo!", "Done!");
+                    line = left > 0 ? I18n.Fmt("Mira algo lejano, a m\u00E1s de 6 metros\u2026 {0}", "Look at something far away, over 20 feet\u2026 {0}", left) : I18n.T("\u00A1Listo!", "Done!");
                     break;
                 }
                 case WellKind.Move:
-                    line = sessionStretch ? I18n.T("Brazos arriba y estira la espalda\u2026 ", "Arms up and stretch your back\u2026 ") + (sessionReps + 1) + I18n.T(" de 3", " of 3")
-                                          : I18n.T("Sentadilla ", "Squat ") + Math.Min(8, (int)(Math.Max(0, t - 200) / MascotProps.SquatMs) + 1) + I18n.T(" de 8", " of 8");
+                    line = sessionStretch ? I18n.Fmt("Brazos arriba y estira la espalda\u2026 {0} de 3", "Arms up and stretch your back\u2026 {0} of 3", sessionReps + 1)
+                                          : I18n.Fmt("Sentadilla {0} de 8", "Squat {0} of 8", Math.Min(8, (int)(Math.Max(0, t - 200) / MascotProps.SquatMs) + 1));
                     break;
                 default:
                 {
                     int n = Math.Min(6, (int)(Math.Max(0, t - 200) / MascotProps.BreathMs) + 1);
-                    line = (MascotProps.Inhaling(t) ? I18n.T("Inspira despacio por la nariz\u2026 ", "Breathe in slowly through your nose\u2026 ") : I18n.T("Suelta el aire poco a poco\u2026 ", "Let the air out little by little\u2026 ")) + n + I18n.T(" de 6", " of 6");
+                    line = I18n.Fmt(MascotProps.Inhaling(t) ? "Inspira despacio por la nariz\u2026 {0} de 6" : "Suelta el aire poco a poco\u2026 {0} de 6",
+                                    MascotProps.Inhaling(t) ? "Breathe in slowly through your nose\u2026 {0} of 6" : "Let the air out little by little\u2026 {0} of 6", n);
                     break;
                 }
             }
@@ -1807,7 +1840,7 @@ namespace Stackshot
             if (GoogleHealth.Connected && !f.On)
             {
                 GoogleHealth.Today w = owner.Watch;
-                Add("walk", I18n.T("Mi actividad", "My activity"), w != null && !w.Empty ? w.Steps.ToString("N0", System.Globalization.CultureInfo.GetCultureInfo(I18n.IsSpanish ? "es-ES" : "en-US")) + I18n.T(" pasos", " steps") : null, TellActivity);
+                Add("walk", I18n.T("Mi actividad", "My activity"), w != null && !w.Empty ? w.Steps.ToString("N0", I18n.Culture) + I18n.T(" pasos", " steps") : null, TellActivity);
             }
             // Not for someone who said they have no watch (it stays in Ajustes > Salud y actividad).
             if (GoogleHealth.Available && !GoogleHealth.Connected && !GoogleHealth.Connecting && settings.FitbitAsked != "no")
@@ -1816,6 +1849,7 @@ namespace Stackshot
             Add("brush", I18n.T("Cambiarme de ropa", "Change my outfit"), null, delegate { owner.ShowHome("mascot", false); });
             Add("logo", I18n.T("Abrir Stackshot", "Open Stackshot"), null, delegate { owner.ShowHome("home", false); });
             Add("home", I18n.T("Vete a casa", "Go home"), null, GoHome);
+            reopenMenu = OpenMenu;
             menuAt = menuSeen = Anim.Now;
             menuGone = null;
             Halt();
@@ -2221,6 +2255,7 @@ namespace Stackshot
             if (menuCard != null) { menuCard.Dispose(); menuCard = null; }
             if (bubbleCard != null) { bubbleCard.Dispose(); bubbleCard = null; }
             if (pillText != null) { pillText.Dispose(); pillText = null; }
+            I18n.Changed -= Relocalize;
         }
     }
 }

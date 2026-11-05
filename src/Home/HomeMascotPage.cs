@@ -35,7 +35,15 @@ namespace Stackshot
         const int SlotAnime = 0, SlotStyle = 1, SlotKind = 2, SlotColor = 3, SlotHat = 4, SlotOutfit = 5, SlotFace = 6, SlotEyes = 7, SlotAcc = 8, SlotAction = -4, ActionsTab = 7;
         static readonly string[] DockTabNamesEs = { "Mis looks", "Personajes", "Cuerpo", "Gorros", "Ropa", "Cara", "Extras", "Acciones" };
         static readonly string[] DockTabNamesEn = { "My Looks", "Characters", "Body", "Hats", "Outfits", "Face", "Extras", "Actions" };
-        static string[] DockTabNames { get { return I18n.IsSpanish ? DockTabNamesEs : I18n.LocalizeList(DockTabNamesEn); } }
+        static string[] DockTabNames
+        {
+            get
+            {
+                string[] r = new string[DockTabNamesEn.Length];
+                for (int i = 0; i < r.Length; i++) r[i] = I18n.T(DockTabNamesEs[i], DockTabNamesEn[i]);
+                return r;
+            }
+        }
         static readonly int[][] DockTabSlots =
         {
             new int[0], new int[] { SlotStyle, SlotAnime }, new int[] { SlotKind, SlotColor }, new int[] { SlotHat }, new int[] { SlotOutfit },
@@ -45,7 +53,15 @@ namespace Stackshot
                                                       "Bromista, movido y un poco chulito" };
         static readonly string[] PersonalityHintsEn = { "Lively and always eager to capture", "Calm: speaks little and takes a nap first",
                                                       "Playful, active, and a bit cheeky" };
-        static string[] PersonalityHints { get { return I18n.IsSpanish ? PersonalityHintsEs : I18n.LocalizeList(PersonalityHintsEn); } }
+        static string[] PersonalityHints
+        {
+            get
+            {
+                string[] r = new string[PersonalityHintsEn.Length];
+                for (int i = 0; i < r.Length; i++) r[i] = I18n.T(PersonalityHintsEs[i], PersonalityHintsEn[i]);
+                return r;
+            }
+        }
         static readonly Color StarYellow = Ds.Rgb(255, 196, 0), LovePink = Ds.Rgb(255, 92, 140);
 
         int dockTab = -1;                       // the tab and the search are kept while the window lives
@@ -609,8 +625,10 @@ namespace Stackshot
                 return string.Format(I18n.Localize("{0}  \u00B7  {1} captures together"), MascotParts.LevelNames[level], love)
                     + (left > 0 ? string.Format(I18n.Localize("  \u00B7  {0} left until {1}"), left, MascotParts.LevelNames[level + 1])
                                 : I18n.Localize("  \u00B7  max level"));
-            return MascotParts.LevelNames[level] + "  \u00B7  " + love + (love == 1 ? (I18n.IsSpanish ? " captura juntos" : " capture together") : (I18n.IsSpanish ? " capturas juntos" : " captures together")) +
-                   (left > 0 ? (I18n.IsSpanish ? "  \u00B7  faltan " + left + " para \u00AB" + MascotParts.LevelNames[level + 1].ToLowerInvariant() + "\u00BB" : "  \u00B7  " + left + " to go for \u201C" + MascotParts.LevelNames[level + 1] + "\u201D") : (I18n.IsSpanish ? "  \u00B7  nivel m\u00E1ximo" : "  \u00B7  max level"));
+            string next = level + 1 < MascotParts.LevelNames.Length ? (I18n.IsSpanish ? MascotParts.LevelNames[level + 1].ToLowerInvariant() : MascotParts.LevelNames[level + 1]) : null;
+            return MascotParts.LevelNames[level] + "  \u00B7  " + (love == 1 ? I18n.Fmt("{0} captura juntos", "{0} capture together", love) : I18n.Fmt("{0} capturas juntos", "{0} captures together", love)) +
+                   (left > 0 && next != null ? I18n.Fmt("  \u00B7  faltan {0} para \u00AB{1}\u00BB", "  \u00B7  {0} to go for \u201C{1}\u201D", left, next)
+                                             : I18n.T("  \u00B7  nivel m\u00E1ximo", "  \u00B7  max level"));
         }
 
         // A capture while the page is open: the hearts fill up in place and whatever the new level brings opens up
@@ -909,7 +927,7 @@ namespace Stackshot
             List<string> r = new List<string>();
             for (int i = 0; i < MascotParts.ColorNames.Length; i++) if (MascotParts.ColorUnlock(i) == level) r.Add(I18n.Fmt("color {0}", "{0} color", LowerName(MascotParts.ColorNames[i])));
             for (int i = 0; i < MascotParts.HatNames.Length; i++) if (MascotParts.HatUnlock(i) == level) r.Add(LowerName(MascotParts.HatNames[i]));
-            return r.Count > 0 ? I18n.T("Desbloquea ", "Unlocks ") + string.Join(", ", r.ToArray()) : null;
+            return r.Count > 0 ? I18n.Fmt("Desbloquea {0}", "Unlocks {0}", string.Join(", ", r.ToArray())) : null;
         }
 
         void SetDesktop(bool on)
@@ -1522,7 +1540,7 @@ namespace Stackshot
         {
             Palette pal = Ds.Brushes;
             if (pal.High) return pal.Label;
-            if (name == "Estilos" || name == "Styles" || name == "Originales" || name == "Originals" || name == "Favoritos" || name == "Favorites") return pal.Dark ? Ds.Rgb(243, 201, 107) : Ds.Rgb(158, 104, 0);
+            if (name == "Estilos" || name == "Styles" || name == "Stile" || name == "Originales" || name == "Originals" || name == "Originale" || name == "Favoritos" || name == "Favorites" || name == "Favoriten") return pal.Dark ? Ds.Rgb(243, 201, 107) : Ds.Rgb(158, 104, 0);
             if (MascotParts.GroupFeatured(name)) return pal.Dark ? Ds.Rgb(143, 211, 168) : Ds.Rgb(30, 122, 72);
             return pal.Label2;
         }
@@ -1978,8 +1996,7 @@ namespace Stackshot
             if (it.Locked)
             {
                 int lv = Math.Max(0, Math.Min(MascotParts.LevelNames.Length - 1, it.Level));
-                s += string.Format(I18n.T("  \u00B7  llega con \u00AB{0}\u00BB ({1} capturas)", "  \u00B7  unlocked at \u201C{0}\u201D ({1} captures)"),
-                    I18n.IsSpanish ? MascotParts.LevelNames[lv].ToLowerInvariant() : MascotParts.LevelNames[lv], MascotParts.UnlockLove(lv));
+                s += I18n.Fmt("  \u00B7  llega con \u00AB{0}\u00BB ({1} capturas)", "  \u00B7  unlocked at \u201C{0}\u201D ({1} captures)", I18n.IsSpanish ? MascotParts.LevelNames[lv].ToLowerInvariant() : MascotParts.LevelNames[lv], MascotParts.UnlockLove(lv));
             }
             return s;
         }
@@ -2164,7 +2181,8 @@ namespace Stackshot
             if (it.Locked)
             {
                 int left = MascotParts.UnlockLove(it.Level) - settings.MascotLove;
-                if (settings.MascotOn) mascot.Say(I18n.IsKorean ? string.Format(I18n.Localize("Not yet! You need {0} more captures for that."), left) : I18n.IsSpanish ? ("\u00A1A\u00FAn no! Te faltan " + left + (left == 1 ? " captura" : " capturas") + " para eso.") : ("Not yet! You need " + left + (left == 1 ? " more capture" : " more captures") + " for that."), 2800);
+                if (settings.MascotOn) mascot.Say(I18n.IsKorean ? string.Format(I18n.Localize("Not yet! You need {0} more captures for that."), left) : left == 1 ? I18n.Fmt("\u00A1A\u00FAn no! Te falta 1 captura para eso.", "Not yet! You need 1 more capture for that.", 1)
+                                                            : I18n.Fmt("\u00A1A\u00FAn no! Te faltan {0} capturas para eso.", "Not yet! You need {0} more captures for that.", left), 2800);
                 if (it.Cell != null) it.Cell.Shake();
                 Wake();
                 return;

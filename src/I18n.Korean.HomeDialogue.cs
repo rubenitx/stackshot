@@ -740,7 +740,7 @@ namespace Stackshot
             map["  \u00B7  max level"] = "  \u00B7  \uCD5C\uACE0 \uB808\uBCA8";
             map["At {0} captures"] = "\uCEA1\uCC98 {0}\uD68C \uB2EC\uC131 \uC2DC";
             map["  \u00B7  unlocked at \u201C{0}\u201D ({1} captures)"] = "  \u00B7  \u2018{0}\u2019 \uB2EC\uC131 \uC2DC \uD574\uC81C(\uCEA1\uCC98 {1}\uD68C)";
-            map["Unlocks "] = "\uC7A0\uAE08 \uD574\uC81C: ";
+            map["Unlocks {0}"] = "\uC7A0\uAE08 \uD574\uC81C: {0}";
             map["Not yet! You need {0} more captures for that."] = "\uC544\uC9C1\uC774\uC57C! \uCEA1\uCC98\uB97C {0}\uBC88 \uB354 \uD558\uBA74 \uB3FC.";
             map["{0} mode on!"] = "{0} \uBAA8\uB4DC \uC2DC\uC791!";
             map["{0}! How does it look on me?"] = "{0}! \uB098\uD55C\uD14C \uC798 \uC5B4\uC6B8\uB824?";

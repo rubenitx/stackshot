@@ -46,6 +46,7 @@ namespace Stackshot.Tests
                 T("korean-switch-on-open-capture-surfaces", KoreanCaptureUpdates);
                 T("german-document-viewer-updates-while-open", GermanDocumentUpdates);
                 T("german-settings-welcome-and-tray", GermanSurfaces);
+                T("german-desktop-pet-menu-updates", GermanPetMenuUpdates);
                 T("language-picker-search-and-preview", LanguagePickerSearch);
                 T("korean-format-fields", KoreanFormatFields);
                 T("korean-selection-fallback-and-persistence", KoreanSelection);
@@ -620,6 +621,40 @@ namespace Stackshot.Tests
             finally { welcome.Close(); }
             List<string> tray = AuditTray();
             Check(tray.Contains("Bereich") && tray.Contains("Sprache auswählen\u2026"), "German actions appear in the tray");
+        }
+
+        // The desktop mascot outlives a language change: with one of its menus open (a healthy-break reminder), a switch
+        // rebuilds it in place in the new language.
+        static void GermanPetMenuUpdates()
+        {
+            Settings s = new Settings();
+            s.SaveFolder = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-pet");
+            I18n.Apply("en");
+            ShotStack owner = (ShotStack)FormatterServices.GetUninitializedObject(typeof(ShotStack));
+            PetWindow pet = new PetWindow(owner, s);
+            try
+            {
+                IntPtr handle = pet.Handle;   // the rebuild is posted to the window: create the handle first
+                typeof(PetWindow).GetMethod("Remind", BindingFlags.Public | BindingFlags.Instance).Invoke(pet, new object[] { WellKind.Water, "Time for some water" });
+                Check(PetRows(pet).Contains("I'll drink a glass with you") && PetRows(pet).Contains("Already done"), "English reminder menu");
+                I18n.Apply("de");
+                System.Windows.Forms.Application.DoEvents();
+                Check(PetRows(pet).Contains("Ich trinke ein Glas mit dir") && PetRows(pet).Contains("Habe ich schon"), "open menu rebuilt in German");
+                I18n.Apply("es");
+                System.Windows.Forms.Application.DoEvents();
+                Check(PetRows(pet).Contains("Bebo un vaso contigo") && PetRows(pet).Contains("Ya lo he hecho"), "open menu rebuilt in Spanish");
+            }
+            finally { pet.Dispose(); }
+        }
+
+        static List<string> PetRows(PetWindow pet)
+        {
+            object menu = typeof(PetWindow).GetField("menu", NP).GetValue(pet);
+            Check(menu != null, "the pet's menu is open");
+            List<string> rows = new List<string>();
+            foreach (object c in (System.Collections.IEnumerable)menu)
+                rows.Add((string)c.GetType().GetField("Text").GetValue(c));
+            return rows;
         }
 
         static void GermanDocumentUpdates()
