@@ -204,6 +204,12 @@ namespace Stackshot
 
         static string[] PirateLines(int k)
         {
+            if (I18n.IsGerman)
+            {
+                if (k == KindLuffySd)
+                    return new string[] { "Ich werde der König der Piraten!", "Ich habe Hunger! Fleisch!", "Gomu Gomu no\u2026!", "Shishishi!", "Komm in meine Crew!" };
+                return new string[] { "Hier ist nichts passiert.", "Wo bin ich? Ich habe mich wieder verlaufen.", "Santoryu!", "Ich werde der beste Schwertkämpfer der Welt.", "Zeit für ein Nickerchen." };
+            }
             if (!I18n.IsSpanish)
             {
                 if (k == KindLuffySd)

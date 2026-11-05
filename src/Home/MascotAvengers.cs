@@ -760,6 +760,7 @@ namespace Stackshot
 
         static string[] AvLines(int k)
         {
+            if (I18n.IsGerman) return AvLinesDe(k);
             if (!I18n.IsSpanish) return AvLinesEn(k);
             switch (k)
             {
@@ -798,6 +799,27 @@ namespace Stackshot
                 case KindBoboTitanSd: return new string[] { "Huh?", "Uaaah\u2026", "Have you seen Eren?", "Hmm\u2026 what was I doing?" };
                 case KindAttackSd: return new string[] { "RAAAAAH!", "I'll wipe you all out!", "Keep moving forward.", "I'll fight." };
                 default: return new string[] { "\u2026", "Charge!", "I am a warrior.", "There's no turning back." };
+            }
+        }
+
+        static string[] AvLinesDe(int k)
+        {
+            switch (k)
+            {
+                case KindCapSd: return new string[] { "Avengers, versammelt euch!", "Das kann ich den ganzen Tag.", "Ich mag keine Tyrannen.", "Sprache!" };
+                case KindThorSd: return new string[] { "Für Asgard!", "Ich bin der Donnergott.", "Nochmal!", "Bringt mir Thanos!" };
+                case KindHulkSd: return new string[] { "Hulk zerquetscht!", "GRRRR!", "Mein Geheimnis: Ich bin immer wütend.", "Hulk hat Hunger." };
+                case KindWidowSd: return new string[] { "Ich habe Rot in meiner Bilanz und will es tilgen.", "Ich gehöre nicht zu denen, die aufgeben.", "Black Widow, in Position.", "Du hast mich gebraucht? Hier bin ich." };
+                case KindHawkSd: return new string[] { "Ich verfehle nie.", "Dafür habe ich einen Pfeil.", "Die Stadt fliegt und ich habe einen Bogen.", "Hawkeye, in Position." };
+                case KindPantherSd: return new string[] { "Wakanda für immer!", "Ich bin der König von Wakanda.", "In Zeiten der Krise bauen Weise Brücken.", "Es ist nicht das erste Mal, dass man mich für tot hält." };
+                case KindStrangeSd: return new string[] { "Dormammu, ich bin gekommen, um zu verhandeln.", "Einer von vierzehn Millionen.", "Zeit ist relativ.", "Oberster Magier, zu deinen Diensten." };
+                case KindCarolSd: return new string[] { "Höher, weiter, schneller!", "Ich habe dir nichts zu beweisen.", "Ich bin Carol Danvers.", "Brauchst du Hilfe? Ich bin da." };
+                case KindWandaSd: return new string[] { "Das will ich.", "Du kannst mich nicht kontrollieren.", "Ich bin die Scarlet Witch.", "Chaosmagie." };
+                case KindColossalSd: return new string[] { "\u2026", "GROOOAAAR!", "Fsssshhh\u2026", "Die Mauer schützt euch nicht mehr." };
+                case KindSmileTitanSd: return new string[] { "Hallo\u2026 hihihi.", "Hunger? Ich schon.", "Was für ein schöner Tag zum Spazieren.", "*grinst ohne Ende*" };
+                case KindBoboTitanSd: return new string[] { "Häh?", "Uaaah\u2026", "Hast du Eren gesehen?", "Hmm\u2026 was mache ich hier eigentlich?" };
+                case KindAttackSd: return new string[] { "RAAAAAH!", "Ich werde euch alle auslöschen!", "Immer weiter vorwärts.", "Ich werde kämpfen." };
+                default: return new string[] { "\u2026", "Angriff!", "Ich bin ein Krieger.", "Da gibt es kein Zurück." };
             }
         }
 

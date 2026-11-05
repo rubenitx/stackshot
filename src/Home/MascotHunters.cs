@@ -270,6 +270,13 @@ namespace Stackshot
 
         static string[] HunterLines(int k)
         {
+            if (I18n.IsGerman)
+                switch (k)
+                {
+                    case KindGonSd: return new string[] { "Komm schon, Killua!", "Schere, Stein\u2026 Papier!", "Ich werde meinen Vater finden!", "Ich bin Gon Freecss." };
+                    case KindKilluaSd: return new string[] { "Ich bin Killua.", "Ist noch Schokolade da?", "Gon, du bist mein bester Freund.", "Blitzschnell!" };
+                    default: return new string[] { "Die hebe ich mir für später auf.", "Was für eine köstliche Frucht!", "Bungee-Gum hat die Eigenschaften von Kaugummi und Gummi \u2665", "Noch ein bisschen reifen\u2026 \u2660" };
+                }
             if (!I18n.IsSpanish)
                 switch (k)
                 {

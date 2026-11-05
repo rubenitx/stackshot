@@ -1160,6 +1160,7 @@ namespace Stackshot
 
         static string[] KleiLines(int kind)
         {
+            if (I18n.IsGerman) return KleiLinesDe(kind);
             if (!I18n.IsSpanish) return KleiLinesEn(kind);
             switch (kind)
             {
@@ -1200,6 +1201,27 @@ namespace Stackshot
                                                         "Wendy: \u201CAbigail has always been my light in the dark\u2026\u201D", "Wendy: \u201CI was so lonely here without you.\u201D",
                                                         "Wendy: \u201CBe careful, Abigail!\u201D", "Wilson: \u201COooh, she has the cutest little bow.\u201D", "Willow: \u201CWell, what happened to you?\u201D" };
                 default: return new string[] { "Need oxygen\u2026", "Who left this slime here?", "Errand complete!" };
+            }
+        }
+
+        static string[] KleiLinesDe(int kind)
+        {
+            switch (kind)
+            {
+                case KindWilson: return new string[] { "Ich habe einen Mordshunger!", "Es wird spät. Bald ist es dunkel.", "Ist das dunkel!",
+                                                       "Diese Präsenz\u2026 die kommt mir bekannt vor! Hallo?", "BIEEEEEEEEEENEN!!", "Es ist eiskalt!",
+                                                       "Ich brauche\u2026 Eis\u2026 oder\u2026 Schatten!", "Hast du das gehört?", "Ich fühle mich jetzt so schlau!", "Höre nie auf zu lernen!",
+                                                       "Besser das als die Dunkelheit.", "Ich verehre nur die Wissenschaft.", "Ich werde alles erobern, mit der Macht meines VERSTANDS!" };
+                case KindWillow: return new string[] { "Ich brauche Essen!", "Die Nacht kommt. Ich brauche Feuer!", "Wo habe ich nur mein Feuerzeug?!",
+                                                       "Vor dir habe ich keine Angst!", "Aah! Stechende Biester!", "Die Kälte! Sie brennt!", "Mein kostbares Licht ist aus!",
+                                                       "Zeig dich!", "Ich habe ein Feuer gemacht!", "Ich kann nicht anders!", "Es ist mein Glückfeuerzeug!",
+                                                       "Mein Kindheitsfreund: Bernie!", "Hilf mir, Bernie!", "BRENN! BRENN SCHNELLER!", "Ich mag Feuer.",
+                                                       "Ich könnte stundenlang zuschauen.", "Dinge sind so viel schöner, wenn sie brennen.", "Für Blumen habe ich keine Zeit." };
+                case KindAbigail: return new string[] { "Uuuuuuuuuh\u2026", "Ooooooooh\u2026", "(Geflüster)\u2026", "Wendy: \u201EAbigail! Bist du bereit zum Spielen?\u201C",
+                                                        "Wendy: \u201EWir werden nie wieder getrennt sein.\u201C", "Wendy: \u201ELass uns spielen, Abigail!\u201C",
+                                                        "Wendy: \u201EAbigail war immer mein Licht in der Dunkelheit\u2026\u201C", "Wendy: \u201EOhne dich habe ich mich hier so allein gefühlt.\u201C",
+                                                        "Wendy: \u201ESei vorsichtig, Abigail!\u201C", "Wilson: \u201EOooh, sie hat eine so süße kleine Schleife.\u201C", "Willow: \u201ENa, was ist mit dir passiert?\u201C" };
+                default: return new string[] { "Ich brauche Sauerstoff\u2026", "Wer hat den Slime hier liegen lassen?", "Auftrag erledigt!" };
             }
         }
     }

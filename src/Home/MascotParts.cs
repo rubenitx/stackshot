@@ -113,7 +113,32 @@ namespace Stackshot
                                              "Giant sleepyhead", "Grinning ghost", "Unique kitten", "Duck with a headache", "Spiky egg", "Coin cat",
                                              "Emperor penguin", "Rag disguise", "Aura warrior", "Cuddly dragon", "Copycat blob", "Genetic clone",
                                              "Baby tree", "Smiling titan", "Goofy titan" };
-        public static string[] Kinds { get { return I18n.IsSpanish ? KindsEs : I18n.LocalizeList(KindsEn); } }
+        static readonly string[] KindsDe = { "Roboter", "Katze", "Häschen", "Geist", "Schleim", "Drache", "Hund", "Chibi", "Pinguin", "Panda", "Fuchs", "Frosch", "Rentier", "Flügellöwe",
+                                             "Nachtfurie", "Lichtfurie", "Todesnadder", "Monströser Nightmare", "Gronckle",
+                                             "Blaues Experiment", "Rosa Wollknäuel", "Kleiner Jedi", "Flauschi", "Salamander", "Elektromaus",
+                                             "Konsole", "Kosmische Katze", "Waldgeist",
+                                             "Samen", "Schildkrötlein", "Singballon", "Schlafmütze", "Schelmischer Schatten", "Psy-Kätzchen",
+                                             "Verwirrte Ente", "Eichlein", "Katze mit Münze", "Pinguinchen", "Verkleideter", "Aura-Schakal",
+                                             "Freundlicher Drache", "Klecksi", "Psychoklon", "Gesichtsloser Geist", "Feuerdämon", "Baumgeist",
+                                             "Grüner Saurier", "Pac-Man", "Grüner Block", "Crewmate", "Geistchen", "Blauer Tropfen",
+                                             "Weißer Welpe", "Katze mit Schleife", "Bäumchen", "Entspannter Bär", "Moppelkatze", "Welpe mit Schlappohren",
+                                             "Invasor", "Mürrischer Pilz", "Schüchterner Geist", "Pilzchen", "Pilz", "Uhrwerk-Bombe",
+                                             "Kettenkugel", "Wütender Vogel", "Grünes Ferkel", "Hollow Knight", "Herzwürfel", "Bomber",
+                                             "Ballon mit Brille", "Bohne", "Blockschwein", "Überraschungsblock", "Qualle", "Oranger Ball",
+                                             "Wissenschaftler", "Feuermädchen", "Duplikant", "Lockiger Duplikant",
+                                             "Blonder Ninja", "Ninja-Rächer", "Kopier-Ninja", "Gummipirat", "Schwertkämpfer", "Dämonenjäger", "Dämonenschwester",
+                                             "Geistermädchen", "Abenteuerjunge", "Zauberhund", "Konsolenfreund", "Spürhund", "Oranger Ninja",
+                                             "Ninja mit Fächeremblem", "Maskierter Ninja", "Doktor-Rentier", "Geflügelter Wächter", "Beagle", "Jäger-Novize", "Elektrojunge", "Schelmischer Magier", "Haori-Junge", "Bambusmädchen", "Strohhut-Pirat", "Grüner Schwertkämpfer", "Anführer mit Sonnenbrille", "Lausbube", "Baumwoll-Welpe", "Roboterjunge", "Heldenjunge", "Schwertkämpfer-Ferkel", "Krokodiljunge",
+                                             "Alchemist", "Kundschafter", "Elitekapitän", "Magier mit Augenbinde",
+                                             "Kahler Held", "Spartanischer Krieger", "Gepanzerter Soldat", "Spinnenheld", "Nächtlicher Rächer", "Speedster", "Held mit rotem Umhang", "Gepanzerter Erfinder",
+                                             "Ritter", "Astronaut", "Weiser Magier", "Superheld",
+                                             "Supersoldat", "Donnergott", "Smaragdriese", "Spion", "Bogenschütze", "Kriegerkönig", "Oberster Magier",
+                                             "Kosmische Heldin", "Scharlachrote Hexe", "Kolossaler Titan", "Angriffstitan", "Gepanzerter Titan",
+                                             "Elektro-Nagetier", "Flauschiges Fuchsjunges", "Feuerechse", "Pflanzenzwiebel", "Wasserschildkröte", "Singender Ballon",
+                                             "Riesige Schlafmütze", "Grinsender Geist", "Besonderes Kätzchen", "Ente mit Migräne", "Stacheliges Ei", "Münzenkatze",
+                                             "Kaiserpinguin", "Lumpenverkleidung", "Aura-Krieger", "Kuscheldrache", "Nachahmer-Klecksi", "Genklon",
+                                             "Baby-Bäumchen", "Lächelnder Titan", "Tolpatschiger Titan" };
+        public static string[] Kinds { get { return I18n.IsSpanish ? KindsEs : I18n.IsGerman ? KindsDe : I18n.LocalizeList(KindsEn); } }
 
         public static readonly Color[,] Colors =
         {
@@ -207,11 +232,18 @@ namespace Stackshot
                                                   "Yoshi", "Deep blue", "Creeper", "Crewmate", "Blinky", "White", "Teddy", "Cat gray",
                                                   "Pac-Man", "Pinky", "Inky", "Clyde", "Goomba", "Skin", "Mushroom", "Bob-omb", "Red bird", "Piggy",
                                                   "Cape", "Cube", "Pooka", "Fall Guy", "Pig", "Block", "Metroid", "Waddle Dee", "Kirby", "1-Up", "Pale", "Tan", "Duplicant", "Anime skin", "Ghost" };
-        public static string[] ColorNames { get { return I18n.IsSpanish ? ColorNamesEs : I18n.LocalizeList(ColorNamesEn); } }
+        static readonly string[] ColorNamesDe = { "Aurora", "Minze", "Koralle", "Lavendel", "Ozean", "Sonne", "Limette", "Graphit",
+                                                  "Kaugummi", "Kürbis", "Nacht", "Schnee", "Galaxie", "Kirsche", "Eis", "Wald", "Gold", "Pfirsich", "Zimt", "Türkis", "Asche", "Ton", "Mitternacht", "Schokolade", "Honig", "Glut", "Indigo", "Salbei", "Elektrisch", "Blatt", "Wasser", "Baumwolle", "Petrol", "Violett",
+                                                  "Ente", "Creme", "Königsblau", "Lumpen", "Orange", "Lila", "Perle", "Schatten", "Feuer", "Weißes Moos",
+                                                  "Yoshi", "Tiefblau", "Creeper", "Crewmate", "Blinky", "Weiß", "Teddy", "Katzengrau",
+                                                  "Pac-Man", "Pinky", "Inky", "Clyde", "Goomba", "Hautton", "Pilz", "Bob-omb", "Roter Vogel", "Ferkel",
+                                                  "Umhang", "Würfel", "Pooka", "Fall Guy", "Schwein", "Block", "Metroid", "Waddle Dee", "Kirby", "1-Up", "Blässe", "Hellbraun", "Duplikant", "Anime-Hautton", "Geist" };
+        public static string[] ColorNames { get { return I18n.IsSpanish ? ColorNamesEs : I18n.IsGerman ? ColorNamesDe : I18n.LocalizeList(ColorNamesEn); } }
 
         static readonly string[] EyeNamesEs = { "Brillo", "Kawaii", "Puntitos", "Anime", "Chulo", "Estrella", "Pesta\u00F1as", "Drag\u00F3n" };
         static readonly string[] EyeNamesEn = { "Sparkle", "Kawaii", "Dots", "Anime", "Cool", "Star", "Lashes", "Dragon" };
-        public static string[] EyeNames { get { return I18n.IsSpanish ? EyeNamesEs : I18n.LocalizeList(EyeNamesEn); } }
+        static readonly string[] EyeNamesDe = { "Funkeln", "Kawaii", "Punkte", "Anime", "Cool", "Stern", "Wimpern", "Drache" };
+        public static string[] EyeNames { get { return I18n.IsSpanish ? EyeNamesEs : I18n.IsGerman ? EyeNamesDe : I18n.LocalizeList(EyeNamesEn); } }
 
         public const int HatPumpkin = 4, HatSanta = 11, HatCrown = 13, HatHalo = 14;
         static readonly string[] HatNamesEs = { "Ninguno", "Gorra", "Gorro de lana", "Sombrero de bruja", "Calabaza", "Cuernos",
@@ -228,7 +260,14 @@ namespace Stackshot
                                                 "Silver-haired ninja", "Bat cowl", "Lightning helmet", "Hair with a curl", "Armor helmet",
                                                 "Doctor's hat", "Wild blue hair", "Nightcap",
                                                 "Gojo's hair", "Killua's hair", "Levi's hair", "Shin-chan's hair" };
-        public static string[] HatNames { get { return I18n.IsSpanish ? HatNamesEs : I18n.LocalizeList(HatNamesEn); } }
+        static readonly string[] HatNamesDe = { "Keine", "Kappe", "Strickmütze", "Hexenhut", "Kürbis", "Hörner",
+                                                "Zylinder", "Partyhut", "Cowboyhut", "Kopfhörer", "Schleife", "Weihnachtsmütze", "Spross",
+                                                "Krone", "Heiligenschein", "Baskenmütze", "Kochmütze", "Blumen", "Blondes Haar", "Braunes Haar", "Stachelhaar", "Weißes Haar", "Dunkelrotes Haar", "Bärenkapuze", "Ninja-Stirnband", "Strohhut", "Schwarzes Haar", "Blonder Ninja", "Marine-Helm", "Ritterhelm", "Astronautenhelm", "Funke",
+                                                "Dunkles Stachelhaar", "Magenta-Haar", "Ninja mit dunklem Haar", "Grünes Haar", "Flammenhaar", "Lange schwarze Mähne",
+                                                "Ninja mit silbernem Haar", "Fledermaus-Kapuze", "Blitzhelm", "Haar mit Lockenkringel", "Rüstungshelm",
+                                                "Doktorhut", "Wilde blaue Haare", "Schlafmütze",
+                                                "Gojos Haar", "Killuas Haar", "Levis Haar", "Shin-chans Haar" };
+        public static string[] HatNames { get { return I18n.IsSpanish ? HatNamesEs : I18n.IsGerman ? HatNamesDe : I18n.LocalizeList(HatNamesEn); } }
         static readonly string[] OutfitNamesEs = { "Nada", "Bufanda", "Pajarita", "Corbata", "Capa de vampiro", "Capa de h\u00E9roe",
                                                         "Cascabel", "Cadena de oro", "Capa verde", "Abrigo rojo", "Chaleco ninja", "Kimono de lucha", "Haori a cuadros", "Mochila", "Chaleco rojo", "Camiseta roja", "Botones de consola", "Panza del bosque", "Ch\u00E1ndal naranja",
                                                         "Hombrera", "Armadura verde", "Traje espacial", "Chaqueta verde", "Camiseta morada", "Traje de buf\u00F3n",
@@ -241,23 +280,34 @@ namespace Stackshot
                                                    "Blue turtleneck", "Green sash", "White armor", "Yellow suit", "Pink kimono", "Green vest",
                                                    "Spider suit", "Bat suit", "Lightning suit", "Steel suit", "Red armor",
                                                    "Shorts", "Red cape and tattoos" };
-        public static string[] OutfitNames { get { return I18n.IsSpanish ? OutfitNamesEs : I18n.LocalizeList(OutfitNamesEn); } }
+        static readonly string[] OutfitNamesDe = { "Keins", "Schal", "Fliege", "Krawatte", "Vampirumhang", "Heldenumhang",
+                                                   "Glöckchen", "Goldkette", "Grüner Umhang", "Roter Mantel", "Ninja-Weste", "Kampfkimono", "Kariierter Haori", "Rucksack", "Rote Weste", "Rotes T-Shirt", "Konsolentasten", "Waldwampe", "Oranger Trainingsanzug",
+                                                   "Schulterpanzer", "Grüne Rüstung", "Raumanzug", "Grüne Jacke", "Violettes T-Shirt", "Narrenkleid",
+                                                   "Blauer Rollkragen", "Grüne Schärpe", "Weiße Rüstung", "Gelber Anzug", "Rosa Kimono", "Grüne Weste",
+                                                   "Spinnenanzug", "Fledermausanzug", "Blitzanzug", "Stahlanzug", "Rote Rüstung",
+                                                   "Kurze Hose", "Roter Umhang und Tattoos" };
+        public static string[] OutfitNames { get { return I18n.IsSpanish ? OutfitNamesEs : I18n.IsGerman ? OutfitNamesDe : I18n.LocalizeList(OutfitNamesEn); } }
         static readonly string[] FaceNamesEs = { "Nada", "Gafas de sol", "Gafas pixel", "Gafas redondas", "Mon\u00F3culo", "Antifaz",
                                                       "Parche pirata", "Bigote", "Venda", "Cejas gordas", "Mofletes rojos", "Marcas de bigote", "Tatuaje y barba", "Barba de mago", "Terminal",
                                                       "Estrella y l\u00E1grima", "Bozal de bamb\u00FA", "M\u00E1scara ninja", "M\u00E1scara ar\u00E1cnida", "Nariz azul", "Gafas triangulares" };
         static readonly string[] FaceNamesEn = { "None", "Sunglasses", "Pixel shades", "Round glasses", "Monocle", "Eye mask",
                                                  "Pirate eye patch", "Mustache", "Blindfold", "Bushy eyebrows", "Rosy cheeks", "Whisker marks", "Tattoo and beard", "Wizard beard", "Terminal",
                                                  "Star and teardrop", "Bamboo muzzle", "Ninja mask", "Spider mask", "Blue nose", "Triangle shades" };
-        public static string[] FaceNames { get { return I18n.IsSpanish ? FaceNamesEs : I18n.LocalizeList(FaceNamesEn); } }
+        static readonly string[] FaceNamesDe = { "Keins", "Sonnenbrille", "Pixelbrille", "Runde Brille", "Monokel", "Augenmaske",
+                                                 "Piratenklappe", "Schnurrbart", "Augenbinde", "Buschige Brauen", "Rote Wangen", "Schnurrbartmarken", "Tattoo und Bart", "Magierbart", "Terminal",
+                                                 "Stern und Träne", "Bambus-Maulkorb", "Ninjamaske", "Spinnenmaske", "Blaue Nase", "Dreiecksbrille" };
+        public static string[] FaceNames { get { return I18n.IsSpanish ? FaceNamesEs : I18n.IsGerman ? FaceNamesDe : I18n.LocalizeList(FaceNamesEn); } }
         static readonly string[] PersonalitiesEs = { "Alegre", "Tranquilo", "Gamberro" };
         static readonly string[] PersonalitiesEn = { "Cheerful", "Calm", "Mischievous" };
-        public static string[] Personalities { get { return I18n.IsSpanish ? PersonalitiesEs : I18n.LocalizeList(PersonalitiesEn); } }
+        static readonly string[] PersonalitiesDe = { "Fröhlich", "Ruhig", "Frech" };
+        public static string[] Personalities { get { return I18n.IsSpanish ? PersonalitiesEs : I18n.IsGerman ? PersonalitiesDe : I18n.LocalizeList(PersonalitiesEn); } }
 
         // ---- Friendship: one point per capture. A few items unlock along the way, like companions that grow with you.
         static readonly int[] LevelAt = { 0, 10, 30, 75, 150, 300 };
         static readonly string[] LevelNamesEs = { "Reci\u00E9n llegados", "Colegas", "Amigos", "Mejores amigos", "Inseparables", "Leyenda" };
         static readonly string[] LevelNamesEn = { "Newcomers", "Buddies", "Friends", "Best Friends", "Inseparable", "Legend" };
-        public static string[] LevelNames { get { return I18n.IsSpanish ? LevelNamesEs : I18n.LocalizeList(LevelNamesEn); } }
+        static readonly string[] LevelNamesDe = { "Neulinge", "Kumpels", "Freunde", "Beste Freunde", "Unzertrennliche", "Legende" };
+        public static string[] LevelNames { get { return I18n.IsSpanish ? LevelNamesEs : I18n.IsGerman ? LevelNamesDe : I18n.LocalizeList(LevelNamesEn); } }
 
         public static int Level(int love)
         {
@@ -283,7 +333,8 @@ namespace Stackshot
         // Ready-made looks: kind, color, eyes, hat, outfit, face.
         static readonly string[] StyleNamesEs = { "Cl\u00E1sico", "Halloween", "Chulo", "Cute", "Vampiro", "Dragoncito", "Pirata", "Chef", "Vaquero", "Doctor", "Brujita", "M\u00FAsico", "Invierno", "Enamorado", "Fiestero", "Aventurero", "Primavera", "Campe\u00F3n" };
         static readonly string[] StyleNamesEn = { "Classic", "Halloween", "Cool", "Cute", "Vampire", "Little Dragon", "Pirate", "Chef", "Cowboy", "Doctor", "Little Witch", "Musician", "Winter", "In Love", "Party Goer", "Adventurer", "Spring", "Champion" };
-        public static string[] StyleNames { get { return I18n.IsSpanish ? StyleNamesEs : I18n.LocalizeList(StyleNamesEn); } }
+        static readonly string[] StyleNamesDe = { "Klassisch", "Halloween", "Cool", "Niedlich", "Vampir", "Kleiner Drache", "Pirat", "Koch", "Cowboy", "Doktor", "Kleine Hexe", "Musiker", "Winter", "Verliebt", "Partyhase", "Abenteurer", "Frühling", "Champion" };
+        public static string[] StyleNames { get { return I18n.IsSpanish ? StyleNamesEs : I18n.IsGerman ? StyleNamesDe : I18n.LocalizeList(StyleNamesEn); } }
         static readonly int[,] Styles =
         {
             { 0, 0, 0, 0, 0, 0, 0 },
