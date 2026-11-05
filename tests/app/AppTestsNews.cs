@@ -1,4 +1,5 @@
-// What users are told about each version, suite "news": the news file is well formed and read whole, a release's
+// What users are told about each version, suite "news": the news files (Spanish, English, German and Korean) are well formed,
+// read whole and carry the same versions, the newest is the program's, each language shows its own file, a release's
 // Spanish news are found in its notes, and after an update each user sees everything new since the version they had.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
@@ -46,47 +47,136 @@ namespace Stackshot.Tests
             finally { News.UseForTests(null); }
         }
 
-        // docs/novedades.md as it ships: every line of every version is a news item the app reads whole, the newest
-        // version is the one the program says it is, and the release notes CI builds carry them between the markers.
+        // The versions a news file lists, newest first.
+        static List<string> Versions(string name, string md)
+        {
+            MatchCollection versions = Regex.Matches(md, @"^## (\d+\.\d+\.\d+)\s*$", RegexOptions.Multiline);
+            Check(versions.Count >= 1, name + ": no version in the news file");
+            List<string> list = new List<string>();
+            Version prev = null;
+            foreach (Match m in versions)
+            {
+                string v = m.Groups[1].Value;
+                Version cur = new Version(v);
+                Check(prev == null || cur < prev, name + ": versions not newest first at " + v);
+                prev = cur;
+                list.Add(v);
+                string body = Regex.Match(md, "^## " + Regex.Escape(v) + @"\s*$(.*?)(?=^## |\z)", RegexOptions.Multiline | RegexOptions.Singleline).Groups[1].Value;
+                int bullets = 0;
+                foreach (string line in body.Replace("\r", "").Split('\n'))
+                {
+                    if (line.Trim().Length == 0) continue;
+                    Check(Regex.IsMatch(line, @"^- \*\*[^*]+\.\*\* \S"), name + " " + v + ": not a news line (\"- **Title.** Text\"): " + line);
+                    bullets++;
+                }
+                Check(News.Of(v).Count == bullets, name + " " + v + ": the app reads " + News.Of(v).Count + " of its " + bullets + " news");
+            }
+            return list;
+        }
+
+        // The title of a file's first news of a version, as written.
+        static string FirstTitle(string md, string version)
+        {
+            string body = Regex.Match(md, "^## " + Regex.Escape(version) + @"\s*$(.*?)(?=^## |\z)", RegexOptions.Multiline | RegexOptions.Singleline).Groups[1].Value;
+            foreach (string line in body.Replace("\r", "").Split('\n'))
+            {
+                Match m = Regex.Match(line.Trim(), @"^- \*\*(.+?)\*\*");
+                if (m.Success) return m.Groups[1].Value;
+            }
+            return null;
+        }
+
+        // docs/novedades.md and its English, German and Korean twins as they ship: every line of every version is a news item
+        // the app reads whole, the four carry the same versions in the same order, the newest is the one the program
+        // says it is, and the release notes CI builds carry the Spanish ones between the markers.
         static void RealFile()
         {
-            string path = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Here()), @"..\..\docs\novedades.md"));
-            Check(File.Exists(path), "no news file at " + path);
-            string md = File.ReadAllText(path, Encoding.UTF8);
-            News.UseForTests(md);
+            string dir = Path.GetDirectoryName(Here());
+            string[] files = { "novedades.md", "novedades.en.md", "novedades.de.md", "novedades.ko.md" };
+            string program = typeof(News).Assembly.GetName().Version.ToString(3);
+            string listed = null;
+            foreach (string name in files)
+            {
+                string path = Path.GetFullPath(Path.Combine(dir, @"..\..\docs\" + name));
+                Check(File.Exists(path), "no news file at " + path);
+                string md = File.ReadAllText(path, Encoding.UTF8);
+                News.UseForTests(md);
+                try
+                {
+                    List<string> mine = Versions(name, md);
+                    string joined = string.Join(",", mine.ToArray());
+                    Check(listed == null || listed == joined, name + ": its versions (" + joined + ") differ from novedades.md's (" + listed + ")");
+                    listed = joined;
+                    string newest;
+                    News.Newest(out newest);
+                    Check(newest == program, name + ": its newest version " + newest + " is not the program's " + program);
+                    // The notes a release carries: what CI writes between the markers, read back as the update notice does.
+                    if (name == "novedades.md")
+                    {
+                        string first = mine[0];
+                        StringBuilder notes = new StringBuilder("Notes in English.\n\n<details><summary>Novedades en espa\u00F1ol</summary>\n\n" + News.Start + "\n");
+                        foreach (News.Item it in News.Of(first)) notes.Append("- **").Append(it.Title).Append("** ").Append(it.Text).Append('\n');
+                        notes.Append(News.End + "\n\n</details>\n");
+                        Check(News.FromRelease(notes.ToString()).Count == News.Of(first).Count, "the update notice does not read the release's news back");
+                    }
+                }
+                finally { News.UseForTests(null); }
+            }
+        }
+
+        // The news come in the interface language: English, German and Korean carry their own file (a twin of the Spanish one),
+        // and a news window open while the language changes re-reads it.
+        static void Languages()
+        {
+            string dir = Path.GetDirectoryName(Here());
+            string es = File.ReadAllText(Path.GetFullPath(Path.Combine(dir, @"..\..\docs\novedades.md")), Encoding.UTF8);
+            string en = File.ReadAllText(Path.GetFullPath(Path.Combine(dir, @"..\..\docs\novedades.en.md")), Encoding.UTF8);
+            string de = File.ReadAllText(Path.GetFullPath(Path.Combine(dir, @"..\..\docs\novedades.de.md")), Encoding.UTF8);
+            string ko = File.ReadAllText(Path.GetFullPath(Path.Combine(dir, @"..\..\docs\novedades.ko.md")), Encoding.UTF8);
+            string program = typeof(News).Assembly.GetName().Version.ToString(3);
+            News.UseForTests(es, en, de, ko);
             try
             {
-                MatchCollection versions = Regex.Matches(md, @"^## (\d+\.\d+\.\d+)\s*$", RegexOptions.Multiline);
-                Check(versions.Count >= 1, "no version in the news file");
-                Version prev = null;
-                foreach (Match m in versions)
+                I18n.Apply("es");
+                string esTitle = News.Of(program)[0].Title;
+                I18n.Apply("en");
+                string enTitle = News.Of(program)[0].Title;
+                I18n.Apply("de");
+                string deTitle = News.Of(program)[0].Title;
+                I18n.Apply("ko");
+                string koTitle = News.Of(program)[0].Title;
+                Check(esTitle != enTitle && enTitle != deTitle && esTitle != deTitle && koTitle != esTitle && koTitle != enTitle && koTitle != deTitle,
+                      "every language shows its own news: " + esTitle + " / " + enTitle + " / " + deTitle + " / " + koTitle);
+                Check(koTitle == FirstTitle(ko, program), "Korean shows its own file, not the Spanish one");
+                I18n.Apply("de");
+                Check(enTitle == FirstTitle(en, program), "English shows its own file, not the Spanish one");
+                Check(deTitle == FirstTitle(de, program), "German shows its own file, not the Spanish one");
+                Check(esTitle == FirstTitle(es, program), "Spanish shows its own file");
+                // The window, open while the language changes, re-reads the news of the new language.
+                System.Reflection.ConstructorInfo ctor = typeof(NewsWindow).GetConstructor(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance, null,
+                                                                                         new Type[] { typeof(bool), typeof(string) }, null);
+                Ds.Apply(1);
+                NewsWindow w = (NewsWindow)ctor.Invoke(new object[] { false, "" });
+                try
                 {
-                    string v = m.Groups[1].Value;
-                    Version cur = new Version(v);
-                    Check(prev == null || cur < prev, "versions not newest first at " + v);
-                    prev = cur;
-                    string body = Regex.Match(md, "^## " + Regex.Escape(v) + @"\s*$(.*?)(?=^## |\z)", RegexOptions.Multiline | RegexOptions.Singleline).Groups[1].Value;
-                    int bullets = 0;
-                    foreach (string line in body.Replace("\r", "").Split('\n'))
-                    {
-                        if (line.Trim().Length == 0) continue;
-                        Check(Regex.IsMatch(line, @"^- \*\*[^*]+\.\*\* \S"), v + ": not a news line (\"- **Title.** Text\"): " + line);
-                        bullets++;
-                    }
-                    Check(News.Of(v).Count == bullets, v + ": the app reads " + News.Of(v).Count + " of its " + bullets + " news");
+                    System.Windows.UIElement content = (System.Windows.UIElement)w.Content;
+                    content.Measure(new System.Windows.Size(540, 900));
+                    content.Arrange(new System.Windows.Rect(0, 0, 540, 900));
+                    content.UpdateLayout();
+                    List<string> texts = new List<string>();
+                    Collect(content, texts);
+                    Check(texts.Contains(deTitle), "the open window still shows the German news");
+                    I18n.Apply("en");
+                    content.UpdateLayout();
+                    texts.Clear();
+                    Collect(content, texts);
+                    Check(texts.Contains(enTitle), "the open window re-read the news in English");
+                    Check(!texts.Contains(deTitle), "the open window no longer shows the German news");
                 }
-                string newest;
-                News.Newest(out newest);
-                string program = typeof(News).Assembly.GetName().Version.ToString(3);
-                Check(newest == program || new Version(newest) > new Version(program), "the news file's newest version " + newest + " is older than the program " + program);
-                // The notes a release carries: what CI writes between the markers, read back as the update notice does.
-                string first = versions[0].Groups[1].Value;
-                StringBuilder notes = new StringBuilder("Notes in English.\n\n<details><summary>Novedades en espa\u00F1ol</summary>\n\n" + News.Start + "\n");
-                foreach (News.Item it in News.Of(first)) notes.Append("- **").Append(it.Title).Append("** ").Append(it.Text).Append('\n');
-                notes.Append(News.End + "\n\n</details>\n");
-                Check(News.FromRelease(notes.ToString()).Count == News.Of(first).Count, "the update notice does not read the release's news back");
+                finally { w.Close(); }
+                Ds.Apply(0);
             }
-            finally { News.UseForTests(null); }
+            finally { News.UseForTests(null); I18n.Apply("es"); }
         }
 
         // The window someone coming from 2.1 sees after updating: each version's news under its number, all of them.
@@ -155,7 +245,7 @@ namespace Stackshot.Tests
             string previous = I18n.Mode;
             try
             {
-                News.UseForTests(source, translated);
+                News.UseForTests(source, null, null, translated);
                 I18n.Apply("es");
                 string version = typeof(News).Assembly.GetName().Version.ToString(3);
                 string sourceVersions = Keys(News.Since("", version));
@@ -172,7 +262,8 @@ namespace Stackshot.Tests
         {
             AppTests.Test(S, "Korean bundled release notes and language switching", KoreanNotes);
             AppTests.Test(S, "after an update each user sees everything new since the version they had", Since);
-            AppTests.Test(S, "docs/novedades.md is well formed, read whole and matches the program's version", RealFile);
+            AppTests.Test(S, "docs/novedades.md, novedades.en.md, novedades.de.md and novedades.ko.md are well formed, read whole and match the program's version", RealFile);
+            AppTests.Test(S, "the news come in the interface language and an open window re-reads them when it changes", Languages);
             AppTests.Test(S, "the news window after updating from 2.1 shows every version's news under its number", Window);
         }
     }

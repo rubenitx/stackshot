@@ -1,5 +1,6 @@
-// Stackshot - What each version brings, in the bundled release notes: the one running carries its own, and a
-// release on GitHub carries the next one's between <!-- novedades --> markers, so it can be told before updating.
+// Stackshot - "Novedades": what a version brings, inside the app, in the interface language (docs/novedades.md and
+// its English, German and Korean twins, built into the program). The one running carries its own, and a release on
+// GitHub carries the next one's between <!-- novedades --> markers, so it can be told before updating.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Collections.Generic;
@@ -19,31 +20,47 @@ namespace Stackshot
 
         public const string Start = "<!-- novedades -->", End = "<!-- /novedades -->";
 
-        static string embedded, korean;
+        static string embedded, testEn, testDe, testKo;
         static bool loaded;
+        static readonly object gate = new object();
+        static readonly Dictionary<string, string> read = new Dictionary<string, string>();
 
-        // Tests: the news as if the program carried this text.
-        internal static void UseForTests(string md, string translated = null) { embedded = md; korean = translated; loaded = true; }
+        // Tests: the news as if the program carried this text (the same for every language, or one file for each: a
+        // language left out reads the Spanish one).
+        internal static void UseForTests(string md) { embedded = md; loaded = true; testEn = testDe = testKo = md; }
+        internal static void UseForTests(string es, string en, string de, string ko = null) { embedded = es; loaded = true; testEn = en; testDe = de; testKo = ko; }
 
-        // docs/novedades.md, built into the program.
+        // docs/novedades.md, built into the program: the source the versions are listed from.
         static string Embedded()
         {
-            if (loaded) return embedded;
-            loaded = true;
-            embedded = ReadResource("novedades.md");
-            korean = ReadResource("novedades.ko.md");
-            return embedded;
+            return loaded ? embedded : Read("novedades.md");
         }
 
-        static string ReadResource(string name)
+        // The file of the interface language (the .en, .de and .ko twins; null for Spanish or when it is missing). An
+        // open window re-reads it on I18n.Changed: it rebuilds and asks again.
+        static string Twin()
         {
+            if (I18n.IsSpanish) return null;
+            if (loaded) return I18n.IsGerman ? testDe : I18n.IsKorean ? testKo : testEn;
+            return Read(I18n.IsGerman ? "novedades.de.md" : I18n.IsKorean ? "novedades.ko.md" : "novedades.en.md");
+        }
+
+        static string Read(string name)
+        {
+            lock (gate)
+            {
+                string cached;
+                if (read.TryGetValue(name, out cached)) return cached;
+            }
+            string md = null;
             try
             {
                 using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream(name))
-                    if (s != null) using (StreamReader r = new StreamReader(s, Encoding.UTF8)) return r.ReadToEnd();
+                    if (s != null) using (StreamReader r = new StreamReader(s, Encoding.UTF8)) md = r.ReadToEnd();
             }
             catch (Exception ex) { ShotStack.Log("Novedades: " + ex.Message); }
-            return null;
+            lock (gate) read[name] = md;
+            return md;
         }
 
         // The newest version described in the program and its news (none: null and an empty list).
@@ -88,10 +105,10 @@ namespace Stackshot
 
         static List<Item> Section(string md, string version)
         {
-            // Keep the source version list authoritative when a future release adds notes.
-            if (I18n.IsKorean && korean != null &&
-                Regex.IsMatch(korean, @"^## " + Regex.Escape(version ?? "") + @"\s*$", RegexOptions.Multiline))
-                md = korean;
+            // The twin tells a version only when it has it: the Spanish list stays authoritative when a future release adds notes.
+            string twin = Twin();
+            if (twin != null && Regex.IsMatch(twin, @"^## " + Regex.Escape(version ?? "") + @"\s*$", RegexOptions.Multiline))
+                md = twin;
             List<string> lines = new List<string>();
             bool inside = false;
             foreach (string raw in md.Replace("\r", "").Split('\n'))
