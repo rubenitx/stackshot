@@ -163,7 +163,9 @@ namespace Stackshot
             {
                 key = "work";
                 icon = "save"; c1 = W(Mac.Blue); c2 = W(Mac.Indigo);
-                title = (step == Updater.Step.Downloading ? I18n.T("Descargando", "Downloading") : step == Updater.Step.Verifying ? I18n.T("Comprobando", "Verifying") : I18n.T("Instalando", "Installing")) + " Stackshot " + v;
+                title = (step == Updater.Step.Downloading ? I18n.Fmt("Descargando Stackshot {0}", "Downloading Stackshot {0}", v)
+                       : step == Updater.Step.Verifying ? I18n.Fmt("Comprobando Stackshot {0}", "Verifying Stackshot {0}", v)
+                       : I18n.Fmt("Instalando Stackshot {0}", "Installing Stackshot {0}", v));
                 sub = step == Updater.Step.Downloading ? DownloadText()
                     : step == Updater.Step.Verifying ? I18n.T("Se comprueban su suma SHA-256 y su firma antes de instalar nada.", "Verifying SHA-256 checksum and signature before installing.")
                     : Updater.Held ? I18n.T("En cuanto termine de guardarse la grabaci\u00F3n, Stackshot se cerrar\u00E1 y volver\u00E1 a abrirse.", "As soon as recording is saved, Stackshot will restart.")
@@ -218,7 +220,7 @@ namespace Stackshot
                 key = "error";
                 icon = "warning"; c1 = W(Mac.Orange); c2 = Ds.Rgb(232, 110, 20);
                 title = I18n.T("No se pudo comprobar", "Could not check");
-                sub = Updater.Problem + (last > DateTime.MinValue ? " " + I18n.T("\u00DAltima comprobaci\u00F3n: ", "Last checked: ") + When(last) + "." : "");
+                sub = Updater.Problem + (last > DateTime.MinValue ? I18n.Fmt(" \u00DAltima comprobaci\u00F3n: {0}.", " Last checked: {0}.", When(last)) : "");
                 label = I18n.T("Reintentar", "Retry");
             }
             else if (last > DateTime.MinValue)
@@ -466,10 +468,13 @@ namespace Stackshot
             double min = (now - t).TotalMinutes;
             if (min < 1) return I18n.T("ahora mismo", "just now");
             if (min < 60) return I18n.Fmt("hace {0} min", "{0} min ago", (int)min);
-            if (t.Date == now.Date) return I18n.T("hoy a las ", "today at ") + t.ToString(I18n.IsSpanish || I18n.IsKorean ? "H:mm" : "h:mm tt", ci);
-            if (t.Date == now.Date.AddDays(-1)) return I18n.T("ayer a las ", "yesterday at ") + t.ToString(I18n.IsSpanish || I18n.IsKorean ? "H:mm" : "h:mm tt", ci);
+            string clock = I18n.IsGerman ? "HH:mm" : I18n.IsSpanish || I18n.IsKorean ? "H:mm" : "h:mm tt";
+            if (t.Date == now.Date) return I18n.Fmt("hoy a las {0}", "today at {0}", t.ToString(clock, ci));
+            if (t.Date == now.Date.AddDays(-1)) return I18n.Fmt("ayer a las {0}", "yesterday at {0}", t.ToString(clock, ci));
             if (I18n.IsKorean) return t.ToString("M/d H:mm", ci);
-            return I18n.IsSpanish ? "el " + t.ToString("d/M", ci) + " a las " + t.ToString("H:mm", ci) : "on " + t.ToString("M/d", ci) + " at " + t.ToString("h:mm tt", ci);
+            string day = I18n.IsSpanish ? t.ToString("d/M", ci) : I18n.IsGerman ? t.ToString("d.M.", ci) : t.ToString("M/d", ci);
+            string hour = I18n.IsSpanish || I18n.IsGerman ? t.ToString(I18n.IsGerman ? "HH:mm" : "H:mm", ci) : t.ToString("h:mm tt", ci);
+            return I18n.Fmt("el {0} a las {1}", "on {0} at {1}", day, hour);
         }
     }
 }

@@ -18,12 +18,26 @@ namespace Stackshot
         static readonly int[] RecOrder = { Recorder.Standard, Recorder.High, Recorder.Maximum, Recorder.Cinema };
         static readonly string[] RecNamesEs = { "Est\u00E1ndar", "Alta", "M\u00E1xima", "Cine" };
         static readonly string[] RecNamesEn = { "Standard", "High", "Maximum", "Cinema" };
-        static string[] RecNames { get { return I18n.IsSpanish ? RecNamesEs : I18n.LocalizeList(RecNamesEn); } }
+        static string[] RecNames
+        {
+            get
+            {
+                if (I18n.IsSpanish) return RecNamesEs;
+                return Array.ConvertAll(RecNamesEn, label => I18n.T(null, label));
+            }
+        }
         static readonly string[] RecLinesEs = { "Ligera y fluida, para chats y correos.", "60 fps n\u00EDtidos, listo al momento.", "60 fps sin p\u00E9rdida al grabar.",
                                                 "Sin p\u00E9rdidas y verificado, en MKV." };
         static readonly string[] RecLinesEn = { "Light and fluid, for chat and email.", "Sharp 60 fps, ready instantly.", "Lossless 60 fps while recording.",
                                                 "Lossless and verified, in MKV." };
-        static string[] RecLines { get { return I18n.IsSpanish ? RecLinesEs : I18n.LocalizeList(RecLinesEn); } }
+        static string[] RecLines
+        {
+            get
+            {
+                if (I18n.IsSpanish) return RecLinesEs;
+                return Array.ConvertAll(RecLinesEn, label => I18n.T(null, label));
+            }
+        }
         static readonly string[] RecIcons = { "share", "video", "sparkle", "film" };
         static readonly Color[,] RecTiles =
         {
@@ -34,7 +48,14 @@ namespace Stackshot
         };
         static readonly string[] RecMetricsEs = { "Nitidez", "Fluidez", "Tama\u00F1o" };
         static readonly string[] RecMetricsEn = { "Sharpness", "Smoothness", "Size" };
-        static string[] RecMetrics { get { return I18n.IsSpanish ? RecMetricsEs : I18n.LocalizeList(RecMetricsEn); } }
+        static string[] RecMetrics
+        {
+            get
+            {
+                if (I18n.IsSpanish) return RecMetricsEs;
+                return Array.ConvertAll(RecMetricsEn, label => I18n.T(null, label));
+            }
+        }
         static readonly int[,] RecLevels = { { 1, 2, 1 }, { 2, 3, 2 }, { 3, 4, 3 }, { 4, 4, 4 } };
         static readonly string[] RecNotesEs =
         {
@@ -55,7 +76,15 @@ namespace Stackshot
             "Records at 60 or 30 fps (chosen below) and does not capture all refreshes above 60 Hz. " +
             "Faithful to Windows output, not monitor color (Windows converts HDR to SDR). If the PC cannot keep up, recording stops safely keeping what was captured."
         };
-        static string[] RecNotes { get { return I18n.IsSpanish ? RecNotesEs : I18n.LocalizeList(RecNotesEn); } }
+        static string[] RecNotes
+        {
+            get
+            {
+                if (I18n.IsSpanish) return RecNotesEs;
+                if (I18n.IsEnglish) return RecNotesEn;
+                return Array.ConvertAll(RecNotesEn, label => I18n.T(null, label));
+            }
+        }
         static readonly int[] RecFps = { 24, 30, 60 }, RecGifFps = { 10, 15, 20, 25 };
 
         static List<string> recCameras;       // DirectShow cameras, looked up once per session (it runs FFmpeg)
@@ -307,7 +336,7 @@ namespace Stackshot
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
             g.ColumnDefinitions.Add(new ColumnDefinition());
             MacSegmented fs = new MacSegmented(new string[] { "30", "60" }, settings.CineFps == 30 ? 0 : 1);
-            MacSegmented ms = new MacSegmented(I18n.IsSpanish ? new string[] { "Normal", "Alta" } : I18n.LocalizeList(new string[] { "Normal", "High" }), settings.CinePeakMemory >= 1 ? 1 : 0);
+            MacSegmented ms = new MacSegmented(new string[] { I18n.T("Normal", "Normal"), I18n.T("Alta", "High") }, settings.CinePeakMemory >= 1 ? 1 : 0);
             g.Children.Add(RecCineColumn(I18n.T("Fotogramas por segundo", "Frames per second"), fs, out recCineFpsNote));
             FrameworkElement mem = RecCineColumn(I18n.T("Memoria para picos de movimiento", "Memory for motion peaks"), ms, out recCineMemNote);
             Grid.SetColumn(mem, 2);
@@ -357,11 +386,13 @@ namespace Stackshot
             System.Drawing.Rectangle screen = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
             long frame = (long)screen.Width * screen.Height * 4, avail = Cine.AvailablePhysical();
             double seconds = Cine.PeakSeconds(level, frame, avail, fps);
-            string peak = I18n.T("hasta ", "up to ") + DiskBudget.Gb(Cine.PoolBudget(level, avail)) + I18n.T(" (unos ", " (about ") + Math.Max(1, (int)Math.Round(seconds)) + I18n.T(" s de picos a ", " s of peaks at ") +
-                          screen.Width + " \u00D7 " + screen.Height + ")";
+            string peak = I18n.Fmt("hasta {0} (unos {1} s de picos a {2} \u00D7 {3})", "up to {0} (about {1} s of peaks at {2} \u00D7 {3})",
+                          DiskBudget.Gb(Cine.PoolBudget(level, avail)), Math.Max(1, (int)Math.Round(seconds)), screen.Width, screen.Height);
             recCineMemNote.Text = level == 0
-                ? I18n.T("Normal: ", "Normal: ") + peak + I18n.T(". Solo se usa la que hace falta; si se llena, la grabaci\u00F3n se detiene y conserva lo grabado.", ". Only uses what is needed; if full, recording stops and keeps what was recorded.")
-                : I18n.T("Alta: ", "High: ") + peak + I18n.T(". Para tomas que se detienen con mucho movimiento; con poca memoria libre el equipo puede ir m\u00E1s lento.", ". For captures that stop with heavy motion; with low free memory the PC may slow down.");
+                ? I18n.Fmt("Normal: {0}. Solo se usa la que hace falta; si se llena, la grabaci\u00F3n se detiene y conserva lo grabado.",
+                           "Normal: {0}. Only uses what is needed; if full, recording stops and keeps what was recorded.", peak)
+                : I18n.Fmt("Alta: {0}. Para tomas que se detienen con mucho movimiento; con poca memoria libre el equipo puede ir m\u00E1s lento.",
+                           "High: {0}. For captures that stop with heavy motion; with low free memory the PC may slow down.", peak);
         }
 
         // Nitidez, Fluidez and Tamano from 1 to 4; Standard follows its frame rate.
@@ -610,7 +641,7 @@ namespace Stackshot
             if (string.IsNullOrEmpty(cur))
             {
                 string d = AudioDevices.DefaultName(!computer);
-                if (d != null) return I18n.T("El de Windows: ", "Windows default: ") + d;
+                if (d != null) return I18n.Fmt("El de Windows: {0}", "Windows default: {0}", d);
                 warn = true;
                 return computer ? I18n.T("No hay ninguna salida de sonido", "No audio output available") : I18n.T("No hay ning\u00FAn micr\u00F3fono conectado", "No microphone connected");
             }
@@ -678,8 +709,8 @@ namespace Stackshot
             Grid form = new Grid { VerticalAlignment = VerticalAlignment.Center };
             form.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             form.ColumnDefinitions.Add(new ColumnDefinition());
-            MacSegmented shape = new MacSegmented(I18n.IsSpanish ? new string[] { "No", "Redonda", "Cuadrada" } : I18n.LocalizeList(new string[] { "Off", "Round", "Square" }), settings.Webcam);
-            MacSegmented size = new MacSegmented(I18n.IsSpanish ? new string[] { "Peque\u00F1a", "Mediana", "Grande" } : I18n.LocalizeList(new string[] { "Small", "Medium", "Large" }), settings.WebcamSize);
+            MacSegmented shape = new MacSegmented(new string[] { I18n.T("No", "None"), I18n.T("Redonda", "Circle"), I18n.T("Cuadrada", "Square") }, settings.Webcam);
+            MacSegmented size = new MacSegmented(new string[] { I18n.T("Peque\u00F1a", "Small"), I18n.T("Mediana", "Medium"), I18n.T("Grande", "Large") }, settings.WebcamSize);
             TextBlock camName;
             recCamPill = RecPill("camera", out camName);
             recCamText = camName;
@@ -688,7 +719,7 @@ namespace Stackshot
             Press(pill, RecCamClick);
             RecCamRefresh();
             FrameworkElement[] controls = { shape, size, pill };
-            string[] names = I18n.IsSpanish ? new string[] { "Forma", "Tama\u00F1o", "C\u00E1mara" } : I18n.LocalizeList(new string[] { "Shape", "Size", "Camera" });
+            string[] names = new string[] { I18n.T("Forma", "Shape"), I18n.T("Tama\u00F1o", "Size"), I18n.T("C\u00E1mara", "Camera") };
             for (int i = 0; i < controls.Length; i++)
             {
                 form.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -739,7 +770,7 @@ namespace Stackshot
             string s;
             if (!engine) s = I18n.T("Descarga el motor de v\u00EDdeo para elegir c\u00E1mara", "Download video engine to select camera");
             else if (recSearching) s = I18n.T("Buscando c\u00E1maras\u2026", "Searching for cameras\u2026");
-            else if (cur.Length == 0) s = recCameras != null && recCameras.Count > 0 ? I18n.T("La primera que encuentre: ", "First one found: ") + recCameras[0] : I18n.T("La primera que encuentre", "First one found");
+            else if (cur.Length == 0) s = recCameras != null && recCameras.Count > 0 ? I18n.Fmt("La primera que encuentre: {0}", "First one found: {0}", recCameras[0]) : I18n.T("La primera que encuentre", "First one found");
             else s = cur;
             RecSetText(recCamText, s, !engine || (recCameras != null && cur.Length > 0 && !recCameras.Contains(cur)));
             if (engine && recSearching) recCamText.Foreground = Ds.Brush(Ds.Brushes.Label2);
@@ -804,7 +835,7 @@ namespace Stackshot
             }
             if (cams.Count == 0)
             {
-                MenuEntry none = MenuEntry.Item(I18n.T("No se encuentra ninguna c\u00E1mara", "No cameras found"), null, false, null);
+                MenuEntry none = MenuEntry.Item(I18n.T("No se encuentra ninguna c\u00E1mara", "No camera found"), null, false, null);
                 none.Enabled = false;
                 list.Add(none);
             }
@@ -1016,7 +1047,7 @@ namespace Stackshot
             Grid.SetRow(l2, 1);
             inner.Children.Add(l2);
             int[] cds = RecordSetup.Countdowns;
-            MacSegmented cd = new MacSegmented(I18n.IsSpanish ? new string[] { "No", "3 s", "5 s", "10 s" } : I18n.LocalizeList(new string[] { "Off", "3 s", "5 s", "10 s" }), Math.Max(0, Array.IndexOf(cds, Settings.Countdown(settings.RecordCountdown))));
+            MacSegmented cd = new MacSegmented(new string[] { I18n.T("No", "Off", "Aus"), "3 s", "5 s", "10 s" }, Math.Max(0, Array.IndexOf(cds, Settings.Countdown(settings.RecordCountdown))));
             cd.Margin = new Thickness(0, 12, 0, 0);
             Access.Describe(cd, l2.Text, null);
             cd.Changed += delegate(int i) { settings.RecordCountdown = cds[i]; Changed(); };

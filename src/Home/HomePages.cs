@@ -29,7 +29,14 @@ namespace Stackshot
 
         internal static readonly string[] ActionShortEs = { "Un \u00E1rea", "La \u00FAltima \u00E1rea", "Pantalla completa", "Una ventana", "Con desplazamiento", "Copiar texto", "V\u00EDdeo", "GIF animado", "Markdown", "Con temporizador" };
         internal static readonly string[] ActionShortEn = { "An area", "Last area", "Full screen", "A window", "Scrolling", "Copy text", "Video", "Animated GIF", "Markdown", "With timer" };
-        internal static string[] ActionShort { get { return I18n.IsSpanish ? ActionShortEs : I18n.LocalizeList(ActionShortEn); } }
+        internal static string[] ActionShort
+        {
+            get
+            {
+                if (I18n.IsSpanish) return ActionShortEs;
+                return Array.ConvertAll(ActionShortEn, label => I18n.T(null, label));
+            }
+        }
         static readonly string[] ActionIcons = { "area", "update", "screen", "window", "scroll", "textscan", "video", "gif", "markdown", "clock" };
         static readonly D.Color[,] ActionColors =
         {
@@ -607,11 +614,10 @@ namespace Stackshot
                         w.settings.SetHotkeys(a, string.Join(", ", others.ToArray()));
                         w.keysMoved = I18n.IsKorean ? (others.Count == 0
                             ? string.Format(I18n.Localize("{0} was assigned to {1}, which now has no shortcut."), Hotkeys.DisplayOne(combo), ActionNames[i])
-                            : string.Format(I18n.Localize("{0} moved from {1} to {2}."), Hotkeys.DisplayOne(combo), ActionNames[i], Title)) : I18n.IsSpanish
-                            ? (Hotkeys.DisplayOne(combo) + " era de \u00AB" + ActionNames[i] + "\u00BB" +
-                               (others.Count == 0 ? ", que se ha quedado sin atajo." : "; ahora es de \u00AB" + Title + "\u00BB."))
-                            : (Hotkeys.DisplayOne(combo) + " was assigned to \u201C" + ActionNames[i] + "\u201D" +
-                               (others.Count == 0 ? ", which now has no shortcut." : "; it now belongs to \u201C" + Title + "\u201D."));
+                            : string.Format(I18n.Localize("{0} moved from {1} to {2}."), Hotkeys.DisplayOne(combo), ActionNames[i], Title))
+                            : Hotkeys.DisplayOne(combo) + " " + I18n.Fmt("era de \u00AB{0}\u00BB", "was assigned to \u201C{0}\u201D", ActionNames[i]) +
+                                       (others.Count == 0 ? I18n.T(", que se ha quedado sin atajo.", ", which now has no shortcut.")
+                                                          : I18n.Fmt("; ahora es de \u00AB{0}\u00BB.", "; it now belongs to \u201C{0}\u201D.", Title));
                     }
                 }
                 w.settings.SetHotkeys(action, string.Join(", ", list.ToArray()));
@@ -681,7 +687,7 @@ namespace Stackshot
         {
             if (items.Count == 0) return "";
             if (items.Count == 1) return items[0];
-            return string.Join(", ", items.GetRange(0, items.Count - 1).ToArray()) + (I18n.IsSpanish ? " y " : I18n.IsKorean ? ", " : " and ") + items[items.Count - 1];
+            return string.Join(", ", items.GetRange(0, items.Count - 1).ToArray()) + (I18n.IsKorean ? ", " : I18n.T(" y ", " and ")) + items[items.Count - 1];
         }
 
         // ---- Atajos

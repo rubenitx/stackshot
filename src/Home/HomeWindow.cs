@@ -33,7 +33,7 @@ namespace Stackshot
         readonly Settings settings;
         string page = "home";
         readonly Grid sidebar = new Grid(), pane = new Grid();
-        readonly StackPanel navList = new TapPanel { Interactive = false, Role = Access.Tab, Label = "Secciones" };
+        readonly StackPanel navList = new TapPanel { Interactive = false, Role = Access.Tab, Label = I18n.T("Secciones", "Sections") };
         readonly Border widgetSlot = new Border();
         readonly ScrollViewer scroller = new ScrollViewer();
         readonly Grid pageHost = new Grid();
@@ -641,7 +641,7 @@ namespace Stackshot
             if (sideStatusMini && dot.ToArgb() == Mac.Green.ToArgb())
             {
                 int lv = MascotParts.Level(Math.Max(0, settings.MascotLove));
-                sideStatus.Child = Label(I18n.T("Nivel ", "Level ") + (lv + 1) + " \u00B7 " + MascotParts.LevelNames[lv], Ds.Regular, 11.5, Ds.Brushes.Label2);
+                sideStatus.Child = Label(I18n.Fmt("Nivel {0} \u00B7 {1}", "Level {0} \u00B7 {1}", lv + 1, MascotParts.LevelNames[lv]), Ds.Regular, 11.5, Ds.Brushes.Label2);
             }
             else
             {
@@ -660,7 +660,9 @@ namespace Stackshot
             sideMeter.ColumnDefinitions[0].Width = new GridLength(Math.Max(0.0001, prog), GridUnitType.Star);
             sideMeter.ColumnDefinitions[1].Width = new GridLength(Math.Max(0.0001, 1 - prog), GridUnitType.Star);
             FrameworkElement info = sideMeter.Parent as FrameworkElement;
-            if (info != null) info.ToolTip = left > 0 ? (I18n.IsKorean ? string.Format(I18n.Localize("{0} captures to level {1}"), left, lv + 2) : I18n.IsSpanish ? (left + (left == 1 ? " captura" : " capturas") + " para el nivel " + (lv + 2)) : (left + (left == 1 ? " capture" : " captures") + " to level " + (lv + 2))) : I18n.T("Nivel m\u00E1ximo", "Maximum level");
+            if (info != null) info.ToolTip = left > 0
+                ? I18n.Fmt(left == 1 ? "{0} captura para el nivel {1}" : "{0} capturas para el nivel {1}", left == 1 ? "{0} capture to level {1}" : "{0} captures to level {1}", left, lv + 2)
+                : I18n.T("Nivel m\u00E1ximo", "Maximum level");
         }
 
         // A soft radial glow of one colour that reaches zero at its radius.
@@ -854,7 +856,7 @@ namespace Stackshot
                     if (settings.MascotOn)
                     {
                         mascot.PopIn();
-                        if (settings.MascotTalks) mascot.Greet(I18n.Fmt("{0} Soy {1}. \u00BFQu\u00E9 capturamos?", "{0} I'm {1}. What to capture?", MascotTalk.Greeting(), settings.MascotName));
+                        if (settings.MascotTalks) mascot.Greet(MascotTalk.Greeting() + I18n.Fmt(" Soy {0}. \u00BFQu\u00E9 capturamos?", " I'm {0}. What to capture?", settings.MascotName));
                     }
                 }
                 if (intro.Done(now)) EndIntro();
@@ -954,7 +956,7 @@ namespace Stackshot
             if (settings.MascotOn)
             {
                 mascot.PopIn();
-                if (settings.MascotTalks) mascot.Greet(I18n.Fmt("{0} Soy {1}.", "{0} I'm {1}.", MascotTalk.Greeting(), settings.MascotName));
+                if (settings.MascotTalks) mascot.Greet(MascotTalk.Greeting() + I18n.Fmt(" Soy {0}.", " I'm {0}.", settings.MascotName));
             }
             Wake();
         }

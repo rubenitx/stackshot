@@ -85,7 +85,7 @@ namespace Stackshot
                         PartAccessible r = NewPart(into, it.Text, AccessibleRole.MenuItem, Whole(it.R, p.Pad));
                         r.PartState = StateOf(it.Enabled, false, i == p.hot);
                         if (it.Caps != null) r.PartKeys = Hotkeys.Display(p.settings.HotkeysFor(it.Id));
-                        r.PartAction = I18n.T("Ejecutar", "Run");
+                        r.PartAction = I18n.T("Ejecutar", "Run", "Ausführen");
                         string id = it.Id;
                         if (it.Enabled) r.Do = delegate { p.Choose(id, null); };
                         itemOf.Add(i);
@@ -95,8 +95,8 @@ namespace Stackshot
                         for (int t = 0; t < p.ThumbCount(); t++)
                         {
                             FileInfo f = p.recent[t];
-                            string kind = !ShotStack.IsMediaFile(f.FullName) ? I18n.T("Captura", "Capture") : ShotStack.IsVideoFile(f.FullName) ? I18n.T("V\u00EDdeo", "Video") : "GIF";
-                            PartAccessible c = NewPart(into, kind + I18n.T(" reciente: ", " recent: ") + f.Name, AccessibleRole.PushButton, Whole(p.thumbR[t], p.Pad));
+                            string kind = !ShotStack.IsMediaFile(f.FullName) ? I18n.T("Captura", "Capture", "Aufnahme") : ShotStack.IsVideoFile(f.FullName) ? I18n.T("V\u00EDdeo", "Video") : "GIF";
+                            PartAccessible c = NewPart(into, kind + I18n.T(" reciente: ", " recent: ", " zuletzt: ") + f.Name, AccessibleRole.PushButton, Whole(p.thumbR[t], p.Pad));
                             c.PartHelp = When(f.LastWriteTime);
                             c.PartState = StateOf(true, false, t == p.hotThumb);
                             c.PartAction = I18n.T("Abrir", "Open");

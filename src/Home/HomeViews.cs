@@ -1004,7 +1004,7 @@ namespace Stackshot
             Grid head = new Grid { Margin = new Thickness(0, HomeSwitchTop - 3, 0, 16) };
             StackPanel titles = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             titles.Children.Add(HomeMarked(I18n.T("Hoy", "Today"), 26, 260));
-            string date = DateTime.Now.ToString(I18n.IsSpanish ? "dddd, d 'de' MMMM" : I18n.IsKorean ? "M\uc6d4 d\uc77c dddd" : "dddd, MMMM d", new System.Globalization.CultureInfo(I18n.IsSpanish ? "es-ES" : I18n.IsKorean ? "ko-KR" : "en-US"));
+            string date = DateTime.Now.ToString(I18n.IsSpanish ? "dddd, d 'de' MMMM" : I18n.IsGerman ? "dddd, d. MMMM" : I18n.IsKorean ? "M\uc6d4 d\uc77c dddd" : "dddd, MMMM d", I18n.IsKorean ? System.Globalization.CultureInfo.GetCultureInfo("ko-KR") : I18n.Culture);
             titles.Children.Add(Label(char.ToUpper(date[0]) + date.Substring(1), Ds.Regular, 12.5, pal.Label2, new Thickness(12, 8, 0, 0)));
             head.Children.Add(titles);
             Add(head);
@@ -1158,7 +1158,7 @@ namespace Stackshot
 
             // Recording.
             Grid rec = HomeTile(grid, 0, 2, recent ? 1 : 2, 1, null, true);
-            string[] qn = I18n.IsSpanish ? new string[] { "Est\u00E1ndar", "M\u00E1xima", "Alta", "Cine" } : I18n.LocalizeList(new string[] { "Standard", "Maximum", "High", "Cinema" });
+            string[] qn = new string[] { I18n.T("Est\u00E1ndar", "Standard"), I18n.T("M\u00E1xima", "Maximum"), I18n.T("Alta", "High"), I18n.T("Cine", "Cinema") };
             StackPanel rp = new StackPanel();
             rp.Children.Add(Label(I18n.T("Grabar", "Record"), Ds.Semibold, 12, pal.Label));
             StackPanel rr = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 8) };

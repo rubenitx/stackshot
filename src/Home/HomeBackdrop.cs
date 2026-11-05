@@ -67,10 +67,10 @@ namespace Stackshot
             Func<bool> padTuned = delegate { return Array.IndexOf(pads, settings.BgPadding) < 0; };
             Func<bool> radTuned = delegate { return Array.IndexOf(radii, settings.BgRadius) < 0; };
             Group(I18n.T("Estilo", "Style"),
-                new SegRow(I18n.T("Margen", "Padding"), null, null, D.Color.Empty, D.Color.Empty, I18n.IsSpanish ? new string[] { "Ninguno", "Peque\u00F1o", "Medio", "Grande" } : I18n.LocalizeList(new string[] { "None", "Small", "Medium", "Large" }),
+                new SegRow(I18n.T("Margen", "Padding"), null, null, D.Color.Empty, D.Color.Empty, new string[] { I18n.T("Ninguno", "None"), I18n.T("Peque\u00F1o", "Small"), I18n.T("Medio", "Medium"), I18n.T("Grande", "Large") },
                            delegate { return Nearest(pads, settings.BgPadding); }, delegate(int i) { settings.BgPadding = pads[i]; StyleChanged(); })
                     { SubNow = delegate { return padTuned() ? Tuned : null; }, Loose = padTuned },
-                new SegRow(I18n.T("Esquinas", "Corners"), null, null, D.Color.Empty, D.Color.Empty, I18n.IsSpanish ? new string[] { "Rectas", "Suaves", "Redondas" } : I18n.LocalizeList(new string[] { "Sharp", "Soft", "Round" }),
+                new SegRow(I18n.T("Esquinas", "Corners"), null, null, D.Color.Empty, D.Color.Empty, new string[] { I18n.T("Rectas", "Sharp"), I18n.T("Suaves", "Soft"), I18n.T("Redondas", "Round") },
                            delegate { return Nearest(radii, settings.BgRadius); }, delegate(int i) { settings.BgRadius = radii[i]; StyleChanged(); })
                     { SubNow = delegate { return radTuned() ? Tuned : null; }, Loose = radTuned },
                 new ToggleRow(I18n.T("Sombra", "Shadow"), null, null, D.Color.Empty, D.Color.Empty,

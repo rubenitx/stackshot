@@ -11,15 +11,11 @@ namespace Stackshot
         public const int Water = 0, Eyes = 1, Move = 2, Breathe = 3;
         public const int Count = 4;
 
-        static readonly string[] NamesEs = { "Beber agua", "Descansar la vista", "Moverse", "Respirar" };
-        static readonly string[] NamesEn = { "Drink water", "Rest your eyes", "Move", "Breathe" };
-        public static string[] Names { get { return I18n.IsSpanish ? NamesEs : I18n.LocalizeList(NamesEn); } }
+        public static string[] Names { get { return new string[] { I18n.T("Beber agua", "Drink water"), I18n.T("Descansar la vista", "Rest your eyes"), I18n.T("Moverse", "Move"), I18n.T("Respirar", "Breathe") }; } }
         public static readonly string[] Glyphs = { "drop", "eye", "walk", "wind" };
         // Choices for each interval, in minutes (0: off).
         public static readonly int[] Minutes = { 0, 20, 30, 45, 60, 90, 120 };
-        static readonly string[] MinuteNamesEs = { "No", "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" };
-        static readonly string[] MinuteNamesEn = { "Off", "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" };
-        public static string[] MinuteNames { get { return I18n.IsSpanish ? MinuteNamesEs : I18n.LocalizeList(MinuteNamesEn); } }
+        public static string[] MinuteNames { get { return new string[] { I18n.T("No", "Off"), "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" }; } }
 
         public static int IndexOf(int minutes)
         {
@@ -126,20 +122,19 @@ namespace Stackshot
                 string summary = string.Format(I18n.Localize("Today: {0} glasses of water, {1} eye rests, {2} movement breaks"), n[0], n[1], n[2]);
                 return summary + (n[3] > 0 ? string.Format(I18n.Localize(", {0} breathing breaks."), n[3]) : ".");
             }
-            if (I18n.IsSpanish)
-            {
-                string r = "Hoy: " + n[0] + (n[0] == 1 ? " vaso de agua" : " vasos de agua") + " \u00B7 " + n[1] + (n[1] == 1 ? " descanso de vista" : " descansos de vista") +
-                           " \u00B7 " + n[2] + (n[2] == 1 ? " pausa para moverte" : " pausas para moverte");
-                if (n[3] > 0) r += " \u00B7 " + n[3] + (n[3] == 1 ? " respiraci\u00F3n" : " respiraciones");
-                return r + ".";
-            }
-            else
-            {
-                string r = "Today: " + n[0] + (n[0] == 1 ? " glass of water" : " glasses of water") + " \u00B7 " + n[1] + (n[1] == 1 ? " eye rest" : " eye rests") +
-                           " \u00B7 " + n[2] + (n[2] == 1 ? " movement break" : " movement breaks");
-                if (n[3] > 0) r += " \u00B7 " + n[3] + (n[3] == 1 ? " breathing break" : " breathing breaks");
-                return r + ".";
-            }
+            string r = (n[0] == 1
+                ? I18n.T("Hoy: 1 vaso de agua", "Today: 1 glass of water", "Heute: 1 Glas Wasser")
+                : string.Format(I18n.Culture, I18n.T("Hoy: {0} vasos de agua", "Today: {0} glasses of water", "Heute: {0} Gl\u00E4ser Wasser"), n[0])) + " \u00B7 " +
+                (n[1] == 1
+                    ? I18n.T("1 descanso de vista", "1 eye rest", "1 Pause f\u00FCr die Augen")
+                    : string.Format(I18n.Culture, I18n.T("{0} descansos de vista", "{0} eye rests", "{0} Pausen f\u00FCr die Augen"), n[1])) + " \u00B7 " +
+                (n[2] == 1
+                    ? I18n.T("1 pausa para moverte", "1 movement break", "1 Bewegungspause")
+                    : string.Format(I18n.Culture, I18n.T("{0} pausas para moverte", "{0} movement breaks", "{0} Bewegungspausen"), n[2]));
+            if (n[3] > 0) r += " \u00B7 " + (n[3] == 1
+                ? I18n.T("1 respiraci\u00F3n", "1 breathing break", "1 Atempause")
+                : string.Format(I18n.Culture, I18n.T("{0} respiraciones", "{0} breathing breaks", "{0} Atempausen"), n[3]));
+            return r + ".";
         }
 
         public static int[] MinutesOf(Settings s)
