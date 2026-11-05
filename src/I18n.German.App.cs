@@ -130,7 +130,6 @@ namespace Stackshot
             reg("Could not open browser.", "No he podido abrir el navegador.", "Der Browser lie\u00DF sich nicht \u00F6ffnen.");
             reg("Could not open \u201C{0}\u201D: it may no longer exist.", "No he podido abrir \u00AB{0}\u00BB: puede que ya no exista.", "\u201E{0}\u201C lie\u00DF sich nicht \u00F6ffnen: es existiert vielleicht nicht mehr.");
             reg("I cannot find that folder or file.", "No encuentro esa carpeta o ese archivo.", "Diesen Ordner oder diese Datei finde ich nicht.");
-            reg("Added to your notes.", "Apuntado en tus notas.", "In deinen Notizen gespeichert.");
             reg("Noted, with {0}.", "Apuntado, con {0}.", "Notiert, mit {0}.");
             reg("Note saved.", "Nota guardada.", "Notiz gespeichert.");
             reg("Could not add note", "No se pudo apuntar", "Die Notiz konnte nicht gespeichert werden");
@@ -139,18 +138,14 @@ namespace Stackshot
             reg("That note is no longer in Notas.md (it was deleted or changed outside).", "Esa nota ya no est\u00E1 en Notas.md (se borr\u00F3 o cambi\u00F3 fuera).", "Diese Notiz ist nicht mehr in Notas.md (gel\u00F6scht oder au\u00DFerhalb ge\u00E4ndert).");
 
             // ShotStack.Links / LinksWindow
-            reg("Your links ({0} of {1})", "Tus accesos ({0} de {1})", "Deine Schnelllinks ({0} von {1})");
 
             // ShotStack.Focus
-            reg("Focus", "Concentraci\u00F3n", "Fokus");
             reg(" paused", " en pausa", " pausiert");
             reg("block {0} of {1}", "bloque {0} de {1}", "Block {0} von {1}");
             reg("{0} left", "quedan {0}", "noch {0}");
             reg("{0} left.", "Quedan {0}.", "Noch {0}.");
-            reg("Break", "Descanso", "Pause");
-            reg("Break of {0}", "Descanso de {0}", "Pause von {0}");
-            reg("Long break", "Descanso largo", "Lange Pause");
-            reg("Long break of {0}", "Descanso largo de {0}", "Lange Pause von {0}");
+            reg("Break of {0}", null, "Pause von {0}");
+            reg("Long break of {0}", null, "Lange Pause von {0}");
             reg(": stand up, look away, drink water. I'll let you know when it's done.", ": lev\u00E1ntate, mira lejos, bebe agua. Te aviso al terminar.", ": steh auf, schau in die Ferne, trink Wasser. Ich melde mich, wenn er vorbei ist.");
             reg("Focus paused", "Concentraci\u00F3n en pausa", "Fokus pausiert");
             reg("Focus finished", "Concentraci\u00F3n terminada", "Fokus beendet");
@@ -172,7 +167,6 @@ namespace Stackshot
             reg("blocks", "bloques", "Bl\u00F6cke");
 
             // ShotStack.Health: watch, water, steps, sleep
-            reg("Connect", "Conectar", "Verbinden");
             reg("Connect your smartwatch?", "\u00BFConectamos tu reloj?", "Uhr verbinden?");
             reg("Have a Pixel Watch or a Fitbit? If you connect it, I can accompany you with your steps, activity and sleep. Data goes from Google directly to your PC.",
                 "\u00BFTienes un Pixel Watch o un Fitbit? Si lo conectas, te acompa\u00F1o con tus pasos, tu actividad y tu sue\u00F1o. Los datos van de Google a tu equipo.",
@@ -194,10 +188,6 @@ namespace Stackshot
             reg("Your day", "Tu d\u00EDa", "Dein Tag");
             reg("Today: ", "Hoy: ", "Heute: ");
             reg("Today: {0} {1}, {2} of focus", "Hoy: {0} {1}, {2} de concentraci\u00F3n", "Heute: {0} {1}, {2} Fokus");
-            reg(" steps", " pasos", " Schritte");
-            reg(" and ", " y ", " und ");
-            reg("{0} capture", "{0} captura", "{0} Aufnahme");
-            reg("{0} captures", "{0} capturas", "{0} Aufnahmen");
             reg("{0} focus block ({1})", "{0} bloque de concentraci\u00F3n ({1})", "{0} Fokusblock ({1})");
             reg("{0} focus blocks ({1})", "{0} bloques de concentraci\u00F3n ({1})", "{0} Fokusbl\u00F6cke ({1})");
             reg("You've already walked {0} steps today: goal reached!", "\u00A1Hoy ya llevas {0} pasos: objetivo cumplido!", "Du hast heute schon {0} Schritte geschafft: Tagesziel erreicht!");
@@ -237,8 +227,6 @@ namespace Stackshot
             reg("Okay, I won't.", "Vale, no la hago.", "Na gut, dann nicht.");
 
             // ReportWindow: report an issue, my reports
-            reg("Report an issue", "Informar de un problema", "Ein Problem melden");
-            reg("My reports", "Mis reportes", "Meine Meldungen");
             reg("New report", "Nuevo reporte", "Neue Meldung");
             reg("What you sent from this computer, how it's going and the replies you get. No account needed.",
                 "Lo que has enviado desde este equipo, c\u00F3mo va y las respuestas que recibas. No hace falta ninguna cuenta.",
@@ -372,9 +360,7 @@ namespace Stackshot
             reg("Capture ", "Captura ", "Aufnahme ");
             reg("Saved in ", "Guardada en ", "Gespeichert in ");
             reg("Not saved yet", "Sin guardar todav\u00EDa", "Noch nicht gespeichert");
-            reg("Saving\u2026", "Guardando\u2026", "Wird gespeichert\u2026");
             reg("Combined", "Unidas", "Zusammengef\u00FCgt");
-            reg("Could not combine", "No se pudieron unir", "Zusammenf\u00FCgen fehlgeschlagen");
             reg("The captures are too large or could not be read. Please try again.", "Las capturas son demasiado grandes o no se han podido leer. Vuelve a intentarlo.", "Die Aufnahmen sind zu gro\u00DF oder lie\u00DFen sich nicht lesen. Versuch es bitte erneut.");
             reg("Could not open viewer", "No se pudo abrir el visor", "Die Ansicht konnte nicht ge\u00F6ffnet werden");
             reg("Saving GIF\u2026", "Guardando el GIF\u2026", "GIF wird gespeichert\u2026");
@@ -405,7 +391,6 @@ namespace Stackshot
                 "Windows will sich abmelden und es l\u00E4uft eine Aufnahme.\n\nStackshot stoppt sie und speichert sie in deinem Ordner, bevor es beendet wird.");
 
             // News
-            reg("What's new", "Novedades", "Neuigkeiten");
             reg("What's new in Stackshot {0}", "Novedades de Stackshot {0}", "Neu in Stackshot {0}");
             reg("The new version: here is what's new.", "La versi\u00F3n nueva: esto es lo que trae.", "Die neue Version: das ist neu darin.");
             reg("Everything new since the version you had.", "Todo lo nuevo desde la versi\u00F3n que ten\u00EDas.", "Alles Neue seit der Version, die du hattest.");
@@ -424,7 +409,7 @@ namespace Stackshot
             // Toast / ShotStack.Toast
             reg("New XML", "Nuevo XML", "Neue XML-Datei");
             reg(". The viewer has unsaved changes: open it from the tray when finished.", ". El visor tiene cambios sin guardar: \u00E1brelo desde la bandeja cuando acabes.", ". Die Ansicht hat ungespeicherte \u00C4nderungen: \u00F6ffne sie \u00FCber den Infobereich, wenn du fertig bist.");
-            reg("Open XML", "Abrir el XML", "XML \u00F6ffnen");
+            reg("Open XML", null, "XML \u00F6ffnen");
             reg("picking an area", "eligiendo un \u00E1rea", "ein Bereich wird ausgew\u00E4hlt");
             reg("session locked or away", "sesi\u00F3n bloqueada o sin nadie delante", "Sitzung gesperrt oder niemand am Rechner");
             reg("full-screen application", "aplicaci\u00F3n a pantalla completa", "Anwendung im Vollbild");
@@ -435,7 +420,6 @@ namespace Stackshot
             reg("No text found", "No hay texto", "Kein Text gefunden");
             reg("No text found in the image.", "No se ha encontrado texto en la imagen.", "Im Bild wurde kein Text gefunden.");
             reg("Could not read text", "No se ha podido leer el texto", "Text konnte nicht gelesen werden");
-            reg("Could not open browser", "No se pudo abrir el navegador", "Browser konnte nicht ge\u00F6ffnet werden");
 
             // Settings: comments written into the settings file
             reg("# Stackshot settings. Change them from the tray icon > Settings.",
@@ -498,7 +482,6 @@ namespace Stackshot
             reg("Whatever you want to note", "Lo que quieras apuntar", "Was du notieren willst");
             reg("For example: call Laura", "Por ejemplo: llamar a Laura", "Zum Beispiel: Laura anrufen");
             reg("Start a line with \u201C- [ ] \u201D for a task list.", "Empieza una l\u00EDnea con \u00AB- [ ] \u00BB para una lista de tareas.", "Beginne eine Zeile mit \u201E- [ ] \u201C f\u00FCr eine Aufgabenliste.");
-            reg("Unpin from desktop", "Quitar del escritorio", "Vom Desktop l\u00F6sen");
             reg("Pin to desktop", "Fijar en el escritorio", "Auf dem Desktop anheften");
             reg("View all (Notas.md, in your captures folder)", "Ver todas (Notas.md, en tu carpeta de capturas)", "Alle ansehen (Notas.md, in deinem Aufnahmeordner)");
             reg("View my notes (Notas.md, in your captures folder)", "Ver mis notas (Notas.md, en tu carpeta de capturas)", "Meine Notizen ansehen (Notas.md, in deinem Aufnahmeordner)");
@@ -526,7 +509,6 @@ namespace Stackshot
             reg("No XML folder is monitored yet: choose it in Settings > General > Advanced.",
                 "Todav\u00EDa no hay ninguna carpeta de XML vigilada: el\u00EDgela en Ajustes > General > Avanzado.",
                 "Es wird noch kein XML-Ordner \u00FCberwacht: w\u00E4hle ihn unter Einstellungen > Allgemein > Erweitert.");
-            reg("Open video", "Abrir v\u00EDdeo", "Video \u00F6ffnen");
             reg("{0} older", "{0} anterior", "{0} \u00E4ltere");
             reg("{0} newer", "{0} m\u00E1s reciente", "{0} neuere");
 

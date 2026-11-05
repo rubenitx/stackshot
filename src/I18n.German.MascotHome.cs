@@ -141,7 +141,6 @@ namespace Stackshot
             reg("10,000", "10.000", "10.000");
             reg("12,000", "12.000", "12.000");
             reg("15,000", "15.000", "15.000");
-            reg("Activity comments", "Comentarios sobre tu actividad", "Kommentare zu deiner Aktivität");
             reg("Gentle reminders to move after an hour of sitting, celebrates walks, active minutes, and step goals, notes sleep duration. Rare, unobtrusive daily speech.",
                 "Te propone levantarte si llevas una hora quieto o una mañana floja, un paseo después de comer, celebra tus paseos, minutos activos y objetivo de pasos, te dice cómo vas y cuánto te falta, y cómo has dormido. Cada cosa, pocas veces al día.",
                 "Schlägt vor aufzustehen, wenn du eine Stunde stillgesessen hast oder der Morgen träge war, schlägt einen Spaziergang nach dem Mittagessen vor, feiert deine Spaziergänge, aktiven Minuten und dein Schrittziel, erzählt, wie es läuft und wie viel noch fehlt, und wie du geschlafen hast. Jedes davon selten am Tag.");
@@ -230,12 +229,11 @@ namespace Stackshot
             reg("Styles", "Estilos", "Stile");
             reg("Favorites", "Favoritos", "Favoriten");
             reg("Originals", "Originales", "Originale");
-            reg("Character", "Personaje", "Figur");
             reg("Style", "Estilo", "Stil");
             reg("Species", "Especie", "Art");
             reg("Color", "Color", "Farbe");
             reg("Hat", "Gorro", "Hut");
-            reg("Outfit", "Ropa", "Kleidung");
+            reg("Outfit", null, "Kleidung");
             reg("Accessory", "Accesorio", "Accessoire");
             reg("Eyes", "Ojos", "Augen");
             reg("Extra", "Extra", "Extra");
@@ -270,7 +268,6 @@ namespace Stackshot
             reg("Strolls by the taskbar while you work", "Pasea junto a la barra de tareas mientras trabajas", "Schlendert bei der Arbeit an der Taskleiste entlang");
             reg("Only with Full profile (in General \u203A Profile)", "Solo con el perfil Completo (en General \u203A Perfil)", "Nur mit dem vollständigen Profil unter „Allgemein \u203A Profil“");
             reg("Change name", "Cambiar el nombre", "Namen ändern");
-            reg("On desktop", "En el escritorio", "Auf dem Desktop");
 
             // Accessibility of the mascot page
             reg("Mascot name", "Nombre de la mascota", "Name des Maskottchens");
@@ -318,8 +315,8 @@ namespace Stackshot
             // The desktop mascot: focus mode
             reg("Block {0} of {1} done!", "¡Bloque {0} de {1} hecho!", "Block {0} von {1} geschafft!");
             reg("Break's over. Shall we go on with block {0} of {1}?", "Fin del descanso. ¿Seguimos con el bloque {0} de {1}?", "Pause vorbei. Weiter mit Block {0} von {1}?");
-            reg("{0} long break", "Descanso largo de {0}", "Lange Pause von {0} Min.");
-            reg("{0} break", "Descanso de {0}", "Pause von {0} Min.");
+            reg("{0} long break", "Descanso largo de {0}", "Lange Pause von {0}");
+            reg("{0} break", "Descanso de {0}", "Pause von {0}");
             reg("{0} with me", "{0} conmigo", "{0} mit mir");
             reg("Another block, no break", "Otro bloque sin descanso", "Noch ein Block ohne Pause");
             reg("Done for today", "Terminar por hoy", "Für heute fertig");
@@ -332,7 +329,6 @@ namespace Stackshot
             reg("Skip the break", "Saltar el descanso", "Pause überspringen");
             reg("Block done! Tap me", "¡Bloque hecho! Tócame", "Block geschafft! Tippe mich");
             reg("Shall we go on? Tap me", "¿Seguimos? Tócame", "Weiter? Tippe mich");
-            reg("Paused", "En pausa", "Pausiert");
             reg("Break", "Descanso", "Pause");
 
             // The desktop mascot: health and the watch
@@ -358,7 +354,6 @@ namespace Stackshot
             reg("Drop it here and I'll open it!", "¡Suéltalo aquí y te lo abro!", "Lass es hier fallen und ich öffne es!");
             reg("Drop it and I'll add it to your notes!", "¡Suéltalo y lo apunto en tus notas!", "Lass es fallen und ich schreibe es in deine Notizen!");
             reg("Added to your notes.", "Apuntado en tus notas.", "In deine Notizen eingetragen.");
-            reg("Connect my watch", "Conectar mi reloj", "Meine Uhr verbinden");
             reg("OK, I'll ask you again another day.", "Vale, otro día te lo vuelvo a preguntar.", "OK, das frage ich dich an einem anderen Tag noch einmal.");
             reg("I don't have a watch", "No tengo reloj", "Ich habe keine Uhr");
             reg("Got it! I'll keep you company without a watch too.", "¡Entendido! Sin reloj también te acompaño.", "Verstanden! Auch ohne Uhr bin ich für dich da.");

@@ -209,12 +209,12 @@ namespace Stackshot
             reg("Could not save image.\n\n", null, "Das Bild konnte nicht gespeichert werden.\n\n");
             reg("Discard?", null, "Verwerfen?");
             reg("Cancel?", null, "Abbrechen?");
-            reg("Paused", null, "Pausiert");
+            reg("Paused", "En pausa", "Pausiert");
             reg("Pause", null, "Pause");
             reg("Resume", null, "Fortsetzen");
             reg("Countdown…", null, "Countdown…");
             reg("Preparing…", null, "Wird vorbereitet…");
-            reg("Saving…", null, "Wird gespeichert…");
+            reg("Saving…", "Guardando…", "Wird gespeichert…");
             reg("Preserving recording…", null, "Aufnahme wird gesichert…");
             reg("Recording bar", null, "Aufnahmeleiste");
             reg("Saving recording", null, "Aufnahme wird gespeichert");

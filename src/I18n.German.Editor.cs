@@ -123,7 +123,7 @@ namespace Stackshot
             reg("Container", null, "Container");
             reg("Video codec", null, "Videocodec");
             reg("Pixel format", null, "Pixelformat");
-            reg("Size", null, "Größe");
+            reg("Size", "Tamaño", "Größe");
             reg(" (non-square pixels {0}:{1}, displayed as {2} × {3})", null, " (nicht quadratische Pixel {0}:{1}, angezeigt als {2} × {3})");
             reg("Duration", null, "Dauer");
             reg("No audio", null, "Kein Ton");
@@ -236,7 +236,8 @@ namespace Stackshot
             reg("The file cannot be found.", null, "Die Datei wurde nicht gefunden.");
             reg("This file cannot be played: FFmpeg does not find a video to show.", null, "Diese Datei lässt sich nicht wiedergeben: FFmpeg findet kein abspielbares Video.");
             reg("Frame ", null, "Einzelbild ");
-            reg("Open video", null, "Video öffnen");
+            reg("Open video", "Abrir vídeo", "Video öffnen");
+            reg("%", " %", " %");
             reg("The duration of this video is unknown, so it cannot be fit to {0}. Mark a clip (E and S) or choose another quality in More options > Quality when exporting.", null, "Die Dauer dieses Videos ist unbekannt. Die Größe lässt sich daher nicht auf {0} ausrichten. Markiere einen Ausschnitt (E und S) oder wähle unter „Weitere Optionen“ > „Qualität beim Export“ eine andere.");
             reg("It is too long to fit in {0} with good quality ({1} fit). Mark a shorter clip (E and S) or choose another quality in More options > Quality when exporting.", null, "Er ist zu lang, um mit guter Qualität in {0} zu passen ({1} passen hinein). Markiere einen kürzeren Ausschnitt (E und S) oder wähle unter „Weitere Optionen“ > „Qualität beim Export“ eine andere.");
             reg("Creating the MP4… 0%  ·  Esc cancels", null, "MP4 wird erstellt… 0 %  ·  Esc bricht ab");
@@ -281,7 +282,7 @@ namespace Stackshot
             reg("Save as PDF: tall scrolling captures split across pages without losing crispness  (Ctrl+P)", null, "Als PDF speichern: lange Scrollaufnahmen werden scharf auf mehrere Seiten verteilt  (Strg+P)");
             reg("Drag", null, "Ziehen");
             reg("Drag to chat or another application", null, "In einen Chat oder eine andere Anwendung ziehen");
-            reg("Copy text", null, "Text kopieren");
+            reg("Copy text", "Copiar texto", "Text kopieren");
             reg("Copy text from image (Windows OCR)  (Ctrl+Shift+C)", null, "Text aus dem Bild kopieren (Windows-Texterkennung)  (Strg+Umschalt+C)");
             reg("Copy to clipboard  (Ctrl+C)", null, "In die Zwischenablage kopieren  (Strg+C)");
             reg("Keep in your captures folder  (Ctrl+S)", null, "Im Aufnahmeordner speichern  (Strg+S)");
@@ -317,7 +318,6 @@ namespace Stackshot
             reg("Shadow", "Sombra", "Schatten");
             reg("Saved styles", null, "Gespeicherte Stile");
             reg("Save this style", null, "Diesen Stil speichern");
-            reg("None", null, "Keine");
             reg("Gradients", null, "Farbverläufe");
             reg("Show less", null, "Weniger anzeigen");
             reg("Show more", null, "Mehr anzeigen");
@@ -328,7 +328,7 @@ namespace Stackshot
             reg("Other color\u2026", null, "Andere Farbe\u2026");
             reg("Auto-balance", null, "Automatisch ausbalancieren");
             reg("Alignment", null, "Ausrichtung");
-            reg("Aspect ratio", null, "Seitenverhältnis");
+            reg("Aspect ratio", "Proporción", "Seitenverhältnis");
             reg("Saved styles\u2026", null, "Gespeicherte Stile\u2026");
             reg("Saved styles ({0})", null, "Gespeicherte Stile ({0})");
             reg("Choose an image to use as background", null, "Hintergrundbild auswählen");

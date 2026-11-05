@@ -546,9 +546,10 @@ namespace Stackshot
         public static string LevelUp(Settings s, int level)
         {
             if (I18n.IsKorean) return string.Format(I18n.Localize("We are now {0}!"), MascotParts.LevelNames[level]);
-            return I18n.T("\u00A1Ya somos " + MascotParts.LevelNames[level].ToLowerInvariant() + "!",
-                          "We are now " + MascotParts.LevelNames[level].ToLowerInvariant() + "!",
-                          "Jetzt sind wir " + MascotParts.LevelNames[level].ToLowerInvariant() + "!");
+            string lower = MascotParts.LevelNames[level].ToLowerInvariant();
+            return I18n.T("\u00A1Ya somos " + lower + "!",
+                          "We are now " + lower + "!",
+                          "Jetzt sind wir " + MascotParts.LevelNames[level] + "!");
         }
     }
 }

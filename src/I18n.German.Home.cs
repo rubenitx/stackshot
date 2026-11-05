@@ -30,13 +30,10 @@ namespace Stackshot
             reg("This week", "Esta semana", "Diese Woche");
             reg("This month", "Este mes", "Dieser Monat");
             reg("Earlier", "Anteriores", "Fr\u00FCher");
-            reg("Capture an area", "Capturar un \u00E1rea", "Bereich aufnehmen");
             reg("An area", "Un \u00E1rea", "Ein Bereich");
             reg("Last area", "La \u00FAltima \u00E1rea", "Letzter Bereich");
             reg("Full screen", "Pantalla completa", "Ganzer Bildschirm");
             reg("A window", "Una ventana", "Ein Fenster");
-            reg("Scrolling", "Con desplazamiento", "Mit Bildlauf");
-            reg("Copy text", "Copiar texto", "Text kopieren");
             reg("Animated GIF", "GIF animado", "Animiertes GIF");
             reg("With timer", "Con temporizador", "Mit Timer");
             reg(" and ", " y ", " und ");
@@ -60,21 +57,18 @@ namespace Stackshot
             reg("Tip", "Truco", "Tipp");
             reg("Copied!", "\u00A1Copiada!", "Kopiert!");
             reg("Could not read capture or clipboard is busy. Please try again.", "No se ha podido leer la captura o el portapapeles est\u00E1 ocupado. Vuelve a intentarlo.", "Die Aufnahme oder die Zwischenablage konnte nicht gelesen werden. Versuch es erneut.");
-            reg("Rename", "Cambiar el nombre", "Umbenennen");
-            reg("Mascot name", "Nombre de la mascota", "Name des Maskottchens");
+            reg("Rename", null, "Umbenennen");
+            reg("Ready", null, "Bereit");
             reg("My name is now {0}!", "\u00A1Ahora me llamo {0}!", "Ich hei\u00DFe jetzt {0}!");
-            reg("Saving\u2026", "Guardando\u2026", "Wird gespeichert\u2026");
             reg("Empty", "Vac\u00EDa", "Leer");
             reg("Show", "Mostrar", "Zeigen");
 
             // History page
             reg("Your captures and recordings, newest first.", "Tus capturas y grabaciones, de la m\u00E1s reciente a la m\u00E1s antigua.", "Deine Aufnahmen und Videos, vom neuesten zum \u00E4ltesten.");
             reg("All", "Todo", "Alle");
-            reg("Captures", "Capturas", "Aufnahmen");
             reg("Videos", "V\u00EDdeos", "Videos");
             reg("Search by text or name", "Buscar por texto o nombre", "Nach Text oder Name suchen");
             reg("Search by name", "Buscar por nombre", "Nach Name suchen");
-            reg("Clear search", "Borrar la b\u00FAsqueda", "Suche l\u00F6schen");
             reg("This Windows does not have text recognition (OCR): searching by name only for now.", "Este Windows no tiene el reconocimiento de texto (OCR): de momento se busca solo por el nombre.", "Dieses Windows hat keine Texterkennung (OCR): vorerst wird nur nach dem Namen gesucht.");
             reg("Reading capture text\u2026 {0} of {1}", "Leyendo el texto de las capturas\u2026 {0} de {1}", "Text der Aufnahmen wird gelesen\u2026 {0} von {1}");
             reg(" \u00B7 paused while recording", " \u00B7 en pausa mientras grabas", " \u00B7 pausiert beim Aufnehmen");
@@ -125,17 +119,10 @@ namespace Stackshot
             reg("Deletes the copy saved in Stackshot; your original image is untouched.", "Se borra la copia guardada en Stackshot; tu imagen original no se toca.", "L\u00F6scht die in Stackshot gespeicherte Kopie; dein Originalbild bleibt unber\u00FChrt.");
             reg("Open editor with backdrop enabled", "Abrir el editor con el fondo puesto", "Editor mit Hintergrund \u00F6ffnen");
             reg("Otherwise, enable it with the Backdrop button anytime.", "Si no, se pone con el bot\u00F3n Fondo cuando quieras.", "Sonst schaltest du ihn jederzeit mit der Schaltfl\u00E4che Hintergrund ein.");
-            reg("Style", "Estilo", "Stil");
-            reg("Padding", "Margen", "Abstand");
             reg("Corners", "Esquinas", "Ecken");
-            reg("Small", "Peque\u00F1o", "Klein");
-            reg("Medium", "Medio", "Mittel");
-            reg("Large", "Grande", "Gro\u00DF");
             reg("Sharp", "Rectas", "Eckig");
             reg("Soft", "Suaves", "Sanft");
             reg("Round", "Redondas", "Rund");
-            reg("Shadow", "Sombra", "Schatten");
-            reg("Aspect ratio", "Proporci\u00F3n", "Seitenverh\u00E4ltnis");
             reg("Custom, from editor", "A tu medida, desde el editor", "Eigene, aus dem Editor");
             reg("In the editor you have more: plain colors, blurred capture, inset, alignment, and sliders for padding, shadow, and corners; what you last used is saved here.",
                 "En el editor tienes m\u00E1s: colores lisos, la captura desenfocada, inserci\u00F3n, alineaci\u00F3n y deslizadores para el margen, la sombra y las esquinas; lo \u00FAltimo que uses se queda guardado aqu\u00ED.",
@@ -203,7 +190,6 @@ namespace Stackshot
             reg("Lossless and verified, in MKV.", "Sin p\u00E9rdidas y verificado, en MKV.", "Verlustfrei und gepr\u00FCft, in MKV.");
             reg("Sharpness", "Nitidez", "Sch\u00E4rfe");
             reg("Smoothness", "Fluidez", "Fl\u00FCssigkeit");
-            reg("Size", "Tama\u00F1o", "Gr\u00F6\u00DFe");
             reg("Standard: 24, 30 or 60 fps with good compression. Small files ready to share in seconds.",
                 "Est\u00E1ndar: 24, 30 o 60 fps con buena compresi\u00F3n. Archivos peque\u00F1os que se env\u00EDan en segundos.",
                 "Standard: 24, 30 oder 60 Bilder/s mit guter Komprimierung. Kleine Dateien, die in Sekunden geteilt werden.");
@@ -223,7 +209,6 @@ namespace Stackshot
             reg("High: {0}. For captures that stop with heavy motion; with low free memory the PC may slow down.",
                 "Alta: {0}. Para tomas que se detienen con mucho movimiento; con poca memoria libre el equipo puede ir m\u00E1s lento.",
                 "Hoch: {0}. F\u00FCr Aufnahmen mit viel Bewegung; bei wenig freiem Arbeitsspeicher kann der PC langsamer werden.");
-            reg("Normal", "Normal", "Normal");
             reg("More frames, smoother (and larger file).", "M\u00E1s fotogramas, m\u00E1s fluido (y m\u00E1s pesado).", "Mehr Bilder, fl\u00FCssiger (und gr\u00F6\u00DFere Datei).");
             reg("Memory for motion peaks", "Memoria para picos de movimiento", "Speicher f\u00FCr Bewegungsspitzen");
             reg("Smooth motion. If the area is too large for your PC, it will ask before recording.", "Movimiento fluido. Si el \u00E1rea es demasiado grande para tu equipo, te preguntar\u00E1 antes de grabar.", "Fl\u00FCssige Bewegung. Ist der Bereich f\u00FCr deinen PC zu gro\u00DF, fragt es vor der Aufnahme nach.");
@@ -295,7 +280,6 @@ namespace Stackshot
             reg("Not synced yet today.", "A\u00FAn sin leer hoy.", "Heute noch nicht gelesen.");
             reg("Google has no data for today yet. Open your watch app on phone to sync, then try again.", "Google a\u00FAn no tiene datos de hoy. Abre la app de tu reloj en el m\u00F3vil para que se sincronice y vuelve a leerlo.", "Google hat f\u00FCr heute noch keine Daten. \u00D6ffne die Uhr-App auf dem Handy zum Synchronisieren und lies dann erneut.");
             reg("Google has no data for today yet. Open watch companion app on phone to sync.", "Google a\u00FAn no tiene datos de hoy. Abre la app del reloj en el m\u00F3vil para sincronizarlo.", "Google hat f\u00FCr heute noch keine Daten. \u00D6ffne die Uhr-App auf dem Handy zum Synchronisieren.");
-            reg("Steps", "Pasos", "Schritte");
             reg("Goal reached!", "\u00A1Objetivo cumplido!", "Ziel erreicht!");
             reg("of {0}", "de {0}", "von {0}");
             reg("Sleep", "Sue\u00F1o", "Schlaf");
@@ -307,7 +291,6 @@ namespace Stackshot
             reg("Your watch today", "Tu reloj hoy", "Deine Uhr heute");
             reg("Read at {0}", "Le\u00EDdo a las {0}", "Gelesen um {0}");
             reg("View in Health and activity", "Ver en Salud y actividad", "In Gesundheit und Aktivit\u00E4t ansehen");
-            reg("Health and activity", "Salud y actividad", "Gesundheit und Aktivit\u00E4t");
             reg("Benefits of connecting", "Qu\u00E9 ganas conect\u00E1ndolo", "Was das Verbinden bringt");
             reg("The mascot uses your activity data to care for you: alerts after an hour of inactivity, encourages movement in morning/afternoon, celebrates walks, active minutes and step goals, adapts breaks if you had poor sleep, and includes steps in daily summary.",
                 "La mascota usa tus datos para cuidarte: te avisa si llevas una hora sin moverte y te propone levantarte, te anima por la ma\u00F1ana y despu\u00E9s de comer si apenas has caminado, celebra tus paseos, tus minutos activos y tu objetivo de pasos, te dice cu\u00E1nto te falta por la tarde, adelanta las pausas si has dormido poco (y por la noche te recuerda acostarte antes) y no te pide moverte justo despu\u00E9s de caminar. Tambi\u00E9n suma tus pasos al resumen del d\u00EDa.",
@@ -320,11 +303,7 @@ namespace Stackshot
             reg("Read at {0}. Automatically synced every 30 minutes.", "Le\u00EDdo a las {0}. Se lee solo cada media hora.", "Gelesen um {0}. Wird automatisch alle 30 Minuten gelesen.");
 
             // Wellness
-            reg("Drink water", "Beber agua", "Wasser trinken");
-            reg("Rest your eyes", "Descansar la vista", "Augen ausruhen");
-            reg("Move", "Moverse", "Bewegung");
-            reg("Breathe", "Respirar", "Atmen");
-            reg("Off", "No", "Aus");
+            reg("Rest your eyes", null, "Augen ausruhen");
             reg("You haven't taken any breaks yet today.", "Hoy todav\u00EDa no has hecho ninguna pausa.", "Heute hast du noch keine Pause gemacht.");
 
             // Search
@@ -334,7 +313,6 @@ namespace Stackshot
             reg("And {0} more: add another word to refine.", "Y {0} m\u00E1s: a\u00F1ade otra palabra para afinar.", "Und {0} weitere: erg\u00E4nze ein Wort, um es einzugrenzen.");
             reg("No settings match {0}", "No hay ajustes que coincidan con {0}", "Keine Einstellungen passen zu {0}");
             reg("Try different words or fewer letters, such as \u201Cfolder\u201D, \u201Csound\u201D or \u201Cshortcut\u201D.", "Prueba con otras palabras o con menos letras, como \u00ABcarpeta\u00BB, \u00ABsonido\u00BB o \u00ABatajo\u00BB.", "Versuch andere W\u00F6rter oder weniger Buchstaben, etwa \u201EOrdner\u201C, \u201ETon\u201C oder \u201ETastenk\u00FCrzel\u201C.");
-            reg("folder", "carpeta", "Ordner");
             reg(" folder", " carpeta", " Ordner");
 
             // Saved-capture names
@@ -377,7 +355,6 @@ namespace Stackshot
             reg("You already have 8 notes on your desktop: remove one before pinning another.", "Ya tienes 8 notas en el escritorio: quita alguna antes de fijar otra.", "Es sind schon 8 Notizen auf dem Desktop: entferne eine, um eine weitere anzupinnen.");
 
             // Quick links
-            reg("Quick links", "Accesos r\u00E1pidos", "Schnelllinks");
             reg("Websites, folders, files or programs you want handy: they appear in the mascot's menu and open with a click.", "Webs, carpetas, archivos o programas que quieras tener a mano: salen en el men\u00FA de la mascota y te los abre con un clic.", "Websites, Ordner, Dateien oder Programme, die du griffbereit haben willst: Sie erscheinen im Men\u00FC des Maskottchens und \u00F6ffnen sich per Klick.");
             reg("Web address or path", "Direcci\u00F3n web o ruta", "Webadresse oder Pfad");
             reg("https://\u2026 or C:\\Folder\\file", "https://\u2026 o C:\\Carpeta\\archivo", "https://\u2026 oder C:\\Ordner\\Datei");
@@ -386,7 +363,7 @@ namespace Stackshot
             reg("Choose folder\u2026", "Elegir carpeta\u2026", "Ordner ausw\u00E4hlen\u2026");
             reg("Choose file or program\u2026", "Elegir archivo o programa\u2026", "Datei oder Programm ausw\u00E4hlen\u2026");
             reg("Add", "A\u00F1adir", "Hinzuf\u00FCgen");
-            reg("Your links ({0} of {1})", "Tus accesos ({0} de {1})", "Deine Links ({0} von {1})");
+            reg("Your links ({0} of {1})", "Tus accesos ({0} de {1})", "Deine Schnelllinks ({0} von {1})");
             reg("Remove {0}", "Quitar {0}", "{0} entfernen");
             reg("Done! \u201C{0}\u201D is now in my menu.", "\u00A1Listo! \u00AB{0}\u00BB ya est\u00E1 en mi men\u00FA.", "Fertig! \u201E{0}\u201C ist jetzt in meinem Men\u00FC.");
             reg("Choose the folder you want to have handy", "Elige la carpeta que quieres tener a mano", "W\u00E4hle den Ordner, den du griffbereit haben willst");

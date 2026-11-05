@@ -34,7 +34,7 @@ namespace Stackshot
             get
             {
                 if (I18n.IsSpanish) return ActionShortEs;
-                return Array.ConvertAll(ActionShortEn, label => I18n.T(null, label));
+                return Array.ConvertAll(ActionShortEn, label => label == "Scrolling" ? I18n.T(null, label, "Mit Bildlauf") : I18n.T(null, label));
             }
         }
         static readonly string[] ActionIcons = { "area", "update", "screen", "window", "scroll", "textscan", "video", "gif", "markdown", "clock" };

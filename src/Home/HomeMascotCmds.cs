@@ -254,7 +254,7 @@ namespace Stackshot
                                         delegate { int i = Array.IndexOf(steps, settings.StepsGoal); return i < 0 ? 2 : i; },
                                         delegate(int i) { settings.StepsGoal = steps[Math.Max(0, Math.Min(steps.Length - 1, i))]; }));
                 }
-                rows.Add(new ToggleRow(I18n.T("Comentarios sobre tu actividad", "Activity comments"), I18n.T("Te propone levantarte si llevas una hora quieto o una ma\u00F1ana floja, un paseo despu\u00E9s de comer, celebra tus paseos, minutos activos y objetivo de pasos, te dice c\u00F3mo vas y cu\u00E1nto te falta, y c\u00F3mo has dormido. Cada cosa, pocas veces al d\u00EDa.", "Gentle reminders to move after an hour of sitting, celebrates walks, active minutes, and step goals, notes sleep duration. Rare, unobtrusive daily speech."), "sparkle", Mac.Orange, Mac.Pink,
+                rows.Add(new ToggleRow(I18n.T("Comentarios sobre tu actividad", "Activity comments", "Kommentare zu deiner Aktivität"), I18n.T("Te propone levantarte si llevas una hora quieto o una ma\u00F1ana floja, un paseo despu\u00E9s de comer, celebra tus paseos, minutos activos y objetivo de pasos, te dice c\u00F3mo vas y cu\u00E1nto te falta, y c\u00F3mo has dormido. Cada cosa, pocas veces al d\u00EDa.", "Gentle reminders to move after an hour of sitting, celebrates walks, active minutes, and step goals, notes sleep duration. Rare, unobtrusive daily speech."), "sparkle", Mac.Orange, Mac.Pink,
                                        delegate { return settings.HealthTalk; }, delegate(bool v) { settings.HealthTalk = v; }) { When = delegate { return GoogleHealth.Connected; } });
                 rows.Add(new SoonRow());
             }

@@ -305,8 +305,6 @@ namespace Stackshot
             reg("Open attachment", null, "Anhang öffnen");
             reg("It is {0}: can only be saved", null, "Dateityp {0}. Der Anhang kann nur gespeichert werden.");
             reg("Unknown type: can only be saved", null, "Unbekannter Dateityp. Der Anhang kann nur gespeichert werden.");
-            reg("text", null, "Text");
-            reg("saved", null, "gespeichert");
             reg("Find", null, "Suchen");
             reg("Save attachment as\u2026", null, "Anhang speichern unter\u2026");
             reg("JSON copied.", null, "JSON kopiert.");

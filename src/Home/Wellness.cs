@@ -11,7 +11,7 @@ namespace Stackshot
         public const int Water = 0, Eyes = 1, Move = 2, Breathe = 3;
         public const int Count = 4;
 
-        public static string[] Names { get { return new string[] { I18n.T("Beber agua", "Drink water"), I18n.T("Descansar la vista", "Rest your eyes"), I18n.T("Moverse", "Move"), I18n.T("Respirar", "Breathe") }; } }
+        public static string[] Names { get { return new string[] { I18n.T("Beber agua", "Drink water"), I18n.T("Descansar la vista", "Rest your eyes"), I18n.T("Moverse", "Move", "Bewegung"), I18n.T("Respirar", "Breathe", "Atmen") }; } }
         public static readonly string[] Glyphs = { "drop", "eye", "walk", "wind" };
         // Choices for each interval, in minutes (0: off).
         public static readonly int[] Minutes = { 0, 20, 30, 45, 60, 90, 120 };
