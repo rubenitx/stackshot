@@ -618,8 +618,10 @@ namespace Stackshot
                 return char.ToUpper(day[0], HistoryEs) + day.Substring(1) + ", " + hm;
             }
             if (I18n.IsKorean) return t.Year == DateTime.Now.Year ? t.ToString("M/d HH:mm", HistoryEs) : t.ToString("yyyy/M/d", HistoryEs);
-            if (t.Year == DateTime.Now.Year) return t.ToString(I18n.IsSpanish ? "d MMM" : "MMM d", HistoryEs).Replace(".", "") + ", " + hm;
-            return t.ToString(I18n.IsSpanish ? "d MMM yyyy" : "MMM d, yyyy", HistoryEs).Replace(".", "");
+            bool thisYear = t.Year == DateTime.Now.Year;
+            string date = t.ToString(thisYear ? I18n.T("d MMM", "MMM d", "d. MMM") : I18n.T("d MMM yyyy", "MMM d, yyyy", "d. MMM yyyy"), HistoryEs);
+            if (!I18n.IsGerman) date = date.Replace(".", "");
+            return thisYear ? date + ", " + hm : date;
         }
 
         sealed class HistoryTile : TapPanel

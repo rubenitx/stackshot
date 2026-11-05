@@ -157,6 +157,12 @@ namespace Stackshot.Tests
             }
         }
 
+        static string LineOf(Source f, int line)
+        {
+            string[] lines = f.Text.Split('\n');
+            return line >= 1 && line <= lines.Length ? lines[line - 1] : "";
+        }
+
         static void Classify(List<List<Tok>> parts, Source f, int line, List<string> issues, ref int unknownArrays)
         {
             if (parts.Count == 2)
@@ -164,10 +170,13 @@ namespace Stackshot.Tests
                 Branch x = BranchOf(parts[0]), y = BranchOf(parts[1]);
                 if (x.Kind <= 1 || y.Kind <= 1)
                 {
-                    // Date/time formats ("d MMM" vs "MMM d") and culture names ("es-ES" vs "en-US") are locale logic,
-                    // not translatable text; only a German branch can change them, so they are reported, not failed.
+                    // Date/time formats ("d MMM" vs "MMM d") and culture names ("es-ES" vs "en-US") are locale logic, not
+                    // text; they pass only when the same line also gives German its own branch.
                     if (x.Kind == 0 && y.Kind == 0 && LocaleLiteral(x.Text) && LocaleLiteral(y.Text))
-                        Console.WriteLine("    ternary-locale: " + f.Rel + ":" + line + ": '" + x.Text + "' / '" + y.Text + "'");
+                    {
+                        if (LineOf(f, line).IndexOf("IsGerman", StringComparison.Ordinal) < 0)
+                            issues.Add(f.Rel + ":" + line + ": locale format without a German branch: '" + x.Text + "' / '" + y.Text + "'");
+                    }
                     else
                         issues.Add(f.Rel + ":" + line + ": 2-way IsSpanish text ternary: '" + Show(parts[0]) + "' / '" + Show(parts[1]) + "'");
                 }
