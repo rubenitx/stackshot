@@ -45,6 +45,7 @@ namespace Stackshot.Tests
                 T("no-unwrapped-spanish-in-ui", AppTestsI18nCoverage.NoUnwrappedSpanish);
                 T("german-placeholders-match", AppTestsI18nCoverage.GermanPlaceholdersMatch);
                 T("no-duplicate-german-keys", AppTestsI18nCoverage.NoDuplicateGermanKeys);
+                T("german-values-have-no-glued-english", AppTestsI18nCoverage.GermanValuesHaveNoGluedEnglish);
                 T("spanish-pages-unchanged-by-a-round-trip", RoundTrip);
                 T("editor-tool-keys-localized", EditorToolKeysLocalized);
                 T("german-localization-catalog", GermanLocalization);

@@ -258,6 +258,70 @@ namespace Stackshot.Tests
             finally { News.UseForTests(null); I18n.Apply(previous); }
         }
 
+        // Words a news item carries in every language no matter the wording (file masks, formats, page sizes, a
+        // screensaver's name): the items that contain them must sit at the same index in all three files, so no
+        // language tells the story in a different order.
+        static readonly string[] NeutralMarkers = { "A4", "DVD", "<kbd>", ".md", ".xml", ".mkv", "PDF" };
+
+        static List<KeyValuePair<string, List<string>>> Sections(string name, string md)
+        {
+            List<KeyValuePair<string, List<string>>> sections = new List<KeyValuePair<string, List<string>>>();
+            foreach (Match m in Regex.Matches(md.Replace("\r", ""), @"^## (\d+\.\d+\.\d+)\s*$(.*?)(?=^## |\z)", RegexOptions.Multiline | RegexOptions.Singleline))
+            {
+                List<string> bullets = new List<string>();
+                foreach (string line in m.Groups[2].Value.Split('\n')) if (line.StartsWith("- ", StringComparison.Ordinal)) bullets.Add(line);
+                sections.Add(new KeyValuePair<string, List<string>>(m.Groups[1].Value, bullets));
+            }
+            Check(sections.Count > 0, name + ": no version sections found");
+            return sections;
+        }
+
+        static string IndexList(List<int> at)
+        {
+            StringBuilder sb = new StringBuilder("[");
+            foreach (int i in at) sb.Append(sb.Length == 1 ? "" : ",").Append(i);
+            return sb.Append("]").ToString();
+        }
+
+        static void SectionsMatch()
+        {
+            string dir = Path.GetDirectoryName(Here());
+            string[] names = { "novedades.md", "novedades.en.md", "novedades.de.md", "novedades.ko.md" };
+            List<List<KeyValuePair<string, List<string>>>> all = new List<List<KeyValuePair<string, List<string>>>>();
+            foreach (string name in names)
+                all.Add(Sections(name, File.ReadAllText(Path.GetFullPath(Path.Combine(dir, @"..\..\docs\" + name)), Encoding.UTF8)));
+
+            List<KeyValuePair<string, List<string>>> es = all[0];
+            StringBuilder wrong = new StringBuilder();
+            for (int f = 1; f < all.Count; f++)
+            {
+                if (all[f].Count != es.Count) { wrong.Append(names[f] + " has " + all[f].Count + " sections, novedades.md has " + es.Count + ". "); continue; }
+                for (int i = 0; i < es.Count; i++)
+                    if (all[f][i].Key != es[i].Key)
+                        wrong.Append(names[f] + ": section " + (i + 1) + " is " + all[f][i].Key + ", novedades.md's is " + es[i].Key + ". ");
+            }
+            Check(wrong.Length == 0, wrong + "the four news files must list the same versions in the same order");
+
+            for (int i = 0; i < es.Count; i++)
+            {
+                for (int f = 1; f < all.Count; f++)
+                    Check(all[f][i].Value.Count == es[i].Value.Count,
+                          names[f] + " " + es[i].Key + ": " + all[f][i].Value.Count + " items, novedades.md has " + es[i].Value.Count);
+                foreach (string mk in NeutralMarkers)
+                {
+                    List<int> want = new List<int>();
+                    for (int b = 0; b < es[i].Value.Count; b++) if (es[i].Value[b].Contains(mk)) want.Add(b);
+                    for (int f = 1; f < all.Count; f++)
+                    {
+                        List<int> got = new List<int>();
+                        for (int b = 0; b < all[f][i].Value.Count; b++) if (all[f][i].Value[b].Contains(mk)) got.Add(b);
+                        Check(IndexList(got) == IndexList(want),
+                              names[f] + " " + es[i].Key + ": items with '" + mk + "' sit at " + IndexList(got) + ", novedades.md has them at " + IndexList(want));
+                    }
+                }
+            }
+        }
+
         public static void Suite()
         {
             AppTests.Test(S, "Korean bundled release notes and language switching", KoreanNotes);
@@ -265,6 +329,7 @@ namespace Stackshot.Tests
             AppTests.Test(S, "docs/novedades.md, novedades.en.md, novedades.de.md and novedades.ko.md are well formed, read whole and match the program's version", RealFile);
             AppTests.Test(S, "the news come in the interface language and an open window re-reads them when it changes", Languages);
             AppTests.Test(S, "the news window after updating from 2.1 shows every version's news under its number", Window);
+            AppTests.Test(S, "sections match across languages", SectionsMatch);
         }
     }
 }

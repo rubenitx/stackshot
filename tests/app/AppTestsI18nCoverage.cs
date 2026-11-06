@@ -329,6 +329,75 @@ namespace Stackshot.Tests
             Check(found.Count == 0, found.Count + " German texts do not keep the {n} placeholders of their English key (listed above)");
         }
 
+        // A German value that glues an English word into German text ("schreibeAnywhere") reads as a bug, not as a
+        // language: a lowercase letter immediately followed by an uppercase one inside a word. Real product names keep
+        // their inner capitals, so they are the only words allowed to look glued.
+        static readonly Regex GluedEnglish = new Regex("\\b[\\w\u00E4\u00F6\u00FC\u00DF\u00C4\u00D6\u00DC]*[a-z\u00E4\u00F6\u00FC\u00DF][A-Z][\\w\u00E4\u00F6\u00FC\u00DF\u00C4\u00D6\u00DC]*\\b");
+
+        static readonly string[] GluedAllowList =
+        {
+            "GitHub", "PowerPoint", "PrintScreen", "BgColor", "BgBlur", "OneDrive", "ShareX", "WhatsApp", "FFmpeg",
+            "CleanShot", "kHz", "macOS", "iPhone", "YouTube", "LinkedIn", "JavaScript", "TypeScript", "PowerShell",
+            "OpenAI", "DeepL", "iCloud", "WinRT", "DirectX", "PDFs"
+        };
+
+        static bool AllowedGlued(string word)
+        {
+            foreach (string a in GluedAllowList) if (a == word) return true;
+            return false;
+        }
+
+        public static void GermanValuesHaveNoGluedEnglish()
+        {
+            // The detector itself: glued words are caught, ordinary German text is not, and the product names stay allowed.
+            foreach (string w in new[] { "schreibeAnywhere", "Text: schreibeAnywhere auf der Seite (T)", "dieseFunktion" })
+                Check(GluedEnglish.IsMatch(w), "the detector misses the glued word in '" + w + "'");
+            foreach (string w in new[] { "Aufnahme gespeichert", "Bildschirm aufnehmen", "die Seite", "GIF erstellen", "Wir \u00FCbertragen es" })
+                Check(!GluedEnglish.IsMatch(w), "the detector flags ordinary German: '" + w + "'");
+            Check(!FlaggedGlued("Melde es auf GitHub, YouTube oder WhatsApp."), "product names must stay allowed");
+
+            List<string> found = new List<string>();
+            foreach (KeyValuePair<string, string> e in AppTestsI18n.GermanByEnglish())
+                ScanGlued("catalog de of en '" + e.Key + "'", e.Value, found);
+            foreach (Source f in Sources())
+            {
+                List<Tok> toks = Tokenize(f.Text);
+                for (int i = 0; i < toks.Count - 3; i++)
+                {
+                    if (toks[i].Com || toks[i].Str || toks[i].S != "I18n") continue;
+                    if (toks[i + 1].S != "." || toks[i + 2].S != "T" || toks[i + 3].S != "(") continue;
+                    int line = toks[i].Line, at = i + 3;
+                    List<List<Tok>> args = CallArgs(toks, ref at);
+                    i = at - 1;
+                    string de;
+                    if (args.Count == 3 && LiteralOf(args[2], out de)) ScanGlued(f.Rel + ":" + line, de, found);
+                }
+            }
+            found.Sort(string.CompareOrdinal);
+            foreach (string s in found) Console.WriteLine("    glued: " + s);
+            Check(found.Count == 0, found.Count + " German texts glue an English word into German text (listed above)");
+        }
+
+        static bool FlaggedGlued(string value)
+        {
+            foreach (Match m in GluedEnglish.Matches(value.Replace("\n", " "))) if (!AllowedGlued(m.Value)) return true;
+            return false;
+        }
+
+        static void ScanGlued(string where, string value, List<string> into)
+        {
+            if (string.IsNullOrEmpty(value)) return;
+            string flat = value.Replace("\n", " ");
+            foreach (Match m in GluedEnglish.Matches(flat))
+            {
+                if (AllowedGlued(m.Value)) continue;
+                string v = flat.Trim();
+                if (v.Length > 90) v = v.Substring(0, 90) + "\u2026";
+                into.Add(where + ": '" + m.Value + "' in \"" + v + "\"");
+                break;   // one report per value
+            }
+        }
+
         public static void NoDuplicateGermanKeys()
         {
             List<string> found = new List<string>();
