@@ -47,7 +47,7 @@ namespace Stackshot
             "Verlustfreie Aufnahme und MP4 mit sehr hoher Qualität. Das Speichern dauert einen Moment.",
             "Verlustfreie, bildweise geprüfte Masterdatei (.mkv) mit hohem Speicherbedarf."
         };
-        static string[] QualityNotes { get { return I18n.IsSpanish ? QualityNotesEs : I18n.IsGerman ? QualityNotesDe : QualityNotesEn; } }
+        static string[] QualityNotes { get { return I18n.IsSpanish ? QualityNotesEs : I18n.IsGerman ? QualityNotesDe : I18n.LocalizeList(QualityNotesEn); } }
 
         // Maxima is not lossless on areas above 1920x1200 at 60 fps: they go through NV12 (4:2:0) on the graphics card.
         internal static string QualityNote(int quality, D.Rectangle area)

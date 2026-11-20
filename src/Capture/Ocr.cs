@@ -557,6 +557,7 @@ namespace Stackshot
                 int cut = char.IsHighSurrogate(flat[87]) ? 87 : 88;
                 flat = flat.Substring(0, cut).TrimEnd() + "\u2026";
             }
+            if (I18n.IsKorean) return I18n.Fmt("", "{0} lines: \u201C{1}\u201D", n, flat);
             if (I18n.IsGerman) return n + (n == 1 ? " Zeile: „" : " Zeilen: „") + flat + "“";
             string count = I18n.IsSpanish ? (n == 1 ? "1 l\u00EDnea" : n + " l\u00EDneas") : (n == 1 ? "1 line" : n + " lines");
             return I18n.IsSpanish ? count + ": \u00AB" + flat + "\u00BB" : count + ": \u201C" + flat + "\u201D";

@@ -920,6 +920,7 @@ namespace Stackshot
                         : mode == Mode.Text ? "Copy text  \u00B7  Drag over text or click a window  \u00B7  Esc: cancel"
                         : mode == Mode.Gif ? "Record GIF  \u00B7  Drag an area or click a window  \u00B7  Esc: cancel"
                         : "Scrolling capture  \u00B7  Drag over the scrolling area, excluding fixed header  \u00B7  Esc: cancel";
+                text = I18n.Localize(text);
             }
             string icon = mode == Mode.Image ? "area" : mode == Mode.Video ? "video" : mode == Mode.Gif ? "gif" : mode == Mode.Text ? "textscan" : "scroll";
             HintPart[] parts = SplitHint(text.Split(new string[] { "  \u00B7  " }, StringSplitOptions.None));

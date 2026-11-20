@@ -46,7 +46,7 @@ namespace Stackshot
             protected override string Signature()
             {
                 StringBuilder b = new StringBuilder();
-                b.Append(p.Width).Append('|').Append(p.Height).Append('|').Append(p.scroll).Append('|').Append(p.On).Append('|').Append(p.Enabled).Append('|').Append(p.items.Count);
+                b.Append(I18n.Language).Append('|').Append(p.Width).Append('|').Append(p.Height).Append('|').Append(p.scroll).Append('|').Append(p.On).Append('|').Append(p.Enabled).Append('|').Append(p.items.Count);
                 Settings s = p.Bg;
                 if (s != null)
                     b.Append('|').Append(s.BgKind).Append('|').Append(s.BgPreset).Append('|').Append(s.BgColor).Append('|').Append(s.BgBlur)
@@ -82,7 +82,7 @@ namespace Stackshot
                             a.PartState = StateOf(p.Enabled, p.On && p.KindNow == 2 && bg.BgBlur == it.Index, false);
                             break;
                         case Kind.Plain:
-                            a = NewPart(into, "Color " + it.Label.ToLowerInvariant(), AccessibleRole.RadioButton, r);
+                            a = NewPart(into, I18n.Fmt("Color {0}", "Color {0}", it.Label.ToLowerInvariant()), AccessibleRole.RadioButton, r);
                             a.PartState = StateOf(p.Enabled, p.On && p.KindNow == 1 && (bg.BgColor & 0xFFFFFF) == it.Index, false);
                             break;
                         case Kind.Slider:

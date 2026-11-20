@@ -131,7 +131,7 @@ namespace Stackshot
         static readonly string[] QualityNamesEs = { "Est\u00E1ndar", "M\u00E1xima", "Alta", "Cine" };
         static readonly string[] QualityNamesEn = { "Standard", "Maximum", "High", "Cinema" };
         static readonly string[] QualityNamesDe = { "Standard", "Maximum", "Hoch", "Kino" };
-        internal static string[] QualityNames { get { return I18n.IsSpanish ? QualityNamesEs : I18n.IsGerman ? QualityNamesDe : QualityNamesEn; } }
+        internal static string[] QualityNames { get { return I18n.IsSpanish ? QualityNamesEs : I18n.IsGerman ? QualityNamesDe : I18n.LocalizeList(QualityNamesEn); } }
 
         // The frame rate a take will record at, as Session picks it.
         internal static int TargetFps(Settings s, bool gif, int cineFps)
@@ -664,21 +664,21 @@ namespace Stackshot
 
         public static string Chip(double minutes)
         {
-            return "~" + Math.Max(0, (int)Math.Floor(minutes)) + (I18n.IsSpanish ? " min de disco" : " min disk space");
+            return I18n.Fmt("~{0} min de disco", "~{0} min disk space", Math.Max(0, (int)Math.Floor(minutes)));
         }
 
         public static string Range(double fromMin, double toMin)
         {
             if (toMin < 1) return I18n.T("menos de 1 min", "under 1 min");
-            if (fromMin < 1) return (I18n.IsSpanish ? "hasta " : "up to ") + Minutes(toMin);
+            if (fromMin < 1) return I18n.Fmt("hasta {0}", "up to {0}", Minutes(toMin));
             string a = Minutes(fromMin), b = Minutes(toMin);
-            return a == b ? (I18n.IsSpanish ? "unos " + a : "about " + a) : (I18n.IsSpanish ? "entre " + a + " y " + b : "between " + a + " and " + b);
+            return a == b ? I18n.Fmt("unos {0}", "about {0}", a) : I18n.Fmt("entre {0} y {1}", "between {0} and {1}", a, b);
         }
 
         static string Minutes(double m)
         {
             if (double.IsInfinity(m) || m > 99 * 60) return I18n.T("muchas horas", "many hours");
-            return m < 120 ? (int)Math.Floor(m) + " min" : (int)Math.Floor(m / 60) + " h";
+            return m < 120 ? I18n.Fmt("{0} min", "{0} min", (int)Math.Floor(m)) : I18n.Fmt("{0} h", "{0} h", (int)Math.Floor(m / 60));
         }
 
         public static string Gb(long bytes)
@@ -715,6 +715,13 @@ namespace Stackshot
             if ((long)w * h > 1920L * 1080) r.Advice.Add(I18n.T("grabar un \u00E1rea m\u00E1s peque\u00F1a", "record a smaller area"));
             if (!gif && (quality == Recorder.Maximum || quality == Recorder.Cinema)) r.Advice.Add(I18n.T("usar la calidad Alta", "use High quality"));
             r.Advice.Add(I18n.T("cerrar las apps que no uses", "close unused apps"));
+            if (I18n.IsKorean)
+            {
+                string detail = many ? I18n.Fmt("", "{0} frames ({1}%) were late or repeated.", r.Affected, Num(r.Percent))
+                                     : I18n.Fmt("", "The computer paused for {0} s; frames may have repeated.", Num(maxLateMs / 1000));
+                r.Text = I18n.Fmt("", "{0} Try: {1}.", detail, Join(r.Advice, 3));
+                return r;
+            }
             string what = many
                 ? (I18n.IsSpanish
                     ? "Tu equipo no ha podido seguir el ritmo: " + r.Affected + " fotogramas (" + Num(r.Percent) + " %) salieron tarde o repetidos."
@@ -738,7 +745,7 @@ namespace Stackshot
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < n; i++)
             {
-                if (i > 0) sb.Append(i == n - 1 ? (I18n.IsSpanish ? " o " : " or ") : ", ");
+                if (i > 0) sb.Append(i == n - 1 ? I18n.T(" o ", " or ") : ", ");
                 sb.Append(items[i]);
             }
             return sb.ToString();
@@ -876,6 +883,7 @@ namespace Stackshot
         string warning;
         bool fineTimer;                   // the 1 ms timer resolution is raised for this recording
         string error;
+        bool errorIsCancellation;
         RecordBar bar;
         WebcamBubble webcam;
         FrameEdge[] edges;
@@ -2052,7 +2060,7 @@ namespace Stackshot
             bool go = error == null && !cancelled && !saveCancelled;
             if (go && gif) MakeGif(seconds);
             else if (go && !direct) MakeVideo(seconds);
-            if (saveCancelled && !cancelled && error == null) error = PassWatch.CancelledText;
+            if (saveCancelled && !cancelled && error == null) SetCancellationError();
             if (!cancelled && error != null && frames > 0) RescueOnError();
             if (cancelled || error != null) DeleteOutput();
             if (video != output) TryDelete(video);
@@ -2085,7 +2093,7 @@ namespace Stackshot
             {
                 report = BuildReport();
                 if (error == null && frames == 0) error = I18n.T("No se ha grabado ning\u00FAn fotograma.", "No frames were recorded.");
-                if (error == null && saveCancelled) error = PassWatch.CancelledText;
+                if (error == null && saveCancelled) SetCancellationError();
                 if (error == null) MakeCine(seconds);
                 else if (frames > 0) RescueOnError();
                 SaveReport();
@@ -2181,6 +2189,11 @@ namespace Stackshot
             if (a.Joins > 0)
             {
                 int fadeMs = AudioCapture.JoinFrames * 1000 / AudioCapture.Rate;
+                if (I18n.IsKorean)
+                {
+                    notes.Add(I18n.Fmt("", "{0}: faded for {1} ms after each of {2} pauses.", name, fadeMs, a.Joins));
+                    return;
+                }
                 string pause = a.Joins == 1 ? "the pause" : "each of the " + a.Joins + " pauses";
                 notes.Add(name + ": " + (I18n.IsGerman
                     ? "Beim Fortsetzen nach " + (a.Joins == 1 ? "der Pause" : "jeder der " + a.Joins + " Pausen") + " wird der Ton " + fadeMs + " ms überblendet."
@@ -2197,6 +2210,8 @@ namespace Stackshot
                                          : total.ToString("0.0", I18n.IsSpanish ? CultureInfo.CurrentCulture : CultureInfo.InvariantCulture) + " s";
             string when = first >= 3600 ? (first / 3600) + ":" + (first / 60 % 60).ToString("00") + ":" + (first % 60).ToString("00")
                                         : (first / 60) + ":" + (first % 60).ToString("00");
+            if (I18n.IsKorean)
+                return I18n.Fmt("", "clipped {0} times (first at {1}, held at full scale for {2})", a.ClipEvents, when, held);
             if (I18n.IsGerman)
                 return (a.ClipEvents == 1 ? "einmal übersteuert (bei " : a.ClipEvents + "-mal übersteuert (zuerst bei ") + when + ", " + held + " am Maximalpegel)";
             if (!I18n.IsSpanish)
@@ -2233,7 +2248,8 @@ namespace Stackshot
             {
                 TryDelete(temp);
                 masterTemp = null;
-                error = watch.Cancelled ? PassWatch.CancelledText : I18n.T("No se pudo crear el m\u00E1ster sin p\u00E9rdidas. ", "Could not create the lossless master. ") + failure;
+                if (watch.Cancelled) SetCancellationError();
+                else error = I18n.T("No se pudo crear el m\u00E1ster sin p\u00E9rdidas. ", "Could not create the lossless master. ") + failure;
                 RescueOnError();
                 return;
             }
@@ -2409,7 +2425,7 @@ namespace Stackshot
                 shown = pct;
                 Ui(delegate { if (bar != null) bar.Converting(label, pct / 100.0); if (owner != null) owner.SavingShow(gif, label, pct / 100.0); });
             }, errors);
-            if (watch.Cancelled) { if (error == null) error = PassWatch.CancelledText; }
+            if (watch.Cancelled) { if (error == null) SetCancellationError(); }
             else if (watch.Stalled) error = failure + " " + PassWatch.StalledText;
             else if (code != 0) error = failure + " " + Tail();
         }
@@ -2452,11 +2468,16 @@ namespace Stackshot
             if (poster != null) { poster.Dispose(); poster = null; }
         }
 
+        void SetCancellationError()
+        {
+            errorIsCancellation = true;
+            error = PassWatch.CancelledText;
+        }
+
         // The failure, and the folder with what was kept when there is one.
         void ShowError()
         {
-            bool mine = saveCancelled && error.StartsWith(PassWatch.CancelledText, StringComparison.Ordinal);
-            MessageBoxIcon icon = mine ? MessageBoxIcon.Information : MessageBoxIcon.Warning;
+            MessageBoxIcon icon = saveCancelled && errorIsCancellation ? MessageBoxIcon.Information : MessageBoxIcon.Warning;
             if (rescueDir == null || !Directory.Exists(rescueDir))
             {
                 Dialogs.Show(error, "Stackshot", MessageBoxButtons.OK, icon);

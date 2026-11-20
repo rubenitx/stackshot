@@ -182,6 +182,18 @@ namespace Stackshot
             if (w.Empty) return I18n.T("Google a\u00FAn no tiene datos de hoy. Abre la app de tu reloj en el m\u00F3vil para que se sincronice y vuelvo a mirarlo.",
                                        "Google has no data for today yet. Open your watch's app on your phone so it syncs, and I will check again.");
             int goal = w.StepsGoal;
+            if (I18n.IsKorean)
+            {
+                List<string> sentences = new List<string>();
+                sentences.Add(w.Steps >= goal
+                    ? I18n.Fmt("", "You've already walked {0} steps today: goal reached!", N0(w.Steps))
+                    : I18n.Fmt("", "You've walked {0} steps today, {1}% of your {2} goal.", N0(w.Steps), w.Steps * 100 / goal, N0(goal)));
+                if (w.SleepMinutes > 0) sentences.Add(I18n.Fmt("", "You slept {0} last night.", Hours(w.SleepMinutes)));
+                if (w.ActiveMinutes > 0) sentences.Add(I18n.Fmt("", "You have {0} min of moderate or vigorous activity.", w.ActiveMinutes));
+                if (w.Steps < goal && DateTime.Now.Hour >= 12)
+                    sentences.Add(I18n.Fmt("", "{0} to go: about {1} min of walking.", N0(goal - w.Steps), WalkMinutes(goal - w.Steps)));
+                return string.Join(" ", sentences.ToArray());
+            }
             if (!I18n.IsSpanish)
             {
                 string stepsEn = w.Steps >= goal ? "You've already walked " + N0(w.Steps) + " steps today: goal reached!"
@@ -212,7 +224,11 @@ namespace Stackshot
             nextWatchRead = Math.Min(nextWatchRead, Anim.Now + 20 * 60 * 1000);
         }
 
-        static string Hours(int minutes) { return minutes / 60 + " h" + (minutes % 60 > 0 ? " " + minutes % 60 + " min" : ""); }
+        static string Hours(int minutes)
+        {
+            if (I18n.IsKorean) return minutes / 60 + "\uC2DC\uAC04" + (minutes % 60 > 0 ? " " + minutes % 60 + "\uBD84" : "");
+            return minutes / 60 + " h" + (minutes % 60 > 0 ? " " + minutes % 60 + " min" : "");
+        }
 
         public bool WatchReading { get { return watchReading; } }
 
@@ -395,7 +411,8 @@ namespace Stackshot
                 if (settings.WellOn) WellLater(WellKind.Move, 40 * 60 * 1000);
                 pet.HealthAskMove(I18n.IsSpanish
                     ? "En " + (ago >= 90 ? "la \u00FAltima hora y media" : "la \u00FAltima hora") + " solo has dado " + still + " pasos. \u00BFEstiramos las piernas un par de minutos?"
-                    : "In the last " + (ago >= 90 ? "hour and a half" : "hour") + " you have only taken " + still + " steps. Shall we stretch our legs for a couple of minutes?");
+                    : I18n.Fmt("", "In the last {0} you have only taken {1} steps. Shall we stretch our legs for a couple of minutes?",
+                               I18n.Localize(ago >= 90 ? "hour and a half" : "hour"), still));
                 return;
             }
             // A slow morning: before lunch, up for a glass of water and a short round.
@@ -443,7 +460,7 @@ namespace Stackshot
             // How it is going, now and then through the working day.
             if (now.Hour >= 10 && now.Hour < 19 && w.Steps > 0 && w.Steps < goal && Said("dato" + now.Hour / 3))
                 pet.FocusSay(I18n.IsSpanish ? "Llevas " + w.Steps.ToString("N0", Es) + " pasos, el " + (w.Steps * 100 / Math.Max(1, goal)) + " % de tu objetivo de hoy."
-                                            : N0(w.Steps) + " steps so far, " + (w.Steps * 100 / Math.Max(1, goal)) + "% of today's goal.");
+                                            : I18n.Fmt("", "{0} steps so far, {1}% of today's goal.", N0(w.Steps), w.Steps * 100 / Math.Max(1, goal)));
         }
 
         // True the first time this is said today (and remembered); false if it was already said.

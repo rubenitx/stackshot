@@ -22,9 +22,9 @@ namespace Stackshot
     {
         static readonly string[] HistoryFiltersEs = { "Todo", "Capturas", "V\u00EDdeos", "GIF" };
         static readonly string[] HistoryFiltersEn = { "All", "Captures", "Videos", "GIF" };
-        static string[] HistoryFilters { get { return I18n.IsSpanish ? HistoryFiltersEs : HistoryFiltersEn; } }
+        static string[] HistoryFilters { get { return I18n.IsSpanish ? HistoryFiltersEs : I18n.LocalizeList(HistoryFiltersEn); } }
         static readonly CultureInfo HistoryEsCulture = new CultureInfo("es-ES");
-        static CultureInfo HistoryEs { get { return I18n.IsSpanish ? HistoryEsCulture : CultureInfo.GetCultureInfo("en-US"); } }
+        static CultureInfo HistoryEs { get { return I18n.IsSpanish ? HistoryEsCulture : CultureInfo.GetCultureInfo(I18n.IsKorean ? "ko-KR" : "en-US"); } }
 
         string historyQuery = "";
         int historyFilter;
@@ -325,9 +325,8 @@ namespace Stackshot
                     // A single new capture is read in a moment: no line for it.
                     if (total > 1 && done < total)
                     {
-                        text = I18n.IsSpanish
-                            ? ("Leyendo el texto de las capturas\u2026 " + done.ToString("N0", HistoryEs) + " de " + total.ToString("N0", HistoryEs))
-                            : ("Reading capture text\u2026 " + done.ToString("N0", CultureInfo.InvariantCulture) + " of " + total.ToString("N0", CultureInfo.InvariantCulture));
+                        text = string.Format(HistoryEs, I18n.T("Leyendo el texto de las capturas\u2026 {0:N0} de {1:N0}",
+                            "Reading capture text\u2026 {0:N0} of {1:N0}"), done, total);
                         if (HistoryIndex.Paused) text += Recorder.Recording
                             ? I18n.T(" \u00B7 en pausa mientras grabas", " \u00B7 paused while recording")
                             : I18n.T(" \u00B7 en pausa mientras capturas", " \u00B7 paused while capturing");
@@ -405,7 +404,7 @@ namespace Stackshot
             {
                 if (historyWords.Length > 0)
                 {
-                    title = I18n.IsSpanish ? ("Nada coincide con \u00AB" + historyQuery.Trim() + "\u00BB") : ("Nothing matches \u201C" + historyQuery.Trim() + "\u201D");
+                    title = I18n.Fmt("Nada coincide con \u00AB{0}\u00BB", "Nothing matches \u201C{0}\u201D", historyQuery.Trim());
                     sub = !settings.HistorySearch ? I18n.T("Solo se busca por el nombre: la b\u00FAsqueda por texto est\u00E1 desactivada.", "Searching by name only: text search is disabled.")
                         : HistoryReading ? I18n.T("Todav\u00EDa se est\u00E1 leyendo el texto de algunas capturas: prueba otra vez dentro de un momento.", "Still reading text from some captures: try again in a moment.")
                         : historyFilter != 0 ? I18n.T("Prueba con otras palabras o con \u00ABTodo\u00BB.", "Try different words or switch to \u201CAll\u201D.")
@@ -566,13 +565,13 @@ namespace Stackshot
                 if (historyAll == null || historyAll.Count == 0 || n == 0) historyCount.Text = "";
                 else if (words.Length > 0)
                 {
-                    historyCount.Text = I18n.IsSpanish
+                    historyCount.Text = I18n.IsKorean ? string.Format(I18n.Localize("{0:N0} results"), n) : I18n.IsSpanish
                         ? (n == 1 ? "1 resultado" : n.ToString("N0", HistoryEs) + " resultados")
                         : (n == 1 ? "1 result" : n.ToString("N0", CultureInfo.InvariantCulture) + " results");
                 }
                 else
                 {
-                    historyCount.Text = I18n.IsSpanish
+                    historyCount.Text = I18n.IsKorean ? string.Format(I18n.Localize("{0:N0} items"), n) : I18n.IsSpanish
                         ? (n == 1 ? "1 elemento" : n.ToString("N0", HistoryEs) + " elementos")
                         : (n == 1 ? "1 item" : n.ToString("N0", CultureInfo.InvariantCulture) + " items");
                 }
@@ -624,6 +623,7 @@ namespace Stackshot
                 string day = t.ToString("dddd", HistoryEs);
                 return char.ToUpper(day[0], HistoryEs) + day.Substring(1) + ", " + hm;
             }
+            if (I18n.IsKorean) return t.Year == DateTime.Now.Year ? t.ToString("M/d HH:mm", HistoryEs) : t.ToString("yyyy/M/d", HistoryEs);
             if (t.Year == DateTime.Now.Year) return t.ToString(I18n.IsSpanish ? "d MMM" : "MMM d", HistoryEs).Replace(".", "") + ", " + hm;
             return t.ToString(I18n.IsSpanish ? "d MMM yyyy" : "MMM d, yyyy", HistoryEs).Replace(".", "");
         }
@@ -732,7 +732,7 @@ namespace Stackshot
                 if (pos < sn.Text.Length) s.Inlines.Add(new Run(sn.Text.Substring(pos)));
                 t.Children.Add(s);
             }
-            t.ToolTip = it.Name + "\n" + it.When.ToString(I18n.IsSpanish ? "dddd, d 'de' MMMM 'de' yyyy, HH:mm" : "dddd, MMMM d, yyyy, HH:mm", HistoryEs);
+            t.ToolTip = it.Name + "\n" + it.When.ToString(I18n.IsSpanish ? "dddd, d 'de' MMMM 'de' yyyy, HH:mm" : I18n.IsKorean ? "yyyy/M/d dddd HH:mm" : "dddd, MMMM d, yyyy, HH:mm", HistoryEs);
             ToolTipService.SetInitialShowDelay(t, 700);
             bool pressed = false;
             t.MouseEnter += delegate { HomeGlide(ring, OpacityProperty, 1, 120, null); };

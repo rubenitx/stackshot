@@ -46,27 +46,27 @@ namespace Stackshot
         // Words that find each other: whoever types one of a group means the setting that says another (folded).
         internal static readonly string[][] Synonyms =
         {
-            new string[] { "atajo", "tecla", "combinacion", "shortcut" },
-            new string[] { "carpeta", "guardar", "directorio", "ruta" },
-            new string[] { "micro", "microfono", "voz" },
-            new string[] { "sonido", "audio", "volumen" },
-            new string[] { "puntero", "raton", "cursor" },
-            new string[] { "privacidad", "datos sensibles", "tapar", "ocultar" },
-            new string[] { "tema", "oscuro", "claro", "apariencia" },
-            new string[] { "actualizar", "actualizacion", "version" },
-            new string[] { "captura", "pantallazo", "screenshot" },
-            new string[] { "video", "grabar", "grabacion" },
-            new string[] { "arranque", "iniciar", "encender" },
-            new string[] { "camara", "webcam" },
-            new string[] { "copiar", "portapapeles", "pegar" },
-            new string[] { "borrar", "eliminar", "limpiar" },
-            new string[] { "fotogramas", "fps" },
-            new string[] { "nombre", "archivo", "fichero" },
-            new string[] { "reloj", "fitbit", "watch", "pulsera", "pasos", "sueno" },
-            new string[] { "acceso", "enlace", "favorito", "web", "url" },
-            new string[] { "completa", "virtual", "remoto", "presentacion" },
-            new string[] { "resumen", "hora" },
-            new string[] { "nota", "apunte", "apuntar" }
+            new string[] { "atajo", "tecla", "combinacion", "shortcut", "\ub2e8\ucd95\ud0a4", "\ud0a4\uc870\ud569" },
+            new string[] { "carpeta", "guardar", "directorio", "ruta", "\ud3f4\ub354", "\uc800\uc7a5", "\uacbd\ub85c" },
+            new string[] { "micro", "microfono", "voz", "\ub9c8\uc774\ud06c", "\uc74c\uc131" },
+            new string[] { "sonido", "audio", "volumen", "\uc18c\ub9ac", "\uc624\ub514\uc624", "\uc74c\ub7c9", "\ubcfc\ub968" },
+            new string[] { "puntero", "raton", "cursor", "\ud3ec\uc778\ud130", "\ub9c8\uc6b0\uc2a4", "\ucee4\uc11c" },
+            new string[] { "privacidad", "datos sensibles", "tapar", "ocultar", "\uac1c\uc778\uc815\ubcf4", "\uac00\ub9ac\uae30", "\ubbfc\uac10" },
+            new string[] { "tema", "oscuro", "claro", "apariencia", "\ud14c\ub9c8", "\uc5b4\ub461\uac8c", "\ubc1d\uac8c", "\ubaa8\uc591" },
+            new string[] { "actualizar", "actualizacion", "version", "\uc5c5\ub370\uc774\ud2b8", "\ubc84\uc804" },
+            new string[] { "captura", "pantallazo", "screenshot", "\ucea1\ucc98", "\uc2a4\ud06c\ub9b0\uc0f7", "\uac08\ubb34\ub9ac" },
+            new string[] { "video", "grabar", "grabacion", "\ub3d9\uc601\uc0c1", "\ub179\ud654" },
+            new string[] { "arranque", "iniciar", "encender", "\uc2dc\uc791", "\uc790\ub3d9\uc2e4\ud589" },
+            new string[] { "camara", "webcam", "\uce74\uba54\ub77c", "\uc6f9\ucea0" },
+            new string[] { "copiar", "portapapeles", "pegar", "\ubcf5\uc0ac", "\ud074\ub9bd\ubcf4\ub4dc", "\ubd99\uc5ec\ub123\uae30" },
+            new string[] { "borrar", "eliminar", "limpiar", "\uc0ad\uc81c", "\uc81c\uac70", "\ube44\uc6b0\uae30" },
+            new string[] { "fotogramas", "fps", "\ud504\ub808\uc784" },
+            new string[] { "nombre", "archivo", "fichero", "\uc774\ub984", "\ud30c\uc77c" },
+            new string[] { "reloj", "fitbit", "watch", "pulsera", "pasos", "sueno", "\uc6cc\uce58", "\uac78\uc74c", "\uc218\uba74" },
+            new string[] { "acceso", "enlace", "favorito", "web", "url", "\ubc14\ub85c\uac00\uae30", "\ub9c1\ud06c", "\uc990\uaca8\ucc3e\uae30" },
+            new string[] { "completa", "virtual", "remoto", "presentacion", "\uc804\uccb4\ud654\uba74", "\uc6d0\uaca9", "\ubc1c\ud45c" },
+            new string[] { "resumen", "hora", "\uc694\uc57d", "\uc2dc\uac01" },
+            new string[] { "nota", "apunte", "apuntar", "\uba54\ubaa8", "\ub178\ud2b8" }
         };
 
         // Left out of a search with other words: "carpeta de capturas" needs no "de" in the row, "modo oscuro" or
@@ -513,7 +513,7 @@ namespace Stackshot
         string SearchSignature()
         {
             if (settingsFields == null) settingsFields = typeof(Settings).GetFields(BindingFlags.Instance | BindingFlags.Public);
-            StringBuilder b = new StringBuilder();
+            StringBuilder b = new StringBuilder(I18n.Language);
             foreach (FieldInfo f in settingsFields) b.Append(f.GetValue(settings)).Append('\u001F');
             return b.ToString();
         }

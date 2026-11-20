@@ -94,9 +94,8 @@ namespace Stackshot
         // ---- Each character's own lines, mixed in with the usual ones (null when it has none).
         public static string[] OwnLines(int kind)
         {
-            if (IsKlei(kind)) return KleiLines(kind);
-            if (IsToon(kind)) return ToonLines(kind);
-            return OwnLinesOf(kind);
+            string[] lines = IsKlei(kind) ? KleiLines(kind) : IsToon(kind) ? ToonLines(kind) : OwnLinesOf(kind);
+            return lines == null ? null : I18n.LocalizeList(lines);
         }
 
         static string[] OwnLinesOf(int kind)

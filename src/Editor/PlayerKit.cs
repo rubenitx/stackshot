@@ -319,6 +319,12 @@ namespace Stackshot
         // Label and value pairs of the info panel.
         public static List<string[]> Describe(MediaInfo m, string path, long fileBytes, string cineJson)
         {
+            int scaleRow;
+            return Describe(m, path, fileBytes, cineJson, out scaleRow);
+        }
+
+        internal static List<string[]> Describe(MediaInfo m, string path, long fileBytes, string cineJson, out int scaleRow)
+        {
             List<string[]> r = new List<string[]>();
             string raw = m.Raw ?? "";
             r.Add(new string[] { I18n.T("Archivo", "File"), Path.GetFileName(path ?? "") });
@@ -330,10 +336,11 @@ namespace Stackshot
             Size seen = m.Display;
             if (m.HasVideo) r.Add(new string[] { I18n.T("Tama\u00F1o", "Size"), m.Width + " \u00D7 " + m.Height + (seen.Width == m.Width && seen.Height == m.Height ? "" :
                                                   I18n.Fmt(" (p\u00EDxeles no cuadrados {0}:{1}, se ve a {2} \u00D7 {3})", " (non-square pixels {0}:{1}, displayed as {2} \u00D7 {3})", m.SarNum, m.SarDen, seen.Width, seen.Height)) });
+            scaleRow = r.Count;
             if (m.Fps > 0) r.Add(new string[] { I18n.T("Fotogramas por segundo", "Frames per second"), Dec(m.Fps, "0.##") });
             if (m.Duration > 0) r.Add(new string[] { I18n.T("Duraci\u00F3n", "Duration"), Clock(m.Duration) });
             MatchCollection au = Regex.Matches(raw, @"Stream #\d+:\d+[^\n]*?: Audio: ([^\s,]+)(?: \(([^)]*)\))?[^,\n]*, (\d+) Hz, ([^,\n]+)");
-            if (m.Audio.Count == 0) r.Add(new string[] { "Audio", I18n.T("Sin sonido", "No audio") });
+            if (m.Audio.Count == 0) r.Add(new string[] { I18n.Localize("Audio"), I18n.T("Sin sonido", "No audio") });
             for (int i = 0; i < m.Audio.Count; i++)
             {
                 string title = string.IsNullOrEmpty(m.Audio[i].Title) ? I18n.Fmt("Pista {0}", "Track {0}", i + 1) : Cine.TrackName(m.Audio[i].Title);
@@ -344,7 +351,7 @@ namespace Stackshot
                     if (layout == "stereo") layout = I18n.T("est\u00E9reo", "stereo");
                     detail = au[i].Groups[1].Value + " \u00B7 " + layout + " \u00B7 " + au[i].Groups[3].Value + " Hz";
                 }
-                r.Add(new string[] { m.Audio.Count > 1 ? "Audio " + (i + 1) : "Audio", title + (detail.Length > 0 ? " \u00B7 " + detail : "") });
+                r.Add(new string[] { m.Audio.Count > 1 ? I18n.Fmt("Audio {0}", "Audio {0}", i + 1) : I18n.Localize("Audio"), title + (detail.Length > 0 ? " \u00B7 " + detail : "") });
             }
             if (fileBytes > 0) r.Add(new string[] { I18n.T("Tama\u00F1o del archivo", "File size"), Bytes(fileBytes) });
             bool passed = false, known = false;

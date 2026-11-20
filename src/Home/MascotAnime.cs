@@ -17,8 +17,8 @@ namespace Stackshot
         // endorsed by their owners; see the README. Ready-made costumes below: kind, color, eyes, hat, outfit, face.
         // Each language has its own table, index for index (settings store the index); Captions, Beside and the
         // catalog order match on the Spanish one, so they work the same in both languages.
-        public static string[] AnimeNames { get { return I18n.IsSpanish ? AnimeNamesEs : AnimeNamesEn; } }
-        public static string[] AnimeInspiration { get { return I18n.IsSpanish ? AnimeInspirationEs : AnimeInspirationEn; } }
+        public static string[] AnimeNames { get { return I18n.IsSpanish ? AnimeNamesEs : I18n.LocalizeList(AnimeNamesEn); } }
+        public static string[] AnimeInspiration { get { return I18n.IsSpanish ? AnimeInspirationEs : I18n.LocalizeList(AnimeInspirationEn); } }
         static readonly string[] AnimeNamesEs = { "Finn", "Jake", "Pakkun", "Edward Elric", "Eren Jaeger", "Luffy", "Tanjiro", "Gojo",
                                                        "Shin-chan", "BMO", "Pikachu", "Doraemon", "Naruto", "Totoro", "Kratos", "Doom Slayer", "Claude",
                                                        "Codex", "Gon", "Killua", "Hisoka", "Sasuke", "Kakashi", "Zoro", "Chopper", "Saitama", "Levi",
@@ -276,7 +276,7 @@ namespace Stackshot
         public static int KindLatest(int kind) { int n = KindNewer(kind); return n >= 0 ? n : kind; }
 
         // What each character is in its story, shown on the vitrine's plate.
-        public static string[] AnimeRoles { get { return I18n.IsSpanish ? AnimeRolesEs : AnimeRolesEn; } }
+        public static string[] AnimeRoles { get { return I18n.IsSpanish ? AnimeRolesEs : I18n.LocalizeList(AnimeRolesEn); } }
         static readonly string[] AnimeRolesEn =
         {
             "Protagonist", "Companion", "Companion", "Protagonist", "Protagonist", "Protagonist", "Protagonist", "Mentor",
@@ -331,7 +331,7 @@ namespace Stackshot
         public static string AnimeCaption(int i)
         {
             if (i < 0 || i >= AnimeNames.Length) return "";
-            for (int k = 0; k < Captions.GetLength(0); k++) if (Captions[k, 0] == AnimeNamesEs[i]) return I18n.IsSpanish ? Captions[k, 1] : Captions[k, 2];
+            for (int k = 0; k < Captions.GetLength(0); k++) if (Captions[k, 0] == AnimeNamesEs[i]) return I18n.IsSpanish ? Captions[k, 1] : I18n.Localize(Captions[k, 2]);
             return AnimeNames[i];
         }
 
@@ -365,7 +365,8 @@ namespace Stackshot
         {
             if (s == null) return null;
             for (int i = 0; i < SeriesGroups.GetLength(0); i++)
-                if (SeriesGroups[i, 0] == s || SeriesGroups[i, 1] == s) return I18n.IsSpanish ? SeriesGroups[i, 2] : SeriesGroups[i, 3];
+                if (SeriesGroups[i, 0] == s || I18n.Localize(SeriesGroups[i, 1]) == s || SeriesGroups[i, 1] == s)
+                    return I18n.IsSpanish ? SeriesGroups[i, 2] : I18n.Localize(SeriesGroups[i, 3]);
             return s;
         }
 

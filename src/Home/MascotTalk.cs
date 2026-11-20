@@ -21,7 +21,7 @@ namespace Stackshot
             }
             recent.Add(line);
             if (recent.Count > 24) recent.RemoveAt(0);
-            return line;
+            return I18n.Localize(line);
         }
 
         // Three voices: 0 cheerful, 1 calm, 2 cheeky.
@@ -37,7 +37,7 @@ namespace Stackshot
                 return h < 6 ? "\u00A1Buenas noches!" : h < 14 ? "\u00A1Buenos d\u00EDas!" : h < 21 ? "\u00A1Buenas tardes!" : "\u00A1Buenas noches!";
             if (I18n.IsGerman)
                 return h < 6 ? "Gute Nacht!" : h < 11 ? "Guten Morgen!" : h < 18 ? "Guten Tag!" : "Guten Abend!";
-            return h < 6 ? "Good evening!" : h < 12 ? "Good morning!" : h < 18 ? "Good afternoon!" : "Good evening!";
+            return I18n.Localize(h < 6 ? "Good evening!" : h < 12 ? "Good morning!" : h < 18 ? "Good afternoon!" : "Good evening!");
         }
 
         public static string Hello(Settings s)
@@ -77,15 +77,15 @@ namespace Stackshot
                 switch (s.MascotPersonality)
                 {
                     case 1:
-                        return new string[] { Pick(new string[] { "Mmm\u2026 hello.", "Take it easy, there's time.", "Breathe. Capture. Repeat.", "Press " + key + " whenever you want.",
+                        return new string[] { Pick(new string[] { "Mmm\u2026 hello.", "Take it easy, there's time.", "Breathe. Capture. Repeat.", string.Format(I18n.Localize("Press {0} whenever you want."), key),
                                                                   "A little poke, how nice.", "Still here, no rush.", "Everything at its own pace.", "Feels good to be here." }) };
                     case 2:
                         return new string[] { Pick(new string[] { "Hey! I'm not a button!", "You again?", "Poke me again and I'll start dancing.",
-                                                                  "I take the coolest captures, just so you know.", "Press " + key + " and stop tickling me.",
+                                                                  "I take the coolest captures, just so you know.", string.Format(I18n.Localize("Press {0} and stop tickling me."), key),
                                                                   "Careful, I bite (a little bit).", "Bored? It shows.", "You owe me a capture.",
                                                                   "I'm an artist, not a toy.", "You really are annoying\u2026 I like it." }) };
                     default:
-                        return new string[] { Pick(new string[] { "Hey, that tickles!", "Shall we take a capture?", "Press " + key + " and I'll handle it.",
+                        return new string[] { Pick(new string[] { "Hey, that tickles!", "Shall we take a capture?", string.Format(I18n.Localize("Press {0} and I'll handle it."), key),
                                                                   "Smile! Well\u2026 I'm already smiling.", "Beep boop. Beep.", "I love it when you curve the arrows.",
                                                                   "Hello, hello!", "Again! Again!", "Hehehe, stop, stop.", "What a great day for capturing!" }) };
                 }
@@ -118,11 +118,11 @@ namespace Stackshot
                     "Scroll over the stack with the mouse wheel to see previous captures.",
                     "When capturing, clicking a window captures it completely.",
                     "In the editor, Enter copies and closes.",
-                    Hotkeys.Split(s.HotScroll).Count > 0 ? Hotkeys.Display(s.HotScroll) + " captures a whole page by scrolling it."
+                    Hotkeys.Split(s.HotScroll).Count > 0 ? Hotkeys.Display(s.HotScroll) + I18n.Localize(" captures a whole page by scrolling it.")
                                                          : "Scrolling capture takes a whole page; you can assign a shortcut in Shortcuts.",
-                    Hotkeys.Split(s.HotText).Count > 0 ? Hotkeys.Display(s.HotText) + " copies text from anywhere on the screen, without saving a capture."
+                    Hotkeys.Split(s.HotText).Count > 0 ? Hotkeys.Display(s.HotText) + I18n.Localize(" copies text from anywhere on the screen, without saving a capture.")
                                                        : "Copy screen text grabs text from anywhere; you can assign a shortcut in Shortcuts.",
-                    Hotkeys.Split(s.HotRepeat).Count > 0 ? Hotkeys.Display(s.HotRepeat) + " captures the last area again, without selecting it."
+                    Hotkeys.Split(s.HotRepeat).Count > 0 ? Hotkeys.Display(s.HotRepeat) + I18n.Localize(" captures the last area again, without selecting it.")
                                                          : "\u201CRepeat area\u201D in the tray recaptures the last area; you can assign a shortcut in Shortcuts.",
                     "The Backdrop button in the editor gets your captures ready for presentation.",
                     "To cover private data, use Redact in the editor: a solid cover cannot be undone.",
@@ -288,23 +288,23 @@ namespace Stackshot
         {
             if (!I18n.IsSpanish)
             {
-                string tEn = minutes >= 60 ? (minutes % 60 == 0 ? (minutes / 60 == 1 ? "an hour" : minutes / 60 + " hours") : "an hour and a half") : minutes + " minutes";
+                string tEn = I18n.IsKorean ? string.Format(I18n.Localize("{0} minutes"), minutes) : minutes >= 60 ? (minutes % 60 == 0 ? (minutes / 60 == 1 ? "an hour" : minutes / 60 + " hours") : "an hour and a half") : minutes + " minutes";
                 switch (kind)
                 {
                     case WellKind.Water:
                         return By(s.MascotPersonality,
-                            new string[] { "Time to drink water! It's been " + tEn + " without a sip.", "A glass of water? I'll have one with you.", "Fresh water! Your body will thank you." },
-                            new string[] { "A little water will do you good.", "You've been working for " + tEn + ". Shall we drink water?", "A glass of water and we continue." },
-                            new string[] { "Water? Ring a bell? It's been " + tEn + ".", "If you don't drink it, I will.", "Plants that aren't watered dry out." });
+                            new string[] { string.Format(I18n.Localize("Time to drink water! It's been {0} without a sip."), tEn), "A glass of water? I'll have one with you.", "Fresh water! Your body will thank you." },
+                            new string[] { "A little water will do you good.", string.Format(I18n.Localize("You've been working for {0}. Shall we drink water?"), tEn), "A glass of water and we continue." },
+                            new string[] { string.Format(I18n.Localize("Water? Ring a bell? It's been {0}."), tEn), "If you don't drink it, I will.", "Plants that aren't watered dry out." });
                     case WellKind.Eyes:
                         return By(s.MascotPersonality,
-                            new string[] { "Rest your eyes! Look at something far away for 20 seconds.", "Your eyes have been glued to the screen for " + tEn + ". Look away?", "20-20-20 rule: look 20 feet away for 20 seconds." },
+                            new string[] { "Rest your eyes! Look at something far away for 20 seconds.", string.Format(I18n.Localize("Your eyes have been glued to the screen for {0}. Look away?"), tEn), "20-20-20 rule: look 20 feet away for 20 seconds." },
                             new string[] { "Give your eyes a break: gaze into the distance for a moment.", "20 seconds looking far away. No rush.", "Your eyes deserve a pause." },
                             new string[] { "That screen isn't going anywhere. Look out the window.", "Blink, you're forgetting.", "Your eyes are begging for a vacation. Twenty seconds." });
                     case WellKind.Move:
                         return By(s.MascotPersonality,
-                            new string[] { "Up! You've been in that chair for " + tEn + ". Let's stretch those legs!", "Time to move! Stand up for a moment.", "Short walk? Your legs are asking for it." },
-                            new string[] { "Stand up and stretch your body a bit.", "A minute on your feet feels wonderful.", "You've been sitting for " + tEn + ". Move around a bit." },
+                            new string[] { string.Format(I18n.Localize("Up! You've been in that chair for {0}. Let's stretch those legs!"), tEn), "Time to move! Stand up for a moment.", "Short walk? Your legs are asking for it." },
+                            new string[] { "Stand up and stretch your body a bit.", "A minute on your feet feels wonderful.", string.Format(I18n.Localize("You've been sitting for {0}. Move around a bit."), tEn) },
                             new string[] { "Your chair is going to charge rent.", "If you don't stand up, I'll start dancing.", "Are you glued to that chair? Up!" });
                     default:
                         return By(s.MascotPersonality,
@@ -358,6 +358,13 @@ namespace Stackshot
         {
             if (!I18n.IsSpanish)
             {
+                if (I18n.IsKorean)
+                {
+                    if (kind == WellKind.Water && waterGoal > 0)
+                        return string.Format(I18n.Localize(today >= waterGoal ? "Water goal reached: {0} glasses today!" : "{0} of {1} glasses today."), today, waterGoal);
+                    return string.Format(I18n.Localize(kind == WellKind.Water ? "{0} glasses today." : kind == WellKind.Eyes ? "{0} eye rests today." :
+                        kind == WellKind.Move ? "{0} movement breaks today." : "{0} breathing sessions today."), today);
+                }
                 if (kind == WellKind.Water && waterGoal > 0)
                     return today >= waterGoal ? (today == waterGoal ? "Water goal reached: " + waterGoal + " glasses!" : today + " glasses today: goal achieved!")
                          : today == 1 ? "Your first glass today (out of " + waterGoal + ")." : today + " of " + waterGoal + " glasses today.";
@@ -380,7 +387,7 @@ namespace Stackshot
         {
             if (!I18n.IsSpanish)
             {
-                if (!s.MascotTalks) return "I'll remind you in 10 minutes.";
+                if (!s.MascotTalks) return I18n.Localize("I'll remind you in 10 minutes.");
                 return By(s.MascotPersonality, new string[] { "Got it! I'll remind you in 10 minutes.", "Alright! Reminding you in 10 minutes." }, new string[] { "No problem: I'll notify you in 10 minutes.", "I'll remind you in 10 minutes." },
                           new string[] { "Fine, 10 minutes and you can't escape.", "I'll be back in 10 minutes, okay?" });
             }
@@ -393,10 +400,10 @@ namespace Stackshot
         {
             if (!I18n.IsSpanish)
             {
-                string whatEn = kind == WellKind.Water ? "water reminders" : kind == WellKind.Eyes ? "eye rest reminders" : kind == WellKind.Move ? "movement breaks" : "breathing breaks";
-                if (!s.MascotTalks) return "No more " + whatEn + " today.";
-                return By(s.MascotPersonality, new string[] { "Got it! No more " + whatEn + " today." }, new string[] { "Alright, no more " + whatEn + " for today." },
-                          new string[] { "Fine, you're off the hook for " + whatEn + " today." });
+                string whatEn = I18n.Localize(kind == WellKind.Water ? "water reminders" : kind == WellKind.Eyes ? "eye rest reminders" : kind == WellKind.Move ? "movement breaks" : "breathing breaks");
+                if (!s.MascotTalks) return string.Format(I18n.Localize("No more {0} today."), whatEn);
+                return By(s.MascotPersonality, new string[] { string.Format(I18n.Localize("Got it! No more {0} today."), whatEn) }, new string[] { string.Format(I18n.Localize("Alright, no more {0} for today."), whatEn) },
+                          new string[] { string.Format(I18n.Localize("Fine, you're off the hook for {0} today."), whatEn) });
             }
             string what = kind == WellKind.Water ? "lo del agua" : kind == WellKind.Eyes ? "lo de la vista" : kind == WellKind.Move ? "lo de moverte" : "lo de respirar";
             if (!s.MascotTalks) return "Hoy no te recuerdo m\u00E1s " + what + ".";
@@ -485,6 +492,7 @@ namespace Stackshot
 
         public static string LevelUp(Settings s, int level)
         {
+            if (I18n.IsKorean) return string.Format(I18n.Localize("We are now {0}!"), MascotParts.LevelNames[level]);
             return I18n.IsSpanish
                 ? "\u00A1Ya somos " + MascotParts.LevelNames[level].ToLowerInvariant() + "!"
                 : "We are now " + MascotParts.LevelNames[level].ToLowerInvariant() + "!";

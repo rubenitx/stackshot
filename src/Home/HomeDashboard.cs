@@ -466,8 +466,9 @@ namespace Stackshot
             double min = (now - t).TotalMinutes;
             if (min < 1) return I18n.T("ahora mismo", "just now");
             if (min < 60) return I18n.Fmt("hace {0} min", "{0} min ago", (int)min);
-            if (t.Date == now.Date) return I18n.T("hoy a las ", "today at ") + t.ToString(I18n.IsSpanish ? "H:mm" : "h:mm tt", ci);
-            if (t.Date == now.Date.AddDays(-1)) return I18n.T("ayer a las ", "yesterday at ") + t.ToString(I18n.IsSpanish ? "H:mm" : "h:mm tt", ci);
+            if (t.Date == now.Date) return I18n.T("hoy a las ", "today at ") + t.ToString(I18n.IsSpanish || I18n.IsKorean ? "H:mm" : "h:mm tt", ci);
+            if (t.Date == now.Date.AddDays(-1)) return I18n.T("ayer a las ", "yesterday at ") + t.ToString(I18n.IsSpanish || I18n.IsKorean ? "H:mm" : "h:mm tt", ci);
+            if (I18n.IsKorean) return t.ToString("M/d H:mm", ci);
             return I18n.IsSpanish ? "el " + t.ToString("d/M", ci) + " a las " + t.ToString("H:mm", ci) : "on " + t.ToString("M/d", ci) + " at " + t.ToString("h:mm tt", ci);
         }
     }

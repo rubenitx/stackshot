@@ -40,6 +40,7 @@ namespace Stackshot
         MediaInfo info;
         Playback play;
         List<string[]> infoRows = new List<string[]>();
+        int scaleRow;
         double markIn = -1, markOut = -1;   // the piece to export (E and S on the bar), -1 when not set
         bool grabbing;
 
@@ -138,18 +139,15 @@ namespace Stackshot
             Cursor.Current = Cursors.WaitCursor;
             try { info = MediaInfo.ProbeCached(ffmpeg, file); }
             finally { Cursor.Current = Cursors.Default; }
-            long bytes = 0;
-            try { bytes = new FileInfo(file).Length; }
-            catch (Exception) { }
             if (!info.CanPlay)
             {
-                message = !File.Exists(file) ? "No se encuentra el archivo." : "No se puede reproducir este archivo: FFmpeg no encuentra un v\u00EDdeo que mostrar.";
+                message = MissingVideoMessage();
                 if (ClientSize.Width < P(560)) ClientSize = new Size(P(640), P(360));
                 infoRows = new List<string[]>();
                 Invalidate();
                 return;
             }
-            infoRows = PlayerKit.Describe(info, file, bytes, PlayerKit.IsMaster(info) ? PlayerKit.ReadCineReport(file) : null);
+            RefreshInfoRows();
             Size video = info.Display;
             if (!fullscreen && WindowState == FormWindowState.Normal)
             {
@@ -208,6 +206,29 @@ namespace Stackshot
             Playback p = play;
             play = null;
             if (p != null) p.Dispose();
+        }
+
+        string MissingVideoMessage()
+        {
+            return !File.Exists(path) ? I18n.T("No se encuentra el archivo.", "File not found.")
+                : I18n.T("No se puede reproducir este archivo: FFmpeg no encuentra un v\u00EDdeo que mostrar.", "FFmpeg could not find a video stream to play in this file.");
+        }
+
+        void RefreshInfoRows()
+        {
+            long bytes = 0;
+            try { bytes = new FileInfo(path).Length; }
+            catch (Exception) { }
+            infoRows = PlayerKit.Describe(info, path, bytes, PlayerKit.IsMaster(info) ? PlayerKit.ReadCineReport(path) : null, out scaleRow);
+        }
+
+        void RefreshLanguage()
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+            if (InvokeRequired) { OnUi(RefreshLanguage); return; }
+            if (info != null && info.CanPlay) RefreshInfoRows();
+            else if (info != null) message = MissingVideoMessage();
+            Invalidate();
         }
 
         void OnUi(Action a)
@@ -575,7 +596,7 @@ namespace Stackshot
             if (exportThread != null) return;
             using (OpenFileDialog d = new OpenFileDialog())
             {
-                d.Title = "Abrir v\u00EDdeo";
+                d.Title = I18n.T("Abrir v\u00EDdeo", "Open video");
                 d.Filter = ShotStack.VideoFilter;
                 if (d.ShowDialog(this) == DialogResult.OK) OpenAndPlay(d.FileName);
             }
@@ -650,13 +671,16 @@ namespace Stackshot
             if (VideoExport.TargetBytes(spec.Level) > 0 && dur <= 0)
             {
                 ShotStack.Unreserve(output);
-                Alert("No se sabe cu\u00E1nto dura este v\u00EDdeo, as\u00ED que no se puede ajustar a " + Timeline.Qualities[spec.Level] + ". Marca un tramo (E y S) o elige otra calidad en M\u00E1s opciones > Calidad al exportar.");
+                Alert(I18n.Fmt("No se sabe cu\u00E1nto dura este v\u00EDdeo, as\u00ED que no se puede ajustar a {0}. Marca un tramo (E y S) o elige otra calidad en M\u00E1s opciones > Calidad al exportar.",
+                               "Cannot fit a video of unknown duration into {0}. Mark a clip (E and S) or change More options > Export quality.", Timeline.Qualities[spec.Level]));
                 return;
             }
             if (VideoExport.TargetBytes(spec.Level) > 0 && VideoExport.TargetKbps(spec) < VideoExport.TargetMinKbps)
             {
                 ShotStack.Unreserve(output);
-                Alert("Es demasiado largo para caber en " + Timeline.Qualities[spec.Level] + " con buena calidad (caben " + VideoExport.MaxLength(spec.Level, spec.HasAudio) + "). Marca un tramo m\u00E1s corto (E y S) o elige otra calidad en M\u00E1s opciones > Calidad al exportar.");
+                Alert(I18n.Fmt("Es demasiado largo para caber en {0} con buena calidad (caben {1}). Marca un tramo m\u00E1s corto (E y S) o elige otra calidad en M\u00E1s opciones > Calidad al exportar.",
+                               "Too long to fit into {0} at good quality (limit: {1}). Mark a shorter clip (E and S) or change More options > Export quality.",
+                               Timeline.Qualities[spec.Level], VideoExport.MaxLength(spec.Level, spec.HasAudio)));
                 return;
             }
             string log = Path.Combine(Path.GetTempPath(), "stackshot-2pass-" + Guid.NewGuid().ToString("N"));
@@ -667,7 +691,7 @@ namespace Stackshot
             ExportAbort ab = new ExportAbort();
             exportAbort = ab;
             exportOut = output;
-            exportText = "Creando el MP4\u2026 0 %  \u00B7  Esc cancela";
+            exportText = Mp4Progress(0);
             Invalidate();
             ShotStack.Log("Reproductor: exportando " + Path.GetFileName(output));
             System.Threading.Thread t = new System.Threading.Thread(delegate()
@@ -683,13 +707,13 @@ namespace Stackshot
                     TimeSpan ts;
                     if (!TimeSpan.TryParse(line.Substring(9).Trim(), CultureInfo.InvariantCulture, out ts)) return;
                     int pc = (int)Math.Round((done + Math.Max(0, Math.Min(1, ts.TotalSeconds / dur))) / count * 100);
-                    OnUi(delegate { if (exportAbort == ab) { exportText = "Creando el MP4\u2026 " + pc + " %  \u00B7  Esc cancela"; Invalidate(); } });
+                    OnUi(delegate { if (exportAbort == ab) { exportText = Mp4Progress(pc); Invalidate(); } });
                 }, out err);
                 VideoExport.DeletePassLog(log);
                 ShareReport rep = null;
                 if (!ab.Set && code == 0 && File.Exists(output))
                 {
-                    OnUi(delegate { if (exportAbort == ab) { exportText = "Comprobando el v\u00EDdeo\u2026  \u00B7  Esc cancela"; Invalidate(); } });
+                    OnUi(delegate { if (exportAbort == ab) { exportText = I18n.T("Comprobando el v\u00EDdeo\u2026  \u00B7  Esc cancela", "Checking video\u2026  \u00B7  Esc cancels"); Invalidate(); } });
                     rep = ShareCheck.Validate(ff, output, expect);
                 }
                 OnUi(delegate { ExportDone(ab, output, code, err, rep); });
@@ -743,6 +767,11 @@ namespace Stackshot
         internal static bool Quiet { get; set; }
         string exportNote;
         internal string ExportNote { get { return exportNote; } }
+
+        static string Mp4Progress(int percent)
+        {
+            return I18n.Fmt("Creando el MP4\u2026 {0} %  \u00B7  Esc cancela", "Creating MP4\u2026 {0}%  \u00B7  Esc cancels", percent);
+        }
 
         void Alert(string text)
         {
@@ -1046,7 +1075,7 @@ namespace Stackshot
             foreach (double v in PlayerKit.Speeds)
             {
                 double sp = v;
-                ToolStripMenuItem it = TrayMenu.Item(PlayerKit.SpeedText(sp) + (sp == 1 ? "  (normal)" : ""), null, delegate { SetSpeed(sp); });
+                ToolStripMenuItem it = TrayMenu.Item(PlayerKit.SpeedText(sp) + (sp == 1 ? I18n.Localize("  (normal)") : ""), null, delegate { SetSpeed(sp); });
                 it.Checked = Math.Abs(speed - sp) < 1e-9;
                 m.Items.Add(it);
             }
@@ -1061,7 +1090,7 @@ namespace Stackshot
             if (CanEdit) m.Items.Add(TrayMenu.Item(I18n.T("Editar", "Edit"), "edit", delegate { Edit(); }));
             if (CanExport) m.Items.Add(TrayMenu.Item(HasRange ? I18n.T("Exportar el tramo", "Export clip") : I18n.T("Exportar MP4", "Export MP4"), "share", delegate { ExportMp4(); }));
             if (info.CanPlay && exportThread == null) m.Items.Add(GifMenuItem());
-            m.Items.Add(TrayMenu.Item((I18n.IsSpanish ? "Calidad al exportar: " : "Export quality: ") + QualityName(settings.ExportQuality) + "\u2026", null, delegate { OnUi(delegate { ShowQuality(at, b); }); }));
+            m.Items.Add(TrayMenu.Item(I18n.T("Calidad al exportar: ", "Export quality: ") + QualityName(settings.ExportQuality) + "\u2026", null, delegate { OnUi(delegate { ShowQuality(at, b); }); }));
             m.Items.Add(TrayMenu.Item(I18n.T("Capturar este fotograma", "Capture this frame"), "photo", "C", delegate { GrabFrame(); }));
             m.Items.Add(TrayMenu.Item(I18n.T("Marcar el inicio del tramo", "Set in-point"), null, "E", delegate { MarkIn(); }));
             m.Items.Add(TrayMenu.Item(I18n.T("Marcar el final del tramo", "Set out-point"), null, "S", delegate { MarkOut(); }));
@@ -1103,7 +1132,7 @@ namespace Stackshot
         static string QualityName(int q)
         {
             q = Math.Max(0, Math.Min(Timeline.Qualities.Length - 1, q));
-            return Timeline.Qualities[q] + (q == 3 ? " (WhatsApp)" : q == 4 ? (I18n.IsSpanish ? " (correo)" : " (email)") : "");
+            return Timeline.Qualities[q] + (q == 3 ? " (WhatsApp)" : q == 4 ? I18n.T(" (correo)", " (email)") : "");
         }
 
         // The export quality, shared with the editor; 16 MB and 25 MB fit the file in that size.
@@ -1113,7 +1142,7 @@ namespace Stackshot
             for (int i = 0; i < Timeline.Qualities.Length; i++)
             {
                 int q = i;
-                ToolStripMenuItem it = TrayMenu.Item(QualityName(q), null, delegate { settings.ExportQuality = q; Remember(); Flash((I18n.IsSpanish ? "Calidad al exportar: " : "Export quality: ") + QualityName(q)); });
+                ToolStripMenuItem it = TrayMenu.Item(QualityName(q), null, delegate { settings.ExportQuality = q; Remember(); Flash(I18n.T("Calidad al exportar: ", "Export quality: ") + QualityName(q)); });
                 it.Checked = settings.ExportQuality == q;
                 m.Items.Add(it);
             }
@@ -1205,9 +1234,7 @@ namespace Stackshot
             List<string[]> rows = new List<string[]>(infoRows);
             // Right under the video's size: how big it is shown now.
             string scale = PlayerKit.ScaleNote(info.Display, VideoRect(), !fullscreen && WindowState != FormWindowState.Maximized);
-            // The rows were made when the video opened, in the language of that moment.
-            int at = rows.FindIndex(x => x[0] == "Tama\u00F1o" || x[0] == "Size");
-            if (scale.Length > 0) rows.Insert(at >= 0 ? at + 1 : rows.Count, new string[] { I18n.T("En pantalla", "On screen"), scale });
+            if (scale.Length > 0) rows.Insert(scaleRow, new string[] { I18n.T("En pantalla", "On screen"), scale });
             if (play != null) rows.Add(new string[] { I18n.T("Reproducci\u00F3n", "Playback"), I18n.Fmt("{0} fotogramas mostrados, {1} omitidos", "{0} frames shown, {1} dropped", play.FramesShown, play.FramesDropped) });
             int h = pad * 2 + P(26) + rows.Count * rowH;
             int floor = (bar.IsEmpty ? ClientSize.Height : bar.Y) - P(12);
@@ -1361,6 +1388,7 @@ namespace Stackshot
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
+            I18n.Changed += RefreshLanguage;
             try
             {
                 int dark = 1;
@@ -1369,6 +1397,12 @@ namespace Stackshot
                 Native.DwmSetWindowAttribute(Handle, 33, ref round, 4);  // DWMWA_WINDOW_CORNER_PREFERENCE: round
             }
             catch (Exception) { }
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            I18n.Changed -= RefreshLanguage;
+            base.OnHandleDestroyed(e);
         }
 
         protected override void OnShown(EventArgs e)

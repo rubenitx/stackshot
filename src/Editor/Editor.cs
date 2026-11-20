@@ -20,7 +20,7 @@ namespace Stackshot
         static readonly string[] ToolNamesEs = { "Flecha", "L\u00EDnea", "Recuadro", "Elipse", "Texto", "N\u00FAmeros", "Resaltar", "Foco: oscurece el resto", "Pixelar", "Tapar (lo m\u00E1s seguro para datos)", "Recortar" };
         static readonly string[] ToolNamesEn = { "Arrow", "Line", "Rectangle", "Ellipse", "Text", "Numbers", "Highlight", "Spotlight: dims the rest", "Pixelate", "Redact (safest for sensitive data)", "Crop" };
         static readonly string[] ToolNamesDe = { "Pfeil", "Linie", "Rechteck", "Ellipse", "Text", "Zahlen", "Hervorheben", "Scheinwerfer: dunkelt den Rest ab", "Verpixeln", "Schw\u00E4rzen (am sichersten f\u00FCr Daten)", "Zuschneiden" };
-        static string[] ToolNames { get { return I18n.IsSpanish ? ToolNamesEs : I18n.IsGerman ? ToolNamesDe : ToolNamesEn; } }
+        static string[] ToolNames { get { return I18n.IsSpanish ? ToolNamesEs : I18n.IsGerman ? ToolNamesDe : I18n.LocalizeList(ToolNamesEn); } }
         static readonly string[] ToolKeysEs = { "F", "L", "R", "E", "T", "N", "H", "O", "P", "X", "C" };
         static readonly string[] ToolKeysEn = { "A", "L", "R", "E", "T", "N", "H", "S", "P", "X", "C" };
         static readonly string[] ToolKeysDe = { "A", "L", "R", "E", "T", "N", "H", "S", "P", "X", "C" };
@@ -29,11 +29,11 @@ namespace Stackshot
         static readonly string[] WeightNamesEs = { "Fino", "Medio", "Grueso" };
         static readonly string[] WeightNamesEn = { "Thin", "Medium", "Thick" };
         static readonly string[] WeightNamesDe = { "D\u00FCnn", "Mittel", "Dick" };
-        static string[] WeightNames { get { return I18n.IsSpanish ? WeightNamesEs : I18n.IsGerman ? WeightNamesDe : WeightNamesEn; } }
+        static string[] WeightNames { get { return I18n.IsSpanish ? WeightNamesEs : I18n.IsGerman ? WeightNamesDe : I18n.LocalizeList(WeightNamesEn); } }
         static readonly string[] SizeNamesEs = { "Peque\u00F1o", "Mediano", "Grande" };
         static readonly string[] SizeNamesEn = { "Small", "Medium", "Large" };
         static readonly string[] SizeNamesDe = { "Klein", "Mittel", "Gro\u00DF" };
-        static string[] SizeNames { get { return I18n.IsSpanish ? SizeNamesEs : I18n.IsGerman ? SizeNamesDe : SizeNamesEn; } }
+        static string[] SizeNames { get { return I18n.IsSpanish ? SizeNamesEs : I18n.IsGerman ? SizeNamesDe : I18n.LocalizeList(SizeNamesEn); } }
         // Captures that already have the backdrop applied, so reopening them doesn't add a second one.
         static readonly HashSet<string> withBackdrop = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -508,6 +508,8 @@ namespace Stackshot
             if (InvokeRequired) { BeginInvoke((Action)RefreshLanguage); return; }
             EdTip.Cancel();
             foreach (Action refresh in toolbarText) refresh();
+            bgPanel.Relayout();
+            canvas.Invalidate();
             UpdateUi();
             MinimumSize = new Size(Math.Min(Screen.FromControl(this).WorkingArea.Width, bar.LayoutItems()), P(380));
             bar.Invalidate();

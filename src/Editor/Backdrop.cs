@@ -69,21 +69,21 @@ namespace Stackshot
             switch (idx)
             {
                 case 0: return "Stackshot";
-                case 1: return "Sunset";
-                case 2: return "Mint";
-                case 3: return "Ocean";
-                case 4: return "Peach";
-                case 5: return "Lavender";
-                case 6: return "Rose";
-                case 7: return "Aurora";
-                case 8: return "Night";
-                case 9: return "Graphite";
-                case 10: return "Light";
-                case 11: return "Dark";
-                case 12: return "Your desktop";
+                case 1: return I18n.Localize("Sunset");
+                case 2: return I18n.Localize("Mint");
+                case 3: return I18n.Localize("Ocean");
+                case 4: return I18n.Localize("Peach");
+                case 5: return I18n.Localize("Lavender");
+                case 6: return I18n.Localize("Rose");
+                case 7: return I18n.Localize("Aurora");
+                case 8: return I18n.Localize("Night");
+                case 9: return I18n.Localize("Graphite");
+                case 10: return I18n.Localize("Light");
+                case 11: return I18n.Localize("Dark");
+                case 12: return I18n.Localize("Your desktop");
             }
             if (n != null && n.StartsWith("Tu imagen "))
-                return "Your image " + n.Substring("Tu imagen ".Length);
+                return I18n.Localize("Your image ") + n.Substring("Tu imagen ".Length);
             return n;
         }
 

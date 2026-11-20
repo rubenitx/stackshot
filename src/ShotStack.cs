@@ -124,7 +124,7 @@ namespace Stackshot
             if (settings.XmlWatch && XmlWatch.FolderFor(settings) == null && !Test)
                 After(6000, delegate { if (!exiting) NotifyPage(I18n.T("Elige la carpeta de los XML", "Choose the XML folder"), I18n.T("La vigilancia de XML est\u00E1 activada pero no tiene carpeta. El\u00EDgela en General > Avanzado.", "XML monitoring is on, but has no folder. Pick one in General > Advanced."), "general"); });
             // Spanish kept from before on a Windows in another language: English is offered once.
-            if (!Test) After(8000, delegate { if (!exiting) OfferEnglish(); });
+            if (!Test) After(8000, delegate { if (!exiting) OfferLanguage(); });
 
             // Another instance (an update, the uninstaller) can ask this one to quit cleanly.
             if (!Test)
@@ -1488,7 +1488,8 @@ namespace Stackshot
             if (moved.Count == 0) return;
             WorkFiles.Rescued last = moved[moved.Count - 1];
             // Spanish as it always was; English with the month spelled out (3/11 reads differently in the US).
-            string when = last.Started == DateTime.MinValue ? "" : I18n.IsSpanish
+            string when = last.Started == DateTime.MinValue ? "" : I18n.IsKorean
+                ? " (" + last.Started.ToString(last.Started.Date == DateTime.Today ? "HH:mm" : "M/d HH:mm") + ")" : I18n.IsSpanish
                 ? " (la de las " + last.Started.ToString("HH:mm") + (last.Started.Date != DateTime.Today ? " del " + last.Started.ToString("d/M") : "") + ")"
                 : " (the one from " + last.Started.ToString("HH:mm") + (last.Started.Date != DateTime.Today ? " on " + last.Started.ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture) : "") + ")";
             string text = (moved.Count == 1 ? I18n.Fmt("Stackshot se cerr\u00F3 mientras grababa{0}. Lo grabado est\u00E1 a salvo", "Stackshot closed while recording{0}. The recording is safe", when) : I18n.Fmt("Stackshot se cerr\u00F3 durante {0} grabaciones. Lo grabado est\u00E1 a salvo", "Stackshot closed during {0} recordings. The recordings are safe", moved.Count)) +

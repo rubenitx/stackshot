@@ -62,6 +62,26 @@ namespace Stackshot
             IsMedia = ShotStack.IsMediaFile(path);
         }
 
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            I18n.Changed += RefreshLanguage;
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            I18n.Changed -= RefreshLanguage;
+            base.OnHandleDestroyed(e);
+        }
+
+        void RefreshLanguage()
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+            if (InvokeRequired) { BeginInvoke((Action)RefreshLanguage); return; }
+            BuildButtons();
+            Redraw();
+        }
+
         protected override bool PerPixel { get { return true; } }
 
         // Pressed, swiping or dragging: the stack must not move it to another monitor.

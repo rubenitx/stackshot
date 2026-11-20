@@ -735,7 +735,7 @@ namespace Stackshot
         static readonly string[] PillTipsEs = { "Alejar  (Ctrl+\u2212)", "Tama\u00F1o real  (Ctrl+1)", "Acercar  (Ctrl++)", "Ajustar a la ventana  (Ctrl+0)" };
         static readonly string[] PillTipsEn = { "Zoom out  (Ctrl+\u2212)", "Actual size  (Ctrl+1)", "Zoom in  (Ctrl++)", "Fit to window  (Ctrl+0)" };
         static readonly string[] PillTipsDe = { "Verkleinern  (Strg+\u2212)", "Originalgröße  (Strg+1)", "Vergrößern  (Strg++)", "An Fenster anpassen  (Strg+0)" };
-        static string[] PillTips { get { return I18n.IsSpanish ? PillTipsEs : I18n.IsGerman ? PillTipsDe : PillTipsEn; } }
+        static string[] PillTips { get { return I18n.IsSpanish ? PillTipsEs : I18n.IsGerman ? PillTipsDe : I18n.LocalizeList(PillTipsEn); } }
         static string PillFitText { get { return I18n.T("Ajustar", "Fit"); } }
         int pillHot = -1, pillDown = -1;
 
@@ -747,14 +747,14 @@ namespace Stackshot
 
         // 0 minus, 1 percentage, 2 plus, 3 fit; the last rectangle is the whole capsule.
         int pillFitW = -1;
-        bool pillFitLang = true;
+        string pillFitLang;
 
         Rectangle[] PillParts()
         {
             int h = Pu(30), bw = Pu(30), pw = Pu(50);
-            if (pillFitW < 0 || pillFitLang != I18n.IsSpanish)
+            if (pillFitW < 0 || pillFitLang != I18n.Language)
             {
-                pillFitLang = I18n.IsSpanish;
+                pillFitLang = I18n.Language;
                 pillFitW = TextKit.Measure(PillFitText, PillFont, Size.Empty, TextFormatFlags.NoPadding).Width;
             }
             int fw = pillFitW + Pu(26);

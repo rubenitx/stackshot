@@ -18,12 +18,12 @@ namespace Stackshot
         static readonly int[] RecOrder = { Recorder.Standard, Recorder.High, Recorder.Maximum, Recorder.Cinema };
         static readonly string[] RecNamesEs = { "Est\u00E1ndar", "Alta", "M\u00E1xima", "Cine" };
         static readonly string[] RecNamesEn = { "Standard", "High", "Maximum", "Cinema" };
-        static string[] RecNames { get { return I18n.IsSpanish ? RecNamesEs : RecNamesEn; } }
+        static string[] RecNames { get { return I18n.IsSpanish ? RecNamesEs : I18n.LocalizeList(RecNamesEn); } }
         static readonly string[] RecLinesEs = { "Ligera y fluida, para chats y correos.", "60 fps n\u00EDtidos, listo al momento.", "60 fps sin p\u00E9rdida al grabar.",
                                                 "Sin p\u00E9rdidas y verificado, en MKV." };
         static readonly string[] RecLinesEn = { "Light and fluid, for chat and email.", "Sharp 60 fps, ready instantly.", "Lossless 60 fps while recording.",
                                                 "Lossless and verified, in MKV." };
-        static string[] RecLines { get { return I18n.IsSpanish ? RecLinesEs : RecLinesEn; } }
+        static string[] RecLines { get { return I18n.IsSpanish ? RecLinesEs : I18n.LocalizeList(RecLinesEn); } }
         static readonly string[] RecIcons = { "share", "video", "sparkle", "film" };
         static readonly Color[,] RecTiles =
         {
@@ -34,7 +34,7 @@ namespace Stackshot
         };
         static readonly string[] RecMetricsEs = { "Nitidez", "Fluidez", "Tama\u00F1o" };
         static readonly string[] RecMetricsEn = { "Sharpness", "Smoothness", "Size" };
-        static string[] RecMetrics { get { return I18n.IsSpanish ? RecMetricsEs : RecMetricsEn; } }
+        static string[] RecMetrics { get { return I18n.IsSpanish ? RecMetricsEs : I18n.LocalizeList(RecMetricsEn); } }
         static readonly int[,] RecLevels = { { 1, 2, 1 }, { 2, 3, 2 }, { 3, 4, 3 }, { 4, 4, 4 } };
         static readonly string[] RecNotesEs =
         {
@@ -55,7 +55,7 @@ namespace Stackshot
             "Records at 60 or 30 fps (chosen below) and does not capture all refreshes above 60 Hz. " +
             "Faithful to Windows output, not monitor color (Windows converts HDR to SDR). If the PC cannot keep up, recording stops safely keeping what was captured."
         };
-        static string[] RecNotes { get { return I18n.IsSpanish ? RecNotesEs : RecNotesEn; } }
+        static string[] RecNotes { get { return I18n.IsSpanish ? RecNotesEs : I18n.LocalizeList(RecNotesEn); } }
         static readonly int[] RecFps = { 24, 30, 60 }, RecGifFps = { 10, 15, 20, 25 };
 
         static List<string> recCameras;       // DirectShow cameras, looked up once per session (it runs FFmpeg)
@@ -307,7 +307,7 @@ namespace Stackshot
             g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
             g.ColumnDefinitions.Add(new ColumnDefinition());
             MacSegmented fs = new MacSegmented(new string[] { "30", "60" }, settings.CineFps == 30 ? 0 : 1);
-            MacSegmented ms = new MacSegmented(I18n.IsSpanish ? new string[] { "Normal", "Alta" } : new string[] { "Normal", "High" }, settings.CinePeakMemory >= 1 ? 1 : 0);
+            MacSegmented ms = new MacSegmented(I18n.IsSpanish ? new string[] { "Normal", "Alta" } : I18n.LocalizeList(new string[] { "Normal", "High" }), settings.CinePeakMemory >= 1 ? 1 : 0);
             g.Children.Add(RecCineColumn(I18n.T("Fotogramas por segundo", "Frames per second"), fs, out recCineFpsNote));
             FrameworkElement mem = RecCineColumn(I18n.T("Memoria para picos de movimiento", "Memory for motion peaks"), ms, out recCineMemNote);
             Grid.SetColumn(mem, 2);
@@ -678,8 +678,8 @@ namespace Stackshot
             Grid form = new Grid { VerticalAlignment = VerticalAlignment.Center };
             form.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             form.ColumnDefinitions.Add(new ColumnDefinition());
-            MacSegmented shape = new MacSegmented(I18n.IsSpanish ? new string[] { "No", "Redonda", "Cuadrada" } : new string[] { "Off", "Round", "Square" }, settings.Webcam);
-            MacSegmented size = new MacSegmented(I18n.IsSpanish ? new string[] { "Peque\u00F1a", "Mediana", "Grande" } : new string[] { "Small", "Medium", "Large" }, settings.WebcamSize);
+            MacSegmented shape = new MacSegmented(I18n.IsSpanish ? new string[] { "No", "Redonda", "Cuadrada" } : I18n.LocalizeList(new string[] { "Off", "Round", "Square" }), settings.Webcam);
+            MacSegmented size = new MacSegmented(I18n.IsSpanish ? new string[] { "Peque\u00F1a", "Mediana", "Grande" } : I18n.LocalizeList(new string[] { "Small", "Medium", "Large" }), settings.WebcamSize);
             TextBlock camName;
             recCamPill = RecPill("camera", out camName);
             recCamText = camName;
@@ -688,7 +688,7 @@ namespace Stackshot
             Press(pill, RecCamClick);
             RecCamRefresh();
             FrameworkElement[] controls = { shape, size, pill };
-            string[] names = I18n.IsSpanish ? new string[] { "Forma", "Tama\u00F1o", "C\u00E1mara" } : new string[] { "Shape", "Size", "Camera" };
+            string[] names = I18n.IsSpanish ? new string[] { "Forma", "Tama\u00F1o", "C\u00E1mara" } : I18n.LocalizeList(new string[] { "Shape", "Size", "Camera" });
             for (int i = 0; i < controls.Length; i++)
             {
                 form.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -1016,7 +1016,7 @@ namespace Stackshot
             Grid.SetRow(l2, 1);
             inner.Children.Add(l2);
             int[] cds = RecordSetup.Countdowns;
-            MacSegmented cd = new MacSegmented(I18n.IsSpanish ? new string[] { "No", "3 s", "5 s", "10 s" } : new string[] { "Off", "3 s", "5 s", "10 s" }, Math.Max(0, Array.IndexOf(cds, Settings.Countdown(settings.RecordCountdown))));
+            MacSegmented cd = new MacSegmented(I18n.IsSpanish ? new string[] { "No", "3 s", "5 s", "10 s" } : I18n.LocalizeList(new string[] { "Off", "3 s", "5 s", "10 s" }), Math.Max(0, Array.IndexOf(cds, Settings.Countdown(settings.RecordCountdown))));
             cd.Margin = new Thickness(0, 12, 0, 0);
             Access.Describe(cd, l2.Text, null);
             cd.Changed += delegate(int i) { settings.RecordCountdown = cds[i]; Changed(); };

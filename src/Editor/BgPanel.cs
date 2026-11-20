@@ -27,7 +27,8 @@ namespace Stackshot
         public const float Wide = 252;     // width at 100 %
 
         static readonly string[] Ratios = { "auto", "16:9", "4:3", "1:1" };
-        static readonly string[] RatioNames = { "Auto", "16:9", "4:3", "1:1" };
+        static readonly string[] RatioLabels = { "Auto", "16:9", "4:3", "1:1" };
+        static string[] RatioNames { get { return I18n.LocalizeList(RatioLabels); } }
         static readonly int[] Plains =
         {
             0x000000, 0xFFFFFF, 0xE5383B, 0xF3722C, 0xF9C74F, 0x2B9348, 0x1D72E8, 0x7B2CBF, 0xE84393,
@@ -48,11 +49,11 @@ namespace Stackshot
             "Schwarz", "Weiß", "Rot", "Orange", "Gelb", "Grün", "Blau", "Violett", "Rosa",
             "Dunkelgrau", "Hellgrau", "Zartrot", "Zartorange", "Zartgelb", "Zartgrün", "Zartblau", "Zartviolett"
         };
-        static string[] PlainNames { get { return I18n.IsSpanish ? PlainNamesEs : I18n.IsGerman ? PlainNamesDe : PlainNamesEn; } }
+        static string[] PlainNames { get { return I18n.IsSpanish ? PlainNamesEs : I18n.IsGerman ? PlainNamesDe : I18n.LocalizeList(PlainNamesEn); } }
         static readonly string[] BlurNamesEs = { "Desenfocada", "Desenfocada y oscura", "Desenfocada y clara" };
         static readonly string[] BlurNamesEn = { "Blurred", "Blurred & dark", "Blurred & light" };
         static readonly string[] BlurNamesDe = { "Unscharf", "Unscharf und dunkel", "Unscharf und hell" };
-        static string[] BlurNames { get { return I18n.IsSpanish ? BlurNamesEs : I18n.IsGerman ? BlurNamesDe : BlurNamesEn; } }
+        static string[] BlurNames { get { return I18n.IsSpanish ? BlurNamesEs : I18n.IsGerman ? BlurNamesDe : I18n.LocalizeList(BlurNamesEn); } }
         static readonly string[] AlignNamesEs =
         {
             "Arriba a la izquierda", "Arriba", "Arriba a la derecha", "A la izquierda", "Centrada", "A la derecha",
@@ -64,11 +65,11 @@ namespace Stackshot
             "Bottom left", "Bottom", "Bottom right"
         };
         static readonly string[] AlignNamesDe = { "Oben links", "Oben", "Oben rechts", "Links", "Zentriert", "Rechts", "Unten links", "Unten", "Unten rechts" };
-        static string[] AlignNames { get { return I18n.IsSpanish ? AlignNamesEs : I18n.IsGerman ? AlignNamesDe : AlignNamesEn; } }
+        static string[] AlignNames { get { return I18n.IsSpanish ? AlignNamesEs : I18n.IsGerman ? AlignNamesDe : I18n.LocalizeList(AlignNamesEn); } }
         static readonly string[] SliderNamesEs = { "Margen", "Esquinas", "Sombra", "Inserci\u00F3n" };
         static readonly string[] SliderNamesEn = { "Padding", "Corners", "Shadow", "Border inset" };
         static readonly string[] SliderNamesDe = { "Abstand", "Ecken", "Schatten", "Randabstand" };
-        static string[] SliderNames { get { return I18n.IsSpanish ? SliderNamesEs : I18n.IsGerman ? SliderNamesDe : SliderNamesEn; } }
+        static string[] SliderNames { get { return I18n.IsSpanish ? SliderNamesEs : I18n.IsGerman ? SliderNamesDe : I18n.LocalizeList(SliderNamesEn); } }
         static bool allGradients = true;   // "Ver menos" folds them to one row, for the rest of the session
 
         public float S = 1f;

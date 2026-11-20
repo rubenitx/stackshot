@@ -973,6 +973,7 @@ namespace Stackshot
             string hm = t.ToString("HH:mm", Es);
             if (d == now) return I18n.T("Hoy, ", "Today, ") + hm;
             if (d == now.AddDays(-1)) return I18n.T("Ayer, ", "Yesterday, ") + hm;
+            if (I18n.IsKorean) return t.ToString("M/d HH:mm", CultureInfo.InvariantCulture);
             return (I18n.IsSpanish ? t.ToString("d MMM", Es).TrimEnd('.') : t.ToString("MMM d", CultureInfo.GetCultureInfo("en-US"))) + ", " + hm;
         }
 

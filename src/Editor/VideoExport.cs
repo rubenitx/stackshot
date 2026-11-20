@@ -407,7 +407,7 @@ namespace Stackshot
         internal static string Arguments(ExportSpec s, int pass, string log)
         {
             // The editor never keeps a piece shorter than 0.05 s; FFmpeg would refuse an empty or reversed one (-to before -ss).
-            if (s.Keep != null) foreach (double[] k in s.Keep) if (!(k[1] > k[0])) throw new ArgumentException("A kept piece must end after it starts.");
+            if (s.Keep != null) foreach (double[] k in s.Keep) if (!(k[1] > k[0])) throw new ArgumentException(I18n.Localize("A kept piece must end after it starts."));
             Rectangle crop = s.Crop;
             bool clips = s.Clips != null && s.Clips.Count > 1;
             List<ClipSegment> segs = clips ? ClipSeq.Segments(s.Clips, s.Keep) : null;

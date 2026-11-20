@@ -65,7 +65,6 @@ namespace Stackshot
             int bx = Math.Max(wa.Left, Math.Min(wa.Right - body.Width, m.X - body.Width / 2));
             int by = Math.Max(wa.Top, Math.Min(wa.Bottom - body.Height, m.Y - body.Height / 2));
             Bounds = new Rectangle(bx - Pad, by - Pad, body.Width + 2 * Pad, body.Height + 2 * Pad);
-            ContextMenuStrip = BuildMenu();
             restyle = delegate { if (IsHandleCreated && !IsDisposed) BeginInvoke((Action)Redraw); };
             Ds.Changed += restyle;
         }
@@ -85,7 +84,23 @@ namespace Stackshot
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
+            I18n.Changed += RefreshMenu;
+            RefreshMenu();
             Redraw();
+        }
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            I18n.Changed -= RefreshMenu;
+            base.OnHandleDestroyed(e);
+        }
+
+        void RefreshMenu()
+        {
+            if (InvokeRequired) { BeginInvoke((Action)RefreshMenu); return; }
+            ContextMenuStrip previous = ContextMenuStrip;
+            ContextMenuStrip = BuildMenu();
+            if (previous != null) previous.Dispose();
         }
 
         protected override void OnPaintBackground(PaintEventArgs e) { }

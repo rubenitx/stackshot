@@ -13,13 +13,13 @@ namespace Stackshot
 
         static readonly string[] NamesEs = { "Beber agua", "Descansar la vista", "Moverse", "Respirar" };
         static readonly string[] NamesEn = { "Drink water", "Rest your eyes", "Move", "Breathe" };
-        public static string[] Names { get { return I18n.IsSpanish ? NamesEs : NamesEn; } }
+        public static string[] Names { get { return I18n.IsSpanish ? NamesEs : I18n.LocalizeList(NamesEn); } }
         public static readonly string[] Glyphs = { "drop", "eye", "walk", "wind" };
         // Choices for each interval, in minutes (0: off).
         public static readonly int[] Minutes = { 0, 20, 30, 45, 60, 90, 120 };
         static readonly string[] MinuteNamesEs = { "No", "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" };
         static readonly string[] MinuteNamesEn = { "Off", "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" };
-        public static string[] MinuteNames { get { return I18n.IsSpanish ? MinuteNamesEs : MinuteNamesEn; } }
+        public static string[] MinuteNames { get { return I18n.IsSpanish ? MinuteNamesEs : I18n.LocalizeList(MinuteNamesEn); } }
 
         public static int IndexOf(int minutes)
         {
@@ -121,6 +121,11 @@ namespace Stackshot
         {
             int[] n = Today(s);
             if (n[0] + n[1] + n[2] + n[3] == 0) return I18n.T("Hoy todav\u00EDa no has hecho ninguna pausa.", "You haven't taken any breaks yet today.");
+            if (I18n.IsKorean)
+            {
+                string summary = string.Format(I18n.Localize("Today: {0} glasses of water, {1} eye rests, {2} movement breaks"), n[0], n[1], n[2]);
+                return summary + (n[3] > 0 ? string.Format(I18n.Localize(", {0} breathing breaks."), n[3]) : ".");
+            }
             if (I18n.IsSpanish)
             {
                 string r = "Hoy: " + n[0] + (n[0] == 1 ? " vaso de agua" : " vasos de agua") + " \u00B7 " + n[1] + (n[1] == 1 ? " descanso de vista" : " descansos de vista") +

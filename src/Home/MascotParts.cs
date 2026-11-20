@@ -113,7 +113,7 @@ namespace Stackshot
                                              "Giant sleepyhead", "Grinning ghost", "Unique kitten", "Duck with a headache", "Spiky egg", "Coin cat",
                                              "Emperor penguin", "Rag disguise", "Aura warrior", "Cuddly dragon", "Copycat blob", "Genetic clone",
                                              "Baby tree", "Smiling titan", "Goofy titan" };
-        public static string[] Kinds { get { return I18n.IsSpanish ? KindsEs : KindsEn; } }
+        public static string[] Kinds { get { return I18n.IsSpanish ? KindsEs : I18n.LocalizeList(KindsEn); } }
 
         public static readonly Color[,] Colors =
         {
@@ -207,11 +207,11 @@ namespace Stackshot
                                                   "Yoshi", "Deep blue", "Creeper", "Crewmate", "Blinky", "White", "Teddy", "Cat gray",
                                                   "Pac-Man", "Pinky", "Inky", "Clyde", "Goomba", "Skin", "Mushroom", "Bob-omb", "Red bird", "Piggy",
                                                   "Cape", "Cube", "Pooka", "Fall Guy", "Pig", "Block", "Metroid", "Waddle Dee", "Kirby", "1-Up", "Pale", "Tan", "Duplicant", "Anime skin", "Ghost" };
-        public static string[] ColorNames { get { return I18n.IsSpanish ? ColorNamesEs : ColorNamesEn; } }
+        public static string[] ColorNames { get { return I18n.IsSpanish ? ColorNamesEs : I18n.LocalizeList(ColorNamesEn); } }
 
         static readonly string[] EyeNamesEs = { "Brillo", "Kawaii", "Puntitos", "Anime", "Chulo", "Estrella", "Pesta\u00F1as", "Drag\u00F3n" };
         static readonly string[] EyeNamesEn = { "Sparkle", "Kawaii", "Dots", "Anime", "Cool", "Star", "Lashes", "Dragon" };
-        public static string[] EyeNames { get { return I18n.IsSpanish ? EyeNamesEs : EyeNamesEn; } }
+        public static string[] EyeNames { get { return I18n.IsSpanish ? EyeNamesEs : I18n.LocalizeList(EyeNamesEn); } }
 
         public const int HatPumpkin = 4, HatSanta = 11, HatCrown = 13, HatHalo = 14;
         static readonly string[] HatNamesEs = { "Ninguno", "Gorra", "Gorro de lana", "Sombrero de bruja", "Calabaza", "Cuernos",
@@ -228,7 +228,7 @@ namespace Stackshot
                                                 "Silver-haired ninja", "Bat cowl", "Lightning helmet", "Hair with a curl", "Armor helmet",
                                                 "Doctor's hat", "Wild blue hair", "Nightcap",
                                                 "Gojo's hair", "Killua's hair", "Levi's hair", "Shin-chan's hair" };
-        public static string[] HatNames { get { return I18n.IsSpanish ? HatNamesEs : HatNamesEn; } }
+        public static string[] HatNames { get { return I18n.IsSpanish ? HatNamesEs : I18n.LocalizeList(HatNamesEn); } }
         static readonly string[] OutfitNamesEs = { "Nada", "Bufanda", "Pajarita", "Corbata", "Capa de vampiro", "Capa de h\u00E9roe",
                                                         "Cascabel", "Cadena de oro", "Capa verde", "Abrigo rojo", "Chaleco ninja", "Kimono de lucha", "Haori a cuadros", "Mochila", "Chaleco rojo", "Camiseta roja", "Botones de consola", "Panza del bosque", "Ch\u00E1ndal naranja",
                                                         "Hombrera", "Armadura verde", "Traje espacial", "Chaqueta verde", "Camiseta morada", "Traje de buf\u00F3n",
@@ -241,23 +241,23 @@ namespace Stackshot
                                                    "Blue turtleneck", "Green sash", "White armor", "Yellow suit", "Pink kimono", "Green vest",
                                                    "Spider suit", "Bat suit", "Lightning suit", "Steel suit", "Red armor",
                                                    "Shorts", "Red cape and tattoos" };
-        public static string[] OutfitNames { get { return I18n.IsSpanish ? OutfitNamesEs : OutfitNamesEn; } }
+        public static string[] OutfitNames { get { return I18n.IsSpanish ? OutfitNamesEs : I18n.LocalizeList(OutfitNamesEn); } }
         static readonly string[] FaceNamesEs = { "Nada", "Gafas de sol", "Gafas pixel", "Gafas redondas", "Mon\u00F3culo", "Antifaz",
                                                       "Parche pirata", "Bigote", "Venda", "Cejas gordas", "Mofletes rojos", "Marcas de bigote", "Tatuaje y barba", "Barba de mago", "Terminal",
                                                       "Estrella y l\u00E1grima", "Bozal de bamb\u00FA", "M\u00E1scara ninja", "M\u00E1scara ar\u00E1cnida", "Nariz azul", "Gafas triangulares" };
         static readonly string[] FaceNamesEn = { "None", "Sunglasses", "Pixel shades", "Round glasses", "Monocle", "Eye mask",
                                                  "Pirate eye patch", "Mustache", "Blindfold", "Bushy eyebrows", "Rosy cheeks", "Whisker marks", "Tattoo and beard", "Wizard beard", "Terminal",
                                                  "Star and teardrop", "Bamboo muzzle", "Ninja mask", "Spider mask", "Blue nose", "Triangle shades" };
-        public static string[] FaceNames { get { return I18n.IsSpanish ? FaceNamesEs : FaceNamesEn; } }
+        public static string[] FaceNames { get { return I18n.IsSpanish ? FaceNamesEs : I18n.LocalizeList(FaceNamesEn); } }
         static readonly string[] PersonalitiesEs = { "Alegre", "Tranquilo", "Gamberro" };
         static readonly string[] PersonalitiesEn = { "Cheerful", "Calm", "Mischievous" };
-        public static string[] Personalities { get { return I18n.IsSpanish ? PersonalitiesEs : PersonalitiesEn; } }
+        public static string[] Personalities { get { return I18n.IsSpanish ? PersonalitiesEs : I18n.LocalizeList(PersonalitiesEn); } }
 
         // ---- Friendship: one point per capture. A few items unlock along the way, like companions that grow with you.
         static readonly int[] LevelAt = { 0, 10, 30, 75, 150, 300 };
         static readonly string[] LevelNamesEs = { "Reci\u00E9n llegados", "Colegas", "Amigos", "Mejores amigos", "Inseparables", "Leyenda" };
         static readonly string[] LevelNamesEn = { "Newcomers", "Buddies", "Friends", "Best Friends", "Inseparable", "Legend" };
-        public static string[] LevelNames { get { return I18n.IsSpanish ? LevelNamesEs : LevelNamesEn; } }
+        public static string[] LevelNames { get { return I18n.IsSpanish ? LevelNamesEs : I18n.LocalizeList(LevelNamesEn); } }
 
         public static int Level(int love)
         {
@@ -283,7 +283,7 @@ namespace Stackshot
         // Ready-made looks: kind, color, eyes, hat, outfit, face.
         static readonly string[] StyleNamesEs = { "Cl\u00E1sico", "Halloween", "Chulo", "Cute", "Vampiro", "Dragoncito", "Pirata", "Chef", "Vaquero", "Doctor", "Brujita", "M\u00FAsico", "Invierno", "Enamorado", "Fiestero", "Aventurero", "Primavera", "Campe\u00F3n" };
         static readonly string[] StyleNamesEn = { "Classic", "Halloween", "Cool", "Cute", "Vampire", "Little Dragon", "Pirate", "Chef", "Cowboy", "Doctor", "Little Witch", "Musician", "Winter", "In Love", "Party Goer", "Adventurer", "Spring", "Champion" };
-        public static string[] StyleNames { get { return I18n.IsSpanish ? StyleNamesEs : StyleNamesEn; } }
+        public static string[] StyleNames { get { return I18n.IsSpanish ? StyleNamesEs : I18n.LocalizeList(StyleNamesEn); } }
         static readonly int[,] Styles =
         {
             { 0, 0, 0, 0, 0, 0, 0 },
