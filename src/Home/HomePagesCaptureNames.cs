@@ -30,7 +30,7 @@ namespace Stackshot
             {
                 return I18n.IsSpanish
                     ? new string[] { "No", "Por mes", "Por a\u00F1o y mes" }
-                    : new string[] { "No", "By month", "By year and month" };
+                    : I18n.LocalizeList(new string[] { "No", "By month", "By year and month" });
             }
         }
 
@@ -68,15 +68,15 @@ namespace Stackshot
                 "Un n\u00FAmero que no se repite: 1, 2, 3\u2026 (con {fecha}, empieza cada d\u00EDa)"
             } : new string[]
             {
-                "Capture type: Capture, Screen, active app name, Scrolling\u2026",
-                "Date, like " + now.ToString("yyyy-MM-dd"),
-                "Time, like " + now.ToString("HH.mm.ss"),
-                "Active program when captured, like chrome or EXCEL",
-                "Title of that window",
-                "Year, like " + now.ToString("yyyy"),
-                "Month, like " + now.ToString("MM"),
-                "Day, like " + now.ToString("dd"),
-                "Sequential unique number: 1, 2, 3\u2026 (with {date}, resets daily)"
+                I18n.Localize("Capture type: Capture, Screen, active app name, Scrolling\u2026"),
+                I18n.Localize("Date, like ") + now.ToString("yyyy-MM-dd"),
+                I18n.Localize("Time, like ") + now.ToString("HH.mm.ss"),
+                I18n.Localize("Active program when captured, like chrome or EXCEL"),
+                I18n.Localize("Title of that window"),
+                I18n.Localize("Year, like ") + now.ToString("yyyy"),
+                I18n.Localize("Month, like ") + now.ToString("MM"),
+                I18n.Localize("Day, like ") + now.ToString("dd"),
+                I18n.Localize("Sequential unique number: 1, 2, 3\u2026 (with {date}, resets daily)")
             };
         }
 
@@ -86,6 +86,8 @@ namespace Stackshot
             warn = true;
             string t = (template ?? "").Trim();
             List<string> unknown = NameTemplate.Unknown(t);
+            if (unknown.Count > 0 && I18n.IsKorean)
+                return string.Format(I18n.Localize("Unknown tokens are kept as-is: {0}."), string.Join(" ", unknown.ToArray()));
             if (unknown.Count > 0)
                 return I18n.IsSpanish
                     ? string.Join(" ", unknown.ToArray()) + (unknown.Count == 1 ? " no es ninguno de los de arriba: se queda tal cual." : " no son de los de arriba: se quedan tal cual.")
@@ -101,7 +103,7 @@ namespace Stackshot
 
         internal static string NamePreview(string template)
         {
-            return (I18n.IsSpanish ? "Ejemplo: " : "Example: ") + NameTemplate.Example(template, DateTime.Now) + ".png";
+            return I18n.T("Ejemplo: ", "Example: ") + NameTemplate.Example(template, DateTime.Now) + ".png";
         }
 
         // The file name of the captures: the template in a field on the right, an example of the name it gives under the

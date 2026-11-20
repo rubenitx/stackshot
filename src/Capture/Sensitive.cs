@@ -1056,12 +1056,12 @@ namespace Stackshot
         static readonly string[] OneEs = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjeta", "correo", "tel\u00E9fono", "SSN", "clave secreta" };
         static readonly string[] OneEn = { "ID (DNI)", "Foreigner ID (NIE)", "Social Security no.", "IBAN", "card", "email", "phone", "SSN", "secret key" };
         static readonly string[] OneDe = { "DNI", "NIE", "Sozialversicherungsnummer", "IBAN", "Karte", "E-Mail-Adresse", "Telefonnummer", "SSN", "geheimer Schl\u00FCssel" };
-        static string[] One { get { return I18n.IsSpanish ? OneEs : I18n.IsGerman ? OneDe : OneEn; } }
+        static string[] One { get { return I18n.IsSpanish ? OneEs : I18n.IsGerman ? OneDe : I18n.LocalizeList(OneEn); } }
 
         static readonly string[] ManyEs = { "DNI", "NIE", "n.\u00BA de la Seguridad Social", "IBAN", "tarjetas", "correos", "tel\u00E9fonos", "SSNs", "claves secretas" };
         static readonly string[] ManyEn = { "IDs (DNI)", "Foreigner IDs (NIE)", "Social Security nos.", "IBANs", "cards", "emails", "phones", "SSNs", "secret keys" };
         static readonly string[] ManyDe = { "DNI", "NIE", "Sozialversicherungsnummern", "IBANs", "Karten", "E-Mail-Adressen", "Telefonnummern", "SSNs", "geheime Schl\u00FCssel" };
-        static string[] Many { get { return I18n.IsSpanish ? ManyEs : I18n.IsGerman ? ManyDe : ManyEn; } }
+        static string[] Many { get { return I18n.IsSpanish ? ManyEs : I18n.IsGerman ? ManyDe : I18n.LocalizeList(ManyEn); } }
 
         public static string Name(SensitiveKind k, int n) { return n == 1 ? One[(int)k] : Many[(int)k]; }
 
@@ -1071,7 +1071,7 @@ namespace Stackshot
             int[] count = new int[One.Length];
             foreach (SensitiveFinding f in found) count[(int)f.Kind]++;
             List<string> parts = new List<string>();
-            for (int i = 0; i < count.Length; i++) if (count[i] > 0) parts.Add(count[i] + " " + Name((SensitiveKind)i, count[i]));
+            for (int i = 0; i < count.Length; i++) if (count[i] > 0) parts.Add(I18n.IsKorean ? I18n.Fmt("", "{0}: {1} items", Name((SensitiveKind)i, count[i]), count[i]) : count[i] + " " + Name((SensitiveKind)i, count[i]));
             return string.Join(", ", parts.ToArray());
         }
     }

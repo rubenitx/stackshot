@@ -304,9 +304,9 @@ namespace Stackshot
                 searchList.Children.Add(complete ? SearchNothing(quoted) : SearchWaiting());
                 return;
             }
-            string countMsg = I18n.IsSpanish
-                ? (hits.Count == 1 ? "1 ajuste coincide con " + quoted + "." : hits.Count + " ajustes coinciden con " + quoted + ".")
-                : (hits.Count == 1 ? "1 setting matches " + quoted + "." : hits.Count + " settings match " + quoted + ".");
+            string countMsg = hits.Count == 1
+                ? I18n.Fmt("{0} ajuste coincide con {1}.", "{0} setting matches {1}.", hits.Count, quoted)
+                : I18n.Fmt("{0} ajustes coinciden con {1}.", "{0} settings match {1}.", hits.Count, quoted);
             TextBlock count = Paragraph(countMsg, 13, pal.Label2);
             count.Margin = new Thickness(0, 6, 0, 0);
             searchList.Children.Add(count);
@@ -347,7 +347,7 @@ namespace Stackshot
             }
             if (searchPendingLeft > 0)
             {
-                string moreMsg = I18n.IsSpanish ? ("Y " + searchPendingLeft + " m\u00E1s: a\u00F1ade otra palabra para afinar.") : ("And " + searchPendingLeft + " more: add another word to refine.");
+                string moreMsg = I18n.Fmt("Y {0} m\u00E1s: a\u00F1ade otra palabra para afinar.", "And {0} more: add another word to refine.", searchPendingLeft);
                 TextBlock more = Paragraph(moreMsg, 12, Ds.Brushes.Label2);
                 more.Margin = new Thickness(8, -12, 8, 0);
                 searchList.Children.Add(more);
@@ -360,13 +360,13 @@ namespace Stackshot
             Palette pal = Ds.Brushes;
             StackPanel p = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 54, 0, 0), MaxWidth = 420 };
             p.Children.Add(new GlyphView("search", 34, pal.Label3, 1.6) { HorizontalAlignment = HorizontalAlignment.Center });
-            string titleMsg = I18n.IsSpanish ? ("No hay ajustes que coincidan con " + quoted) : ("No settings match " + quoted);
+            string titleMsg = I18n.Fmt("No hay ajustes que coincidan con {0}", "No settings match {0}", quoted);
             TextBlock t = Label(titleMsg, Ds.Semibold, 15, pal.Label, new Thickness(0, 14, 0, 0));
             t.TextWrapping = TextWrapping.Wrap;
             t.TextAlignment = TextAlignment.Center;
             t.HorizontalAlignment = HorizontalAlignment.Center;
             p.Children.Add(t);
-            string helpMsg = I18n.IsSpanish ? "Prueba con otras palabras o con menos letras, como \u00ABcarpeta\u00BB, \u00ABsonido\u00BB o \u00ABatajo\u00BB." : "Try different words or fewer letters, such as \u201Cfolder\u201D, \u201Csound\u201D or \u201Cshortcut\u201D.";
+            string helpMsg = I18n.T("Prueba con otras palabras o con menos letras, como \u00ABcarpeta\u00BB, \u00ABsonido\u00BB o \u00ABatajo\u00BB.", "Try different words or fewer letters, such as \u201Cfolder\u201D, \u201Csound\u201D or \u201Cshortcut\u201D.");
             TextBlock h = Paragraph(helpMsg, 12.5, pal.Label2);
             h.TextAlignment = TextAlignment.Center;
             h.Margin = new Thickness(0, 6, 0, 0);

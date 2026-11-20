@@ -100,10 +100,10 @@ namespace Stackshot
             Func<bool> shown = delegate { return settings.MascotOn; };
             Group(I18n.T("Comportamiento", "Behavior"),
                 new SegRow(I18n.T("Actividad", "Activity"), I18n.T("Cada cu\u00E1nto hace cosas por su cuenta.", "How often it does things on its own."), "hop", Mac.Orange, Mac.Pink,
-                           I18n.IsSpanish ? new string[] { "Tranquila", "Normal", "Juguetona" } : new string[] { "Calm", "Normal", "Playful" },
+                           I18n.IsSpanish ? new string[] { "Tranquila", "Normal", "Juguetona" } : I18n.LocalizeList(new string[] { "Calm", "Normal", "Playful" }),
                            delegate { return settings.MascotEnergy; }, delegate(int i) { settings.MascotEnergy = i; ApplyMascotBehavior(); mascot.Perform(i == 0 ? MascotCmd.Bow : i == 1 ? MascotCmd.Wave : MascotCmd.Jump); Wake(); owner.MascotChanged(); }) { When = shown },
                 new SegRow(I18n.T("Charla", "Chatter"), I18n.T("Cu\u00E1nto comenta lo que hace y te cuenta trucos.", "How often it comments on what it does and shares tips."), "sparkle", Mac.Blue, Mac.Purple,
-                           I18n.IsSpanish ? new string[] { "Poca", "Normal", "Mucha" } : new string[] { "Low", "Normal", "High" },
+                           I18n.IsSpanish ? new string[] { "Poca", "Normal", "Mucha" } : I18n.LocalizeList(new string[] { "Low", "Normal", "High" }),
                            delegate { return settings.MascotChatter; }, delegate(int i) { settings.MascotChatter = i; ApplyMascotBehavior(); if (settings.MascotTalks) mascot.Say(MascotTalk.Hello(settings), 3000); Wake(); owner.MascotChanged(); }) { When = shown },
                 new ToggleRow(I18n.T("Se duerme sola", "Falls asleep when idle"), I18n.T("Si no le haces caso un rato, bosteza y se echa una siesta.", "If left alone for a while, yawns and takes a nap."), "moon", Mac.Indigo, Mac.Purple,
                               delegate { return settings.MascotSleepIdle; }, delegate(bool v) { settings.MascotSleepIdle = v; ApplyMascotBehavior(); owner.MascotChanged(); }) { When = shown },
@@ -193,13 +193,13 @@ namespace Stackshot
                                          "Glasses per day. The ones you drink with the mascot and \u201C+1 glass\u201D in its menu count. Today: {0} {1}.",
                                          water, water == 1 ? I18n.T("vaso", "glass") : I18n.T("vasos", "glasses")),
                                 "drop", Mac.Blue, Mac.Teal,
-                                I18n.IsSpanish ? new string[] { "Sin objetivo", "6 vasos", "8 vasos", "10 vasos" } : new string[] { "No goal", "6 glasses", "8 glasses", "10 glasses" },
+                                I18n.IsSpanish ? new string[] { "Sin objetivo", "6 vasos", "8 vasos", "10 vasos" } : I18n.LocalizeList(new string[] { "No goal", "6 glasses", "8 glasses", "10 glasses" }),
                                 delegate { int i = Array.IndexOf(goals, settings.WaterGoal); return i < 0 ? 2 : i; },
                                 delegate(int i) { settings.WaterGoal = goals[Math.Max(0, Math.Min(goals.Length - 1, i))]; }));
             // Three usual times, or one of your own (set in the row that then shows under it).
             bool custom = SummaryCustom;
             rows.Add(new SegRow(I18n.T("Resumen del d\u00EDa", "Daily summary"), I18n.T("A esa hora te cuenta c\u00F3mo ha ido: agua, pausas, concentraci\u00F3n, capturas y pasos.", "Recaps your day at this time: water, breaks, focus, captures, and steps."), "heart", Mac.Pink, Mac.Red,
-                                I18n.IsSpanish ? new string[] { "No", "17:00", "18:00", "19:00", "Otra" } : new string[] { "Off", "17:00", "18:00", "19:00", "Custom" },
+                                I18n.IsSpanish ? new string[] { "No", "17:00", "18:00", "19:00", "Otra" } : I18n.LocalizeList(new string[] { "Off", "17:00", "18:00", "19:00", "Custom" }),
                                 delegate
                                 {
                                     if (settings.SummaryHour <= 0) return 0;
@@ -250,7 +250,7 @@ namespace Stackshot
                     rows.Add(new WatchRow());
                     int[] steps = { 6000, 8000, 10000, 12000, 15000 };
                     rows.Add(new SegRow(I18n.T("Objetivo de pasos", "Daily step goal"), I18n.T("Lo que cuenta la barra, la mascota y el resumen del d\u00EDa.", "Used for the status bar, mascot speech, and daily summary."), "walk", Mac.Green, Mac.Teal,
-                                        I18n.IsSpanish ? new string[] { "6.000", "8.000", "10.000", "12.000", "15.000" } : new string[] { "6,000", "8,000", "10,000", "12,000", "15,000" },
+                                        I18n.IsSpanish ? new string[] { "6.000", "8.000", "10.000", "12.000", "15.000" } : I18n.LocalizeList(new string[] { "6,000", "8,000", "10,000", "12,000", "15,000" }),
                                         delegate { int i = Array.IndexOf(steps, settings.StepsGoal); return i < 0 ? 2 : i; },
                                         delegate(int i) { settings.StepsGoal = steps[Math.Max(0, Math.Min(steps.Length - 1, i))]; }));
                 }

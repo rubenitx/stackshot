@@ -660,7 +660,7 @@ namespace Stackshot
             sideMeter.ColumnDefinitions[0].Width = new GridLength(Math.Max(0.0001, prog), GridUnitType.Star);
             sideMeter.ColumnDefinitions[1].Width = new GridLength(Math.Max(0.0001, 1 - prog), GridUnitType.Star);
             FrameworkElement info = sideMeter.Parent as FrameworkElement;
-            if (info != null) info.ToolTip = left > 0 ? (I18n.IsSpanish ? (left + (left == 1 ? " captura" : " capturas") + " para el nivel " + (lv + 2)) : (left + (left == 1 ? " capture" : " captures") + " to level " + (lv + 2))) : I18n.T("Nivel m\u00E1ximo", "Maximum level");
+            if (info != null) info.ToolTip = left > 0 ? (I18n.IsKorean ? string.Format(I18n.Localize("{0} captures to level {1}"), left, lv + 2) : I18n.IsSpanish ? (left + (left == 1 ? " captura" : " capturas") + " para el nivel " + (lv + 2)) : (left + (left == 1 ? " capture" : " captures") + " to level " + (lv + 2))) : I18n.T("Nivel m\u00E1ximo", "Maximum level");
         }
 
         // A soft radial glow of one colour that reaches zero at its radius.
@@ -854,7 +854,7 @@ namespace Stackshot
                     if (settings.MascotOn)
                     {
                         mascot.PopIn();
-                        if (settings.MascotTalks) mascot.Greet(MascotTalk.Greeting() + (I18n.IsSpanish ? " Soy " : " I'm ") + settings.MascotName + (I18n.IsSpanish ? ". \u00BFQu\u00E9 capturamos?" : ". What to capture?"));
+                        if (settings.MascotTalks) mascot.Greet(I18n.Fmt("{0} Soy {1}. \u00BFQu\u00E9 capturamos?", "{0} I'm {1}. What to capture?", MascotTalk.Greeting(), settings.MascotName));
                     }
                 }
                 if (intro.Done(now)) EndIntro();
@@ -954,7 +954,7 @@ namespace Stackshot
             if (settings.MascotOn)
             {
                 mascot.PopIn();
-                if (settings.MascotTalks) mascot.Greet(MascotTalk.Greeting() + (I18n.IsSpanish ? " Soy " : " I'm ") + settings.MascotName + ".");
+                if (settings.MascotTalks) mascot.Greet(I18n.Fmt("{0} Soy {1}.", "{0} I'm {1}.", MascotTalk.Greeting(), settings.MascotName));
             }
             Wake();
         }

@@ -36,7 +36,7 @@ namespace Stackshot
         static readonly string[] PaletteNamesEs = { "Rojo", "Amarillo", "Verde", "Azul", "Blanco" };
         static readonly string[] PaletteNamesEn = { "Red", "Yellow", "Green", "Blue", "White" };
         static readonly string[] PaletteNamesDe = { "Rot", "Gelb", "Gr\u00FCn", "Blau", "Wei\u00DF" };
-        public static string[] PaletteNames { get { return I18n.IsSpanish ? PaletteNamesEs : I18n.IsGerman ? PaletteNamesDe : PaletteNamesEn; } }
+        public static string[] PaletteNames { get { return I18n.IsSpanish ? PaletteNamesEs : I18n.IsGerman ? PaletteNamesDe : I18n.LocalizeList(PaletteNamesEn); } }
         public static string IconFont = "Segoe Fluent Icons";
 
         public static void Init()

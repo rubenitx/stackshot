@@ -118,7 +118,7 @@ namespace Stackshot
                 if (n[0] == 1)
                 {
                     int rgb = n[2] & 0xFFFFFF, at = Array.IndexOf(Plains, rgb);
-                    b.Append(at >= 0 ? "Color " + PlainNames[at].ToLowerInvariant() : "Color #" + rgb.ToString("X6", CultureInfo.InvariantCulture));
+                    b.Append(I18n.Fmt("Color {0}", "Color {0}", at >= 0 ? PlainNames[at].ToLowerInvariant() : "#" + rgb.ToString("X6", CultureInfo.InvariantCulture)));
                 }
                 else if (n[0] == 2) b.Append(BlurNames[Clamp(n[3], 0, 2)]);
                 else b.Append(n[1] >= 0 && n[1] < Backdrop.Count ? Backdrop.Name(n[1]) : Backdrop.Name(0));

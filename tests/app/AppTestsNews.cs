@@ -147,8 +147,30 @@ namespace Stackshot.Tests
             for (int i = 0; i < n; i++) Collect(System.Windows.Media.VisualTreeHelper.GetChild(d, i), into);
         }
 
+        static void KoreanNotes()
+        {
+            string dir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Here()), @"..\..\docs"));
+            string source = File.ReadAllText(Path.Combine(dir, "novedades.md"));
+            string translated = File.ReadAllText(Path.Combine(dir, "novedades.ko.md"));
+            string previous = I18n.Mode;
+            try
+            {
+                News.UseForTests(source, translated);
+                I18n.Apply("es");
+                string version = typeof(News).Assembly.GetName().Version.ToString(3);
+                string sourceVersions = Keys(News.Since("", version));
+                I18n.Apply("ko");
+                Check(Keys(News.Since("", version)) == sourceVersions, "bundled Korean notes cover the same versions and entries");
+                Check(News.Of("2.2.1")[0].Title == "\uBC30\uACBD \uC2A4\uD0C0\uC77C \uC800\uC7A5.", "Korean release notes");
+                I18n.Apply("en");
+                Check(News.Of("2.2.1")[0].Title == "Estilos guardados.", "switching languages preserves the original release notes");
+            }
+            finally { News.UseForTests(null); I18n.Apply(previous); }
+        }
+
         public static void Suite()
         {
+            AppTests.Test(S, "Korean bundled release notes and language switching", KoreanNotes);
             AppTests.Test(S, "after an update each user sees everything new since the version they had", Since);
             AppTests.Test(S, "docs/novedades.md is well formed, read whole and matches the program's version", RealFile);
             AppTests.Test(S, "the news window after updating from 2.1 shows every version's news under its number", Window);

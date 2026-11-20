@@ -43,9 +43,13 @@ namespace Stackshot.Tests
                 T("editor-tool-keys-localized", EditorToolKeysLocalized);
                 T("german-localization-catalog", GermanLocalization);
                 T("german-editor-updates-while-open", GermanEditorUpdates);
+                T("korean-switch-on-open-capture-surfaces", KoreanCaptureUpdates);
                 T("german-document-viewer-updates-while-open", GermanDocumentUpdates);
                 T("german-settings-welcome-and-tray", GermanSurfaces);
                 T("language-picker-search-and-preview", LanguagePickerSearch);
+                T("korean-format-fields", KoreanFormatFields);
+                T("korean-selection-fallback-and-persistence", KoreanSelection);
+                T("korean-settings-search-and-tray", KoreanSurfaces);
             }
             finally
             {
@@ -108,17 +112,17 @@ namespace Stackshot.Tests
         {
             Settings s = new Settings();
             s.Language = "es";
-            Check(ShotStack.ShouldOfferEnglish(s, new CultureInfo("en-US")), "Spanish on English Windows: offered");
-            Check(ShotStack.ShouldOfferEnglish(s, new CultureInfo("fr-FR")), "Spanish on French Windows: offered");
-            Check(!ShotStack.ShouldOfferEnglish(s, new CultureInfo("es-ES")), "Spanish on Spanish Windows: nothing to offer");
-            Check(!ShotStack.ShouldOfferEnglish(s, new CultureInfo("ca-ES")), "Spanish on Catalan Windows: nothing to offer");
+            Check(ShotStack.ShouldOfferLanguage(s, new CultureInfo("en-US")), "Spanish on English Windows: offered");
+            Check(ShotStack.ShouldOfferLanguage(s, new CultureInfo("fr-FR")), "Spanish on French Windows: offered");
+            Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo("es-ES")), "Spanish on Spanish Windows: nothing to offer");
+            Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo("ca-ES")), "Spanish on Catalan Windows: nothing to offer");
             s.LanguageOffered = true;
-            Check(!ShotStack.ShouldOfferEnglish(s, new CultureInfo("en-US")), "offered once only");
+            Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo("en-US")), "offered once only");
             s.LanguageOffered = false;
             s.Language = "auto";
-            Check(!ShotStack.ShouldOfferEnglish(s, new CultureInfo("en-US")), "Automatic already follows Windows");
+            Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo("en-US")), "Automatic already follows Windows");
             s.Language = "en";
-            Check(!ShotStack.ShouldOfferEnglish(s, new CultureInfo("en-US")), "already in English");
+            Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo("en-US")), "already in English");
             // An old settings file (no Language line) on English Windows is exactly the case.
             string dir = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-offer-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(dir);
@@ -126,7 +130,7 @@ namespace Stackshot.Tests
             {
                 string old = Path.Combine(dir, "old.ini");
                 File.WriteAllText(old, "FirstRunDone = 1\n");
-                Check(ShotStack.ShouldOfferEnglish(Settings.Load(old), new CultureInfo("en-US")), "an existing user on English Windows is offered English");
+                Check(ShotStack.ShouldOfferLanguage(Settings.Load(old), new CultureInfo("en-US")), "an existing user on English Windows is offered English");
             }
             finally { try { Directory.Delete(dir, true); } catch { } }
         }
@@ -526,6 +530,40 @@ namespace Stackshot.Tests
             }
         }
 
+        static void KoreanCaptureUpdates()
+        {
+            I18n.Apply("en");
+            const string name = "capture-language-test.png";
+            using (var card = new Card(null, name))
+            using (var editor = new Editor(null, name, new System.Drawing.Bitmap(320, 200)))
+            using (var image = new System.Drawing.Bitmap(64, 48))
+            using (var pin = (PinWindow)typeof(PinWindow).GetConstructor(NP, null,
+                new[] { typeof(System.Drawing.Bitmap) }, null).Invoke(new object[] { image }))
+            {
+                card.Place(new System.Drawing.Rectangle(-32000, -32000, 256, 160), "test", 1f, 0, false);
+                pin.Location = new System.Drawing.Point(-32000, -32000);
+                IntPtr cardHandle = card.Handle, editorHandle = editor.Handle, pinHandle = pin.Handle;
+                var toolbar = (Bar)typeof(Editor).GetField("bar", NP).GetValue(editor);
+                Bar.Item arrow = toolbar.Items.Find(it => it.Kind == Bar.Kind.Tool);
+                System.Windows.Forms.AccessibleObject buttons = card.AccessibilityObject;
+                foreach (string code in new[] { "en", "ko", "en" })
+                {
+                    I18n.Apply(code);
+                    bool korean = code == "ko";
+                    string pinLabel = korean ? "\uD654\uBA74\uC5D0 \uACE0\uC815" : "Pin to screen";
+                    var names = new List<string>();
+                    for (int i = 0; i < buttons.GetChildCount(); i++) names.Add(buttons.GetChild(i).Name);
+                    Check(names.Contains(pinLabel) && names.Contains(korean ? "\uBCF5\uC0AC" : "Copy"),
+                          "live thumbnail button and accessibility labels in " + code);
+                    Check(arrow.Tip == (korean ? "\uD654\uC0B4\uD45C  (A)" : "Arrow  (A)"), "live editor tool and shortcut in " + code);
+                    Check(pin.ContextMenuStrip.Items[0].Text == (korean ? "\uBCF5\uC0AC" : "Copy"), "live pin menu in " + code);
+                    Check(card.Handle == cardHandle && editor.Handle == editorHandle && pin.Handle == pinHandle,
+                          "switching languages must preserve capture surfaces");
+                }
+                pin.Close();
+            }
+        }
+
         static void GermanSurfaces()
         {
             I18n.Apply("de");
@@ -617,6 +655,94 @@ namespace Stackshot.Tests
                 }
             }
             finally { File.Delete(path); }
+        }
+
+        static List<string> FormatFields(string text)
+        {
+            List<string> fields = new List<string>();
+            foreach (Match m in Regex.Matches(text, @"(?<!\{)\{\d+(?:,[^}:]+)?(?::[^}]+)?\}(?!\})")) fields.Add(m.Value);
+            fields.Sort(StringComparer.Ordinal);
+            return fields;
+        }
+
+        static void KoreanFormatFields()
+        {
+            MethodInfo build = typeof(I18n).GetMethod("BuildKorean", BindingFlags.NonPublic | BindingFlags.Static);
+            var catalog = (Dictionary<string, string>)build.Invoke(null, null);
+            foreach (KeyValuePair<string, string> pair in catalog)
+            {
+                Check(string.Join("|", FormatFields(pair.Key).ToArray()) == string.Join("|", FormatFields(pair.Value).ToArray()),
+                      "format fields: " + pair.Key);
+                Check(pair.Key.Split('\n').Length == pair.Value.Split('\n').Length, "line breaks: " + pair.Key);
+            }
+        }
+
+        static void KoreanSelection()
+        {
+            Thread.CurrentThread.CurrentUICulture = new CultureInfo("ko-KR");
+            I18n.Apply("auto");
+            Check(I18n.IsKorean && I18n.Mode == "auto", "automatic follows Korean Windows");
+            foreach (I18n.LanguageOption option in I18n.Languages)
+            {
+                if (option.Code == "auto") continue;
+                I18n.Apply(option.Code);
+                Check(I18n.Language == option.Code, option.Code + " overrides Korean Windows");
+            }
+
+            Thread.CurrentThread.CurrentUICulture = new CultureInfo("en-US");
+            I18n.Apply("ko");
+            foreach (string term in new[] { "ko", "Korean", "\uD55C\uAD6D\uC5B4" })
+                Check(I18n.FilterLanguages(term).Exists(o => o.Code == "ko" && o.Name == "\uD55C\uAD6D\uC5B4"), "picker finds " + term);
+            Check(I18n.T("", "Copy", "Kopieren") == "\uBCF5\uC0AC" && I18n.Save == "\uC800\uC7A5", "both T overloads");
+            Check(I18n.T("sin traducir", "missing catalog entry") == "missing catalog entry" &&
+                  I18n.T("sin traducir", "missing catalog entry", "Deutsch") == "missing catalog entry", "fallback to English");
+            Check(I18n.Fmt("", "XML exported: {0}", 7) == "XML exported: 7", "missing format falls back to English");
+            Check(I18n.Fmt("", "The attachment is too large (maximum {0} MB).", 8).Contains("8 MB"), "formatted size");
+            Check(I18n.Fmt("", "Closing tag </{0}> does not match <{1}>, opened on line {2}, column {3}.", "A", "B", 7, 2)
+                  .Contains("7\uD589 2\uC5F4"), "reordered placeholders in an XML error");
+            Check(I18n.T("", "Pin to screen") == "\uD654\uBA74\uC5D0 \uACE0\uC815", "pin action");
+            Check(Notice.KindFor(I18n.T("", "Text copied")) == NoticeKind.Success &&
+                  Notice.KindFor(I18n.T("", "Could not capture")) == NoticeKind.Error &&
+                  Notice.KindFor(I18n.T("", "Some shortcuts are occupied")) == NoticeKind.Warning, "Korean notice types");
+            string red = Theme.PaletteNames[0];
+            I18n.Apply("en");
+            Check(I18n.Save == "Save" && Theme.PaletteNames[0] == "Red" && red != "Red", "actions and arrays switch back");
+
+            var previous = new Settings { Language = "es" };
+            var windows = new CultureInfo("ko-KR");
+            Check(ShotStack.ShouldOfferLanguage(previous, windows) && ShotStack.OfferedLanguage(windows) == "ko",
+                  "old Spanish profile on Korean Windows gets a Korean offer");
+            string path = Path.Combine(Path.GetTempPath(), "stackshot-ko-" + Guid.NewGuid().ToString("N") + ".ini");
+            try
+            {
+                LanguagePicker.Apply(previous, "ko"); // AppTests uses read-only settings.
+                typeof(Settings).GetMethod("Write", NP).Invoke(previous, new object[] { path });
+                I18n.Apply("en");
+                Settings reopened = Settings.Load(path);
+                I18n.Apply(reopened.Language);
+                Check(I18n.IsKorean && reopened.LanguageOffered && !ShotStack.ShouldOfferLanguage(reopened, windows),
+                      "the choice and dismissal survive a settings round trip");
+            }
+            finally { File.Delete(path); }
+        }
+
+        static void KoreanSurfaces()
+        {
+            I18n.Apply("ko");
+            foreach (int appearance in new[] { 1, 2 })
+            {
+                HomeWindow hw = Make(appearance);
+                try
+                {
+                    SetPage(hw, "general");
+                    Layout(hw);
+                    Check(Strings(hw.Content).Contains("\uC5B8\uC5B4"), "Korean language row in settings");
+                    List<SearchHit> results = SettingsSearch.Find(hw.SearchIndexNow(null), "\uC5B8\uC5B4");
+                    Check(results.Exists(h => h.Entry.Title == "\uC5B8\uC5B4"), "settings search finds the language row");
+                }
+                finally { hw.Shutdown(); }
+            }
+            Check(AuditTray().Contains("\uC601\uC5ED"), "Korean capture action in tray");
         }
 
         static void Layout(HomeWindow hw)

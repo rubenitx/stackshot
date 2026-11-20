@@ -22,7 +22,7 @@ For Windows 10 and 11 · Version 2.1.0 · Also as an [MSI package](https://githu
 **Contents:** [Three steps](#three-steps-no-menus) · [What's new](#whats-new-in-21) · [Features](#features-at-a-glance) · [Modes](#seven-ways-to-capture) · [Capture](#select-snap-done) · [Mark up](#mark-it-up-in-seconds) · [Hide data](#hide-it-before-you-share-it) · [Scrolling](#capture-the-whole-page) · [Record](#record-your-screen-with-sound) · [History](#find-it-by-what-it-said) · [XML and Markdown](#xml-and-markdown-upgraded) · [Main window](#one-window-your-way) · [Pixel](#meet-pixel-39-costumes) · [More](#and-so-much-more) · [Performance](#small-fast-private) · [Installation](#installation) · [Command line](#command-line-and-it-policies) · [Shortcuts](#keyboard-shortcuts) · [Privacy](#privacy-and-security) · [FAQ](#faq) · [Build](#building-from-source) · [License](#license)
 
 > [!NOTE]
-> The user interface is in English and Spanish: it follows your Windows language, and **Settings › General › Appearance › Language** changes it. Screenshots on this page show the Spanish interface.
+> In builds from this branch, select **한국어** in **Settings › General › Appearance › Language**, or leave Language on **Auto** to follow the Windows display language. The screenshots below show the Spanish interface.
 
 ## Three steps, no menus
 
@@ -649,7 +649,7 @@ Running `Stackshot.exe` offers to install it for your user (no administrator rig
 <summary><b>Is there an English interface?</b></summary>
 <br>
 
-Yes. Since 2.3.0 Stackshot speaks English and Spanish. A new installation follows the Windows display language (Spanish on a Spanish, Catalan, Galician or Basque Windows; English everywhere else), and **Settings › General › Appearance › Language** switches it at once (Automatic, Español, English). Those who already used Stackshot keep Spanish until they choose otherwise. The English translation was contributed by [@altmashnaveed](https://github.com/altmashnaveed).
+The development build offers Spanish, English, German (partial), and Korean, plus previews of French, Portuguese, Simplified Chinese, Hindi, Arabic and Bengali. A new installation on Korean Windows starts in Korean. Automatic mode also recognizes Spanish (including Catalan, Galician and Basque Windows) and German, with English elsewhere. Choose a language in **Settings › General › Appearance › Language**, at setup, or from the tray. Your choice takes effect immediately and is remembered. Existing profiles without a language keep Spanish until you choose another language. Missing Korean UI strings use English. The English translation was contributed by [@altmashnaveed](https://github.com/altmashnaveed).
 </details>
 
 ## Building from source

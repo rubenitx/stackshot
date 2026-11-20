@@ -68,7 +68,7 @@ namespace Stackshot
         // Main window and mascot.
         public int Appearance = 0;          // 0 follow Windows, 1 light, 2 dark
         public string Language = "auto";    // automatic or a code from the language catalog
-        public bool LanguageOffered;        // English was offered once (Spanish kept from before, Windows in another language)
+        public bool LanguageOffered;        // migration prompt already shown or language chosen explicitly
         public bool AllInOne = false;       // area capture: adjust the area and choose image, video, GIF or scrolling before capturing
         public bool AdjustFirst = false;    // area capture: the area stays adjustable, with a live preview, until Enter or Capturar
         public int CaptureDelay = 3;        // seconds the timed capture counts down: 3, 5 or 10

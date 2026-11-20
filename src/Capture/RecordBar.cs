@@ -852,7 +852,7 @@ namespace Stackshot
 
             protected override string Signature()
             {
-                return b.phase + "|" + b.paused + "|" + (b.armedAt >= 0) + "|" + b.CapLeft() + "|" + b.stopX + "|" + b.pauseX + "|" + b.discardX + "|" + b.srcX +
+                return I18n.Language + "|" + b.phase + "|" + b.paused + "|" + (b.armedAt >= 0) + "|" + b.CapLeft() + "|" + b.stopX + "|" + b.pauseX + "|" + b.discardX + "|" + b.srcX +
                        "|" + (b.hasMic && b.session.Microphone.Muted) + "|" + (b.hasSys && b.session.SystemAudio.Muted);
             }
 

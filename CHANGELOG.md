@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Korean interface.** Select 한국어 in the language picker or use Automatic on Korean Windows. Existing language preferences are preserved.
+
 ## 2.2.1
 
 - **Everything new since your version.** Right after an update, the news window lists what every version since the one you had brings, newest first under its number (from 2.1 straight to 2.2.1: both), and no longer stops at twenty items.

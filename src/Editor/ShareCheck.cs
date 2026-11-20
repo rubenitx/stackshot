@@ -87,7 +87,7 @@ namespace Stackshot
         internal static string NameVideo { get { return I18n.T("V\u00EDdeo", "Video"); } }
         internal static string NameSize { get { return I18n.T("Tama\u00F1o", "Size"); } }
         internal static string NameFps { get { return I18n.T("Fotogramas por segundo", "Frames per second"); } }
-        internal static string NameColor { get { return "Color"; } }
+        internal static string NameColor { get { return I18n.Localize("Color"); } }
         internal static string NameAudio { get { return I18n.T("Sonido", "Sound"); } }
         internal static string NameDuration { get { return I18n.T("Duraci\u00F3n", "Duration"); } }
         internal static string NameDecode { get { return I18n.T("Lectura completa", "Full read"); } }
