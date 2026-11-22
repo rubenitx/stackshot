@@ -742,6 +742,11 @@ namespace Stackshot.Tests
                 search.Text = "not-a-language";
                 Check(list.Items.Count == 0, "list shows no matches");
                 Check(I18n.IsEnglish, "searching does not change the application language");
+                search.Text = "ko";
+                Check(list.Items.Count == 1 && (string)((ListBoxItem)list.Items[0]).Tag == "ko", "the Korean row exists");
+                Aurora.Ring ring = (Aurora.Ring)((ListBoxItem)list.Items[0]).Content;
+                Aurora.Monogram tile = (Aurora.Monogram)((Grid)ring.Child).Children[0];
+                Check((string)typeof(Aurora.Monogram).GetField("text", NP).GetValue(tile) == "\uD55C", "the Korean monogram is \uD55C");
             }
             finally { picker.Close(); }
             I18n.Apply("ar");

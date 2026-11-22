@@ -658,6 +658,7 @@ namespace Stackshot
             map["Apply language"] = "\uC5B8\uC5B4 \uC801\uC6A9";
             map["Follow the Windows language"] = "Windows \uD45C\uC2DC \uC5B8\uC5B4 \uB530\uB974\uAE30";
             map["Partial translation"] = "\uC77C\uBD80 \uBC88\uC5ED";
+            map["Complete"] = "\uBC88\uC5ED \uC644\uB8CC";
             map["Current"] = "\uD604\uC7AC";
             map["Off through the vent\u2026 don't let anyone see me!"] = "\uD658\uD48D\uAD6C\uB85C \uC3D9\u2026 \uC544\uBB34\uB3C4 \uBCF4\uBA74 \uC548 \uB3FC!";
             map["Heading home! See you later!"] = "\uC9D1\uC5D0 \uAC08\uAC8C! \uB098\uC911\uC5D0 \uBD10!";
