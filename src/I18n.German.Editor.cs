@@ -12,6 +12,7 @@ namespace Stackshot
             reg("Resume from where you left off ({0}) · Home returns to start", null, "Bei {0} fortsetzen · Pos1 springt zum Anfang");
             reg("Volume {0} %", null, "Lautstärke {0} %");
             reg("Muted", null, "Stummgeschaltet");
+            reg("Audio {0}", null, "Audio {0}");
             reg("Speed {0}", null, "Geschwindigkeit {0}");
             reg("Loop: on", null, "Wiederholung ein");
             reg("Loop: off", null, "Wiederholung aus");

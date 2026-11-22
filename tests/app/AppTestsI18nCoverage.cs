@@ -33,7 +33,7 @@ namespace Stackshot.Tests
         public static void CatalogCoversEveryCallSite()
         {
             List<Site> missing = new List<Site>(), skipped = new List<Site>();
-            int covered = 0, ignored = 0;
+            int covered = 0, ignored = 0, koreanOnly = 0;
             foreach (Source f in Sources())
             {
                 List<Tok> toks = Tokenize(f.Text);
@@ -52,6 +52,9 @@ namespace Stackshot.Tests
                     bool litDe = args.Count > 2 && LiteralOf(args[2], out de);
 
                     if (args.Count == 2 && litEs && litEn && es.Length == 0 && en.Length == 0) { ignored++; continue; }
+
+                    // The Korean branches (an empty Spanish text, inside or just below an IsKorean test) never run in German.
+                    if ((isFmt ? args.Count >= 2 : args.Count == 2) && litEs && litEn && es.Length == 0 && en.Length > 0 && KoreanBranch(f, line)) { koreanOnly++; continue; }
 
                     if (isFmt)
                     {
@@ -80,7 +83,7 @@ namespace Stackshot.Tests
             missing.Sort(delegate(Site a, Site b) { return string.CompareOrdinal(a.File + ":" + a.Line.ToString("00000"), b.File + ":" + b.Line.ToString("00000")); });
             foreach (Site s in missing) Console.WriteLine("    no german: " + s.File + ":" + s.Line + ": " + s.En);
             foreach (Site s in skipped) Console.WriteLine("    skipped: " + s.File + ":" + s.Line);
-            Console.WriteLine("    i18n calls: " + covered + " covered, " + ignored + " empty placeholders ignored, " +
+            Console.WriteLine("    i18n calls: " + covered + " covered, " + ignored + " empty placeholders ignored, " + koreanOnly + " Korean-only, " +
                               missing.Count + " without German, " + skipped.Count + " non-literal skipped");
 
             // Text ternaries: a 2-way IsSpanish choice leaves German out, and a 3-way Es/En/De chain must keep its
@@ -155,6 +158,14 @@ namespace Stackshot.Tests
 
                 Classify(parts, f, line0, issues, ref unknownArrays);
             }
+        }
+
+        // True when the call sits in a Korean branch: an IsKorean test on its line or the few lines above it.
+        static bool KoreanBranch(Source f, int line)
+        {
+            for (int l = line; l >= Math.Max(1, line - 12); l--)
+                if (LineOf(f, l).IndexOf("IsKorean", StringComparison.Ordinal) >= 0) return true;
+            return false;
         }
 
         static string LineOf(Source f, int line)

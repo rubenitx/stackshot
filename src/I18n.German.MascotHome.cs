@@ -10,6 +10,7 @@ namespace Stackshot
         {
             // The commands menu on Home and the mascot page
             reg("More", "Más", "Mehr");
+            reg("Lv. {0}", "Nv. {0}", "Stufe {0}");
             reg("Everything it knows how to do", "Todo lo que sabe hacer", "Alles, was es kann");
             reg("Play", "Juega", "Spielen");
             reg("Ask {0} to do something", "Pídele algo a {0}", "Frag {0}, was es tun soll");

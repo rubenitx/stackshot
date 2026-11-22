@@ -267,6 +267,7 @@ namespace Stackshot
             reg("{0} frames identical to captured. To share, open and export to MP4 (that copy compresses).", null, "{0} Einzelbilder stimmen mit der Aufnahme überein. Zum Teilen öffne sie und exportiere sie als MP4 (diese Kopie wird komprimiert).");
             reg("\n\nTry recording at 30 fps, smaller area or more memory for motion peaks (Recording > Cinema).", null, "\n\nNimm mit 30 fps, einem kleineren Bereich oder mehr Arbeitsspeicher für Bewegungsspitzen auf (Aufnahme > Kino).");
             reg(" min disk space", null, " min Speicherplatz");
+            reg("{0} h", null, "{0} h");
             reg("up to {0}", null, "bis zu {0}");
             reg("about {0}", null, "etwa {0}");
             reg("between {0} and {1}", null, "zwischen {0} und {1}");
