@@ -5,6 +5,10 @@ al actualizar y en Inicio > Acerca de > Novedades) y también se publica en la p
 
 Formato: una sección `## X.Y.Z` por versión y, en ella, una línea por novedad: `- **Título.** Explicación breve.`
 
+## 2.2.2
+
+- **Interfaz en coreano.** En esta compilación de desarrollo puedes elegir 한국어 en Ajustes > General > Apariencia > Idioma. El modo automático reconoce Windows en coreano y se mantiene el idioma que ya hayas elegido.
+
 ## 2.2.1
 
 - **Estilos guardados.** En el panel de fondos del editor, con + guardas el fondo que tienes (color, margen, sombra, inserción, alineación…) y desde «Estilos guardados» lo recuperas con un clic.

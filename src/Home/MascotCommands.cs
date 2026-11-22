@@ -30,7 +30,7 @@ namespace Stackshot
             "Send love", "Blow bubbles", "Have a coffee", "Read a bit", "Play games", "Take photo", "Stretch",
             "Drink water", "Rest eyes", "Stretch legs", "Breathe with me"
         };
-        public static string[] Names { get { return I18n.IsSpanish ? NamesEs : NamesEn; } }
+        public static string[] Names { get { return I18n.IsSpanish ? NamesEs : I18n.LocalizeList(NamesEn); } }
 
         static readonly string[] ShortEs =
         {
@@ -42,7 +42,7 @@ namespace Stackshot
             "Play", "Juggle", "Dance", "Sleep", "Jump", "Twirl", "Wave", "Flip", "Bow", "Cheer", "Love", "Bubbles", "Coffee", "Read", "Games", "Photo", "Stretch",
             "Water", "Eyes", "Legs", "Breathe"
         };
-        public static string[] Short { get { return I18n.IsSpanish ? ShortEs : ShortEn; } }
+        public static string[] Short { get { return I18n.IsSpanish ? ShortEs : I18n.LocalizeList(ShortEn); } }
 
         static readonly string[] HintsEs =
         {
@@ -58,7 +58,7 @@ namespace Stackshot
             "Blows soap bubbles", "A coffee break", "A quiet reading chapter", "A quick gaming session", "Smile for the camera", "A good back stretch",
             "A glass of water, sip by sip", "Look into distance for 20 seconds", "Eight squats with you", "Six slow deep breaths"
         };
-        public static string[] Hints { get { return I18n.IsSpanish ? HintsEs : HintsEn; } }
+        public static string[] Hints { get { return I18n.IsSpanish ? HintsEs : I18n.LocalizeList(HintsEn); } }
 
         public static readonly string[] Glyphs =
         {
@@ -97,7 +97,7 @@ namespace Stackshot
                                                            "Orejeras", "Mariposa", "Medalla de oro", "Estrellas en las mejillas", "Pecas", "Flor de Abigail" };
         static readonly string[] AccessoryNamesEn = { "None", "Heart glasses", "3D glasses", "Aviator glasses", "Striped scarf", "Flower necklace",
                                                            "Earmuffs", "Butterfly", "Gold medal", "Cheek stars", "Freckles", "Abigail's flower" };
-        public static string[] AccessoryNames { get { return I18n.IsSpanish ? AccessoryNamesEs : AccessoryNamesEn; } }
+        public static string[] AccessoryNames { get { return I18n.IsSpanish ? AccessoryNamesEs : I18n.LocalizeList(AccessoryNamesEn); } }
         public const int AccFlower = 11;
 
         static readonly Color[] Petals =

@@ -739,7 +739,7 @@ namespace Stackshot
 
         static readonly string[] OpeningEs = { "\u00A1Marchando!", "\u00A1Te lo abro!", "\u00A1Ah\u00ED va!", "\u00A1Hecho!" };
         static readonly string[] OpeningEn = { "Coming right up!", "Opening it!", "Here it goes!", "Done!" };
-        static string[] Opening { get { return I18n.IsSpanish ? OpeningEs : OpeningEn; } }
+        static string[] Opening { get { return I18n.IsSpanish ? OpeningEs : I18n.LocalizeList(OpeningEn); } }
 
         void OpenLink(QuickLink l)
         {

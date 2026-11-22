@@ -35,7 +35,7 @@ namespace Stackshot
         const int SlotAnime = 0, SlotStyle = 1, SlotKind = 2, SlotColor = 3, SlotHat = 4, SlotOutfit = 5, SlotFace = 6, SlotEyes = 7, SlotAcc = 8, SlotAction = -4, ActionsTab = 7;
         static readonly string[] DockTabNamesEs = { "Mis looks", "Personajes", "Cuerpo", "Gorros", "Ropa", "Cara", "Extras", "Acciones" };
         static readonly string[] DockTabNamesEn = { "My Looks", "Characters", "Body", "Hats", "Outfits", "Face", "Extras", "Actions" };
-        static string[] DockTabNames { get { return I18n.IsSpanish ? DockTabNamesEs : DockTabNamesEn; } }
+        static string[] DockTabNames { get { return I18n.IsSpanish ? DockTabNamesEs : I18n.LocalizeList(DockTabNamesEn); } }
         static readonly int[][] DockTabSlots =
         {
             new int[0], new int[] { SlotStyle, SlotAnime }, new int[] { SlotKind, SlotColor }, new int[] { SlotHat }, new int[] { SlotOutfit },
@@ -45,7 +45,7 @@ namespace Stackshot
                                                       "Bromista, movido y un poco chulito" };
         static readonly string[] PersonalityHintsEn = { "Lively and always eager to capture", "Calm: speaks little and takes a nap first",
                                                       "Playful, active, and a bit cheeky" };
-        static string[] PersonalityHints { get { return I18n.IsSpanish ? PersonalityHintsEs : PersonalityHintsEn; } }
+        static string[] PersonalityHints { get { return I18n.IsSpanish ? PersonalityHintsEs : I18n.LocalizeList(PersonalityHintsEn); } }
         static readonly Color StarYellow = Ds.Rgb(255, 196, 0), LovePink = Ds.Rgb(255, 92, 140);
 
         int dockTab = -1;                       // the tab and the search are kept while the window lives
@@ -605,6 +605,10 @@ namespace Stackshot
         {
             int love = Math.Max(0, settings.MascotLove), level = MascotParts.Level(love), left;
             MascotParts.Progress(love, out left);
+            if (I18n.IsKorean)
+                return string.Format(I18n.Localize("{0}  \u00B7  {1} captures together"), MascotParts.LevelNames[level], love)
+                    + (left > 0 ? string.Format(I18n.Localize("  \u00B7  {0} left until {1}"), left, MascotParts.LevelNames[level + 1])
+                                : I18n.Localize("  \u00B7  max level"));
             return MascotParts.LevelNames[level] + "  \u00B7  " + love + (love == 1 ? (I18n.IsSpanish ? " captura juntos" : " capture together") : (I18n.IsSpanish ? " capturas juntos" : " captures together")) +
                    (left > 0 ? (I18n.IsSpanish ? "  \u00B7  faltan " + left + " para \u00AB" + MascotParts.LevelNames[level + 1].ToLowerInvariant() + "\u00BB" : "  \u00B7  " + left + " to go for \u201C" + MascotParts.LevelNames[level + 1] + "\u201D") : (I18n.IsSpanish ? "  \u00B7  nivel m\u00E1ximo" : "  \u00B7  max level"));
         }
@@ -882,7 +886,8 @@ namespace Stackshot
         {
             int love = Math.Max(0, settings.MascotLove), level = MascotParts.Level(love);
             List<MenuEntry> m = new List<MenuEntry>();
-            m.Add(MenuEntry.Title(I18n.T("Amistad  \u00B7  ", "Friendship  \u00B7  ") + love + (love == 1 ? (I18n.IsSpanish ? " captura" : " capture") : (I18n.IsSpanish ? " capturas" : " captures"))));
+            string count = love == 1 ? I18n.Fmt("{0} captura", "{0} capture", love) : I18n.Fmt("{0} capturas", "{0} captures", love);
+            m.Add(MenuEntry.Title(I18n.T("Amistad  \u00B7  ", "Friendship  \u00B7  ") + count));
             for (int i = 0; i < MascotParts.LevelNames.Length; i++)
             {
                 MenuEntry e = MenuEntry.Item(MascotParts.LevelNames[i], null, i <= level, null);
@@ -890,7 +895,7 @@ namespace Stackshot
                 if (i > level)
                 {
                     e.Enabled = false;
-                    e.Detail = (I18n.IsSpanish ? "A las " + MascotParts.UnlockLove(i) + " capturas" : "At " + MascotParts.UnlockLove(i) + " captures") + (gets != null ? "  \u00B7  " + gets : "");
+                    e.Detail = I18n.Fmt("A las {0} capturas", "At {0} captures", MascotParts.UnlockLove(i)) + (gets != null ? "  \u00B7  " + gets : "");
                 }
                 else e.Detail = gets ?? (i == 0 ? I18n.T("Donde empieza todo", "Where it all begins") : I18n.T("Cada captura suma", "Every capture counts"));
                 m.Add(e);
@@ -904,7 +909,7 @@ namespace Stackshot
             List<string> r = new List<string>();
             for (int i = 0; i < MascotParts.ColorNames.Length; i++) if (MascotParts.ColorUnlock(i) == level) r.Add(I18n.Fmt("color {0}", "{0} color", LowerName(MascotParts.ColorNames[i])));
             for (int i = 0; i < MascotParts.HatNames.Length; i++) if (MascotParts.HatUnlock(i) == level) r.Add(LowerName(MascotParts.HatNames[i]));
-            return r.Count > 0 ? (I18n.IsSpanish ? "Desbloquea " : "Unlocks ") + string.Join(", ", r.ToArray()) : null;
+            return r.Count > 0 ? I18n.T("Desbloquea ", "Unlocks ") + string.Join(", ", r.ToArray()) : null;
         }
 
         void SetDesktop(bool on)
@@ -1646,13 +1651,13 @@ namespace Stackshot
         }
 
         static string[][] slotFind;
-        static bool slotFindSpanish;
+        static string slotFindLanguage;
         static string SlotFind(int slot, int i)
         {
             // Built in the language it searches: after a switch, "pirate" finds the pirate, not only "pirata".
-            if (slotFind == null || slotFindSpanish != I18n.IsSpanish)
+            if (slotFind == null || slotFindLanguage != I18n.Language)
             {
-                slotFindSpanish = I18n.IsSpanish;
+                slotFindLanguage = I18n.Language;
                 slotFind = new string[Slots.Length][];
                 for (int s = 0; s < Slots.Length; s++)
                 {
@@ -1859,9 +1864,9 @@ namespace Stackshot
         {
             get
             {
-                if (slots == null || slotsLang != (I18n.IsSpanish ? "es" : "en"))
+                if (slots == null || slotsLang != I18n.Language)
                 {
-                    slotsLang = I18n.IsSpanish ? "es" : "en";
+                    slotsLang = I18n.Language;
                     slots = new MSlot[]
                     {
                         new MSlot("anime", I18n.T("Personaje", "Character"), MascotParts.AnimeNames, MascotParts.AnimeInspiration, MascotParts.ApplyAnime, null, null),
@@ -1973,7 +1978,8 @@ namespace Stackshot
             if (it.Locked)
             {
                 int lv = Math.Max(0, Math.Min(MascotParts.LevelNames.Length - 1, it.Level));
-                s += I18n.IsSpanish ? ("  \u00B7  llega con \u00AB" + MascotParts.LevelNames[lv].ToLowerInvariant() + "\u00BB (" + MascotParts.UnlockLove(lv) + " capturas)") : ("  \u00B7  unlocked at \u201C" + MascotParts.LevelNames[lv] + "\u201D (" + MascotParts.UnlockLove(lv) + " captures)");
+                s += string.Format(I18n.T("  \u00B7  llega con \u00AB{0}\u00BB ({1} capturas)", "  \u00B7  unlocked at \u201C{0}\u201D ({1} captures)"),
+                    I18n.IsSpanish ? MascotParts.LevelNames[lv].ToLowerInvariant() : MascotParts.LevelNames[lv], MascotParts.UnlockLove(lv));
             }
             return s;
         }
@@ -2158,7 +2164,7 @@ namespace Stackshot
             if (it.Locked)
             {
                 int left = MascotParts.UnlockLove(it.Level) - settings.MascotLove;
-                if (settings.MascotOn) mascot.Say(I18n.IsSpanish ? ("\u00A1A\u00FAn no! Te faltan " + left + (left == 1 ? " captura" : " capturas") + " para eso.") : ("Not yet! You need " + left + (left == 1 ? " more capture" : " more captures") + " for that."), 2800);
+                if (settings.MascotOn) mascot.Say(I18n.IsKorean ? string.Format(I18n.Localize("Not yet! You need {0} more captures for that."), left) : I18n.IsSpanish ? ("\u00A1A\u00FAn no! Te faltan " + left + (left == 1 ? " captura" : " capturas") + " para eso.") : ("Not yet! You need " + left + (left == 1 ? " more capture" : " more captures") + " for that."), 2800);
                 if (it.Cell != null) it.Cell.Shake();
                 Wake();
                 return;
@@ -2177,9 +2183,9 @@ namespace Stackshot
                 if (!s.Whole && s.Get(l) == it.Index) return;
                 s.Apply(l, it.Index);
                 if (it.Slot == SlotAnime) reaction = I18n.Fmt("\u00A1Hoy soy {0}!", "Today I'm {0}!", it.Name);
-                else if (it.Slot == SlotStyle) reaction = I18n.IsSpanish ? "\u00A1Modo " + it.Name.ToLowerInvariant() + " activado!" : it.Name + " mode on!";
+                else if (it.Slot == SlotStyle) reaction = I18n.Fmt("\u00A1Modo {0} activado!", "{0} mode on!", I18n.IsSpanish ? it.Name.ToLowerInvariant() : it.Name);
                 else if (it.Slot == SlotEyes) reaction = I18n.T("\u00BFQu\u00E9 tal me ves as\u00ED?", "How do I look like this?");
-                else reaction = it.Index > 0 ? (I18n.IsSpanish ? ("\u00A1" + it.Name + "! \u00BFQu\u00E9 tal me queda?") : (it.Name + "! How does it look on me?")) : null;
+                else reaction = it.Index > 0 ? I18n.Fmt("\u00A1{0}! \u00BFQu\u00E9 tal me queda?", "{0}! How does it look on me?", it.Name) : null;
             }
             LookChanged(l, reaction);
             AfterLook(true);
@@ -2864,7 +2870,7 @@ namespace Stackshot
                 veil = new Border { CornerRadius = new CornerRadius(14), Background = Ds.Brush(high ? Ds.Brushes.Window : dark ? Ds.Argb(0.56, 18, 18, 20) : Ds.Argb(0.66, 248, 248, 250)), IsHitTestVisible = false };
                 StackPanel p = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                 p.Children.Add(new PadlockGlyph(ink) { Width = 14, Height = 16, HorizontalAlignment = HorizontalAlignment.Center });
-                TextBlock t = Label("Nv. " + (level + 1), Ds.Semibold, 10, ink, new Thickness(0, 3, 0, 0));
+                TextBlock t = Label(I18n.Fmt("Nv. {0}", "Lv. {0}", level + 1), Ds.Semibold, 10, ink, new Thickness(0, 3, 0, 0));
                 t.HorizontalAlignment = HorizontalAlignment.Center;
                 p.Children.Add(t);
                 veil.Child = p;

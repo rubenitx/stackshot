@@ -38,6 +38,8 @@ if (Test-Path $logo) { $cscArgs += "/resource:$logo,logo.png" }
 # What each version brings, shown inside the app (Novedades).
 $news = Join-Path $root 'docs\novedades.md'
 if (Test-Path $news) { $cscArgs += "/resource:$news,novedades.md" }
+$koreanNews = Join-Path $root 'docs\novedades.ko.md'
+if (Test-Path $koreanNews) { $cscArgs += "/resource:$koreanNews,novedades.ko.md" }
 
 # Build to a temp file and swap it in, so a failed build leaves the previous .exe intact.
 $output = & $csc @cscArgs $sources 2>&1

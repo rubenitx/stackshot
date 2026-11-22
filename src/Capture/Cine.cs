@@ -43,9 +43,9 @@ namespace Stackshot
         public static string TrackName(string title)
         {
             if (I18n.IsSpanish || title == null) return title;
-            if (title == TitleMix) return "Mix (computer + microphone)";
-            if (title == TitleSystem) return "Computer sound (original)";
-            if (title == TitleMic) return "Microphone (original)";
+            if (title == TitleMix) return I18n.Localize("Mix (computer + microphone)");
+            if (title == TitleSystem) return I18n.Localize("Computer sound (original)");
+            if (title == TitleMic) return I18n.Localize("Microphone (original)");
             return title;
         }
 
@@ -833,7 +833,8 @@ namespace Stackshot
             foreach (string a in audios) if (!a.StartsWith("pcm_f32le", StringComparison.Ordinal) || !a.Contains("48000 Hz") || !a.Contains("stereo")) audioOk = false;
             if (expect.Audio.Count > 0 || audios.Count > 0)
                 Add(v, I18n.T("Pistas de sonido", "Sound tracks"), audioOk,
-                    audioOk ? (I18n.IsSpanish ? audios.Count + (audios.Count == 1 ? " pista" : " pistas") + " PCM de 32 bits, 48 kHz, est\u00E9reo."
+                    audioOk ? (I18n.IsKorean ? I18n.Fmt("", "{0} tracks of 32-bit PCM, 48 kHz, stereo.", audios.Count)
+                                              : I18n.IsSpanish ? audios.Count + (audios.Count == 1 ? " pista" : " pistas") + " PCM de 32 bits, 48 kHz, est\u00E9reo."
                                               : audios.Count + (audios.Count == 1 ? " track" : " tracks") + " of 32-bit PCM, 48 kHz, stereo.")
                             : I18n.Fmt("Se esperaban {0} pistas PCM de 32 bits a 48 kHz est\u00E9reo y hay {1} (o con otro formato).",
                                        "Expected {0} tracks of 32-bit PCM at 48 kHz stereo and there are {1} (or in another format).", expect.Audio.Count, audios.Count));
@@ -1136,28 +1137,28 @@ namespace Stackshot
         {
             StringBuilder sb = new StringBuilder();
             double fps = FpsDen > 0 ? FpsNum / (double)FpsDen : 0;
-            sb.AppendLine("Cinema: " + Width + " \u00D7 " + Height + " at " + N(fps, "0.##") + " fps, " + N(RecordSeconds, "0.0") + " s, " + FramesWritten + " frames.");
-            if (!string.IsNullOrEmpty(File)) sb.AppendLine("File: " + System.IO.Path.GetFileName(File) + (FileBytes > 0 ? " (" + N(FileBytes / 1048576.0, "0.0") + " MB)" : ""));
-            if (StopReason != null) sb.AppendLine("The recording stopped early: " + StopReason + ". What was recorded up to then has been saved.");
-            if (Pauses > 0) sb.AppendLine("- Paused " + (Pauses == 1 ? "once" : Pauses + " times") + ": what happened during " + (Pauses == 1 ? "the pause" : "the pauses") + " is not in the file.");
-            if (OverlayFrames > 0) sb.AppendLine("- " + (OverlayFrames == 1 ? "1 frame has" : OverlayFrames + " frames have") + " clicks or pressed keys drawn on them (Recording > Clicks and keys).");
-            if (HistoryMisses > 0) sb.AppendLine("- " + HistoryMisses + " frames may have taken the wrong screen image (the computer was too slow).");
-            if (FramesRepeatedFailed > 0) sb.AppendLine("- " + FramesRepeatedFailed + " frames repeat the one before because the screen could not be read.");
-            if (FramesBlack > 0) sb.AppendLine("- " + FramesBlack + " black frames at the start because the screen could not be read.");
-            if (Discarded > 0) sb.AppendLine("- " + Discarded + " captured frames were never written.");
-            if (LostEvents > 0) sb.AppendLine("- Screen capture was interrupted " + LostEvents + (LostEvents == 1 ? " time" : " times") + " (" + N(LostMs, "0") + " ms with no new image).");
-            if (Protected > 0) sb.AppendLine("- In " + Protected + " images Windows hid protected windows or windows excluded from capture on that screen (Stackshot's too); any inside the area is missing or black.");
-            if (Gdi) sb.AppendLine("- The fallback capture (GDI) was used: it does not see hardware-accelerated content.");
-            if (Hdr) sb.AppendLine("- The screen is in HDR: Windows hands over the image converted to SDR.");
-            if (RefreshHz > 0 && fps > 0 && RefreshHz > fps * 1.02) sb.AppendLine("- The monitor runs at " + N(RefreshHz, "0.#") + " Hz and recording is at " + N(fps, "0.##") + " fps: " + ImagesUnused + " screen images are not in any frame.");
+            sb.AppendLine(I18n.Fmt("", "Cinema: {0} \u00D7 {1} at {2} fps, {3} s, {4} frames.", Width, Height, N(fps, "0.##"), N(RecordSeconds, "0.0"), FramesWritten));
+            if (!string.IsNullOrEmpty(File)) sb.AppendLine(I18n.Localize("File: ") + System.IO.Path.GetFileName(File) + (FileBytes > 0 ? " (" + N(FileBytes / 1048576.0, "0.0") + " MB)" : ""));
+            if (StopReason != null) sb.AppendLine(I18n.Fmt("", "The recording stopped early: {0}. What was recorded up to then has been saved.", StopReason));
+            if (Pauses > 0) sb.AppendLine(Pauses == 1 ? I18n.Localize("- Paused once: what happened during the pause is not in the file.") : I18n.Fmt("", "- Paused {0} times: what happened during the pauses is not in the file.", Pauses));
+            if (OverlayFrames > 0) sb.AppendLine(OverlayFrames == 1 ? I18n.Localize("- 1 frame has clicks or pressed keys drawn on them (Recording > Clicks and keys).") : I18n.Fmt("", "- {0} frames have clicks or pressed keys drawn on them (Recording > Clicks and keys).", OverlayFrames));
+            if (HistoryMisses > 0) sb.AppendLine(I18n.Fmt("", "- {0} frames may have taken the wrong screen image (the computer was too slow).", HistoryMisses));
+            if (FramesRepeatedFailed > 0) sb.AppendLine(I18n.Fmt("", "- {0} frames repeat the one before because the screen could not be read.", FramesRepeatedFailed));
+            if (FramesBlack > 0) sb.AppendLine(I18n.Fmt("", "- {0} black frames at the start because the screen could not be read.", FramesBlack));
+            if (Discarded > 0) sb.AppendLine(I18n.Fmt("", "- {0} captured frames were never written.", Discarded));
+            if (LostEvents > 0) sb.AppendLine(I18n.Fmt("", LostEvents == 1 ? "- Screen capture was interrupted {0} time ({1} ms with no new image)." : "- Screen capture was interrupted {0} times ({1} ms with no new image).", LostEvents, N(LostMs, "0")));
+            if (Protected > 0) sb.AppendLine(I18n.Fmt("", "- In {0} images Windows hid protected windows or windows excluded from capture on that screen (Stackshot's too); any inside the area is missing or black.", Protected));
+            if (Gdi) sb.AppendLine(I18n.Localize("- The fallback capture (GDI) was used: it does not see hardware-accelerated content."));
+            if (Hdr) sb.AppendLine(I18n.Localize("- The screen is in HDR: Windows hands over the image converted to SDR."));
+            if (RefreshHz > 0 && fps > 0 && RefreshHz > fps * 1.02) sb.AppendLine(I18n.Fmt("", "- The monitor runs at {0} Hz and recording is at {1} fps: {2} screen images are not in any frame.", N(RefreshHz, "0.#"), N(fps, "0.##"), ImagesUnused));
             if (AudioNotes != null) foreach (string a in AudioNotes) sb.AppendLine("- " + a);
-            if (!string.IsNullOrEmpty(Error)) sb.AppendLine("The master was not created: " + Error.Replace("\r", "").Replace("\n\n", " ").Replace("\n", " "));
-            if (!string.IsNullOrEmpty(Rescued)) sb.AppendLine("What was recorded is in: " + Rescued);
-            if (Verification == null) sb.AppendLine("Check: not done.");
-            else if (Verification.Passed) sb.AppendLine("Check: passed, " + Verification.FramesMatched + " frames identical to the ones sent to the encoder.");
+            if (!string.IsNullOrEmpty(Error)) sb.AppendLine(I18n.Localize("The master was not created: ") + Error.Replace("\r", "").Replace("\n\n", " ").Replace("\n", " "));
+            if (!string.IsNullOrEmpty(Rescued)) sb.AppendLine(I18n.Localize("What was recorded is in: ") + Rescued);
+            if (Verification == null) sb.AppendLine(I18n.Localize("Check: not done."));
+            else if (Verification.Passed) sb.AppendLine(I18n.Fmt("", "Check: passed, {0} frames identical to the ones sent to the encoder.", Verification.FramesMatched));
             else
             {
-                sb.AppendLine("Check: FAILED.");
+                sb.AppendLine(I18n.Localize("Check: FAILED."));
                 foreach (CineCheck c in Verification.Checks) if (!c.Passed) sb.AppendLine("- " + c.Name + ": " + c.Detail);
             }
             return sb.ToString().TrimEnd();

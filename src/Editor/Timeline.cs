@@ -36,7 +36,8 @@ namespace Stackshot
         static readonly string[] QualitiesEs = { "M\u00E1xima", "Alta", "Ligera", "16 MB", "25 MB" };
         static readonly string[] QualitiesEn = { "Maximum", "High", "Light", "16 MB", "25 MB" };
         static readonly string[] QualitiesDe = { "Maximum", "Hoch", "Leicht", "16 MB", "25 MB" };
-        public static string[] Qualities { get { return I18n.IsSpanish ? QualitiesEs : I18n.IsGerman ? QualitiesDe : QualitiesEn; } }
+        static readonly string[] QualitiesKo = { "\uCD5C\uACE0", "\uB192\uC74C", "\uACBD\uB7C9", "16 MB", "25 MB" };
+        public static string[] Qualities { get { return I18n.IsSpanish ? QualitiesEs : I18n.IsGerman ? QualitiesDe : I18n.IsKorean ? QualitiesKo : QualitiesEn; } }
         public static readonly string[] Formats = { "MP4", "GIF" };
         public int Speed, OutSize, Quality, Format;
         readonly Rectangle[][] segs = new Rectangle[4][];
@@ -611,9 +612,9 @@ namespace Stackshot
         int PaintOptions(Graphics g, Palette pal, Rectangle r, Font f, int minLeft)
         {
             int leftmost = r.Right;
-            string[][] groups = { Speeds, Sizes, Qualities, Formats };
+            string[][] groups = { Speeds, I18n.LocalizeList(Sizes), Qualities, Formats };
             int[] sel = { Speed, OutSize, Quality, Format };
-            string[] labels = { I18n.T("Velocidad", "Speed"), I18n.T("Tama\u00F1o", "Size"), I18n.T("Calidad", "Quality"), I18n.T("Formato", "Format") };
+            string[] labels = { I18n.T("Velocidad", "Speed"), I18n.T("Tama\u00F1o", "Size"), I18n.T("Calidad", "Quality"), I18n.IsKorean ? I18n.Localize("File format") : I18n.T("Formato", "Format") };
             Font fs = Fonts.Get(EdLook.Semibold, 11.5f * S), fr = Fonts.Get(EdLook.Text, 11.5f * S);
             const TextFormatFlags C = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
             int x = r.Right, h = P(24), y = P(7);

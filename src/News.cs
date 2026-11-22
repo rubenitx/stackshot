@@ -1,4 +1,4 @@
-// Stackshot - What each version brings, in plain Spanish (docs/novedades.md): the one running carries its own, and a
+// Stackshot - What each version brings, in the bundled release notes: the one running carries its own, and a
 // release on GitHub carries the next one's between <!-- novedades --> markers, so it can be told before updating.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
@@ -19,24 +19,31 @@ namespace Stackshot
 
         public const string Start = "<!-- novedades -->", End = "<!-- /novedades -->";
 
-        static string embedded;
+        static string embedded, korean;
         static bool loaded;
 
         // Tests: the news as if the program carried this text.
-        internal static void UseForTests(string md) { embedded = md; loaded = true; }
+        internal static void UseForTests(string md, string translated = null) { embedded = md; korean = translated; loaded = true; }
 
         // docs/novedades.md, built into the program.
         static string Embedded()
         {
             if (loaded) return embedded;
             loaded = true;
+            embedded = ReadResource("novedades.md");
+            korean = ReadResource("novedades.ko.md");
+            return embedded;
+        }
+
+        static string ReadResource(string name)
+        {
             try
             {
-                using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("novedades.md"))
-                    if (s != null) using (StreamReader r = new StreamReader(s, Encoding.UTF8)) embedded = r.ReadToEnd();
+                using (Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream(name))
+                    if (s != null) using (StreamReader r = new StreamReader(s, Encoding.UTF8)) return r.ReadToEnd();
             }
             catch (Exception ex) { ShotStack.Log("Novedades: " + ex.Message); }
-            return embedded;
+            return null;
         }
 
         // The newest version described in the program and its news (none: null and an empty list).
@@ -81,6 +88,10 @@ namespace Stackshot
 
         static List<Item> Section(string md, string version)
         {
+            // Keep the source version list authoritative when a future release adds notes.
+            if (I18n.IsKorean && korean != null &&
+                Regex.IsMatch(korean, @"^## " + Regex.Escape(version ?? "") + @"\s*$", RegexOptions.Multiline))
+                md = korean;
             List<string> lines = new List<string>();
             bool inside = false;
             foreach (string raw in md.Replace("\r", "").Split('\n'))

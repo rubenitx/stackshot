@@ -128,7 +128,7 @@ namespace Stackshot
             for (int i = 0; i < 4; i++)
             {
                 int c = i;
-                string label = I18n.T("Color " + ColorNamesEs[i].ToLowerInvariant(), ColorNamesEn[i] + " color");
+                string label = I18n.IsKorean ? string.Format(I18n.Localize("{0} color"), I18n.Localize(ColorNamesEn[i])) : I18n.T("Color " + ColorNamesEs[i].ToLowerInvariant(), ColorNamesEn[i] + " color");
                 colorItems[i] = TrayMenu.Item(label, null, delegate { color = c; Redraw(); StickyNotes.Save(); });
                 m.Items.Add(colorItems[i]);
             }

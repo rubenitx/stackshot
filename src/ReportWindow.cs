@@ -405,7 +405,7 @@ namespace Stackshot
             Grid.SetColumn(chips, 1);
             top.Children.Add(chips);
             body.Children.Add(top);
-            body.Children.Add(Text(I18n.Fmt("N.\u00BA {0}  \u00B7  {1}  \u00B7  enviado el {2}", "#{0}  \u00B7  {1}  \u00B7  sent on {2}", e.Number, e.Idea ? I18n.T("Idea", "Idea") : I18n.T("Fallo", "Bug"), I18n.IsSpanish ? e.SentUtc.ToLocalTime().ToString("d/M/yyyy") : e.SentUtc.ToLocalTime().ToString("MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)),
+            body.Children.Add(Text(I18n.Fmt("N.\u00BA {0}  \u00B7  {1}  \u00B7  enviado el {2}", "#{0}  \u00B7  {1}  \u00B7  sent on {2}", e.Number, e.Idea ? I18n.T("Idea", "Idea") : I18n.T("Fallo", "Bug"), I18n.IsSpanish ? e.SentUtc.ToLocalTime().ToString("d/M/yyyy") : e.SentUtc.ToLocalTime().ToString(I18n.IsKorean ? "yyyy-MM-dd" : "MMM d, yyyy", System.Globalization.CultureInfo.InvariantCulture)),
                                    Ds.Regular, 12, pal.Label3, new Thickness(23, 3, 0, 0)));
             if (s != null)
                 foreach (ReportHistory.Reply r in s.Replies)
@@ -417,7 +417,7 @@ namespace Stackshot
                         BorderBrush = Ds.Brush(pal.Hairline), BorderThickness = new Thickness(pal.High ? 1 : 0)
                     };
                     StackPanel rs = new StackPanel();
-                    rs.Children.Add(Text((r.Team ? I18n.T("Respuesta de Stackshot", "Reply from Stackshot") : I18n.T("Comentario", "Comment")) + "  \u00B7  " + (I18n.IsSpanish ? r.AtUtc.ToLocalTime().ToString("d/M/yyyy HH:mm") : r.AtUtc.ToLocalTime().ToString("MMM d, yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)),
+                    rs.Children.Add(Text((r.Team ? I18n.T("Respuesta de Stackshot", "Reply from Stackshot") : I18n.T("Comentario", "Comment")) + "  \u00B7  " + (I18n.IsSpanish ? r.AtUtc.ToLocalTime().ToString("d/M/yyyy HH:mm") : r.AtUtc.ToLocalTime().ToString(I18n.IsKorean ? "yyyy-MM-dd HH:mm" : "MMM d, yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)),
                                          Ds.Semibold, 11.5, r.Team ? pal.Label : pal.Label2, new Thickness(0)));
                     TextBlock rt = Para(r.Text.Trim(), pal.Label, new Thickness(0, 4, 0, 0));
                     rt.FontSize = 12.5;
@@ -603,7 +603,7 @@ namespace Stackshot
             System.Windows.Forms.Screen[] all = System.Windows.Forms.Screen.AllScreens;
             List<string> parts = new List<string>();
             foreach (System.Windows.Forms.Screen s in all)
-                parts.Add(s.Bounds.Width + "\u00D7" + s.Bounds.Height + (I18n.IsSpanish ? " al " : " at ") + Math.Round(ShotStack.ScaleFor(s) * 100) + " %");
+                parts.Add(s.Bounds.Width + "\u00D7" + s.Bounds.Height + (I18n.IsSpanish ? " al " : I18n.IsKorean ? " / " : " at ") + Math.Round(ShotStack.ScaleFor(s) * 100) + " %");
             return (all.Length == 1 ? I18n.T("1 pantalla: ", "1 display: ") : I18n.Fmt("{0} pantallas: ", "{0} displays: ", all.Length)) + string.Join(", ", parts.ToArray());
         }
 

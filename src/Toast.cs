@@ -71,10 +71,28 @@ namespace Stackshot
                                                    "Text copied", "Recording recovered", "Cinema: lossless", "Print Screen now belongs to Stackshot",
                                                    "Text kopiert", "Aufnahme wiederhergestellt", "Kino: verlustfrei", "Druck-Taste geh\u00F6rt" };
 
+        // Korean titles put the verb last. Match the complete localized title to its
+        // English source so wording or word order cannot change its severity.
+        static readonly string[] NoticeTitles =
+        {
+            "Could not pin capture", "Could not open", "Could not show", "Could not save",
+            "Could not copy", "Could not copy color", "Could not save edit", "Could not open browser",
+            "Could not open folder", "Could not open uninstaller", "Capture not found",
+            "Could not add note", "Could not update note", "Could not open viewer", "Could not capture",
+            "Could not read text", "Could not save capture", "Could not save to your folder", "Could not combine",
+            "Recording without part of audio", "Recording without camera", "Recording stopped",
+            "Recording was choppy", "Audio clipped", "Scrolling capture", "Sensitive data not reviewed",
+            "Some shortcuts are occupied", "Some shortcuts do not work", "Text copied", "Recording recovered",
+            "Cinema: lossless, verified", "Print Screen now belongs to Stackshot"
+        };
+
         // The kind of a notice raised without one (Notify and NotifyPage), from its title.
         public static NoticeKind KindFor(string title)
         {
             string t = (title ?? "").Trim();
+            if (I18n.IsKorean)
+                foreach (string source in NoticeTitles)
+                    if (t == I18n.Localize(source)) { t = source; break; }
             if (Starts(t, ErrorStarts)) return NoticeKind.Error;
             if (Starts(t, WarningStarts)) return NoticeKind.Warning;
             if (Starts(t, SuccessStarts)) return NoticeKind.Success;

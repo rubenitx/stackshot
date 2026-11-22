@@ -134,6 +134,13 @@ namespace Stackshot
         // What the hint strip says after a search. added: how many of found this search covered (the rest already were).
         internal static string SensitiveResult(IList<SensitiveFinding> found, int added)
         {
+            if (I18n.IsKorean)
+            {
+                if (found.Count == 0) return I18n.Localize("No sensitive data found.");
+                if (added == 0) return I18n.Localize("Sensitive data is already redacted.");
+                if (added < found.Count) return I18n.Fmt("", "Redacted {0} more items; {1} were already covered.", added, found.Count - added);
+                return I18n.Fmt("", "{0} items redacted: {1}. You can remove the marks.", added, Sensitive.Summary(found));
+            }
             if (I18n.IsGerman)
             {
                 if (found.Count == 0) return "Keine sensiblen Daten gefunden.";

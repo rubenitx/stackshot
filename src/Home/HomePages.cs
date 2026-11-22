@@ -29,7 +29,7 @@ namespace Stackshot
 
         internal static readonly string[] ActionShortEs = { "Un \u00E1rea", "La \u00FAltima \u00E1rea", "Pantalla completa", "Una ventana", "Con desplazamiento", "Copiar texto", "V\u00EDdeo", "GIF animado", "Markdown", "Con temporizador" };
         internal static readonly string[] ActionShortEn = { "An area", "Last area", "Full screen", "A window", "Scrolling", "Copy text", "Video", "Animated GIF", "Markdown", "With timer" };
-        internal static string[] ActionShort { get { return I18n.IsSpanish ? ActionShortEs : ActionShortEn; } }
+        internal static string[] ActionShort { get { return I18n.IsSpanish ? ActionShortEs : I18n.LocalizeList(ActionShortEn); } }
         static readonly string[] ActionIcons = { "area", "update", "screen", "window", "scroll", "textscan", "video", "gif", "markdown", "clock" };
         static readonly D.Color[,] ActionColors =
         {
@@ -48,7 +48,7 @@ namespace Stackshot
         static readonly string[] ProfileNamesEs = { "Rendimiento", "Equilibrado", "Completo" };
         static readonly string[] ProfileNamesEn = { "Performance", "Balanced", "Full" };
         static readonly string[] ProfileNamesDe = { "Leistung", "Ausgewogen", "Vollständig" };
-        static string[] ProfileNames { get { return I18n.IsSpanish ? ProfileNamesEs : I18n.IsGerman ? ProfileNamesDe : ProfileNamesEn; } }
+        static string[] ProfileNames { get { return I18n.IsSpanish ? ProfileNamesEs : I18n.IsGerman ? ProfileNamesDe : I18n.LocalizeList(ProfileNamesEn); } }
 
         string keysMoved;   // one-off note after a combo moved from one action to another
 
@@ -605,7 +605,9 @@ namespace Stackshot
                         List<string> others = Hotkeys.Split(w.settings.HotkeysFor(a));
                         if (others.RemoveAll(delegate(string o) { return Hotkeys.Same(o, combo); }) == 0) continue;
                         w.settings.SetHotkeys(a, string.Join(", ", others.ToArray()));
-                        w.keysMoved = I18n.IsSpanish
+                        w.keysMoved = I18n.IsKorean ? (others.Count == 0
+                            ? string.Format(I18n.Localize("{0} was assigned to {1}, which now has no shortcut."), Hotkeys.DisplayOne(combo), ActionNames[i])
+                            : string.Format(I18n.Localize("{0} moved from {1} to {2}."), Hotkeys.DisplayOne(combo), ActionNames[i], Title)) : I18n.IsSpanish
                             ? (Hotkeys.DisplayOne(combo) + " era de \u00AB" + ActionNames[i] + "\u00BB" +
                                (others.Count == 0 ? ", que se ha quedado sin atajo." : "; ahora es de \u00AB" + Title + "\u00BB."))
                             : (Hotkeys.DisplayOne(combo) + " was assigned to \u201C" + ActionNames[i] + "\u201D" +
@@ -679,7 +681,7 @@ namespace Stackshot
         {
             if (items.Count == 0) return "";
             if (items.Count == 1) return items[0];
-            return string.Join(", ", items.GetRange(0, items.Count - 1).ToArray()) + (I18n.IsSpanish ? " y " : " and ") + items[items.Count - 1];
+            return string.Join(", ", items.GetRange(0, items.Count - 1).ToArray()) + (I18n.IsSpanish ? " y " : I18n.IsKorean ? ", " : " and ") + items[items.Count - 1];
         }
 
         // ---- Atajos

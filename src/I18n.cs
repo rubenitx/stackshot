@@ -1,4 +1,4 @@
-// Stackshot - Internationalization & localization engine (Spanish / English / German / Auto).
+// Stackshot - Internationalization & localization engine (explicit choice or Windows display language).
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Globalization;
@@ -12,6 +12,7 @@ namespace Stackshot
         public static bool IsSpanish { get { return Language == "es"; } }
         public static bool IsEnglish { get { return Language == "en"; } }
         public static bool IsGerman { get { return Language == "de"; } }
+        public static bool IsKorean { get { return Language == "ko"; } }
         public static event Action Changed;
 
         static I18n()
@@ -19,9 +20,7 @@ namespace Stackshot
             Apply("auto");
         }
 
-        // Sets the active language: "auto" (follows Windows UI culture), "es", "en", or "de".
-        // What Automático picks for a Windows display language: Spanish on a Spanish Windows, and on a Catalan, Galician or
-        // Basque one; German on German Windows; English everywhere else.
+        // Catalan, Galician and Basque Windows installations use Spanish in automatic mode.
         public static bool SpanishWindows(CultureInfo ui)
         {
             string l = ui.TwoLetterISOLanguageName.ToLowerInvariant();
@@ -52,6 +51,7 @@ namespace Stackshot
                     CultureInfo ui = CultureInfo.CurrentUICulture;
                     if (SpanishWindows(ui)) Language = "es";
                     else if (GermanWindows(ui)) Language = "de";
+                    else if (ui.TwoLetterISOLanguageName == "ko") Language = "ko";
                     else Language = "en";
                 }
                 catch { Language = "en"; }
@@ -72,6 +72,7 @@ namespace Stackshot
         public static string T(string es, string en)
         {
             if (IsSpanish) return es;
+            if (IsKorean) return Localize(en);
             if (IsGerman)
             {
                 string de = LookupGerman(en, es);
@@ -83,6 +84,7 @@ namespace Stackshot
         public static string T(string es, string en, string de)
         {
             if (IsSpanish) return es;
+            if (IsKorean) return Localize(en);
             if (IsGerman && !string.IsNullOrEmpty(de)) return de;
             return PreviewText(en) ?? en;
         }

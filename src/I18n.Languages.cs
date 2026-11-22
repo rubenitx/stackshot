@@ -31,6 +31,7 @@ namespace Stackshot
             new LanguageOption("es", "Español", "Spanish castellano Spanisch"),
             new LanguageOption("en", "English", "inglés Englisch"),
             new LanguageOption("de", "Deutsch", "German alemán"),
+            new LanguageOption("ko", "\uD55C\uAD6D\uC5B4", "Korean"),
             new LanguageOption("fr", "Français", "French francés Französisch", 0),
             new LanguageOption("pt", "Português", "Portuguese portugués Portugiesisch Brasil Brazil Portugal", 1),
             new LanguageOption("zh", "简体中文", "Chinese chino Chinesisch Mandarin mandarín pinyin zhongwen", 2),
