@@ -29,7 +29,7 @@ namespace Stackshot
             { "Search for and choose the language for Stackshot.", new[] { "Recherchez et choisissez la langue de Stackshot.", "Pesquise e escolha o idioma do Stackshot.", "搜索并选择 Stackshot 的界面语言。", "Stackshot की भाषा खोजें और चुनें।", "ابحث عن لغة Stackshot واخترها.", "Stackshot-এর ভাষা খুঁজে বেছে নিন।" } },
             { "Follow the Windows language", new[] { "Utiliser la langue de Windows", "Usar o idioma do Windows", "使用 Windows 语言", "Windows की भाषा इस्तेमाल करें", "استخدام لغة Windows", "Windows-এর ভাষা ব্যবহার করুন" } },
             { "Preview", new[] { "Aperçu", "Prévia", "预览", "पूर्वावलोकन", "تجريبي", "প্রিভিউ" } },
-            { "Partial translation", new[] { "Traduction partielle", "Tradução parcial", "部分翻译", "आंशिक अनुवाद", "ترجمة جزئية", "আংশিক অনুবাদ" } },
+            { "Complete", new[] { "Complet", "Completo", "完整", "पूर्ण", "مكتملة", "সম্পূর্ণ" } },
             { "Current", new[] { "Actuelle", "Atual", "当前", "वर्तमान", "الحالية", "বর্তমান" } },
             { "Home", new[] { "Accueil", "Início", "主页", "होम", "الرئيسية", "হোম" } },
             { "History", new[] { "Historique", "Histórico", "历史记录", "इतिहास", "السجل", "ইতিহাস" } },

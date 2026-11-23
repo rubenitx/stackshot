@@ -824,6 +824,7 @@ namespace Stackshot.Tests
                 Check(list.Items.Count > 1, "the Arabic picker lists the languages");
                 var tile = (Aurora.Monogram)((Grid)((Aurora.Ring)((ListBoxItem)list.Items[1]).Content).Child).Children[0];
                 Check(tile.FlowDirection == FlowDirection.LeftToRight, "Arabic layout does not mirror the monogram glyphs");
+                Check(System.Windows.Automation.AutomationProperties.GetName((ListBoxItem)list.Items[1]).Contains("\u0645\u0643\u062A\u0645\u0644\u0629"), "the Arabic picker says Complete in Arabic");
             }
             finally { arabic.Close(); }
             string path = Path.Combine(Path.GetTempPath(), "stackshot-languages-" + Guid.NewGuid().ToString("N") + ".ini");
