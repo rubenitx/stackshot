@@ -175,7 +175,7 @@ namespace Stackshot
             reg("Downloaded, verified, and installed when system is idle.", "Se descargan, se comprueba su firma y se instalan cuando no est\u00E9s usando el equipo.", "Wird heruntergeladen, gepr\u00FCft und installiert, wenn der PC im Leerlauf ist.");
             reg("{0}%  \u00B7  SHA-256 checksum and signature verified after", "{0} %  \u00B7  despu\u00E9s se comprueban su suma SHA-256 y su firma", "{0} %  \u00B7  danach werden SHA-256-Pr\u00FCfsumme und Signatur gepr\u00FCft");
             reg("just now", "ahora mismo", "gerade eben");
-            reg("{0} min ago", "hace {0} min", "vor {0} Min.");
+            reg("{0} min ago", "hace {0} min", "vor {0} min");
             reg("today at {0}", "hoy a las {0}", "heute um {0}");
             reg("yesterday at {0}", "ayer a las {0}", "gestern um {0}");
             reg("on {0} at {1}", "el {0} a las {1}", "am {0} um {1}");

@@ -40,7 +40,7 @@ namespace Stackshot
 
         internal static string DisplayName(string code)
         {
-            I18n.LanguageOption option = I18n.FindLanguage(code) ?? I18n.FindLanguage("auto");
+            I18n.LanguageOption option = I18n.FindListedLanguage(code) ?? I18n.FindLanguage("auto");
             return option.Name;
         }
 

@@ -46,37 +46,40 @@ namespace Stackshot
         // Words that find each other: whoever types one of a group means the setting that says another (folded).
         internal static readonly string[][] Synonyms =
         {
-            new string[] { "atajo", "tecla", "combinacion", "shortcut", "\ub2e8\ucd95\ud0a4", "\ud0a4\uc870\ud569", "kurzbefehl", "tastenkombination" },
-            new string[] { "carpeta", "guardar", "directorio", "ruta", "\ud3f4\ub354", "\uc800\uc7a5", "\uacbd\ub85c", "ordner", "ablage" },
+            new string[] { "atajo", "tecla", "combinacion", "shortcut", "\ub2e8\ucd95\ud0a4", "\ud0a4\uc870\ud569", "kurzbefehl", "tastenkombination", "tastenkurzel", "hotkey", "hotkeys", "keyboard shortcut" },
+            new string[] { "carpeta", "guardar", "directorio", "ruta", "\ud3f4\ub354", "\uc800\uc7a5", "\uacbd\ub85c", "ordner", "ablage", "folder" },
             new string[] { "micro", "microfono", "voz", "\ub9c8\uc774\ud06c", "\uc74c\uc131", "mikrofon" },
-            new string[] { "sonido", "audio", "volumen", "\uc18c\ub9ac", "\uc624\ub514\uc624", "\uc74c\ub7c9", "\ubcfc\ub968", "ton", "lautstaerke" },
+            new string[] { "sonido", "audio", "volumen", "\uc18c\ub9ac", "\uc624\ub514\uc624", "\uc74c\ub7c9", "\ubcfc\ub968", "ton", "lautstaerke", "lautstarke" },
             new string[] { "puntero", "raton", "cursor", "\ud3ec\uc778\ud130", "\ub9c8\uc6b0\uc2a4", "\ucee4\uc11c", "maus", "zeiger" },
-            new string[] { "privacidad", "datos sensibles", "tapar", "ocultar", "\uac1c\uc778\uc815\ubcf4", "\uac00\ub9ac\uae30", "\ubbfc\uac10", "datenschutz", "schwärzen" },
-            new string[] { "tema", "oscuro", "claro", "apariencia", "\ud14c\ub9c8", "\uc5b4\ub461\uac8c", "\ubc1d\uac8c", "\ubaa8\uc591", "design", "dunkel", "hell" },
+            new string[] { "privacidad", "datos sensibles", "tapar", "ocultar", "\uac1c\uc778\uc815\ubcf4", "\uac00\ub9ac\uae30", "\ubbfc\uac10", "datenschutz", "schwarzen", "privacy", "private", "sensitive", "redact" },
+            new string[] { "tema", "oscuro", "claro", "apariencia", "\ud14c\ub9c8", "\uc5b4\ub461\uac8c", "\ubc1d\uac8c", "\ubaa8\uc591", "design", "dunkel", "hell", "dark", "light", "\ub2e4\ud06c", "\ub77c\uc774\ud2b8" },
             new string[] { "actualizar", "actualizacion", "version", "\uc5c5\ub370\uc774\ud2b8", "\ubc84\uc804", "update", "aktualisieren" },
-            new string[] { "captura", "pantallazo", "screenshot", "\ucea1\ucc98", "\uc2a4\ud06c\ub9b0\uc0f7", "\uac08\ubb34\ub9ac", "bildschirmfoto" },
+            new string[] { "captura", "pantallazo", "screenshot", "\ucea1\ucc98", "\uc2a4\ud06c\ub9b0\uc0f7", "\uac08\ubb34\ub9ac", "bildschirmfoto", "capture", "captures" },
             new string[] { "video", "grabar", "grabacion", "\ub3d9\uc601\uc0c1", "\ub179\ud654", "aufnahme" },
+            new string[] { "windows", "\uc708\ub3c4\uc6b0", "\uc708\ub3c4" },
             new string[] { "arranque", "iniciar", "encender", "\uc2dc\uc791", "\uc790\ub3d9\uc2e4\ud589", "autostart", "starten" },
             new string[] { "camara", "webcam", "\uce74\uba54\ub77c", "\uc6f9\ucea0", "kamera" },
-            new string[] { "copiar", "portapapeles", "pegar", "\ubcf5\uc0ac", "\ud074\ub9bd\ubcf4\ub4dc", "\ubd99\uc5ec\ub123\uae30", "kopieren", "zwischenablage", "einfügen" },
-            new string[] { "borrar", "eliminar", "limpiar", "\uc0ad\uc81c", "\uc81c\uac70", "\ube44\uc6b0\uae30", "löschen", "entfernen" },
+            new string[] { "copiar", "portapapeles", "pegar", "\ubcf5\uc0ac", "\ud074\ub9bd\ubcf4\ub4dc", "\ubd99\uc5ec\ub123\uae30", "kopieren", "zwischenablage", "einfugen" },
+            new string[] { "borrar", "eliminar", "limpiar", "\uc0ad\uc81c", "\uc81c\uac70", "\ube44\uc6b0\uae30", "loschen", "entfernen", "delete", "remove", "erase", "clear" },
             new string[] { "fotogramas", "fps", "\ud504\ub808\uc784", "bilder" },
             new string[] { "nombre", "archivo", "fichero", "\uc774\ub984", "\ud30c\uc77c", "datei", "bezeichnung" },
             new string[] { "reloj", "fitbit", "watch", "pulsera", "pasos", "sueno", "\uc6cc\uce58", "\uac78\uc74c", "\uc218\uba74", "uhr", "schritte", "schlaf" },
             new string[] { "acceso", "enlace", "favorito", "web", "url", "\ubc14\ub85c\uac00\uae30", "\ub9c1\ud06c", "\uc990\uaca8\ucc3e\uae30", "link", "lesezeichen" },
-            new string[] { "completa", "virtual", "remoto", "presentacion", "\uc804\uccb4\ud654\uba74", "\uc6d0\uaca9", "\ubc1c\ud45c", "vollbild", "präsentation" },
-            new string[] { "resumen", "hora", "\uc694\uc57d", "\uc2dc\uac01", "übersicht", "uhrzeit" },
+            new string[] { "completa", "virtual", "remoto", "presentacion", "\uc804\uccb4\ud654\uba74", "\uc6d0\uaca9", "\ubc1c\ud45c", "vollbild", "prasentation" },
+            new string[] { "resumen", "hora", "\uc694\uc57d", "\uc2dc\uac01", "ubersicht", "uhrzeit" },
             new string[] { "nota", "apunte", "apuntar", "\uba54\ubaa8", "\ub178\ud2b8", "notiz", "vermerk" }
         };
 
         // Left out of a search with other words: "carpeta de capturas" needs no "de" in the row, "modo oscuro" or
         // "activar micro" no "modo" or "activar".
-        static readonly string[] StopWords =
+        internal static readonly string[] StopWords =
         {
             "a", "al", "con", "de", "del", "el", "en", "la", "las", "lo", "los", "mi", "mis", "o", "para", "por", "que", "se", "tu", "tus", "u", "un", "una", "y",
             "activar", "desactivar", "ajuste", "ajustes", "cambiar", "como", "configurar", "configuracion", "modo", "opcion", "opciones",
-            "der", "die", "das", "und", "ein", "eine", "ich", "mich", "mir", "mit", "für", "von", "vom", "zu", "zum", "zur", "auf", "aus", "beim", "im", "in",
-            "ist", "sind", "wie", "was", "wenn", "oder", "aktivieren", "deaktivieren", "einstellung", "einstellungen", "ändern"
+            "der", "die", "das", "und", "ein", "eine", "ich", "mich", "mir", "mit", "fur", "von", "vom", "zu", "zum", "zur", "auf", "aus", "beim", "im", "in",
+            "ist", "sind", "wie", "was", "wenn", "oder", "aktivieren", "deaktivieren", "einstellung", "einstellungen", "andern",
+            "change", "enable", "disable", "turn", "set", "setting", "settings", "option", "options", "mode", "the", "of", "to", "for", "my", "your",
+            "\ubcc0\uacbd", "\uc124\uc815", "\ubaa8\ub4dc", "\ucf1c\uae30", "\ub044\uae30", "\uc0ac\uc6a9"
         };
 
         // A synonym counts half: a row that says the word itself, even inside a longer one, comes before one that only

@@ -66,10 +66,10 @@ namespace Stackshot
             reg("in the \u201Crecuperado\u201D folder.", "en la carpeta \u00ABrecuperado\u00BB.", "im Ordner \u201Erecuperado\u201C.");
             reg("Windows cannot write to {0}. Check folder permissions or if Controlled Folder Access is protecting it.",
                 "Windows no deja escribir en {0}. Comprueba los permisos de la carpeta o si \u00ABAcceso controlado a carpetas\u00BB la protege.",
-                "Windows kann nicht in {0} schreiben. Pr\u00FCfe die Ordnerberechtigungen oder ob der \u201Ekontrollierte Ordnerzugriff\u201C sie sch\u00FCtzt.");
-            reg("No space left on the disk of {0}. Free up space and try again.", "No queda espacio en el disco de {0}. Libera espacio y vuelve a intentarlo.", "Auf dem Laufwerk von {0} ist kein Platz mehr. Schaffe Platz und versuch es erneut.");
-            reg("Cannot find folder {0} (a disconnected or network drive?).", "No se encuentra la carpeta {0} (\u00BFuna unidad desconectada o de red?).", "Ordner {0} wurde nicht gefunden (ein getrenntes oder Netzlaufwerk?).");
-            reg("the folder", "la carpeta", "dem Ordner");
+                "Windows kann nicht in {0} schreiben. Pr\u00FCfe die Ordnerberechtigungen oder ob der \u201Ekontrollierte Ordnerzugriff\u201C ihn sch\u00FCtzt.");
+            reg("No space left on the disk of {0}. Free up space and try again.", "No queda espacio en el disco de {0}. Libera espacio y vuelve a intentarlo.", "Auf dem Laufwerk f\u00FCr {0} ist kein Platz mehr. Schaffe Platz und versuch es erneut.");
+            reg("Cannot find the folder (a disconnected or network drive?).", "No se encuentra la carpeta (\u00BFuna unidad desconectada o de red?).", "Der Ordner wurde nicht gefunden (ein getrenntes oder Netzlaufwerk?).");
+            reg("Cannot find folder {0} (a disconnected or network drive?).", "No se encuentra la carpeta {0} (\u00BFuna unidad desconectada o de red?).", "{0} wurde nicht gefunden (ein getrenntes oder Netzlaufwerk?).");
             reg("Opening {0}. {1} {2} (the viewer shows one at a time).", "Se abre {0}. {1} {2} (el visor muestra uno cada vez).", "{0} wird ge\u00F6ffnet. {1} {2} (die Ansicht zeigt immer nur eine).");
             reg("more file", "archivo m\u00E1s", "weitere Datei");
             reg("more files", "archivos m\u00E1s", "weitere Dateien");

@@ -827,8 +827,10 @@ namespace Stackshot
             owner.SaveCapture(result, I18n.T("Desplazamiento", "Scrolling"));
             // Auto ended without the page moving: say why it is only one screen, and what usually helps.
             if (plain && !plainOk)
-                owner.Notify(I18n.T("Captura con desplazamiento", "Scrolling capture"), I18n.T("La zona no se ha movido, as\u00ED que se ha guardado como una captura normal. Elige solo la parte que se desplaza (la lista o el texto), sin la cabecera fija.", "The area did not scroll, so it was saved as a normal capture. Choose only the part that scrolls (the list or text), without the fixed header."));
+                owner.Notify(I18n.T("Captura con desplazamiento", "Scrolling capture"), PlainNotice);
         }
+
+        internal static string PlainNotice { get { return I18n.T("La zona no se ha movido, as\u00ED que se ha guardado como una captura normal. Elige solo la parte que se desplaza, sin la cabecera fija.", "The area did not scroll, so it was saved as a normal capture. Choose only the part that scrolls (the list or text), without the fixed header."); } }
 
         // Synthetic wheel (SendInput) and key polling without registering hotkeys.
 
@@ -938,6 +940,9 @@ namespace Stackshot
             return sc + " \u00B7 " + h.ToString("N0", I18n.Culture) + " px";
         }
 
+        internal static string AutoLabel { get { return I18n.Own("Auto", "Auto", "Auto", "\uC790\uB3D9"); } }
+        internal static string PauseLabel { get { return I18n.IsKorean ? "\uBA48\uCDA4" : I18n.T("Pausa", "Pause"); } }
+
         // Layout in body coordinates.
         Rectangle AutoRect() { return new Rectangle(body.Width - P(40) - P(78) - P(6) - P(64), P(9), P(64), body.Height - P(18)); }
         Rectangle DoneRect() { return new Rectangle(body.Width - P(40) - P(78), P(9), P(78), body.Height - P(18)); }
@@ -1003,7 +1008,7 @@ namespace Stackshot
                     ai.Inflate(-0.5, -0.5);
                     dc.DrawRoundedRectangle(null, pen, ai, ai.Height / 2, ai.Height / 2);
                 }
-                Ink.Center(dc, Ink.Px(session.Auto ? I18n.T("Pausa", "Pause") : "Auto", Ds.Semibold, P(13), autoInk), ar);
+                Ink.Center(dc, Ink.Px(session.Auto ? PauseLabel : AutoLabel, Ds.Semibold, P(13), autoInk), ar);
 
                 // Never lighter than the accent, so the white label keeps 4.5:1.
                 System.Windows.Rect dr = R(DoneRect());

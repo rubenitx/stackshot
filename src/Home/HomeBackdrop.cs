@@ -75,7 +75,7 @@ namespace Stackshot
                     { SubNow = delegate { return radTuned() ? Tuned : null; }, Loose = radTuned },
                 new ToggleRow(I18n.T("Sombra", "Shadow"), null, null, D.Color.Empty, D.Color.Empty,
                               delegate { return settings.BgShadow; }, delegate(bool v) { settings.BgShadow = v; StyleChanged(); }),
-                new SegRow(I18n.T("Proporci\u00F3n", "Aspect ratio"), null, null, D.Color.Empty, D.Color.Empty, new string[] { "Auto", "16:9", "4:3", "1:1" },
+                new SegRow(I18n.T("Proporci\u00F3n", "Aspect ratio"), null, null, D.Color.Empty, D.Color.Empty, new string[] { I18n.T("Auto", "Auto", "Auto"), "16:9", "4:3", "1:1" },
                            delegate { return Math.Max(0, Array.IndexOf(ratios, settings.BgRatio)); }, delegate(int i) { settings.BgRatio = ratios[i]; StyleChanged(); }));
             styleNote = Paragraph("", 12, pal.Label2);
             styleNote.Margin = new Thickness(8, -14, 8, 24);

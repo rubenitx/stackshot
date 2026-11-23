@@ -114,7 +114,7 @@ namespace Stackshot
                                              "Emperor penguin", "Rag disguise", "Aura warrior", "Cuddly dragon", "Copycat blob", "Genetic clone",
                                              "Baby tree", "Smiling titan", "Goofy titan" };
         static readonly string[] KindsDe = { "Roboter", "Katze", "Häschen", "Geist", "Schleim", "Drache", "Hund", "Chibi", "Pinguin", "Panda", "Fuchs", "Frosch", "Rentier", "Flügellöwe",
-                                             "Nachtfurie", "Lichtfurie", "Todesnadder", "Monströser Nightmare", "Gronckle",
+                                             "Nachtfurie", "Lichtfurie", "Todesnadder", "Monströser Nightmare", "Gronckel",
                                              "Blaues Experiment", "Rosa Wollknäuel", "Kleiner Jedi", "Flauschi", "Salamander", "Elektromaus",
                                              "Konsole", "Kosmische Katze", "Waldgeist",
                                              "Samen", "Schildkrötlein", "Singballon", "Schlafmütze", "Schelmischer Schatten", "Psy-Kätzchen",

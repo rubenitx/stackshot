@@ -145,7 +145,7 @@ namespace Stackshot
             hint.IsHitTestVisible = false;
             hint.HorizontalAlignment = HorizontalAlignment.Left;
             g.Children.Add(hint);
-            TextBlock keys = Label("Ctrl+F", Ds.Regular, 11.5, pal.Label3, new Thickness(0, 0, 13, 1));
+            TextBlock keys = Label(Hotkeys.CtrlF, Ds.Regular, 11.5, pal.Label3, new Thickness(0, 0, 13, 1));
             keys.IsHitTestVisible = false;
             keys.HorizontalAlignment = HorizontalAlignment.Right;
             g.Children.Add(keys);

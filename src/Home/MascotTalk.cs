@@ -323,7 +323,7 @@ namespace Stackshot
         {
             if (I18n.IsKorean)
             {
-                string tEn = string.Format(I18n.Localize("{0} minutes"), minutes);
+                string tEn = FocusClock.Minutes(minutes);
                 switch (kind)
                 {
                     case WellKind.Water:
@@ -380,7 +380,7 @@ namespace Stackshot
                                        I18n.T("Tus ojos piden vacaciones. Veinte segundos.", "Your eyes are begging for a vacation. Twenty seconds.", "Deine Augen flehen um Urlaub. Zwanzig Sekunden.") });
                 case WellKind.Move:
                     return By(s.MascotPersonality,
-                        new string[] { I18n.T("\u00A1Arriba! Llevas " + t + " en la silla. \u00A1Estiramos las piernas!", "Up! You've been in that chair for " + t + ". Let's stretch those legs!", "Auf! Du sitzt schon " + t + " in dem Stuhl. Strecken wir die Beine!"),
+                        new string[] { I18n.T("\u00A1Arriba! Llevas " + t + " en la silla. \u00A1Estiramos las piernas!", "Up! You've been in that chair for " + t + ". Let's stretch those legs!", "Auf! Du sitzt schon " + t + " auf dem Stuhl. Strecken wir die Beine!"),
                                        I18n.T("\u00A1Hora de moverse! Lev\u00E1ntate un momento.", "Time to move! Stand up for a moment.", "Zeit, dich zu bewegen! Steh kurz auf."),
                                        I18n.T("\u00BFDamos un pase\u00EDto? Tus piernas lo piden.", "Short walk? Your legs are asking for it.", "Kurzer Spaziergang? Deine Beine betteln darum.") },
                         new string[] { I18n.T("Lev\u00E1ntate y estira un poco el cuerpo.", "Stand up and stretch your body a bit.", "Steh auf und streck dich ein bisschen."),
@@ -550,13 +550,15 @@ namespace Stackshot
                           new string[] { I18n.T("Ahora soy el rey de la ventana.", "Now I'm the king of the window.", "Jetzt bin ich der K\u00F6nig des Fensters."), I18n.T("Qu\u00E9 desorden hay aqu\u00ED abajo.", "Such a mess down there.", "Was ist da unten ein Durcheinander."), I18n.T("Esta ventana es m\u00EDa.", "This window is mine.", "Dieses Fenster geh\u00F6rt mir.") });
         }
 
+        static readonly string[] LevelNamesInASentenceDe = { "Neulinge", "Kumpels", "Freunde", "beste Freunde", "unzertrennlich", "eine Legende" };
+
         public static string LevelUp(Settings s, int level)
         {
             if (I18n.IsKorean) return string.Format(I18n.Localize("We are now {0}!"), MascotParts.LevelNames[level]);
             string lower = MascotParts.LevelNames[level].ToLowerInvariant();
             return I18n.T("\u00A1Ya somos " + lower + "!",
                           "We are now " + lower + "!",
-                          "Jetzt sind wir " + MascotParts.LevelNames[level] + "!");
+                          "Jetzt sind wir " + LevelNamesInASentenceDe[level] + "!");
         }
     }
 }

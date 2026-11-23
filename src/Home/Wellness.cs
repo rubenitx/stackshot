@@ -19,8 +19,8 @@ namespace Stackshot
         {
             get
             {
-                // Korean says its own units ("20\uBD84", "1\uC2DC\uAC04 30\uBD84"), as everywhere else a duration is shown.
-                if (I18n.IsKorean) return new string[] { I18n.T("No", "Off"), FocusClock.Minutes(20), FocusClock.Minutes(30), FocusClock.Minutes(45), FocusClock.Minutes(60), FocusClock.Minutes(90), FocusClock.Minutes(120) };
+                // Korean and German say their own units ("20\uBD84", "1\uC2DC\uAC04 30\uBD84", "20 Min."), as everywhere else a duration is shown.
+                if (I18n.IsKorean || I18n.IsGerman) return new string[] { I18n.T("No", "Off"), FocusClock.Minutes(20), FocusClock.Minutes(30), FocusClock.Minutes(45), FocusClock.Minutes(60), FocusClock.Minutes(90), FocusClock.Minutes(120) };
                 return new string[] { I18n.T("No", "Off"), "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" };
             }
         }

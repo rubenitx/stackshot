@@ -204,6 +204,8 @@ namespace Stackshot
             return DisplayOne(parts[0]);
         }
 
+        internal static string CtrlF { get { return (I18n.IsGerman ? "Strg" : "Ctrl") + "+F"; } }
+
         public static string DisplayOne(string combo)
         {
             uint mods;
@@ -280,7 +282,7 @@ namespace Stackshot
                 case Keys.LaunchApplication1: return I18n.T("Aplicaci\u00F3n 1", "App 1", "App 1");
                 case Keys.LaunchApplication2: return I18n.T("Calculadora", "Calculator", "Rechner");
                 case Keys.SelectMedia: return I18n.T("Multimedia", "Media", "Medien");
-                case Keys.Sleep: return I18n.T("Suspender", "Sleep", "Ruhezustand");
+                case Keys.Sleep: return I18n.IsKorean ? "\uC808\uC804" : I18n.T("Suspender", "Sleep", "Ruhezustand");
             }
             if (key >= Keys.D0 && key <= Keys.D9) return ((char)('0' + (key - Keys.D0))).ToString();
             if (key >= Keys.NumPad0 && key <= Keys.NumPad9) return "Num " + (char)('0' + (key - Keys.NumPad0));

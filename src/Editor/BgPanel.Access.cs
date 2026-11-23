@@ -11,6 +11,8 @@ namespace Stackshot
 {
     public partial class BgPanel
     {
+        internal static string SliderRange { get { return I18n.T("De 0 a 100", "From 0 to 100", "Von 0 bis 100"); } }
+
         protected override AccessibleObject CreateAccessibilityInstance() { return new PanelAccess(this); }
 
         // A choice made from a reader, as a click on it makes it.
@@ -89,7 +91,7 @@ namespace Stackshot
                             a = NewPart(into, it.Label, AccessibleRole.Slider, r);
                             a.PartState = StateOf(p.Enabled, false, false);
                             a.PartValue = p.ValueOf(it).ToString(CultureInfo.CurrentCulture);
-                            a.PartHelp = "De 0 a 100";
+                            a.PartHelp = SliderRange;
                             a.SetValue = delegate(string v) { p.AccessSlide(item, v); };
                             continue;
                         case Kind.Check:

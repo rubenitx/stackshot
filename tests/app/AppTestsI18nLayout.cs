@@ -523,8 +523,8 @@ namespace Stackshot.Tests
 
         // ---- Minutes
 
-        // "25 min" is an English unit: the Korean pet menu says "25\uBD84", an hour and a quarter "1\uC2DC\uAC04 15\uBD84"; the other
-        // languages keep theirs (and a language that only previews English reads the English one).
+        // "25 min" is an English unit: the Korean pet menu says "25\uBD84", an hour and a quarter "1\uC2DC\uAC04 15\uBD84", the German one
+        // "25 Min."; the other languages keep theirs (and a language that only previews English reads the English one).
         public static void FocusMinutesAreLocalized()
         {
             List<string> bad = new List<string>();
@@ -533,7 +533,7 @@ namespace Stackshot.Tests
                 foreach (string lang in AllLanguages)
                 {
                     I18n.Apply(lang);
-                    string[] want = lang == "ko" ? new[] { "25\uBD84", "1\uC2DC\uAC04", "1\uC2DC\uAC04 15\uBD84", "2\uC2DC\uAC04" } : new[] { "25 min", "1 h", "1 h 15 min", "2 h" };
+                    string[] want = lang == "ko" ? new[] { "25\uBD84", "1\uC2DC\uAC04", "1\uC2DC\uAC04 15\uBD84", "2\uC2DC\uAC04" } : lang == "de" ? new[] { "25 Min.", "1 h", "1 h 15 Min.", "2 h" } : new[] { "25 min", "1 h", "1 h 15 min", "2 h" };
                     int[] minutes = { 25, 60, 75, 120 };
                     for (int i = 0; i < minutes.Length; i++)
                         if (FocusClock.Minutes(minutes[i]) != want[i]) bad.Add(lang + ": " + minutes[i] + " min reads \"" + Ascii(FocusClock.Minutes(minutes[i])) + "\", expected \"" + Ascii(want[i]) + "\"");

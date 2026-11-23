@@ -119,10 +119,10 @@ namespace Stackshot
             return s >= 3600 ? (s / 3600) + ":" + (s / 60 % 60).ToString("00") + ":" + (s % 60).ToString("00") : (s / 60) + ":" + (s % 60).ToString("00");
         }
 
-        // "25 min", "1 h 15 min" ("25분", "1시간 15분" in Korean, which has its own units).
+        // "25 min", "1 h 15 min" ("25분", "1시간 15분" in Korean and "25 Min." in German, which have their own units).
         public static string Minutes(int m)
         {
-            if (I18n.IsKorean)
+            if (I18n.IsKorean || I18n.IsGerman)
                 return m < 60 ? I18n.Fmt("", "{0} min", m) : I18n.Fmt("", "{0} h", m / 60) + (m % 60 > 0 ? " " + I18n.Fmt("", "{0} min", m % 60) : "");
             return m < 60 ? m + " min" : (m / 60) + " h" + (m % 60 > 0 ? " " + (m % 60) + " min" : "");
         }
