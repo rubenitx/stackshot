@@ -92,7 +92,7 @@ namespace Stackshot
                 if (cut && v.Length <= Shown) { o.Add(new DiffPiece(raw ? v : XmlDoc.Esc(v, attr), kind, mark)); o.Add(new DiffPiece("\u2026", Seg.Hint, 0)); return; }
                 if (v.Length > Shown)
                 {
-                    string rest = (cut ? total - Shown : v.Length - Shown).ToString("N0");
+                    string rest = (cut ? total - Shown : v.Length - Shown).ToString("N0", I18n.Culture);
                     o.Add(new DiffPiece(raw ? v.Substring(0, Shown) : XmlDoc.Esc(v.Substring(0, Shown), attr), kind, mark));
                     o.Add(new DiffPiece("\u2026 (+" + rest + ")", Seg.Hint, 0));
                     return;
@@ -150,7 +150,7 @@ namespace Stackshot
             }
         }
 
-        static string Hidden(int n) { return "\u22EF " + n.ToString("N0") + (n == 1 ? I18n.T(" nodo sin cambios", " unchanged node") : I18n.T(" nodos sin cambios", " unchanged nodes")); }
+        static string Hidden(int n) { return "\u22EF " + n.ToString("N0", I18n.Culture) + (n == 1 ? I18n.T(" nodo sin cambios", " unchanged node") : I18n.T(" nodos sin cambios", " unchanged nodes")); }
 
         public static List<DiffPiece> Pieces(DiffRow r, bool full)
         {
@@ -213,7 +213,7 @@ namespace Stackshot
                         o.Add(new DiffPiece(">", Seg.Punct, 0));
                         o.Add(new DiffPiece(" \u2026 ", Seg.Hint, 0));
                         o.Add(new DiffPiece("</", Seg.Punct, 0)); Name(o, n); o.Add(new DiffPiece(">", Seg.Punct, 0));
-                        o.Add(new DiffPiece("  " + d.Kids.Count.ToString("N0") + (d.Kids.Count == 1 ? I18n.T(" nodo", " node") : I18n.T(" nodos", " nodes")) + (n.Inner ? I18n.T(" \u00B7 XML interno", " \u00B7 inner XML") : ""), Seg.Hint, 0));
+                        o.Add(new DiffPiece("  " + d.Kids.Count.ToString("N0", I18n.Culture) + (d.Kids.Count == 1 ? I18n.T(" nodo", " node") : I18n.T(" nodos", " nodes")) + (n.Inner ? I18n.T(" \u00B7 XML interno", " \u00B7 inner XML") : ""), Seg.Hint, 0));
                     }
                     else
                     {
@@ -677,7 +677,7 @@ namespace Stackshot
         {
             string t = SelectionText();
             int n = list.SelectedItems.Count;
-            if (t.Length > 0 && CopyRequest != null) CopyRequest(t, n == 1 ? I18n.T("Copiado.", "Copied.") : I18n.Fmt("Copiadas {0} l\u00EDneas.", "{0} lines copied.", n.ToString("N0")));
+            if (t.Length > 0 && CopyRequest != null) CopyRequest(t, n == 1 ? I18n.T("Copiado.", "Copied.") : I18n.Fmt("Copiadas {0} l\u00EDneas.", "{0} lines copied.", n.ToString("N0", I18n.Culture)));
         }
 
         // ---- Picture
@@ -700,7 +700,7 @@ namespace Stackshot
                     sp.Children.Add(new DiffRowView(new DiffRow { Node = r.Node, Depth = r.Depth, Gap = r.Gap, Close = r.Close, Collapsed = r.Collapsed, Look = look }));
                 }
                 if (n < rows.Count)
-                    sp.Children.Add(new TextBlock { Text = I18n.Fmt("\u2026 y {0} l\u00EDneas m\u00E1s", "\u2026 and {0} more lines", (rows.Count - n).ToString("N0")), Foreground = look.Syntax.Hint, FontSize = 12.5, Margin = new Thickness(XmlRowView.Gutter, 8, 0, 0) });
+                    sp.Children.Add(new TextBlock { Text = I18n.Fmt("\u2026 y {0} l\u00EDneas m\u00E1s", "\u2026 and {0} more lines", (rows.Count - n).ToString("N0", I18n.Culture)), Foreground = look.Syntax.Hint, FontSize = 12.5, Margin = new Thickness(XmlRowView.Gutter, 8, 0, 0) });
                 page = new Border { Background = Ds.Brush(look.Dark ? Ds.Rgb(30, 30, 32) : Colors.White), Padding = new Thickness(28, 26, 28, 28), Width = W + 56, UseLayoutRounding = true, Child = sp };
                 TextOptions.SetTextFormattingMode(page, TextFormattingMode.Ideal);
                 TextOptions.SetTextRenderingMode(page, TextRenderingMode.Grayscale);

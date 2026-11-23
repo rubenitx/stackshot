@@ -322,7 +322,6 @@ namespace Stackshot
             Grid row = new Grid { Margin = new Thickness(0, 20, 0, 0) };
             Grid.SetRow(row, 2);
             Grid.SetColumnSpan(row, 2);
-            StackPanel right = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             MacButton main = null;
             MacButton[] all = new MacButton[buttons.Length];
             for (int i = 0; i < buttons.Length; i++)
@@ -338,12 +337,26 @@ namespace Stackshot
             if (primary >= 0 && primary < all.Length) order.Add(primary);
             for (int i = 0; i < all.Length; i++) if (i != primary && i != cancel) order.Add(i);
             if (cancel >= 0 && cancel < all.Length && cancel != primary) order.Add(cancel);
+            // One row; when a language makes the buttons longer than the room they have, the rest go on a second row
+            // (still on the right, in the same order) instead of running off the edge.
+            double room = Width - g.Margin.Left - g.Margin.Right, used = 0;
+            StackPanel rows = new StackPanel();
+            StackPanel right = null;
             for (int n = 0; n < order.Count; n++)
             {
-                all[order[n]].Margin = new Thickness(n == 0 ? 0 : 8, 0, 0, 0);
-                right.Children.Add(all[order[n]]);
+                MacButton b = all[order[n]];
+                double w = Math.Max(b.Width, b.MinWidth);
+                if (right == null || used + 8 + w > room)
+                {
+                    right = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, right == null ? 0 : 8, 0, 0) };
+                    rows.Children.Add(right);
+                    used = 0;
+                }
+                b.Margin = new Thickness(used == 0 ? 0 : 8, 0, 0, 0);
+                used += (used == 0 ? 0 : 8) + w;
+                right.Children.Add(b);
             }
-            row.Children.Add(right);
+            row.Children.Add(rows);
             g.Children.Add(row);
             Root.Children.Add(g);
             KeepCaptionsOnTop();

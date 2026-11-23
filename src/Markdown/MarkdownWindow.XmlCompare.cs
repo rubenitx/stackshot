@@ -83,9 +83,9 @@ namespace Stackshot
             DiffResult r = compare.Result;
             if (r.Total == 0) return I18n.T("Sin diferencias", "No differences");
             List<string> parts = new List<string>();
-            if (r.Changed > 0) parts.Add(I18n.Fmt(r.Changed == 1 ? "{0} cambio" : "{0} cambios", r.Changed == 1 ? "{0} change" : "{0} changes", r.Changed.ToString("N0")));
-            if (r.Added > 0) parts.Add(I18n.Fmt(r.Added == 1 ? "{0} a\u00F1adido" : "{0} a\u00F1adidos", r.Added == 1 ? "{0} added" : "{0} added", r.Added.ToString("N0")));
-            if (r.Removed > 0) parts.Add(I18n.Fmt(r.Removed == 1 ? "{0} quitado" : "{0} quitados", r.Removed == 1 ? "{0} removed" : "{0} removed", r.Removed.ToString("N0")));
+            if (r.Changed > 0) parts.Add(I18n.Fmt(r.Changed == 1 ? "{0} cambio" : "{0} cambios", r.Changed == 1 ? "{0} change" : "{0} changes", r.Changed.ToString("N0", I18n.Culture)));
+            if (r.Added > 0) parts.Add(I18n.Fmt(r.Added == 1 ? "{0} a\u00F1adido" : "{0} a\u00F1adidos", r.Added == 1 ? "{0} added" : "{0} added", r.Added.ToString("N0", I18n.Culture)));
+            if (r.Removed > 0) parts.Add(I18n.Fmt(r.Removed == 1 ? "{0} quitado" : "{0} quitados", r.Removed == 1 ? "{0} removed" : "{0} removed", r.Removed.ToString("N0", I18n.Culture)));
             return string.Join(" \u00B7 ", parts.ToArray());
         }
 
@@ -145,7 +145,7 @@ namespace Stackshot
         {
             if (compare == null || comparePos == null) return;
             int total = compare.Result.Stops.Count, cur = compare.View != null ? compare.View.Current : -1;
-            comparePos.Text = cur >= 0 ? I18n.Fmt("{0} de {1}", "{0} of {1}", (cur + 1).ToString("N0"), total.ToString("N0")) : total == 0 ? I18n.T("Sin diferencias", "No differences") : I18n.Fmt(total == 1 ? "{0} diferencia" : "{0} diferencias", total == 1 ? "{0} difference" : "{0} differences", total.ToString("N0"));
+            comparePos.Text = cur >= 0 ? I18n.Fmt("{0} de {1}", "{0} of {1}", (cur + 1).ToString("N0", I18n.Culture), total.ToString("N0", I18n.Culture)) : total == 0 ? I18n.T("Sin diferencias", "No differences") : I18n.Fmt(total == 1 ? "{0} diferencia" : "{0} diferencias", total == 1 ? "{0} difference" : "{0} differences", total.ToString("N0", I18n.Culture));
             if (compareUp != null) compareUp.IsEnabled = total > 0;
             if (compareDown != null) compareDown.IsEnabled = total > 0;
         }
@@ -290,7 +290,7 @@ namespace Stackshot
             if (r.Stops.Count > 0) compare.View.Step(1);
             else compare.View.List.Focus();
             UpdateComparePos();
-            if (cut) Say(I18n.Fmt("El XML es muy grande: solo se comparan sus primeros {0} nodos.", "The XML is very large: only its first {0} nodes are compared.", XmlDoc.MaxNodes.ToString("N0")), false);
+            if (cut) Say(I18n.Fmt("El XML es muy grande: solo se comparan sus primeros {0} nodos.", "The XML is very large: only its first {0} nodes are compared.", XmlDoc.MaxNodes.ToString("N0", I18n.Culture)), false);
         }
 
         internal void ExitCompare()

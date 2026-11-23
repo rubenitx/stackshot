@@ -116,7 +116,7 @@ namespace Stackshot
                 return;
             }
             pdfPages = pages;
-            Say(I18n.Fmt(pages == 1 ? "PDF exportado: {0} ({1} p\u00E1gina)." : "PDF exportado: {0} ({1} p\u00E1ginas).", pages == 1 ? "PDF exported: {0} ({1} page)." : "PDF exported: {0} ({1} pages).", System.IO.Path.GetFileName(path), pages.ToString("N0")), false);
+            Say(I18n.Fmt(pages == 1 ? "PDF exportado: {0} ({1} p\u00E1gina)." : "PDF exportado: {0} ({1} p\u00E1ginas).", pages == 1 ? "PDF exported: {0} ({1} page)." : "PDF exported: {0} ({1} pages).", System.IO.Path.GetFileName(path), pages.ToString("N0", I18n.Culture)), false);
         }
     }
 }

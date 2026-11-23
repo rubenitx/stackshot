@@ -309,11 +309,11 @@ namespace Stackshot
             map["The area did not scroll, so it was saved as a normal capture. Choose only the part that scrolls (the list or text), without the fixed header."] = "\uC601\uC5ED\uC774 \uC6C0\uC9C1\uC774\uC9C0 \uC54A\uC544 \uC77C\uBC18 \uCEA1\uCC98\uB85C \uC800\uC7A5\uD588\uC2B5\uB2C8\uB2E4. \uACE0\uC815\uB41C \uBA38\uB9AC\uAE00\uC744 \uBE7C\uACE0 \uC2A4\uD06C\uB864\uB418\uB294 \uBAA9\uB85D\uC774\uB098 \uBCF8\uBB38\uB9CC \uC120\uD0DD\uD558\uC138\uC694.";
             map["Composing\u2026"] = "\uC774\uBBF8\uC9C0 \uD569\uCE58\uB294 \uC911\u2026";
             map["Esc again to discard"] = "Esc\uB97C \uB2E4\uC2DC \uB20C\uB7EC \uBC84\uB9AC\uAE30";
-            map["You haven't scrolled \u00B7 Done again saves it"] = "\uC2A4\uD06C\uB864\uD558\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4 \u00B7 \uC644\uB8CC\uB97C \uB2E4\uC2DC \uB20C\uB7EC \uC800\uC7A5";
+            map["You haven't scrolled \u00B7 Done again saves it"] = "\uC2A4\uD06C\uB864 \uC548 \uD568 \u00B7 \uC644\uB8CC\uB97C \uB2E4\uC2DC \uB20C\uB7EC \uC800\uC7A5";
             map["Maximum height"] = "\uCD5C\uB300 \uB192\uC774 \uB3C4\uB2EC";
             map["Downward only"] = "\uC544\uB798\uB85C\uB9CC \uC2A4\uD06C\uB864";
             map["Slow down"] = "\uB354 \uCC9C\uCC9C\uD788 \uC2A4\uD06C\uB864\uD558\uC138\uC694";
-            map["Pause: stop and continue scrolling with wheel"] = "\uC77C\uC2DC \uC815\uC9C0: \uC790\uB3D9 \uC2A4\uD06C\uB864\uC744 \uBA48\uCD94\uACE0 \uD720\uB85C \uACC4\uC18D";
+            map["Pause: stop and scroll with the wheel"] = "\uC77C\uC2DC \uC815\uC9C0: \uC790\uB3D9 \uC2A4\uD06C\uB864\uC744 \uBA48\uCD94\uACE0 \uD720\uB85C \uACC4\uC18D";
             map["Auto: scroll automatically"] = "\uC790\uB3D9: \uC790\uB3D9\uC73C\uB85C \uC2A4\uD06C\uB864";
             map["Done: save capture (Enter)"] = "\uC644\uB8CC: \uCEA1\uCC98 \uC800\uC7A5(Enter)";
             map["Cancel without saving (Esc)"] = "\uC800\uC7A5\uD558\uC9C0 \uC54A\uACE0 \uCDE8\uC18C(Esc)";
@@ -406,7 +406,7 @@ namespace Stackshot
             map["No sensitive data found."] = "\uBBFC\uAC10 \uC815\uBCF4\uB97C \uCC3E\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
             map["Sensitive data is already redacted."] = "\uBBFC\uAC10 \uC815\uBCF4\uAC00 \uC774\uBBF8 \uAC00\uB824\uC838 \uC788\uC2B5\uB2C8\uB2E4.";
             map["Redacted {0} more items; {1} were already covered."] = "{0}\uAC1C\uB97C \uCD94\uAC00\uB85C \uAC00\uB838\uC2B5\uB2C8\uB2E4. \uB098\uBA38\uC9C0 {1}\uAC1C\uB294 \uC774\uBBF8 \uAC00\uB824\uC838 \uC788\uC5C8\uC2B5\uB2C8\uB2E4.";
-            map["{0} items redacted: {1}. You can remove the marks."] = "\uBBFC\uAC10 \uC815\uBCF4 {0}\uAC1C\uB97C \uAC00\uB838\uC2B5\uB2C8\uB2E4({1}). \uAC00\uB9AC\uAE30 \uD45C\uC2DC\uB294 \uC81C\uAC70\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.";
+            map["{0} items redacted: {1}. You can remove the marks."] = "\uBBFC\uAC10 \uC815\uBCF4 {0}\uAC1C \uAC00\uB9BC({1}). \uD45C\uC2DC\uB294 \uC81C\uAC70 \uAC00\uB2A5\uD569\uB2C8\uB2E4.";
             map["Original"] = "\uC6D0\uBCF8";
             map["Sunset"] = "\uB178\uC744";
             map["Mint"] = "\uBBFC\uD2B8";

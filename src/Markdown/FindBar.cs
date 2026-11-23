@@ -290,7 +290,7 @@ namespace Stackshot
             if (error != null) count.Text = error;
             else if (Query.Text.Length == 0) count.Text = "";
             else if (total == 0) count.Text = partial ? I18n.T("Sin resultados (b\u00FAsqueda cortada)", "No results (search cut short)") : I18n.T("Sin resultados", "No results");
-            else count.Text = (index >= 0 ? (index + 1).ToString("N0") + I18n.T(" de ", " of ") : "") + total.ToString("N0") + (total >= TextSearch.MaxHits || partial ? "+" : "") + (index >= 0 ? "" : total == 1 ? I18n.T(" resultado", " result") : I18n.T(" resultados", " results"));
+            else count.Text = (index >= 0 ? (index + 1).ToString("N0", I18n.Culture) + I18n.T(" de ", " of ") : "") + total.ToString("N0", I18n.Culture) + (total >= TextSearch.MaxHits || partial ? "+" : "") + (index >= 0 ? "" : total == 1 ? I18n.T(" resultado", " result") : I18n.T(" resultados", " results"));
         }
 
         public void FocusQuery()

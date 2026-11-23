@@ -327,7 +327,7 @@ namespace Stackshot
             reg("Blur", null, "Unschärfe");
             reg("Solid color", null, "Volltonfarbe");
             reg("Other color\u2026", null, "Andere Farbe\u2026");
-            reg("Auto-balance", null, "Automatisch ausbalancieren");
+            reg("Auto-balance", null, "Auto-Ausgleich");
             reg("Alignment", null, "Ausrichtung");
             reg("Aspect ratio", "Proporción", "Seitenverhältnis");
             reg("Saved styles\u2026", null, "Gespeicherte Stile\u2026");

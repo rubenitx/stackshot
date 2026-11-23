@@ -73,7 +73,7 @@ namespace Stackshot
                 bool on = i == selected;
                 if (i == hover && !on && enabled) dc.DrawRoundedRectangle(null, Line(s.Highlight, px), new Rect(2 + seg * i + px / 2, 2 + px / 2, seg - px, h - 4 - px), 5.5, 5.5);
                 FormattedText t = Ink.Text(options[i], on ? Ds.Semibold : Ds.Regular, 12.5, on ? (enabled ? s.HighlightText : s.Window) : ink);
-                t.MaxTextWidth = Math.Max(1, seg - 8);
+                t.MaxTextWidth = Math.Max(1, seg - MacSegmented.TextPad);
                 t.MaxLineCount = 1;
                 t.Trimming = TextTrimming.CharacterEllipsis;
                 Ink.Center(dc, t, new Rect(2 + seg * i, 0, seg, h));

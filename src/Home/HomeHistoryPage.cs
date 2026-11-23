@@ -561,12 +561,12 @@ namespace Stackshot
                 if (historyAll == null || historyAll.Count == 0 || n == 0) historyCount.Text = "";
                 else if (words.Length > 0)
                 {
-                    historyCount.Text = I18n.IsKorean ? string.Format(I18n.Localize("{0:N0} results"), n)
+                    historyCount.Text = I18n.IsKorean ? string.Format(HistoryEs, I18n.Localize("{0:N0} results"), n)
                         : n == 1 ? I18n.T("1 resultado", "1 result") : I18n.Fmt("{0} resultados", "{0} results", n.ToString("N0", HistoryEs));
                 }
                 else
                 {
-                    historyCount.Text = I18n.IsKorean ? string.Format(I18n.Localize("{0:N0} items"), n)
+                    historyCount.Text = I18n.IsKorean ? string.Format(HistoryEs, I18n.Localize("{0:N0} items"), n)
                         : n == 1 ? I18n.T("1 elemento", "1 item") : I18n.Fmt("{0} elementos", "{0} items", n.ToString("N0", HistoryEs));
                 }
             }
