@@ -44,6 +44,7 @@ namespace Stackshot.Tests
             T("korean-writes-markdown-in-hangul", KoreanWritesMarkdownInHangul);
             T("no-bare-markdown-label-in-src", NoBareMarkdownLabelInSrc);
             T("tray-panel-has-no-foreign-leftovers", TrayPanelHasNoForeignLeftovers);
+            T("readmes-call-korean-complete", ReadmesCallKoreanComplete);
             T("tray-recent-dates-follow-the-language", TrayRecentDatesFollowTheLanguage);
             T("picker-lists-only-the-complete-languages", PickerListsOnlyTheCompleteLanguages);
             T("hidden-languages-load-as-automatic", HiddenLanguagesLoadAsAutomatic);
@@ -61,6 +62,18 @@ namespace Stackshot.Tests
         }
 
         static string Show(string s) { return s == null ? "null" : Regex.Replace(s, "[^\\x20-\\x7e]", m => "\\u" + ((int)m.Value[0]).ToString("X4")); }
+
+        // Korean is one of the four complete languages: no README may say some of its texts are still missing.
+        static void ReadmesCallKoreanComplete()
+        {
+            string root = AppTestsI18nCoverage.RepoRoot();
+            foreach (string f in new[] { "README.md", "README.es.md" })
+            {
+                string t = File.ReadAllText(Path.Combine(root, f), Encoding.UTF8);
+                Check(t.IndexOf("Korean text still missing", StringComparison.Ordinal) < 0 &&
+                      t.IndexOf("falten en coreano", StringComparison.Ordinal) < 0, f + " says Korean is incomplete");
+            }
+        }
 
         static string Src(string rel) { return File.ReadAllText(Path.Combine(AppTestsI18nCoverage.RepoRoot(), "src", rel), Encoding.UTF8); }
 
