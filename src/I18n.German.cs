@@ -156,7 +156,7 @@ namespace Stackshot
             reg("Show options", null, "Optionen anzeigen");
             reg("A gentle camera shutter sound on capture.", null, "Spielt beim Aufnehmen einen leisen Kameraton ab.");
             reg("Ready to paste immediately with Ctrl+V; videos and GIFs as files.", null, "Sofort mit Strg+V einfügen. Videos und GIFs werden als Dateien kopiert.");
-            reg("Auto-hide thumbnails", null, "Miniaturansichten automatisch ausblenden");
+            reg("Auto-hide thumbnails", null, "Miniaturansichten ausblenden");
             reg("When unused, tuck thumbnails into screen edge until hovered.", null, "Schiebt Miniaturansichten an den Bildschirmrand, bis der Mauszeiger darübersteht.");
             reg("Never", null, "Nie");
             reg("After 3 s", null, "Nach 3 s");

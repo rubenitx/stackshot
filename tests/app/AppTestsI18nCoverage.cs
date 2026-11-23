@@ -25,7 +25,7 @@ namespace Stackshot.Tests
         {
             // ShotStack.Language.cs: the offer of English is shown only to users whose interface is Spanish, on purpose
             // in English, and it names the settings route in their language so they can find it.
-            "ShotStack.Language.cs|Switch Stackshot to English? Later in Ajustes \u203A General \u203A Apariencia \u203A Idioma (Settings \u203A General \u203A Appearance \u203A Language).|the English offer names the route in the user's current (Spanish) interface on purpose"
+            "ShotStack.Language.cs|Switch to English? You can change it later in Ajustes \u203A General \u203A Apariencia \u203A Idioma (Settings \u203A General \u203A Appearance \u203A Language).|the English offer names the route in the user's current (Spanish) interface on purpose"
         };
 
         const int Cap = 60;
@@ -738,7 +738,7 @@ namespace Stackshot.Tests
                 for (int i = 0; i < toks.Count - 1; i++)
                 {
                     if (toks[i].Com || toks[i].Str || Array.IndexOf(calls, toks[i].S) < 0 || toks[i + 1].S != "(") continue;
-                    if (i > 0 && (toks[i - 1].S == "void" || toks[i - 1].S == "Notice" || toks[i - 1].S == "Notice") && toks[i].S != "Notice") continue;
+                    if (i > 0 && (toks[i - 1].S == "void" || toks[i - 1].S == "Notice") && toks[i].S != "Notice") continue;
                     int line = toks[i].Line, at = i + 1;
                     List<List<Tok>> args = CallArgs(toks, ref at);
                     if (args.Count == 0) continue;

@@ -71,6 +71,11 @@ namespace Stackshot.Tests
                 T("korean-keys-not-registered-twice-differently", AppTestsI18nAudit.KoreanKeysNotRegisteredTwiceDifferently);
                 T("notice-titles-fit-their-line", AppTestsI18nAudit.NoticeTitlesFitTheirLine);
                 T("language-offer-fits-its-toast", AppTestsI18nAudit.LanguageOfferFitsItsToast);
+                T("korean-update-steps-same-order", AppTestsI18nAudit.KoreanUpdateStepsSameOrder);
+                T("german-discard-title-matches-its-body", AppTestsI18nAudit.GermanDiscardTitleMatchesItsBody);
+                T("sensitive-notice-bodies-fit", AppTestsI18nAudit.SensitiveNoticeBodiesFit);
+                T("old-release-bodies-still-read", AppTestsI18nAudit.OldReleaseBodiesStillRead);
+                T("workflow-writes-the-markers", AppTestsI18nAudit.WorkflowWritesTheMarkers);
             }
             finally
             {
