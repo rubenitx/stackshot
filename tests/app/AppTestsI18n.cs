@@ -64,6 +64,7 @@ namespace Stackshot.Tests
                 T("numbers-follow-the-language", NumberCulture);
                 T("changed-listeners-are-independent", ChangedListeners);
                 T("reader-seek-parses-any-language", ReaderSeek);
+                T("settings-rows-not-squeezed", AppTestsI18nAudit.SettingsRowsNotSqueezed);
             }
             finally
             {
@@ -522,7 +523,7 @@ namespace Stackshot.Tests
             return acc;
         }
 
-        static void Walk(DependencyObject d, HashSet<DependencyObject> seen, Action<DependencyObject> visit)
+        internal static void Walk(DependencyObject d, HashSet<DependencyObject> seen, Action<DependencyObject> visit)
         {
             if (d == null || !seen.Add(d)) return;
             UIElement u = d as UIElement;
