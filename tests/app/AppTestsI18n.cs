@@ -192,6 +192,13 @@ namespace Stackshot.Tests
             Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo("en-US")), "Automatic already follows Windows");
             s.Language = "en";
             Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo("en-US")), "already in English");
+            s.Language = "es";
+            Check(ShotStack.ShouldOfferLanguage(s, new CultureInfo("de-DE")), "Spanish on German Windows: offered");
+            Check(ShotStack.OfferedLanguage(new CultureInfo("de-DE")) == "de" && ShotStack.OfferedLanguage(new CultureInfo("de-AT")) == "de", "German Windows is offered German");
+            Check(ShotStack.OfferedLanguage(new CultureInfo("ko-KR")) == "ko", "Korean Windows is offered Korean");
+            Check(ShotStack.OfferedLanguage(new CultureInfo("en-US")) == "en" && ShotStack.OfferedLanguage(new CultureInfo("fr-FR")) == "en", "other Windows is offered English");
+            foreach (string spanish in new[] { "es-ES", "ca-ES", "gl-ES", "eu-ES" })
+                Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo(spanish)), "Spanish on " + spanish + " Windows: nothing to offer");
             // An old settings file (no Language line) on English Windows is exactly the case.
             string dir = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-offer-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(dir);
