@@ -88,9 +88,7 @@ namespace Stackshot
             map["Uninstall Stackshot\u2026"] = "Stackshot \uC81C\uAC70\u2026";
             map["Updates"] = "\uC5C5\uB370\uC774\uD2B8";
             map["You have version {0}. Stackshot updates are managed by your organization."] = "\uD604\uC7AC \uBC84\uC804\uC740 {0}\uC785\uB2C8\uB2E4. \uC870\uC9C1\uC5D0\uC11C Stackshot \uC5C5\uB370\uC774\uD2B8\uB97C \uAD00\uB9AC\uD569\uB2C8\uB2E4.";
-            map["Downloading Stackshot {0}"] = "\uB2E4\uC6B4\uB85C\uB4DC \uC911 Stackshot {0}";
-            map["Verifying Stackshot {0}"] = "\uAC80\uC99D \uC911 Stackshot {0}";
-            map["Installing Stackshot {0}"] = "\uC124\uCE58 \uC911 Stackshot {0}";
+            map["Verifying Stackshot {0}"] = "Stackshot {0} \uAC80\uC99D \uC911";
             map["Verifying SHA-256 checksum and signature before installing."] = "\uC124\uCE58\uD558\uAE30 \uC804\uC5D0 SHA-256 \uCCB4\uD06C\uC12C\uACFC \uC11C\uBA85\uC744 \uAC80\uC99D\uD569\uB2C8\uB2E4.";
             map["As soon as recording is saved, Stackshot will restart."] = "\uB179\uD654\uB97C \uC800\uC7A5\uD558\uBA74 Stackshot\uC774 \uB2E4\uC2DC \uC2DC\uC791\uB429\uB2C8\uB2E4.";
             map["Stackshot will restart in a few seconds."] = "\uC7A0\uC2DC \uD6C4 Stackshot\uC774 \uB2E4\uC2DC \uC2DC\uC791\uB429\uB2C8\uB2E4.";
@@ -334,7 +332,7 @@ namespace Stackshot
             map["and {0} more"] = "\uC678 {0}\uAC1C";
             map["Also: {0}"] = "\uCD94\uAC00: {0}";
             map["Press the combination\u2026"] = "\uD0A4 \uC870\uD569\uC744 \uB204\uB974\uC138\uC694\u2026";
-            map["Print Screen now belongs to Stackshot"] = "\uC774\uC81C Print Screen\uC73C\uB85C Stackshot\uC744 \uC0AC\uC6A9\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4";
+            map["Print Screen now belongs to Stackshot"] = "Print Screen\uC740 Stackshot \uC804\uC6A9";
             map["Windows had reserved it for Snipping Tool; it is now freed for your user. If Snipping Tool still opens, sign out and back in."] = "Windows \uCEA1\uCC98 \uB3C4\uAD6C\uC5D0 \uD560\uB2F9\uB41C \uD0A4\uB97C \uC774 \uACC4\uC815\uC5D0\uC11C \uD574\uC81C\uD588\uC2B5\uB2C8\uB2E4. \uCEA1\uCC98 \uB3C4\uAD6C\uAC00 \uACC4\uC18D \uC5F4\uB9AC\uBA74 \uB85C\uADF8\uC544\uC6C3 \uD6C4 \uB2E4\uC2DC \uB85C\uADF8\uC778\uD558\uC138\uC694.";
             map["Where your saved captures go."] = "\uCEA1\uCC98\uB97C \uC800\uC7A5\uD560 \uD3F4\uB354\uC785\uB2C8\uB2E4.";
             map["Change\u2026"] = "\uBCC0\uACBD\u2026";

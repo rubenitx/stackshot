@@ -64,6 +64,18 @@ namespace Stackshot.Tests
                 T("numbers-follow-the-language", NumberCulture);
                 T("changed-listeners-are-independent", ChangedListeners);
                 T("reader-seek-parses-any-language", ReaderSeek);
+                T("settings-rows-not-squeezed", AppTestsI18nAudit.SettingsRowsNotSqueezed);
+                T("every-list-text-has-german", AppTestsI18nAudit.EveryListTextHasGerman);
+                T("every-list-text-has-korean", AppTestsI18nAudit.EveryListTextHasKorean);
+                T("release-news-only-in-spanish", AppTestsI18nAudit.ReleaseNewsOnlyInSpanish);
+                T("korean-keys-not-registered-twice-differently", AppTestsI18nAudit.KoreanKeysNotRegisteredTwiceDifferently);
+                T("notice-titles-fit-their-line", AppTestsI18nAudit.NoticeTitlesFitTheirLine);
+                T("language-offer-fits-its-toast", AppTestsI18nAudit.LanguageOfferFitsItsToast);
+                T("korean-update-steps-same-order", AppTestsI18nAudit.KoreanUpdateStepsSameOrder);
+                T("german-discard-title-matches-its-body", AppTestsI18nAudit.GermanDiscardTitleMatchesItsBody);
+                T("sensitive-notice-bodies-fit", AppTestsI18nAudit.SensitiveNoticeBodiesFit);
+                T("old-release-bodies-still-read", AppTestsI18nAudit.OldReleaseBodiesStillRead);
+                T("workflow-writes-the-markers", AppTestsI18nAudit.WorkflowWritesTheMarkers);
             }
             finally
             {
@@ -522,7 +534,7 @@ namespace Stackshot.Tests
             return acc;
         }
 
-        static void Walk(DependencyObject d, HashSet<DependencyObject> seen, Action<DependencyObject> visit)
+        internal static void Walk(DependencyObject d, HashSet<DependencyObject> seen, Action<DependencyObject> visit)
         {
             if (d == null || !seen.Add(d)) return;
             UIElement u = d as UIElement;

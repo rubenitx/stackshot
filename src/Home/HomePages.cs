@@ -878,7 +878,7 @@ namespace Stackshot
                 new SegRow(I18n.T("Guardar las temporales", "Temporary captures retention"), I18n.T("Cu\u00E1nto duran las capturas que no guardas en tu carpeta.", "How long unsaved captures remain."), "stack", Mac.Teal, Mac.Blue,
                            new string[] { I18n.T("1 hora", "1 hour", "1 Stunde"), I18n.T("Al cerrar", "On close", "Beim Schließen"),
                                           I18n.T("1 d\u00EDa", "1 day", "1 Tag"), I18n.T("7 d\u00EDas", "7 days", "7 Tage"), I18n.T("30 d\u00EDas", "30 days", "30 Tage") },
-                           delegate { return settings.TempKeep; }, delegate(int i) { settings.TempKeep = i; owner.Sweep(); }),
+                           delegate { return settings.TempKeep; }, delegate(int i) { settings.TempKeep = i; owner.Sweep(); }) { Stacked = true },
                 new ButtonRow(I18n.T("Borrar recientes", "Clear recents"), I18n.T("Quita las capturas temporales; las de tu carpeta no se tocan.", "Removes temporary captures; saved files are untouched."), "trash", Mac.Red, Mac.Orange, I18n.T("Borrar", "Clear"), ClearRecent),
                 recovered);
             Group(I18n.T("Al capturar", "When capturing"),

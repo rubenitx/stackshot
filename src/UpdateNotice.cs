@@ -1,6 +1,7 @@
 // Stackshot - New version notice: a small banner by the clock that offers the update and follows its progress.
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using W = System.Windows;
@@ -107,14 +108,15 @@ namespace Stackshot
             }
             if (state == "error") return Updater.Problem ?? "";
             // What it brings comes first (the button "Novedades" has the rest).
-            string brings = release.News.Count > 0 ? I18n.Fmt("Novedades: {0}.\n", "What's new: {0}.\n", News.Headline(release.News, 2)) : "";
+            List<News.Item> items = release.Items();
+            string brings = items.Count > 0 ? I18n.Fmt("Novedades: {0}.\n", "What's new: {0}.\n", News.Headline(items, 2)) : "";
             if (Updater.IsReady && Updater.CanInstall) return brings + I18n.T("Ya est\u00E1 descargada y verificada. Al instalarla, Stackshot se cerrar\u00E1 y volver\u00E1 a abrirse.", "Already downloaded and verified. Upon installing, Stackshot will close and reopen.");
             if (Updater.CanInstall) return brings + I18n.T("\u00BFQuieres descargarla? Se comprueba su firma y se instala en unos segundos.", "Do you want to download it? Its signature will be verified and it installs in seconds.");
             if (Installer.ManagedByMsi) return brings + I18n.T("En este equipo las actualizaciones las instala inform\u00E1tica. \u00BFQuieres ver la nueva versi\u00F3n?", "On this machine updates are managed by IT. Would you like to view the new version?");
             return brings + I18n.T("\u00BFQuieres descargarla? Esta versi\u00F3n se descarga desde su p\u00E1gina de GitHub.", "Do you want to download it? This version is downloaded from its GitHub page.");
         }
 
-        bool HasNews { get { return release.News.Count > 0 || release.Notes.Count > 0; } }
+        bool HasNews { get { return release.Items().Count > 0; } }
 
         M.FormattedText LinkText(bool over)
         {

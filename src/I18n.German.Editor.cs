@@ -210,7 +210,7 @@ namespace Stackshot
             reg("Playing · Space pauses", null, "Wiedergabe · Leertaste pausiert");
             reg(" · visible throughout video", null, " · im gesamten Video sichtbar");
             reg("Could not save: ", null, "Speichern fehlgeschlagen: ");
-            reg("Could not save edit", null, "Änderungen konnten nicht gespeichert werden");
+            reg("Could not save edit", null, "Änderungen nicht gespeichert");
             reg("Saving {0}…", null, "{0} wird gespeichert…");
             reg("Saved: {0}", null, "Gespeichert: {0}");
             reg("Could not copy: ", null, "Kopieren fehlgeschlagen: ");

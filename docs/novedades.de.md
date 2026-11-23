@@ -7,7 +7,13 @@ Format: ein Abschnitt `## X.Y.Z` pro Version und darin eine Zeile pro Neuerung: 
 
 ## 2.2.2
 
-- **Oberfläche auf Koreanisch.** In diesem Entwicklungs-Build kannst du 한국어 unter Einstellungen › Allgemein › Erscheinungsbild › Sprache wählen. Der Automatikmodus erkennt Windows auf Koreanisch, und eine selbst gewählte Sprache bleibt erhalten.
+- **Oberfläche auf Englisch.** Stackshot folgt der Windows-Sprache: Eine neue Installation auf einem englischen Windows startet auf Englisch. Ändern kannst du das unter Einstellungen › Allgemein › Erscheinungsbild › Sprache.
+- **Deutsch, vollständig.** Deutsch deckt jetzt die ganze App ab: Aufnahme, Editor, Aufzeichnung, das Maskottchen, Startseite, Verlauf und Berichte.
+- **Oberfläche auf Koreanisch.** Wähle 한국어 unter Einstellungen › Allgemein › Erscheinungsbild › Sprache. Danke an @Hobeom für die Übersetzung.
+- **Neue Sprachauswahl.** Suche Sprachen nach Name oder Code und erkenne, ob die Übersetzung vollständig oder nur eine Vorschau ist.
+- **Automatische Sprache und ein einmaliges Angebot.** Automatisch folgt der Windows-Sprache (Spanisch, Englisch, Deutsch oder Koreanisch). Wenn du Stackshot schon auf Spanisch benutzt hast und Windows in einer anderen Sprache läuft, wird dir die passende Sprache einmal angeboten; wenn du nicht zustimmst, ändert sich nichts.
+- **Sprachen als Vorschau.** Französisch, Portugiesisch, vereinfachtes Chinesisch, Hindi, Arabisch und Bengalisch erscheinen in der Auswahl als Vorschau: Die häufigsten Wörter sind übersetzt, der Rest bleibt Englisch.
+- **Sensible Daten in jeder Sprache abgedeckt.** Sensible Daten in einer Aufnahme zu finden und abzudecken funktioniert gleich, egal welche Oberflächensprache eingestellt ist.
 
 ## 2.2.1
 
@@ -20,7 +26,7 @@ Format: ein Abschnitt `## X.Y.Z` pro Version und darin eine Zeile pro Neuerung: 
 
 ## 2.2.0
 
-- **Hintergründe wie CleanShot X.** Im Editor öffnet die Schaltfläche Fondo ein Seitenfenster: Verläufe, dein Desktop-Hintergrund und eigene Bilder, die Aufnahme selbst weichgezeichnet, einfarbige und jede andere Farbe, dazu Regler für Rand, Einrückung (mit automatischem Ausgleich), Schatten und Ecken sowie Ausrichtung und Seitenverhältnis.
+- **Hintergründe wie CleanShot X.** Im Editor öffnet die Schaltfläche Hintergrund ein Seitenfenster: Verläufe, dein Desktop-Hintergrund und eigene Bilder, die Aufnahme selbst weichgezeichnet, einfarbige und jede andere Farbe, dazu Regler für Rand, Einrückung (mit automatischem Ausgleich), Schatten und Ecken sowie Ausrichtung und Seitenverhältnis.
 - **Zieh mich.** In der unteren Leiste des Editors gibt es einen Griff, um die Aufnahme per Ziehen in einen Chat, eine E-Mail oder eine andere App zu tragen.
 - **Vor dem Aufnehmen anpassen.** Eine Option (standardmäßig aus), um den Bereich mit einer Vorschau zu verschieben und anzupassen, bevor aufgenommen wird.
 - **Schärfere Texte.** In jedem Fenster, in den Menüs und im Hinweis der Bereichsauswahl, die jetzt jede Taste in ihrer eigenen Farbe malt.

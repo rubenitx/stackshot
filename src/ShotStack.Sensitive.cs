@@ -72,9 +72,12 @@ namespace Stackshot
         // The fail-closed notice when a capture cannot be covered at all.
         void DiscardCaptureNotice()
         {
-            Notify(I18n.T("No se pudo revisar la captura", "The capture could not be checked", "Die Aufnahme konnte nicht gepr\u00FCft werden"),
-                   I18n.T("No se pudieron tapar sus datos sensibles, as\u00ED que se ha descartado: nunca se muestra ni se guarda sin revisar.", "Its sensitive data could not be covered, so it was discarded: it is never shown or saved unchecked.", "Ihre sensiblen Daten konnten nicht geschw\u00E4rzt werden, deshalb wurde sie verworfen: Sie wird nie ungepr\u00FCft gezeigt oder gespeichert."),
-                   NoticeKind.Error, null, null);
+            Notify(I18n.T("No se pudo revisar la captura", "The capture could not be checked", "Aufnahme nicht gepr\u00FCft"), DiscardBody(), NoticeKind.Error, null, null);
+        }
+
+        internal static string DiscardBody()
+        {
+            return I18n.T("No se pudieron tapar sus datos sensibles, as\u00ED que se ha descartado: nunca se muestra ni se guarda sin revisar.", "Its sensitive data could not be covered, so it was discarded: it is never shown or saved unchecked.", "Ihre sensiblen Daten konnten nicht geschw\u00E4rzt werden, deshalb wurde sie verworfen: Sie wird nie ungepr\u00FCft gezeigt oder gespeichert.");
         }
 
         static void Discard(CoverOutcome r)
@@ -95,20 +98,24 @@ namespace Stackshot
             // The switch is named by its own setting title, so the quoted words are the ones the user sees in whatever
             // language (the German one comes from the same catalog key, never retyped here).
             string title = PolicyTitles.Sensitive;
-            // What a policy forces cannot be turned off: say who requires it instead of naming a way out the user has.
-            Notify(I18n.T("Las capturas se descartan: no hay reconocimiento de texto (OCR)", "Captures are discarded: no text recognition (OCR)", "Aufnahmen werden verworfen: keine Texterkennung (OCR)"),
-                   I18n.IsKorean
-                       ? I18n.Fmt("", Policy.SensitiveForced
-                             ? "Your organization requires \u201C{0}\u201D, but this Windows has no OCR installed, so every capture is discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or contact IT."
-                             : "With \u201C{0}\u201D on, every capture is checked before it is shown, and this Windows has no OCR installed, so captures are discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or turn the option off.", title)
-                   : Policy.SensitiveForced
-                       ? I18n.T("Tu organizaci\u00F3n exige \u00AB" + title + "\u00BB, pero este Windows no tiene OCR instalado, as\u00ED que cada captura se descarta para que nada se muestre sin revisar. Instala un idioma de OCR (Configuraci\u00F3n de Windows > Aplicaciones > Caracter\u00EDsticas opcionales) o consulta con inform\u00E1tica.",
-                                "Your organization requires \u201C" + title + "\u201D, but this Windows has no OCR installed, so every capture is discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or contact IT.",
-                                "Deine Organisation verlangt \u201E" + title + "\u201C, aber dieses Windows hat keine OCR installiert, daher wird jede Aufnahme verworfen, statt ungepr\u00FCft gezeigt zu werden. Installiere eine OCR-Sprache (Windows-Einstellungen > Apps > Optionale Features) oder wende dich an die IT.")
-                       : I18n.T("Con \u00AB" + title + "\u00BB activado, cada captura se revisa antes de mostrarla y este Windows no tiene OCR instalado, as\u00ED que se descarta para que nada se muestre sin revisar. Instala un idioma de OCR (Configuraci\u00F3n de Windows > Aplicaciones > Caracter\u00EDsticas opcionales) o desactiva la opci\u00F3n.",
-                                "With \u201C" + title + "\u201D on, every capture is checked before it is shown, and this Windows has no OCR installed, so captures are discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or turn the option off.",
-                                "Mit \u201E" + title + "\u201C aktiviert wird jede Aufnahme gepr\u00FCft, bevor sie gezeigt wird, und dieses Windows hat keine OCR installiert, daher werden Aufnahmen verworfen, statt ungepr\u00FCft gezeigt zu werden. Installiere eine OCR-Sprache (Windows-Einstellungen > Apps > Optionale Features) oder schalte die Option aus."),
-                   NoticeKind.Warning, null, null);
+            Notify(I18n.T("Capturas descartadas: falta el OCR", "Captures discarded: no OCR", "Aufnahmen verworfen: OCR fehlt"), OcrMissingBody(title, Policy.SensitiveForced), NoticeKind.Warning, null, null);
+        }
+
+        // What a policy forces cannot be turned off: say who requires it instead of naming a way out the user has.
+        internal static string OcrMissingBody(string title, bool forced)
+        {
+            // Three toast lines: the way to the OCR languages is in Windows' own settings, so the text stays short (the German
+            // name of the switch alone fills a line and a half, so German says what it does).
+            return I18n.IsKorean
+                       ? forced ? I18n.Localize("Your organization requires redaction, but this Windows has no OCR, so captures are discarded. Install an OCR language or contact IT.")
+                                : I18n.Fmt("", "No OCR on this Windows, so captures are discarded. Install an OCR language or turn off \u201C{0}\u201D.", title)
+                   : forced
+                       ? I18n.T("Tu organizaci\u00F3n exige tapar los datos sensibles y este Windows no tiene OCR: se descartan las capturas. Consulta con inform\u00E1tica.",
+                                "Your organization requires redaction, but this Windows has no OCR, so captures are discarded. Install an OCR language or contact IT.",
+                                "Deine Organisation verlangt Schw\u00E4rzung, aber dieses Windows hat keine OCR: Aufnahmen werden verworfen. Frag die IT.")
+                       : I18n.T("Este Windows no tiene OCR y las capturas se descartan. Instala un idioma de OCR o desactiva \u00AB" + title + "\u00BB.",
+                                "No OCR on this Windows, so captures are discarded. Install an OCR language or turn off \u201C" + title + "\u201D.",
+                                "Ohne OCR werden Aufnahmen verworfen. Installiere eine OCR-Sprache oder schalte das automatische Schw\u00E4rzen aus.");
         }
 
         // The check is over: the card shows the capture as it is now with a note, and the copy goes to the clipboard
