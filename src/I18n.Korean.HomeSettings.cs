@@ -131,6 +131,7 @@ namespace Stackshot
             map["Clear search"] = "\uAC80\uC0C9 \uC9C0\uC6B0\uAE30";
             map["Show"] = "\uD45C\uC2DC";
             map["This Windows does not have text recognition (OCR): searching by name only for now."] = "\uC774 Windows\uC5D0\uC11C\uB294 \uD14D\uC2A4\uD2B8 \uC778\uC2DD(OCR)\uC744 \uC0AC\uC6A9\uD560 \uC218 \uC5C6\uC5B4 \uC774\uB984\uC73C\uB85C\uB9CC \uAC80\uC0C9\uD569\uB2C8\uB2E4.";
+            map["This Windows has no text recognition (OCR): it cannot be turned on, because every capture would be discarded unchecked. Install an OCR language under Windows Settings > Apps > Optional features."] = "\uC774 Windows\uC5D0\uB294 \uD14D\uC2A4\uD2B8 \uC778\uC2DD(OCR)\uC774 \uC5C6\uC5B4 \uCF24 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uCF1C\uBA74 \uBAA8\uB4E0 \uCEA1\uCC98\uAC00 \uAC80\uC0AC \uC5C6\uC774 \uC0AD\uC81C\uB418\uAE30 \uB54C\uBB38\uC785\uB2C8\uB2E4. Windows \uC124\uC815 > \uC571 > \uC120\uD0DD\uC801 \uAE30\uB2A5\uC5D0\uC11C OCR \uC5B8\uC5B4\uB97C \uC124\uCE58\uD558\uC138\uC694.";
             map[" \u00B7 paused while recording"] = " \u00B7 \uB179\uD654 \uC911 \uC77C\uC2DC \uC911\uC9C0";
             map[" \u00B7 paused while capturing"] = " \u00B7 \uCEA1\uCC98 \uC911 \uC77C\uC2DC \uC911\uC9C0";
             map["Text search is turned off"] = "\uD14D\uC2A4\uD2B8 \uAC80\uC0C9\uC774 \uAEBC\uC838 \uC788\uC2B5\uB2C8\uB2E4";

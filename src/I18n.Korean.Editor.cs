@@ -260,6 +260,7 @@ namespace Stackshot
             map["Frame at {0} added to stack"] = "{0}\uC758 \uD504\uB808\uC784\uC744 \uC378\uB124\uC77C \uBAA9\uB85D\uC5D0 \uCD94\uAC00\uD588\uC2B5\uB2C8\uB2E4";
             map[" frame "] = " \uD504\uB808\uC784 ";
             map["Frame saved: {0}"] = "\uD504\uB808\uC784 \uC800\uC7A5\uB428: {0}";
+            map["Frame "] = "\uD504\uB808\uC784 ";
             map["Could not save frame: "] = "\uD504\uB808\uC784 \uC800\uC7A5 \uC2E4\uD328: ";
             map["Could not prepare export."] = "\uB0B4\uBCF4\uB0B4\uAE30\uB97C \uC900\uBE44\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
             map["Could not create MP4.\n\n"] = "MP4\uB97C \uB9CC\uB4E4\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.\n\n";

@@ -43,6 +43,8 @@ namespace Stackshot.Tests
                 T("german-audit-of-every-page", AppTestsI18nGerman.GermanAudit);
                 T("audit-covers-the-other-windows", AppTestsI18nGerman.ExtraWindowsAudit);
                 T("catalog-covers-every-call-site", AppTestsI18nCoverage.CatalogCoversEveryCallSite);
+                T("korean-catalog-covers-every-call-site", AppTestsI18nCoverage.KoreanCatalogCoversEveryCallSite);
+                T("korean-persona-lines-keep-their-meaning", AppTestsI18nCoverage.KoreanPersonaLinesKeepTheirMeaning);
                 T("no-unwrapped-spanish-in-ui", AppTestsI18nCoverage.NoUnwrappedSpanish);
                 T("german-placeholders-match", AppTestsI18nCoverage.GermanPlaceholdersMatch);
                 T("no-duplicate-german-keys", AppTestsI18nCoverage.NoDuplicateGermanKeys);

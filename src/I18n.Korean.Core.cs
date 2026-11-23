@@ -380,6 +380,18 @@ namespace Stackshot
             // ShotStack.Sensitive.cs
             map["Checking data\u2026"] = "\uB370\uC774\uD130 \uAC80\uC0AC \uC911\u2026";
             map["The capture was discarded because it could not be checked for sensitive data."] = "\uBBFC\uAC10\uC815\uBCF4\uB97C \uAC80\uC0AC\uD560 \uC218 \uC5C6\uC5B4 \uCEA1\uCC98\uB97C \uC0AD\uC81C\uD588\uC2B5\uB2C8\uB2E4.";
+            map["The capture could not be checked"] = "\uCEA1\uCC98\uB97C \uAC80\uC0AC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4";
+            map["Its sensitive data could not be covered, so it was discarded: it is never shown or saved unchecked."] = "\uBBFC\uAC10 \uC815\uBCF4\uB97C \uAC00\uB9AC\uC9C0 \uBABB\uD574 \uCEA1\uCC98\uB97C \uC0AD\uC81C\uD588\uC2B5\uB2C8\uB2E4. \uAC80\uC0AC\uD558\uC9C0 \uC54A\uC740 \uCEA1\uCC98\uB294 \uD45C\uC2DC\uD558\uAC70\uB098 \uC800\uC7A5\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.";
+            map["Captures are discarded: no text recognition (OCR)"] = "\uD14D\uC2A4\uD2B8 \uC778\uC2DD(OCR)\uC774 \uC5C6\uC5B4 \uCEA1\uCC98\uB97C \uC0AD\uC81C\uD569\uB2C8\uB2E4";
+            map["Your organization requires \u201C{0}\u201D, but this Windows has no OCR installed, so every capture is discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or contact IT."] = "\uC870\uC9C1\uC5D0\uC11C \u2018{0}\u2019 \uC0AC\uC6A9\uC744 \uC694\uAD6C\uD558\uC9C0\uB9CC \uC774 Windows\uC5D0\uB294 OCR\uC774 \uC124\uCE58\uB418\uC5B4 \uC788\uC9C0 \uC54A\uC544, \uAC80\uC0AC\uD558\uC9C0 \uC54A\uC740 \uCEA1\uCC98\uAC00 \uD45C\uC2DC\uB418\uC9C0 \uC54A\uB3C4\uB85D \uBAA8\uB4E0 \uCEA1\uCC98\uB97C \uC0AD\uC81C\uD569\uB2C8\uB2E4. Windows \uC124\uC815 > \uC571 > \uC120\uD0DD\uC801 \uAE30\uB2A5\uC5D0\uC11C OCR \uC5B8\uC5B4\uB97C \uC124\uCE58\uD558\uAC70\uB098 IT \uBD80\uC11C\uC5D0 \uBB38\uC758\uD558\uC138\uC694.";
+            map["With \u201C{0}\u201D on, every capture is checked before it is shown, and this Windows has no OCR installed, so captures are discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or turn the option off."] = "\u2018{0}\u2019 \uC635\uC158\uC774 \uCF1C\uC838 \uC788\uC73C\uBA74 \uBAA8\uB4E0 \uCEA1\uCC98\uB97C \uD45C\uC2DC\uD558\uAE30 \uC804\uC5D0 \uAC80\uC0AC\uD558\uB294\uB370, \uC774 Windows\uC5D0\uB294 OCR\uC774 \uC124\uCE58\uB418\uC5B4 \uC788\uC9C0 \uC54A\uC544 \uAC80\uC0AC\uD558\uC9C0 \uC54A\uC740 \uCEA1\uCC98\uAC00 \uD45C\uC2DC\uB418\uC9C0 \uC54A\uB3C4\uB85D \uCEA1\uCC98\uB97C \uC0AD\uC81C\uD569\uB2C8\uB2E4. Windows \uC124\uC815 > \uC571 > \uC120\uD0DD\uC801 \uAE30\uB2A5\uC5D0\uC11C OCR \uC5B8\uC5B4\uB97C \uC124\uCE58\uD558\uAC70\uB098 \uC774 \uC635\uC158\uC744 \uB044\uC138\uC694.";
+            map["Pasted"] = "\uBD99\uC5EC\uB123\uC74C";
+            map["Okay, I won't."] = "\uC54C\uACA0\uC5B4, \uC548 \uD560\uAC8C.";
+            map["tomorrow "] = "\uB0B4\uC77C ";
+            map["Reinstall Stackshot {0} over the installed copy?"] = "\uC124\uCE58\uB41C Stackshot \uC704\uC5D0 {0} \uBC84\uC804\uC744 \uB2E4\uC2DC \uC124\uCE58\uD560\uAE4C\uC694?";
+            map["you slept {0} last night"] = "\uC5B4\uC82F\uBC24 {0} \uC218\uBA74";
+            map["you have {0} min of moderate or vigorous activity"] = "\uC911\uAC15\uB3C4 \uC774\uC0C1 \uD65C\uB3D9 {0}\uBD84";
+            map[" {0} to go: about {1} min of walking."] = " {0}\uAC78\uC74C \uB0A8\uC558\uC5B4\uC694. \uAC78\uC73C\uBA74 \uC57D {1}\uBD84 \uAC78\uB824\uC694.";
 
             // ShotStack.Toast.cs
             map["Open folder"] = "\uD3F4\uB354 \uC5F4\uAE30";

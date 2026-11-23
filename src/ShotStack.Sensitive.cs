@@ -97,7 +97,11 @@ namespace Stackshot
             string title = PolicyTitles.Sensitive;
             // What a policy forces cannot be turned off: say who requires it instead of naming a way out the user has.
             Notify(I18n.T("Las capturas se descartan: no hay reconocimiento de texto (OCR)", "Captures are discarded: no text recognition (OCR)", "Aufnahmen werden verworfen: keine Texterkennung (OCR)"),
-                   Policy.SensitiveForced
+                   I18n.IsKorean
+                       ? I18n.Fmt("", Policy.SensitiveForced
+                             ? "Your organization requires \u201C{0}\u201D, but this Windows has no OCR installed, so every capture is discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or contact IT."
+                             : "With \u201C{0}\u201D on, every capture is checked before it is shown, and this Windows has no OCR installed, so captures are discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or turn the option off.", title)
+                   : Policy.SensitiveForced
                        ? I18n.T("Tu organizaci\u00F3n exige \u00AB" + title + "\u00BB, pero este Windows no tiene OCR instalado, as\u00ED que cada captura se descarta para que nada se muestre sin revisar. Instala un idioma de OCR (Configuraci\u00F3n de Windows > Aplicaciones > Caracter\u00EDsticas opcionales) o consulta con inform\u00E1tica.",
                                 "Your organization requires \u201C" + title + "\u201D, but this Windows has no OCR installed, so every capture is discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or contact IT.",
                                 "Deine Organisation verlangt \u201E" + title + "\u201C, aber dieses Windows hat keine OCR installiert, daher wird jede Aufnahme verworfen, statt ungepr\u00FCft gezeigt zu werden. Installiere eine OCR-Sprache (Windows-Einstellungen > Apps > Optionale Features) oder wende dich an die IT.")

@@ -27,6 +27,7 @@ namespace Stackshot
             map["FFmpeg did not create the file."] = "FFmpeg\uAC00 \uD30C\uC77C\uC744 \uB9CC\uB4E4\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
             map["Check"] = "\uAC80\uC99D";
             map["Cancelled before finishing."] = "\uC644\uB8CC \uC804\uC5D0 \uCDE8\uC18C\uD588\uC2B5\uB2C8\uB2E4.";
+            map["Stackshot Cine: lossless H.264 RGB video and 32-bit PCM audio"] = "Stackshot Cine: \uBB34\uC190\uC2E4 H.264 RGB \uC601\uC0C1 \uBC0F 32\uBE44\uD2B8 PCM \uC624\uB514\uC624";
             map["Could not finish: "] = "\uC644\uB8CC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4: ";
             map["Reading the file"] = "\uD30C\uC77C \uC77D\uAE30";
             map["FFmpeg reads all of it without errors."] = "FFmpeg\uAC00 \uC624\uB958 \uC5C6\uC774 \uD30C\uC77C \uC804\uCCB4\uB97C \uC77D\uC5C8\uC2B5\uB2C8\uB2E4.";

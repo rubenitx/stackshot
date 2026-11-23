@@ -113,6 +113,122 @@ namespace Stackshot.Tests
             }
         }
 
+        // Files whose English texts are not translated on purpose: the key names of the hotkeys (Hotkeys.cs) and the
+        // comments of the settings file (Settings.cs), the same as in every other language.
+        static readonly string[] KoreanSkipFiles = { "Capture/Hotkeys.cs", "Settings.cs" };
+
+        // The English texts an argument can be: its literal, or every literal of a plain "cond ? \"one\" : \"other\"" choice.
+        // Anything built at run time (a concatenation with a variable) has no fixed key and is left to the audits.
+        static List<string> EnglishKeys(List<Tok> arg)
+        {
+            List<string> keys = new List<string>();
+            string one;
+            if (LiteralOf(arg, out one)) { if (one.Trim().Length > 0) keys.Add(one); return keys; }
+            bool choice = false, joined = false;
+            foreach (Tok t in arg) { if (t.Str || t.Com) continue; if (t.S == "?") choice = true; else if (t.S == "+") joined = true; }
+            if (choice && !joined) foreach (Tok t in arg) if (t.Str && !t.Com && t.S.Trim().Length > 0) keys.Add(t.S);
+            return keys;
+        }
+
+        // The same text in Korean as in English (numbers, quotes, key names, technical words): no catalog entry needed.
+        static readonly string[] KoreanSameAsEnglish =
+        {
+            "%", "\u201C{0}\u201D", " \u201C{0}\u201D", "6,000", "8,000", "10,000", "12,000", "15,000", "Ctrl + Enter", "Ctrl+Enter",
+            "Space", "FAIL ", "\u2026"
+        };
+
+        // English texts that sit in the non-Korean half of a call site: an `if (I18n.IsKorean)` branch above them in the
+        // same method returns its own Korean text first, so the catalog never sees these.
+        static readonly string[] KoreanBranchAbove =
+        {
+            " (the one from {0}{1})", " Try to ", " at ", " min disk space", ", which now has no shortcut.", "; it now belongs to \u201C{0}\u201D.",
+            "was assigned to \u201C{0}\u201D", "1 breathing break", "1 eye rest", "1 movement break", "{0} breathing breaks", "Today: 1 glass of water",
+            "Today: {0} glasses of water", "First breathing session today.", "First eye rest today.", "First movement break today.",
+            "Your first glass today.", "an hour", "an hour and a half", "hours", "minutes",
+            "In the last hour and a half you have only taken {0} steps. Shall we stretch our legs for a couple of minutes?",
+            "In the last hour you have only taken {0} steps. Shall we stretch our legs for a couple of minutes?",
+            "Your computer couldn't keep up: {0} frames ({1}%) were late or repeated.",
+            "Your computer hitched for a moment ({0} s) and some frames may have repeated.",
+            "1 item", "{0} items", "1 result", "{0} results", "MMM d", "MMM d, yyyy", "MMM d HH:mm:ss", "{0} capture together", "{0} captures together",
+            "Not yet! You need 1 more capture for that.", "on {0} at {1}", "{0} are not tokens above: kept as-is.",
+            "{0} is not one of the tokens above: kept as-is.", "  \u00B7  {0} to go for \u201C{1}\u201D", " on {0}"
+        };
+
+        // Every English text that an I18n.T / I18n.Fmt / I18n.Localize call site shows in Korean has a Korean catalog entry
+        // (a missing one falls back to English and reads as a bug in a Korean interface).
+        public static void KoreanCatalogCoversEveryCallSite()
+        {
+            FieldInfo field = typeof(I18n).GetField("KoreanCatalog", BindingFlags.NonPublic | BindingFlags.Static);
+            Check(field != null, "the Korean catalog field must exist");
+            object lazy = field.GetValue(null);
+            var catalog = (Dictionary<string, string>)lazy.GetType().GetProperty("Value").GetValue(lazy, null);
+            SortedDictionary<string, string> missing = new SortedDictionary<string, string>(StringComparer.Ordinal);
+            int covered = 0, skipped = 0;
+            foreach (Source f in Sources())
+            {
+                if (Array.IndexOf(KoreanSkipFiles, f.Rel) >= 0) continue;
+                List<Tok> toks = Tokenize(f.Text);
+                for (int i = 0; i < toks.Count - 3; i++)
+                {
+                    if (toks[i].Com || toks[i].Str || toks[i].S != "I18n" || toks[i + 1].S != ".") continue;
+                    string method = toks[i + 2].S;
+                    if ((method != "T" && method != "Fmt" && method != "Localize") || toks[i + 3].S != "(") continue;
+                    int line = toks[i].Line, at = i + 3;
+                    List<List<Tok>> args = CallArgs(toks, ref at);   // no skipping ahead: calls nested in the arguments count too
+                    int index = method == "Localize" ? 0 : 1;
+                    if (args.Count <= index) continue;
+                    foreach (string en in EnglishKeys(args[index]))
+                    {
+                        if (catalog.ContainsKey(en)) covered++;
+                        else if (Array.IndexOf(KoreanSameAsEnglish, en) >= 0 || Array.IndexOf(KoreanBranchAbove, en) >= 0) skipped++;
+                        else if (!missing.ContainsKey(en)) missing[en] = f.Rel + ":" + line;
+                    }
+                }
+            }
+            foreach (KeyValuePair<string, string> m in missing) Console.WriteLine("    no korean: " + m.Value + ": " + m.Key);
+            Console.WriteLine("    korean calls: " + covered + " covered, " + skipped + " same in Korean or handled by a Korean branch, " + missing.Count + " English texts without Korean");
+            if (missing.Count > 0)
+            {
+                var sb = new StringBuilder(missing.Count + " English texts have no Korean entry (first " + Math.Min(Cap, missing.Count) + "):");
+                int n = 0;
+                foreach (KeyValuePair<string, string> m in missing)
+                {
+                    if (n++ >= Cap) break;
+                    sb.Append("\n" + m.Value + ": " + m.Key);
+                }
+                throw new InvalidOperationException(sb.ToString());
+            }
+        }
+
+        // Mascot persona lines were once registered one entry out of step (each text carried its neighbour's Korean): a few
+        // pairs from the start, the middle and the end of that stretch must keep their own translation.
+        public static void KoreanPersonaLinesKeepTheirMeaning()
+        {
+            string[,] pairs =
+            {
+                { "Hit me from below!", "\uC544\uB798\uC5D0\uC11C \uCCD0 \uC918!" },
+                { "Kriii\u2026", "\uD0A4\uB9AC\uC774\u2026" },
+                { "Wadi!", "\uC640\uB514!" },
+                { "Errand complete!", "\uC2EC\uBD80\uB984 \uB05D!" },
+                { "Don't call me short!", "\uB098\uD55C\uD14C \uD0A4 \uC791\uB2E4\uACE0 \uD558\uC9C0 \uB9C8!" },
+                { "If you don't fight, you can't win.", "\uC2F8\uC6B0\uC9C0 \uC54A\uC73C\uBA74 \uC774\uAE38 \uC218 \uC5C6\uC5B4." },
+                { "Tch.", "\uCE6B." },
+                { "This is still filthy.", "\uC544\uC9C1\uB3C4 \uB354\uB7FD\uC796\uC544." },
+                { "Choose whatever you'll regret the least.", "\uAC00\uC7A5 \uB35C \uD6C4\uD68C\uD560 \uCABD\uC744 \uACE8\uB77C." }
+            };
+            string was = I18n.Mode;
+            try
+            {
+                I18n.Apply("ko");
+                for (int i = 0; i < pairs.GetLength(0); i++)
+                {
+                    string got = I18n.Localize(pairs[i, 0]);
+                    Check(got == pairs[i, 1], "'" + pairs[i, 0] + "' reads '" + got + "' in Korean, not '" + pairs[i, 1] + "'");
+                }
+            }
+            finally { I18n.Apply(was); }
+        }
+
         sealed class Branch { public int Kind; public string Text; public int Count; public string Ident; }  // Kind: 0 literal, 1 array literal, 2 identifier, 3 other
 
         static void ScanTernaries(Source f, List<string> issues, ref int unknownArrays)
