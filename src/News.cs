@@ -19,6 +19,8 @@ namespace Stackshot
         }
 
         public const string Start = "<!-- novedades -->", End = "<!-- /novedades -->";
+        // The same news in English, which the release workflow writes beside the Spanish ones.
+        public const string StartEn = "<!-- novedades-en -->", EndEn = "<!-- /novedades-en -->";
 
         static string embedded, testEn, testDe, testKo;
         static bool loaded;
@@ -119,13 +121,18 @@ namespace Stackshot
             return Bullets(lines);
         }
 
-        // The news a release on GitHub carries for its version (empty if it has none, as releases before 2.2.0).
-        public static List<Item> FromRelease(string body)
+        // The news a release on GitHub carries for its version, in Spanish (empty if it has none, as releases before 2.2.0).
+        public static List<Item> FromRelease(string body) { return Between(body, Start, End); }
+
+        // The same news in English (empty when the release only carries the Spanish ones).
+        public static List<Item> FromReleaseEnglish(string body) { return Between(body, StartEn, EndEn); }
+
+        static List<Item> Between(string body, string start, string end)
         {
             if (string.IsNullOrEmpty(body)) return new List<Item>();
-            int a = body.IndexOf(Start, StringComparison.Ordinal), b = a < 0 ? -1 : body.IndexOf(End, a, StringComparison.Ordinal);
+            int a = body.IndexOf(start, StringComparison.Ordinal), b = a < 0 ? -1 : body.IndexOf(end, a, StringComparison.Ordinal);
             if (a < 0 || b < 0) return new List<Item>();
-            string part = body.Substring(a + Start.Length, b - a - Start.Length);
+            string part = body.Substring(a + start.Length, b - a - start.Length);
             return Bullets(new List<string>(part.Replace("\r", "").Split('\n')));
         }
 

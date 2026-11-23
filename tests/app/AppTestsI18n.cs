@@ -67,6 +67,7 @@ namespace Stackshot.Tests
                 T("settings-rows-not-squeezed", AppTestsI18nAudit.SettingsRowsNotSqueezed);
                 T("every-list-text-has-german", AppTestsI18nAudit.EveryListTextHasGerman);
                 T("every-list-text-has-korean", AppTestsI18nAudit.EveryListTextHasKorean);
+                T("release-news-only-in-spanish", AppTestsI18nAudit.ReleaseNewsOnlyInSpanish);
             }
             finally
             {

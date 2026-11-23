@@ -56,6 +56,19 @@ namespace Stackshot
             public string Tag, Page, ExeUrl, SigUrl, Sha256;
             public List<string> Notes = new List<string>();
             public List<News.Item> News = new List<News.Item>();   // in Spanish, when the release carries them
+            public List<News.Item> NewsEn = new List<News.Item>(); // the same in English, when the release carries them
+
+            // What a notice tells of this release in the interface language. The news between the markers are Spanish
+            // (and English when the workflow wrote them), so Spanish reads those and every other language the English
+            // ones, or the changelog lines the release always has in English: never the Spanish news.
+            public List<News.Item> Items()
+            {
+                if (I18n.IsSpanish && News.Count > 0) return News;
+                if (!I18n.IsSpanish && NewsEn.Count > 0) return NewsEn;
+                List<News.Item> items = new List<News.Item>();
+                foreach (string n in Notes) items.Add(new News.Item { Title = n, Text = "" });
+                return items;
+            }
         }
 
         public static Release Available;        // newer than this build, or null
@@ -449,10 +462,11 @@ namespace Stackshot
             // Release notes: the changelog bullets, without Markdown emphasis.
             string body = Str(root, "body") ?? "";
             r.News = global::Stackshot.News.FromRelease(body);
+            r.NewsEn = global::Stackshot.News.FromReleaseEnglish(body);
             foreach (string raw in body.Replace("\r", "").Split('\n'))
             {
                 string line = raw.Trim();
-                if (line.StartsWith("###") || line.StartsWith("<details") || line.StartsWith(global::Stackshot.News.Start)) break;
+                if (line.StartsWith("###") || line.StartsWith("<details") || line.StartsWith(global::Stackshot.News.Start) || line.StartsWith(global::Stackshot.News.StartEn)) break;
                 if (!line.StartsWith("- ")) continue;
                 line = Regex.Replace(line.Substring(2), @"\*\*|`|<[^>]+>", "");
                 int dot = line.IndexOf(". ");

@@ -125,7 +125,7 @@ jobs:
         run: |
           v="${GITHUB_REF_NAME#v}"
           awk -v v="$v" '/^## /{p = index($0, "## " v) == 1; next} p' CHANGELOG.md > notes.md
-          # The same news in Spanish, between markers the app reads to tell what a new version brings before updating.
+          # The same news in Spanish and English, between markers the app reads to tell what a new version brings before updating.
           awk -v v="$v" '/^## /{p = $0 == "## " v; next} p' docs/novedades.md > es.md
           if grep -q '^- ' es.md; then
             {
@@ -135,6 +135,19 @@ jobs:
               echo "<!-- novedades -->"
               cat es.md
               echo "<!-- /novedades -->"
+              echo
+              echo "</details>"
+            } >> notes.md
+          fi
+          awk -v v="$v" '/^## /{p = $0 == "## " v; next} p' docs/novedades.en.md > en.md
+          if grep -q '^- ' en.md; then
+            {
+              echo
+              echo "<details><summary>What's new in English</summary>"
+              echo
+              echo "<!-- novedades-en -->"
+              cat en.md
+              echo "<!-- /novedades-en -->"
               echo
               echo "</details>"
             } >> notes.md

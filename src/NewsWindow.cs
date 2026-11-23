@@ -76,9 +76,8 @@ namespace Stackshot
             if (r != null)
             {
                 version = r.Version.ToString(3);
-                items = new List<News.Item>(r.News);
-                // A release without Spanish news (older ones): its own headlines, as they are.
-                if (items.Count == 0) foreach (string n in r.Notes) items.Add(new News.Item { Title = n, Text = "" });
+                // The news in the interface language, or the release's own headlines as they are (older ones, other languages).
+                items = new List<News.Item>(r.Items());
             }
             else
             {

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -92,5 +93,52 @@ namespace Stackshot.Tests
 
         public static void EveryListTextHasGerman() { ListsLeak("de"); }
         public static void EveryListTextHasKorean() { ListsLeak("ko"); }
+
+        const string SpanishHeadline = "Titular s\u00F3lo en espa\u00F1ol";
+
+        static Updater.Release ParseRelease(string body)
+        {
+            string json = "{\"tag_name\":\"v9.9.9\",\"body\":" + new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(body) + "}";
+            return (Updater.Release)typeof(Updater).GetMethod("Parse", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, new object[] { json });
+        }
+
+        static string NoticeBody(Updater.Release r)
+        {
+            UpdateNotice w = new UpdateNotice((ShotStack)FormatterServices.GetUninitializedObject(typeof(ShotStack)), r);
+            try { return (string)typeof(UpdateNotice).GetMethod("Body", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(w, null); }
+            finally { w.Dispose(); }
+        }
+
+        // The release workflow writes the Spanish news between markers; a notice in any other language must not show them.
+        public static void ReleaseNewsOnlyInSpanish()
+        {
+            string body = "- **Recording works again** after a restart.\n- **Smaller files** for videos.\n\n" +
+                "<details><summary>Novedades en espa\u00F1ol</summary>\n\n" + News.Start + "\n- **" + SpanishHeadline + ".** Cuerpo.\n" + News.End + "\n\n</details>\n";
+            Updater.Release r = ParseRelease(body);
+            foreach (string lang in new[] { "en", "de", "ko" })
+            {
+                I18n.Apply(lang);
+                string text = NoticeBody(r);
+                Check(text.IndexOf(SpanishHeadline, StringComparison.Ordinal) < 0, lang + ": the notice shows the Spanish news: " + text);
+            }
+            I18n.Apply("en");
+            Check(NoticeBody(r).Contains("Recording works again"), "English: the notice carries the English changelog line");
+            I18n.Apply("es");
+            Check(NoticeBody(r).Contains(SpanishHeadline), "Spanish: the notice carries the Spanish news");
+
+            // A release that also carries the English news (the workflow writes both): every other language reads those.
+            string both = body + "\n<details><summary>What's new in English</summary>\n\n" + News.StartEn + "\n- **Headline in English.** Body.\n" + News.EndEn + "\n\n</details>\n";
+            Updater.Release r2 = ParseRelease(both);
+            Check(r2.News.Count == 1 && r2.NewsEn.Count == 1, "both news blocks are read apart");
+            foreach (string lang in new[] { "en", "de", "ko" })
+            {
+                I18n.Apply(lang);
+                string text = NoticeBody(r2);
+                Check(text.IndexOf(SpanishHeadline, StringComparison.Ordinal) < 0, lang + ": Spanish news with English ones present: " + text);
+                Check(text.Contains("Headline in English"), lang + ": the English news are not shown: " + text);
+            }
+            I18n.Apply("es");
+            Check(NoticeBody(r2).Contains(SpanishHeadline) && !NoticeBody(r2).Contains("Headline in English"), "Spanish keeps the Spanish news");
+        }
     }
 }

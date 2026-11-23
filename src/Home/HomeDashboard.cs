@@ -309,10 +309,9 @@ namespace Stackshot
                 np.Children.Add(nt);
                 text.Children.Add(np);
             }
-            // What the new version brings: its Spanish news when the release has them, its headlines otherwise.
+            // What the new version brings, in the interface language (see Updater.Release.Items).
             List<string> heads = new List<string>();
-            if (r != null) { foreach (News.Item it in r.News) if (heads.Count < 5) heads.Add(it.Title); }
-            if (r != null && heads.Count == 0) heads.AddRange(r.Notes);
+            if (r != null) { foreach (News.Item it in r.Items()) if (heads.Count < 5) heads.Add(it.Title); }
             if (r != null && !working && heads.Count > 0)
             {
                 StackPanel notes = new StackPanel { Margin = new Thickness(0, 10, 0, 0) };
