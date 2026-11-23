@@ -140,6 +140,7 @@ namespace Stackshot
                 this.c2 = c2;
                 Width = Height = size;
                 IsHitTestVisible = false;
+                FlowDirection = FlowDirection.LeftToRight;   // a right-to-left layout moves the tile, never mirrors its glyph
             }
 
             protected override void OnRender(DrawingContext dc)

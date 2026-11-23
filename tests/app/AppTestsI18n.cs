@@ -756,6 +756,10 @@ namespace Stackshot.Tests
                 var apply = (MacButton)typeof(LanguagePicker).GetField("apply", NP).GetValue(arabic);
                 Check(((FrameworkElement)apply.Parent).FlowDirection == FlowDirection.RightToLeft &&
                       apply.FlowDirection == FlowDirection.LeftToRight, "Arabic layout does not mirror the custom button glyphs");
+                var list = (ListBox)typeof(LanguagePicker).GetField("list", NP).GetValue(arabic);
+                Check(list.Items.Count > 1, "the Arabic picker lists the languages");
+                var tile = (Aurora.Monogram)((Grid)((Aurora.Ring)((ListBoxItem)list.Items[1]).Content).Child).Children[0];
+                Check(tile.FlowDirection == FlowDirection.LeftToRight, "Arabic layout does not mirror the monogram glyphs");
             }
             finally { arabic.Close(); }
             string path = Path.Combine(Path.GetTempPath(), "stackshot-languages-" + Guid.NewGuid().ToString("N") + ".ini");
