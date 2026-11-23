@@ -24,6 +24,9 @@ namespace Stackshot
         public static readonly string[] EditorFormats = ShotStack.VideoExtensions;
         public static string CineDir = Path.Combine(Settings.DataDir, "cine");   // tests point it elsewhere
 
+        // The button that picks the audio track: "Audio" in Spanish, English and German, "\uC624\uB514\uC624" in Korean.
+        public static string AudioLabel { get { return I18n.T("Audio", "Audio", "Audio"); } }
+
         static string Dec(double v, string f) { return v.ToString(f, I18n.Culture); }
 
         // 1:07 or 1:02:03.

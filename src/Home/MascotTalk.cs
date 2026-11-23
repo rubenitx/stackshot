@@ -11,6 +11,14 @@ namespace Stackshot
         static readonly Random rnd = new Random();
         static readonly List<string> recent = new List<string>();
 
+        // The label that opens the mascot's menu: "Jugar con Pixel". Korean puts \uACFC or \uC640 after the name by how the
+        // name ends; a name that doesn't say (Latin script) gets a wording without any particle.
+        public static string PlayWith(string name)
+        {
+            if (I18n.IsKorean && I18n.JosaOrNull(name, "\uACFC", "\uC640") == null) return name + " \uB180\uC544 \uC8FC\uAE30";
+            return I18n.Fmt("Jugar con {0}", "Play with {0}", name);
+        }
+
         static string Pick(string[] lines)
         {
             string line = null;
@@ -452,9 +460,9 @@ namespace Stackshot
             if (I18n.IsKorean)
             {
                 string whatEn = I18n.Localize(kind == WellKind.Water ? "water reminders" : kind == WellKind.Eyes ? "eye rest reminders" : kind == WellKind.Move ? "movement breaks" : "breathing breaks");
-                if (!s.MascotTalks) return string.Format(I18n.Localize("No more {0} today."), whatEn);
-                return By(s.MascotPersonality, new string[] { string.Format(I18n.Localize("Got it! No more {0} today."), whatEn) }, new string[] { string.Format(I18n.Localize("Alright, no more {0} for today."), whatEn) },
-                          new string[] { string.Format(I18n.Localize("Fine, you're off the hook for {0} today."), whatEn) });
+                if (!s.MascotTalks) return I18n.KoreanParticles(string.Format(I18n.Localize("No more {0} today."), whatEn));
+                return By(s.MascotPersonality, new string[] { I18n.KoreanParticles(string.Format(I18n.Localize("Got it! No more {0} today."), whatEn)) }, new string[] { I18n.KoreanParticles(string.Format(I18n.Localize("Alright, no more {0} for today."), whatEn)) },
+                          new string[] { I18n.KoreanParticles(string.Format(I18n.Localize("Fine, you're off the hook for {0} today."), whatEn)) });
             }
             string what = kind == WellKind.Water ? I18n.T("lo del agua", "water reminders", "Wasser-Erinnerungen")
                         : kind == WellKind.Eyes ? I18n.T("lo de la vista", "eye rest reminders", "Augenpausen")

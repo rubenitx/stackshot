@@ -2268,7 +2268,7 @@ namespace Stackshot
             string dest = output;
             if (!v.Passed)
             {
-                dest = ShotStack.Unique(Path.ChangeExtension(output, null) + " (sin verificar)" + Cine.Extension);
+                dest = ShotStack.Unique(Path.ChangeExtension(output, null) + I18n.Own(" (sin verificar)", " (unverified)", " (ungepr\u00FCft)", " (\uBBF8\uAC80\uC99D)") + Cine.Extension);
                 warning = watch.Cancelled ? I18n.Fmt("Has cancelado la comprobaci\u00F3n: el archivo se ha guardado sin verificar como \u00AB{0}\u00BB.",
                                                      "You cancelled the check: the file was saved unverified as \u201C{0}\u201D.", Path.GetFileName(dest))
                                           : I18n.Fmt("La comprobaci\u00F3n ha encontrado diferencias: el archivo se ha guardado como \u00AB{0}\u00BB.",

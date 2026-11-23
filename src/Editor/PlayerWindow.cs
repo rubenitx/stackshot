@@ -637,7 +637,7 @@ namespace Stackshot
             try
             {
                 Directory.CreateDirectory(dir);
-                output = ShotStack.Reserve(Path.Combine(dir, Path.GetFileNameWithoutExtension(path) + (HasRange ? " (tramo).mp4" : " (para compartir).mp4")));
+                output = ShotStack.Reserve(Path.Combine(dir, Path.GetFileNameWithoutExtension(path) + (HasRange ? ExportName.Clip : ExportName.ForSharing) + ".mp4"));
             }
             catch (Exception ex)
             {
@@ -756,7 +756,7 @@ namespace Stackshot
             string kept = output;
             try
             {
-                kept = ShotStack.Unique(Path.Combine(Path.GetDirectoryName(output), Path.GetFileNameWithoutExtension(output) + " (sin validar)" + Path.GetExtension(output)));
+                kept = ShotStack.Unique(Path.Combine(Path.GetDirectoryName(output), Path.GetFileNameWithoutExtension(output) + ExportName.Unverified + Path.GetExtension(output)));
                 File.Move(output, kept);
             }
             catch (Exception ex) { kept = output; ShotStack.Log("Reproductor: no se pudo renombrar: " + ex.Message); }
@@ -1279,7 +1279,7 @@ namespace Stackshot
             Font pf = Face(true, 12);
             List<Btn> right = new List<Btn>();
             right.Add(Make("full", fullscreen ? "restore" : "maximize", null, I18n.T("Pantalla completa  (F)", "Full screen  (F)"), P(34), false, false));
-            if (info.Audio.Count > 1) right.Add(Make("tracks", null, "Audio", I18n.T("Pista de audio", "Audio track"), Math.Max(P(52), TextKit.Measure(g, "Audio", pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(24)), false, true));
+            if (info.Audio.Count > 1) right.Add(Make("tracks", null, PlayerKit.AudioLabel, I18n.T("Pista de audio", "Audio track"), Math.Max(P(52), TextKit.Measure(g, PlayerKit.AudioLabel, pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(24)), false, true));
             right.Add(Make("speed", null, PlayerKit.SpeedText(speed), I18n.T("Velocidad", "Speed"), Math.Max(P(48), TextKit.Measure(g, PlayerKit.SpeedText(speed), pf, Size.Empty, TextFormatFlags.NoPadding).Width + P(20)), speed != 1, true));
             right.Add(Make("loop", "update", null, I18n.T("Repetir al terminar", "Loop playback"), P(34), loop, false));
             right.Add(Make("menu", "gear", null, I18n.T("M\u00E1s opciones", "More options"), P(34), false, false));

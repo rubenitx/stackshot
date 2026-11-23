@@ -768,10 +768,10 @@ namespace Stackshot
             map["{0} eye rests today."] = "\uC624\uB298 \uB208\uC744 {0}\uBC88 \uC26C\uC5C8\uC5B4.";
             map["{0} movement breaks today."] = "\uC624\uB298 {0}\uBC88 \uBAB8\uC744 \uC6C0\uC9C1\uC600\uC5B4.";
             map["{0} breathing sessions today."] = "\uC624\uB298 \uD638\uD761 \uC6B4\uB3D9\uC744 {0}\uBC88 \uD588\uC5B4.";
-            map["No more {0} today."] = "\uC624\uB298\uC740 {0}\uC744 \uADF8\uB9CC\uD560\uAC8C.";
-            map["Got it! No more {0} today."] = "\uC54C\uACA0\uC5B4! \uC624\uB298\uC740 {0}\uC744 \uADF8\uB9CC\uD560\uAC8C.";
-            map["Alright, no more {0} for today."] = "\uC88B\uC544, \uC624\uB298\uC740 {0}\uC744 \uAEBC \uB458\uAC8C.";
-            map["Fine, you're off the hook for {0} today."] = "\uC88B\uC544. \uC624\uB298\uC740 {0}\uC744 \uB354 \uC548 \uD574\uB3C4 \uB3FC.";
+            map["No more {0} today."] = "\uC624\uB298\uC740 {0}\uC744(\uB97C) \uADF8\uB9CC\uD560\uAC8C.";
+            map["Got it! No more {0} today."] = "\uC54C\uACA0\uC5B4! \uC624\uB298\uC740 {0}\uC744(\uB97C) \uADF8\uB9CC\uD560\uAC8C.";
+            map["Alright, no more {0} for today."] = "\uC88B\uC544, \uC624\uB298\uC740 {0}\uC744(\uB97C) \uAEBC \uB458\uAC8C.";
+            map["Fine, you're off the hook for {0} today."] = "\uC88B\uC544. \uC624\uB298\uC740 {0}\uC744(\uB97C) \uB354 \uC548 \uD574\uB3C4 \uB3FC.";
             map["We are now {0}!"] = "\uC774\uC81C \uC6B0\uB9AC\uB294 \u2018{0}\u2019\uC57C!";
             map["Press {0} to capture."] = "{0} \uD0A4\uB97C \uB20C\uB7EC \uCEA1\uCC98\uD558\uC138\uC694.";
             map["Today: {0} glasses of water, {1} eye rests, {2} movement breaks"] = "\uC624\uB298 \uBB3C {0}\uC794, \uB208 \uC26C\uAE30 {1}\uD68C, \uBAB8 \uC6C0\uC9C1\uC774\uAE30 {2}\uD68C";

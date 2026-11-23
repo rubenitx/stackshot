@@ -101,10 +101,19 @@ namespace Stackshot
             return PreviewText(en) ?? en;
         }
 
-        // Formats a localized string, with the numbers in the interface language's culture.
+        // A wording of its own for each language that has one, and English for every other, the previews too: a short word
+        // such as "Open" (a status, not the verb) has no entry a machine translation could pick the right sense from.
+        internal static string Own(string es, string en, string de, string ko)
+        {
+            return IsSpanish ? es : IsGerman ? de : IsKorean ? ko : en;
+        }
+
+        // Formats a localized string, with the numbers in the interface language's culture. In Korean the particles that
+        // follow a filled-in name or number ("{0}\uC744(\uB97C)") are settled by how that last word ends.
         public static string Fmt(string esFmt, string enFmt, params object[] args)
         {
-            return string.Format(Culture, T(esFmt, enFmt), args);
+            string text = string.Format(Culture, T(esFmt, enFmt), args);
+            return IsKorean ? KoreanParticles(text) : text;
         }
 
         // Shown text back to the English key it translates (the key T starts from): the catalog maps every English key

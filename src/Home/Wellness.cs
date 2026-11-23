@@ -15,7 +15,15 @@ namespace Stackshot
         public static readonly string[] Glyphs = { "drop", "eye", "walk", "wind" };
         // Choices for each interval, in minutes (0: off).
         public static readonly int[] Minutes = { 0, 20, 30, 45, 60, 90, 120 };
-        public static string[] MinuteNames { get { return new string[] { I18n.T("No", "Off"), "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" }; } }
+        public static string[] MinuteNames
+        {
+            get
+            {
+                // Korean says its own units ("20\uBD84", "1\uC2DC\uAC04 30\uBD84"), as everywhere else a duration is shown.
+                if (I18n.IsKorean) return new string[] { I18n.T("No", "Off"), FocusClock.Minutes(20), FocusClock.Minutes(30), FocusClock.Minutes(45), FocusClock.Minutes(60), FocusClock.Minutes(90), FocusClock.Minutes(120) };
+                return new string[] { I18n.T("No", "Off"), "20 min", "30 min", "45 min", "1 h", "1 h 30", "2 h" };
+            }
+        }
 
         public static int IndexOf(int minutes)
         {

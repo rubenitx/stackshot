@@ -57,7 +57,7 @@ namespace Stackshot
 
             // Program.cs
             map["Could not open {0}.\n\n{1}"] = "{0}\uC744(\uB97C) \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.\n\n{1}";
-            map["This machine has Stackshot {0} installed via MSI package.\n\nTo update to {1}, install Stackshot.msi for that version (or ask IT)."] = "\uC774 PC\uC5D0\uB294 MSI\uB85C \uC124\uCE58\uD55C Stackshot {0}\uC774 \uC788\uC2B5\uB2C8\uB2E4.\n\n{1} \uBC84\uC804\uC758 Stackshot.msi\uB97C \uC124\uCE58\uD558\uAC70\uB098 IT \uB2F4\uB2F9\uC790\uC5D0\uAC8C \uBB38\uC758\uD558\uC138\uC694.";
+            map["This machine has Stackshot {0} installed via MSI package.\n\nTo update to {1}, install Stackshot.msi for that version (or ask IT)."] = "\uC774 PC\uC5D0\uB294 MSI\uB85C \uC124\uCE58\uD55C Stackshot {0}\uC774(\uAC00) \uC788\uC2B5\uB2C8\uB2E4.\n\n{1} \uBC84\uC804\uC758 Stackshot.msi\uB97C \uC124\uCE58\uD558\uAC70\uB098 IT \uB2F4\uB2F9\uC790\uC5D0\uAC8C \uBB38\uC758\uD558\uC138\uC694.";
             map["Update Stackshot from version {0} to {1}?"] = "Stackshot\uC744 {0}\uC5D0\uC11C {1}(\uC73C)\uB85C \uC5C5\uB370\uC774\uD2B8\uD560\uAE4C\uC694?";
             map["Does not seem to be a valid image, or is corrupted."] = "\uC62C\uBC14\uB978 \uC774\uBBF8\uC9C0\uAC00 \uC544\uB2C8\uAC70\uB098 \uD30C\uC77C\uC774 \uC190\uC0C1\uB418\uC5C8\uC2B5\uB2C8\uB2E4.";
             map["The file cannot be opened in the editor."] = "\uD3B8\uC9D1\uAE30\uC5D0\uC11C \uD30C\uC77C\uC744 \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
