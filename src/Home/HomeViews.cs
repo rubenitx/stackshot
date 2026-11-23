@@ -328,7 +328,7 @@ namespace Stackshot
             {
                 if (I18n.IsSpanish) return ActionShortestEs;
                 if (I18n.IsEnglish) return ActionShortestEn;
-                return Array.ConvertAll(ActionShortestEn, label => I18n.T(null, label));
+                return Array.ConvertAll(ActionShortestEn, label => label == "GIF" && I18n.IsKorean ? I18n.GifAction : I18n.T(null, label));
             }
         }
 
@@ -1422,7 +1422,7 @@ namespace Stackshot
                 Panel.SetZIndex(play, 2);
                 stage.Children.Add(play);
             }
-            StackPanel right = new StackPanel { Width = 300, HorizontalAlignment = settings.MascotOn ? HorizontalAlignment.Right : HorizontalAlignment.Center, Margin = new Thickness(0, 74, 40, 0) };
+            StackPanel right = new StackPanel { Width = 300, HorizontalAlignment = settings.MascotOn ? HorizontalAlignment.Right : HorizontalAlignment.Center, Margin = new Thickness(0, 0, 40, 0) };
             FrameworkElement hi = HomeGreeting(13, pal.Label2, 0);
             right.Children.Add(hi);
             FrameworkElement q = HomeTitle(30, 300, 430);
@@ -1440,6 +1440,8 @@ namespace Stackshot
                 right.Children.Add(mr);
                 HomeEnter(mr, 150 + j * 45, 22, 0, 1);
             }
+            right.Measure(new Size(300, double.PositiveInfinity));
+            right.Margin = new Thickness(0, Math.Max(36, Math.Min(74, SceneStage + 3 - right.DesiredSize.Height)), 40, 0);
             stage.Children.Add(right);
 
             List<FileInfo> latest = settings.ShowRecent ? Recents.Latest(settings, 5) : new List<FileInfo>();

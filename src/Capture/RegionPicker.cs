@@ -776,7 +776,7 @@ namespace Stackshot
                 return;
             }
             AddBar("video", I18n.T("V\u00EDdeo", "Video"), Mode.Video, false, false);
-            AddBar("gif", "GIF", Mode.Gif, false, false);
+            AddBar("gif", I18n.GifAction, Mode.Gif, false, false);
             AddBar("scroll", I18n.T("Desplazar", "Scroll"), Mode.Scroll, false, false);
             AddBar("textscan", I18n.T("Texto", "Text"), Mode.Text, false, false);
             AddBar("close", null, Mode.Image, false, true);
