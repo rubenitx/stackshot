@@ -328,7 +328,7 @@ namespace Stackshot
                     string col = p.Color ?? "";
                     bool tagged = col.Contains("tv") && col.Contains("bt709/bt709/iec61966-2-1");
                     bool sited = !e.CentredChroma || sps.ChromaLoc == 1;
-                    Add(r, NameColor, tagged && sited, !tagged ? I18n.T("sin las etiquetas BT.709 (", "without the BT.709 tags (") + (col.Length == 0 ? I18n.T("ninguna", "none") : col) + ")" :
+                    Add(r, NameColor, tagged && sited, !tagged ? I18n.T("sin las etiquetas BT.709 (", "without the BT.709 tags (") + (col.Length == 0 ? I18n.T("ninguna", "none", "keine") : col) + ")" :
                                                        !sited ? I18n.T("BT.709, pero no dice que el croma va centrado", "BT.709, but it does not say the chroma is centered") :
                                                        I18n.T("BT.709, rango limitado", "BT.709, limited range") + (e.CentredChroma ? I18n.T(", croma centrado", ", centered chroma") : ""));
                 }

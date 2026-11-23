@@ -613,8 +613,8 @@ namespace Stackshot
                         if (others.RemoveAll(delegate(string o) { return Hotkeys.Same(o, combo); }) == 0) continue;
                         w.settings.SetHotkeys(a, string.Join(", ", others.ToArray()));
                         w.keysMoved = I18n.IsKorean ? (others.Count == 0
-                            ? string.Format(I18n.Localize("{0} was assigned to {1}, which now has no shortcut."), Hotkeys.DisplayOne(combo), ActionNames[i])
-                            : string.Format(I18n.Localize("{0} moved from {1} to {2}."), Hotkeys.DisplayOne(combo), ActionNames[i], Title))
+                            ? I18n.KoreanFormat(I18n.Localize("{0} was assigned to {1}, which now has no shortcut."), Hotkeys.DisplayOne(combo), ActionNames[i])
+                            : I18n.KoreanFormat(I18n.Localize("{0} moved from {1} to {2}."), Hotkeys.DisplayOne(combo), ActionNames[i], Title))
                             : Hotkeys.DisplayOne(combo) + " " + I18n.Fmt("era de \u00AB{0}\u00BB", "was assigned to \u201C{0}\u201D", ActionNames[i]) +
                                        (others.Count == 0 ? I18n.T(", que se ha quedado sin atajo.", ", which now has no shortcut.")
                                                           : I18n.Fmt("; ahora es de \u00AB{0}\u00BB.", "; it now belongs to \u201C{0}\u201D.", Title));
@@ -895,7 +895,7 @@ namespace Stackshot
                            delegate { int i = Array.IndexOf(Settings.TuckSeconds, settings.StackTuck); return i < 0 ? 2 : i; },
                            delegate(int i) { settings.StackTuck = Settings.TuckSeconds[Math.Max(0, Math.Min(Settings.TuckSeconds.Length - 1, i))]; owner.Untuck(); }),
                 new SegRow(I18n.T("Captura con temporizador", "Countdown timer"), I18n.T("Eliges el \u00E1rea y cuenta atr\u00E1s antes de capturar: da tiempo a abrir un men\u00FA o un aviso. Esc la cancela.", "Select area and counts down before capture: gives time to open menus. Esc cancels."), "clock", Mac.Orange, Mac.Red,
-                           new string[] { "3 s", "5 s", "10 s" },
+                           new string[] { RecordSetup.Seconds(3), RecordSetup.Seconds(5), RecordSetup.Seconds(10) },
                            delegate { return settings.CaptureDelay == 10 ? 2 : settings.CaptureDelay == 5 ? 1 : 0; },
                            delegate(int i) { settings.CaptureDelay = i == 2 ? 10 : i == 1 ? 5 : 3; }),
                 new ToggleRow(I18n.T("Seguir al rat\u00F3n entre pantallas", "Follow cursor across monitors"), I18n.T("Con varias pantallas, las miniaturas van a la del rat\u00F3n.", "On multi-monitor setups, thumbnails appear on the active screen."), "screen", Mac.Indigo, Mac.Purple,

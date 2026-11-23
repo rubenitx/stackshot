@@ -33,7 +33,7 @@ namespace Stackshot
             map["Connection cancelled"] = "\uC5F0\uACB0 \uCDE8\uC18C\uB428";
             map["Nothing was connected. You can close this tab and try again whenever you like from Stackshot."] = "\uC5F0\uACB0\uB41C \uAE30\uAE30\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. \uC774 \uD0ED\uC744 \uB2EB\uACE0 \uC5B8\uC81C\uB4E0\uC9C0 Stackshot\uC5D0\uC11C \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.";
             map["Could not connect"] = "\uC5F0\uACB0\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4";
-            map["Google returned \u201C{0}\u201D. Close this tab and try again from Stackshot."] = "Google\uC5D0\uC11C \u201C{0}\u201D\uC744 \uBC18\uD658\uD588\uC2B5\uB2C8\uB2E4. \uD0ED\uC744 \uB2EB\uACE0 Stackshot\uC5D0\uC11C \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.";
+            map["Google returned \u201C{0}\u201D. Close this tab and try again from Stackshot."] = "Google\uC5D0\uC11C \u201C{0}\u201D\uC744(\uB97C) \uBC18\uD658\uD588\uC2B5\uB2C8\uB2E4. \uD0ED\uC744 \uB2EB\uACE0 Stackshot\uC5D0\uC11C \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.";
             map["Google said: {0}"] = "Google \uC751\uB2F5: {0}";
             map["Invalid response"] = "\uC798\uBABB\uB41C \uC751\uB2F5";
             map["This response is not from the login opened by Stackshot. Try again from the app."] = "Stackshot\uC5D0\uC11C \uC2DC\uC791\uD55C \uB85C\uADF8\uC778\uC5D0 \uB300\uD55C \uC751\uB2F5\uC774 \uC544\uB2D9\uB2C8\uB2E4. \uC571\uC5D0\uC11C \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.";
@@ -293,7 +293,7 @@ namespace Stackshot
             map["Styles"] = "\uC2A4\uD0C0\uC77C";
             map["Favorites"] = "\uC990\uACA8\uCC3E\uAE30";
             map["Originals"] = "\uC624\uB9AC\uC9C0\uB110";
-            map["Nothing with \u201C{0}\u201D in {1}"] = "{1}\uC5D0\uC11C \u201C{0}\u201D\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4";
+            map["Nothing with \u201C{0}\u201D in {1}"] = "{1}\uC5D0\uC11C \u201C{0}\u201D\uC744(\uB97C) \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4";
             map["See {0} in {1}"] = "{1}\uC5D0\uC11C {0} \uBCF4\uAE30";
             map["Try another word"] = "\uB2E4\uB978 \uAC80\uC0C9\uC5B4\uB97C \uC785\uB825\uD558\uC138\uC694";
             map["Character"] = "\uCE90\uB9AD\uD130";
@@ -492,7 +492,7 @@ namespace Stackshot
             map["For images; videos and GIFs retain their own names."] = "\uC774\uBBF8\uC9C0\uC5D0 \uC801\uC6A9\uD569\uB2C8\uB2E4. \uB3D9\uC601\uC0C1\uACFC GIF\uB294 \uC790\uCCB4 \uC774\uB984\uC744 \uC720\uC9C0\uD569\uB2C8\uB2E4.";
             map["File names"] = "\uD30C\uC77C \uC774\uB984";
             map["Reset"] = "\uCD08\uAE30\uD654";
-            map["Reset to {0}"] = "{0}(\uC73C)\uB85C \uCD08\uAE30\uD654";
+            map["Reset to {0}"] = "\uAE30\uBCF8\uAC12\uC73C\uB85C \uCD08\uAE30\uD654: {0}";
             map["No"] = "\uC544\uB2C8\uC694";
             map["By month"] = "\uC6D4\uBCC4";
             map["By year and month"] = "\uC5F0\uB3C4 \uBC0F \uC6D4\uBCC4";
@@ -789,10 +789,10 @@ namespace Stackshot
             map["Click"] = "\uD074\uB9AD";
             map["Capture an area or window"] = "\uC601\uC5ED \uB610\uB294 \uCC3D \uCEA1\uCC98";
             map["Record the screen"] = "\uD654\uBA74 \uB179\uD654";
-            map["on thumbnail to edit it"] = "\uC378\uB124\uC77C\uC744 \uD074\uB9AD\uD574 \uD3B8\uC9D1";
+            map["on thumbnail to edit it"] = "\uC378\uB124\uC77C\uC5D0\uC11C \uD3B8\uC9D1";
             map["Install & get started"] = "\uC124\uCE58\uD558\uACE0 \uC2DC\uC791\uD558\uAE30";
             map["Where would you like to save your captures?"] = "\uCEA1\uCC98\uB97C \uC800\uC7A5\uD560 \uC704\uCE58\uB97C \uC120\uD0DD\uD558\uC138\uC694.";
-            map["You haven't taken any breaks yet today."] = "\uC624\uB298\uC740 \uC544\uC9C1 \uD734\uC2DD\uD558\uC9C0 \uC54A\uC558\uC5B4.";
+            map["You haven't taken any breaks yet today."] = "\uC624\uB298\uC740 \uC544\uC9C1 \uD734\uC2DD \uAE30\uB85D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.";
             map["Rest your eyes"] = "\uB208 \uC26C\uAE30";
             map["Move"] = "\uC6C0\uC9C1\uC774\uAE30";
             map["20 min"] = "20\uBD84";

@@ -24,6 +24,7 @@ namespace Stackshot
         // Shown order (Estandar, Alta, Maxima, Cine) to Recorder's quality numbers.
         internal static readonly int[] QualityOrder = { Recorder.Standard, Recorder.High, Recorder.Maximum, Recorder.Cinema };
         internal static readonly int[] Countdowns = { 0, 3, 5, 10 };
+        internal static string Seconds(int s) { return I18n.T(s + " s", s + " s"); }
         // The frame rates offered; a stored value outside them is snapped so what is shown is what gets recorded.
         internal static readonly int[] VideoFpsOptions = { 24, 30, 60 }, GifFpsOptions = { 10, 15, 20, 25 };
         static readonly string[] QualityNotesEs =
@@ -190,7 +191,7 @@ namespace Stackshot
                 f.Changed += delegate(int i) { gifFps = GifFpsOptions[i]; };
                 Row(rows, I18n.T("Fotogramas", "Frame rate"), f, I18n.T("por segundo", "per second"));
             }
-            MacSegmented cd = new MacSegmented(new string[] { I18n.T("No", "None", "Aus"), "3 s", "5 s", "10 s" }, Math.Max(0, Array.IndexOf(Countdowns, countdown)));
+            MacSegmented cd = new MacSegmented(new string[] { I18n.T("No", "None", "Aus"), Seconds(3), Seconds(5), Seconds(10) }, Math.Max(0, Array.IndexOf(Countdowns, countdown)));
             cd.Changed += delegate(int i) { countdown = Countdowns[i]; };
             Row(rows, I18n.T("Cuenta atr\u00E1s", "Countdown"), cd, null);
 

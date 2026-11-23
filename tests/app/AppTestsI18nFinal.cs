@@ -49,6 +49,33 @@ namespace Stackshot.Tests
             T("picker-lists-only-the-complete-languages", PickerListsOnlyTheCompleteLanguages);
             T("hidden-languages-load-as-automatic", HiddenLanguagesLoadAsAutomatic);
             T("previews-come-back-with-the-switch", PreviewsComeBackWithTheSwitch);
+            T("korean-uninstall-note-reads-clean", KoreanUninstallNoteReadsClean);
+            T("level-up-lines-read-right", LevelUpLinesReadRight);
+            T("korean-breaks-note-keeps-one-register", KoreanBreaksNoteKeepsOneRegister);
+            T("german-durations-go-through-the-catalog", GermanDurationsGoThroughTheCatalog);
+            T("segment-seconds-and-auto-follow-the-language", SegmentSecondsAndAutoFollowTheLanguage);
+            T("german-capture-names-use-the-noun", GermanCaptureNamesUseTheNoun);
+            T("search-words-are-folded", SearchWordsAreFolded);
+            T("german-ago-has-no-double-period", GermanAgoHasNoDoublePeriod);
+            T("korean-version-sentences-have-no-open-particle", KoreanVersionSentencesHaveNoOpenParticle);
+            T("korean-euro-follows-the-value", KoreanEuroFollowsTheValue);
+            T("korean-welcome-edit-hint", KoreanWelcomeEditHint);
+            T("english-docs-say-auto-like-the-interface", EnglishDocsSayAutoLikeTheInterface);
+            T("news-spanish-arrows-match", NewsSpanishArrowsMatch);
+            T("picker-name-only-for-listed-languages", PickerNameOnlyForListedLanguages);
+            T("korean-reminder-durations", KoreanReminderDurations);
+            T("german-mascot-wording", GermanMascotWording);
+            T("search-key-is-strg-in-german", SearchKeyIsStrgInGerman);
+            T("korean-particles-after-quoted-values", KoreanParticlesAfterQuotedValues);
+            T("scrolling-plain-notice-fits", ScrollingPlainNoticeFits);
+            T("folder-errors-quote-like-the-language", FolderErrorsQuoteLikeTheLanguage);
+            T("missing-folder-without-a-path-reads-once", MissingFolderWithoutAPathReadsOnce);
+            T("german-none-choice-is-capitalized", GermanNoneChoiceIsCapitalized);
+            T("settings-search-gaps-are-closed", SettingsSearchGapsAreClosed);
+            T("markdown-zone-help-line-fits", MarkdownZoneHelpLineFits);
+            T("scroll-bar-button-labels", ScrollBarButtonLabels);
+            T("backdrop-slider-help-follows-the-language", BackdropSliderHelpFollowsTheLanguage);
+            T("korean-names-the-media-keys", KoreanNamesTheMediaKeys);
             T("last-audit-screens-as-pictures", Pictures);
         }
 
@@ -73,6 +100,25 @@ namespace Stackshot.Tests
                 Check(t.IndexOf("Korean text still missing", StringComparison.Ordinal) < 0 &&
                       t.IndexOf("falten en coreano", StringComparison.Ordinal) < 0, f + " says Korean is incomplete");
             }
+        }
+
+        // A missing folder with no known path names the folder once, never "the folder the folder", in every language.
+        static void MissingFolderWithoutAPathReadsOnce()
+        {
+            try
+            {
+                string[][] cases = { new[] { "es", "carpeta la carpeta" }, new[] { "en", "folder the folder" },
+                                     new[] { "de", "Ordner den Ordner" }, new[] { "ko", "\uD3F4\uB354 \uD3F4\uB354" } };
+                foreach (string[] c in cases)
+                {
+                    I18n.Apply(c[0]);
+                    string t = ShotStack.Explain(new DirectoryNotFoundException(), null);
+                    Check(t.IndexOf(c[1], StringComparison.Ordinal) < 0 && t.IndexOf("{0}", StringComparison.Ordinal) < 0, c[0] + ": " + t);
+                    Check(t.Length > 10, c[0] + " empty: " + t);
+                    if (c[0] == "ko") Check(!Regex.IsMatch(t, "[A-Za-z]"), "ko Latin: " + t);
+                }
+            }
+            finally { I18n.Apply("es"); }
         }
 
         static string Src(string rel) { return File.ReadAllText(Path.Combine(AppTestsI18nCoverage.RepoRoot(), "src", rel), Encoding.UTF8); }
@@ -259,7 +305,7 @@ namespace Stackshot.Tests
                 Check(names.Length == want.Length, "seven choices");
                 for (int i = 1; i < want.Length; i++) Same(want[i], names[i], "Korean interval " + i);
             });
-            foreach (string lang in new[] { "es", "en", "de", "fr" })
+            foreach (string lang in new[] { "es", "en", "fr" })
                 InLanguage(lang, delegate
                 {
                     string[] names = WellKind.MinuteNames;
@@ -877,6 +923,425 @@ namespace Stackshot.Tests
             Check(I18n.Languages.Length == 5, "the switch back off hides them again");
         }
 
+        // ---- T28: the last audit of main (areas A to D), one test per rule.
+
+        // "Recovered recordings (12 MB) remain in ...": the size stays in its parentheses and no counter word follows it.
+        public static void KoreanUninstallNoteReadsClean()
+        {
+            InLanguage("ko", delegate
+            {
+                string note = I18n.Fmt("\n\nLas grabaciones recuperadas ({0}) se quedan en {1}.", "\n\nRecovered recordings ({0}) remain in {1}.", "12 MB", "C:\\Stackshot\\recuperado");
+                Same("\n\n\uBCF5\uAD6C\uB41C \uB179\uD654(12 MB)\uB294 C:\\Stackshot\\recuperado\uC5D0 \uBCF4\uAD00\uB429\uB2C8\uB2E4.", note, "Korean uninstall note");
+            });
+            InLanguage("en", delegate { Same("\n\nRecovered recordings (12 MB) remain in C:\\x.", I18n.Fmt("\n\nLas grabaciones recuperadas ({0}) se quedan en {1}.", "\n\nRecovered recordings ({0}) remain in {1}.", "12 MB", "C:\\x"), "English uninstall note"); });
+        }
+
+        // The mascot's level-up line: a sentence of its own in Korean and German; Spanish and English as they were.
+        public static void LevelUpLinesReadRight()
+        {
+            Settings s = new Settings();
+            InLanguage("ko", delegate
+            {
+                for (int i = 0; i < MascotParts.LevelNames.Length; i++)
+                    Same("\uC6B0\uB9AC \uC0AC\uC774\uAC00 \u2018" + MascotParts.LevelNames[i] + "\u2019 \uB2E8\uACC4\uAC00 \uB410\uC5B4!", MascotTalk.LevelUp(s, i), "Korean level-up " + i);
+            });
+            InLanguage("de", delegate
+            {
+                string[] want = { "Neulinge", "Kumpels", "Freunde", "beste Freunde", "unzertrennlich", "eine Legende" };
+                for (int i = 0; i < want.Length; i++) Same("Jetzt sind wir " + want[i] + "!", MascotTalk.LevelUp(s, i), "German level-up " + i);
+            });
+            InLanguage("es", delegate { Same("\u00A1Ya somos mejores amigos!", MascotTalk.LevelUp(s, 3), "Spanish level-up"); Same("\u00A1Ya somos leyenda!", MascotTalk.LevelUp(s, 5), "Spanish last level-up"); });
+            InLanguage("en", delegate { Same("We are now best friends!", MascotTalk.LevelUp(s, 3), "English level-up"); Same("We are now legend!", MascotTalk.LevelUp(s, 5), "English last level-up"); });
+        }
+
+        // One register in the Korean breaks note, as in the settings text around it.
+        public static void KoreanBreaksNoteKeepsOneRegister()
+        {
+            InLanguage("ko", delegate { Same("\uC624\uB298\uC740 \uC544\uC9C1 \uD734\uC2DD \uAE30\uB85D\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.", I18n.T("Hoy todav\u00EDa no has hecho ninguna pausa.", "You haven't taken any breaks yet today."), "Korean breaks note"); });
+            InLanguage("de", delegate { Same("Heute hast du noch keine Pause gemacht.", I18n.T("Hoy todav\u00EDa no has hecho ninguna pausa.", "You haven't taken any breaks yet today."), "German breaks note"); });
+        }
+
+        // Durations in German go through the catalog, as Korean's do: "25 Min.", "1 h 15 Min."; Spanish and English as before.
+        public static void GermanDurationsGoThroughTheCatalog()
+        {
+            InLanguage("de", delegate
+            {
+                Same("25 Min.", FocusClock.Minutes(25), "German 25");
+                Same("1 h", FocusClock.Minutes(60), "German 60");
+                Same("1 h 15 Min.", FocusClock.Minutes(75), "German 75");
+                Same("2 h", FocusClock.Minutes(120), "German 120");
+                Same("Nein|20 Min.|30 Min.|45 Min.|1 h|1 h 30 Min.|2 h", string.Join("|", WellKind.MinuteNames).Replace("Aus", "Nein"), "German wellness intervals");
+                Same("1 h 15 Min.", typeof(ShotStack).GetMethod("Hours", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, new object[] { 75 }).ToString(), "German health hours");
+            });
+            foreach (string lang in new[] { "es", "en" })
+                InLanguage(lang, delegate
+                {
+                    Same("25 min", FocusClock.Minutes(25), lang + " 25");
+                    Same("1 h 15 min", FocusClock.Minutes(75), lang + " 75");
+                    Same(I18n.T("No", "Off") + "|20 min|30 min|45 min|1 h|1 h 30|2 h", string.Join("|", WellKind.MinuteNames), lang + " wellness intervals");
+                    Same("2 h 5 min", typeof(ShotStack).GetMethod("Hours", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, new object[] { 125 }).ToString(), lang + " health hours");
+                });
+        }
+
+        // The seconds choices and the "Auto" choice are texts of the language, not raw literals.
+        public static void SegmentSecondsAndAutoFollowTheLanguage()
+        {
+            InLanguage("ko", delegate
+            {
+                Same("3\uCD08|5\uCD08|10\uCD08", string.Join("|", new[] { RecordSetup.Seconds(3), RecordSetup.Seconds(5), RecordSetup.Seconds(10) }), "Korean seconds");
+            });
+            foreach (string lang in new[] { "es", "en", "de" })
+                InLanguage(lang, delegate { Same("3 s|5 s|10 s", string.Join("|", new[] { RecordSetup.Seconds(3), RecordSetup.Seconds(5), RecordSetup.Seconds(10) }), lang + " seconds"); });
+            foreach (string f in new[] { "Home/HomePages.cs", "Home/HomeRecordPage.cs", "Capture/RecordSetup.cs" })
+                Check(!Regex.IsMatch(Src(f), "\"3 s\"\\s*,\\s*\"5 s\"\\s*,\\s*\"10 s\""), f + " spells the seconds choices itself");
+            Check(!Regex.IsMatch(Src("Home/HomeBackdrop.cs"), "new string\\[\\] \\{ \"Auto\", \"16:9\""), "the aspect ratio choices spell Auto itself");
+            InLanguage("ko", delegate { Same("\uC790\uB3D9", I18n.T("Auto", "Auto", "Auto"), "Korean Auto"); });
+            InLanguage("de", delegate { Same("Auto", I18n.T("Auto", "Auto", "Auto"), "German Auto"); });
+        }
+
+        // A capture's file name says what it is with a noun in German ("Aufnahme"); the region picker's button keeps its verb.
+        public static void GermanCaptureNamesUseTheNoun()
+        {
+            InLanguage("de", delegate
+            {
+                Same("Aufnahme", NameTemplate.CaptureWord, "German capture word");
+                Same("Aufnehmen", I18n.T("Capturar", "Capture"), "the button keeps the verb");
+                Check(NameTemplate.Example("{type}", new DateTime(2025, 1, 2, 3, 4, 5)).StartsWith("Aufnahme"), "the example in Settings: " + NameTemplate.Example("{type}", new DateTime(2025, 1, 2, 3, 4, 5)));
+            });
+            InLanguage("es", delegate { Same("Captura", NameTemplate.CaptureWord, "Spanish capture word"); });
+            InLanguage("en", delegate { Same("Capture", NameTemplate.CaptureWord, "English capture word"); });
+            InLanguage("ko", delegate { Same(I18n.Localize("Capture"), NameTemplate.CaptureWord, "Korean capture word"); });
+            foreach (string f in new[] { "ShotStack.cs", "ShotStack.Delayed.cs", "ShotStack.RepeatArea.cs" })
+                Check(!Src(f).Contains("I18n.T(\"Captura\", \"Capture\")"), f + " names a capture with the verb's translation");
+        }
+
+        // The settings search folds what it is given and what it knows: every synonym and filler word is in folded form.
+        public static void SearchWordsAreFolded()
+        {
+            List<string> bad = new List<string>();
+            foreach (string[] g in SettingsSearch.Synonyms)
+                foreach (string m in g) if (HistoryIndex.Fold(m) != m) bad.Add("synonym " + Show(m));
+            foreach (string w in SettingsSearch.StopWords) if (HistoryIndex.Fold(w) != w) bad.Add("filler " + Show(w));
+            Check(bad.Count == 0, "unfolded search words: " + string.Join(", ", bad));
+            Check(SettingsSearch.Alternatives(HistoryIndex.Fold("L\u00F6schen")).Contains("entfernen"), "l\u00F6schen finds entfernen");
+            Check(SettingsSearch.Alternatives(HistoryIndex.Fold("Lautst\u00E4rke")).Contains("ton"), "Lautst\u00E4rke finds Ton");
+            Check(SettingsSearch.Alternatives(HistoryIndex.Fold("Tastenk\u00FCrzel")).Contains("kurzbefehl"), "Tastenk\u00FCrzel finds Kurzbefehl");
+            Check(SettingsSearch.Alternatives(HistoryIndex.Fold("Schw\u00E4rzen")).Contains("datenschutz"), "schw\u00E4rzen finds Datenschutz");
+            Same("ordner|aufnahmen", string.Join("|", SettingsSearch.Words("Ordner f\u00FCr Aufnahmen \u00E4ndern")), "German filler words");
+        }
+
+        // The Settings and Home pages say "vor 12 min" in German, and no sentence that quotes it ends in two periods.
+        public static void GermanAgoHasNoDoublePeriod()
+        {
+            MethodInfo when = typeof(HomeWindow).GetMethod("When", BindingFlags.NonPublic | BindingFlags.Static);
+            DateTime past = DateTime.UtcNow.AddMinutes(-12.5);
+            InLanguage("de", delegate
+            {
+                string ago = (string)when.Invoke(null, new object[] { past });
+                Check(ago.StartsWith("vor 12"), "German ago: " + ago);
+                string a = I18n.Fmt(" \u00DAltima comprobaci\u00F3n: {0}.", " Last checked: {0}.", ago), b = I18n.Fmt("Stackshot {0} es la versi\u00F3n m\u00E1s reciente. Comprobado {1}.", "Stackshot {0} is the latest version. Checked {1}.", "2.2.2", ago);
+                Check(!a.Contains("..") && !b.Contains(".."), "double period: <" + a + "> <" + b + ">");
+            });
+            InLanguage("es", delegate { Same("hace 12 min", (string)when.Invoke(null, new object[] { past }), "Spanish ago"); });
+            InLanguage("en", delegate { Same("12 min ago", (string)when.Invoke(null, new object[] { past }), "English ago"); });
+            InLanguage("ko", delegate { Same("12\uBD84 \uC804", (string)when.Invoke(null, new object[] { past }), "Korean ago"); });
+        }
+
+        // Korean version sentences say "\uBC84\uC804\uC5D0\uC11C ... \uBC84\uC804\uC73C\uB85C" instead of leaving a particle pair open after a number.
+        public static void KoreanVersionSentencesHaveNoOpenParticle()
+        {
+            InLanguage("ko", delegate
+            {
+                Same("Stackshot\uC744 2.2.1 \uBC84\uC804\uC5D0\uC11C 2.2.2 \uBC84\uC804\uC73C\uB85C \uC5C5\uB370\uC774\uD2B8\uD560\uAE4C\uC694?", I18n.Fmt("\u00BFActualizar Stackshot de la versi\u00F3n {0} a la {1}?", "Update Stackshot from version {0} to {1}?", "2.2.1", "2.2.2"), "update question");
+                Same("2.3.0 \uBC84\uC804\uC73C\uB85C \uC5C5\uB370\uC774\uD2B8\uD560 \uC218 \uC5C6\uC74C", I18n.Fmt("No se pudo actualizar a la {0}", "Could not update to {0}", "2.3.0"), "update failed");
+                Check(!I18n.Fmt("Volver a {0}", "Reset to {0}", "{type} {date}").Contains("(\uC73C)"), "reset tooltip keeps an open pair: " + I18n.Fmt("Volver a {0}", "Reset to {0}", "{type} {date}"));
+                FieldInfo f = typeof(I18n).GetField("KoreanCatalog", BindingFlags.NonPublic | BindingFlags.Static);
+                object lazy = f.GetValue(null);
+                Dictionary<string, string> catalog = (Dictionary<string, string>)lazy.GetType().GetProperty("Value").GetValue(lazy, null);
+                List<string> open = new List<string>();
+                foreach (KeyValuePair<string, string> p in catalog)
+                    if (Regex.IsMatch(p.Value, "\\{\\d\\}[^ ]{0,2}\\(\uC73C\\)\uB85C") && Regex.IsMatch(p.Key, "version|\\{0\\}$")) open.Add(p.Key);
+                Check(open.Count == 0, "open (\uC73C)\uB85C after a variable: " + string.Join(" | ", open));
+            });
+        }
+
+        // After a value, \uB85C or \uC73C\uB85C is chosen from the value (\u3139 and vowels take \uB85C), as the other pairs are.
+        public static void KoreanEuroFollowsTheValue()
+        {
+            InLanguage("ko", delegate
+            {
+                string key = "{0} moved from {1} to {2}.";
+                Same("Ctrl + S \uD0A4 \uD560\uB2F9\uC744 \u2018\uC601\uC5ED \uCEA1\uCC98\u2019\uC5D0\uC11C \u2018\uC804\uCCB4 \uD654\uBA74\u2019\uC73C\uB85C \uC62E\uACBC\uC2B5\uB2C8\uB2E4.", I18n.Fmt("", key, "Ctrl + S", "\uC601\uC5ED \uCEA1\uCC98", "\uC804\uCCB4 \uD654\uBA74"), "\uC73C\uB85C after a consonant");
+                Same("Ctrl + S \uD0A4 \uD560\uB2F9\uC744 \u2018\uD654\uBA74 \uC804\uCCB4\u2019\uC5D0\uC11C \u2018\uC601\uC5ED \uCEA1\uCC98\u2019\uB85C \uC62E\uACBC\uC2B5\uB2C8\uB2E4.", I18n.Fmt("", key, "Ctrl + S", "\uD654\uBA74 \uC804\uCCB4", "\uC601\uC5ED \uCEA1\uCC98"), "\uB85C after a vowel");
+                Same("Ctrl + S \uD0A4 \uD560\uB2F9\uC744 \u2018\uC601\uC5ED \uCEA1\uCC98\u2019\uC5D0\uC11C \u2018\uB2EC\u2019\uB85C \uC62E\uACBC\uC2B5\uB2C8\uB2E4.", I18n.Fmt("", key, "Ctrl + S", "\uC601\uC5ED \uCEA1\uCC98", "\uB2EC"), "\uB85C after \u3139");
+                Same("Ctrl + S \uD0A4 \uD560\uB2F9\uC744 \u2018\uC601\uC5ED \uCEA1\uCC98\u2019\uC5D0\uC11C \u2018Pixel\u2019(\uC73C)\uB85C \uC62E\uACBC\uC2B5\uB2C8\uB2E4.", I18n.Fmt("", key, "Ctrl + S", "\uC601\uC5ED \uCEA1\uCC98", "Pixel"), "both after a Latin name");
+                Same("\uC73C\uB85C", I18n.Euro("\uC0BC"), "\uC0BC \uC73C\uB85C");
+                Same("\uB85C", I18n.Euro("\uC77C"), "\uC77C \uB85C");
+                Same("(\uC73C)\uB85C", I18n.Euro("Rex"), "Latin");
+            });
+        }
+
+        // The Korean welcome says one thing per row: the key and what it does.
+        public static void KoreanWelcomeEditHint()
+        {
+            InLanguage("ko", delegate { Same("\uC378\uB124\uC77C\uC5D0\uC11C \uD3B8\uC9D1", I18n.T("en la miniatura para editarla", "on thumbnail to edit it"), "welcome edit hint"); });
+        }
+
+        // The English documents call the first choice of the language list what the English interface calls it.
+        public static void EnglishDocsSayAutoLikeTheInterface()
+        {
+            InLanguage("en", delegate { Same("Auto", I18n.Languages[0].Name, "English picker name"); });
+            string root = AppTestsI18nCoverage.RepoRoot();
+            foreach (string f in new[] { "README.md", "CHANGELOG.md" })
+            {
+                string t = File.ReadAllText(Path.Combine(root, f), Encoding.UTF8);
+                Check(!Regex.IsMatch(t, "Automatic, Espa\u00F1ol|choose Automatic|\\(Automatic\\)"), f + " calls the language choice Automatic");
+            }
+        }
+
+        // The 2.2.2 section of the Spanish news writes the settings path with the same arrows as the other three.
+        public static void NewsSpanishArrowsMatch()
+        {
+            string root = AppTestsI18nCoverage.RepoRoot();
+            foreach (string f in new[] { "novedades.md", "novedades.en.md", "novedades.de.md", "novedades.ko.md" })
+            {
+                string[] lines = File.ReadAllLines(Path.Combine(root, "docs", f), Encoding.UTF8);
+                int head = Array.FindIndex(lines, l => l.StartsWith("## 2.2.2", StringComparison.Ordinal));
+                Check(head >= 0, f + " has no 2.2.2 section");
+                for (int i = head + 1; i < lines.Length && !lines[i].StartsWith("## ", StringComparison.Ordinal); i++)
+                    Check(!Regex.IsMatch(lines[i], "\\p{L} > \\p{L}"), f + " writes a settings path with > : " + lines[i]);
+            }
+        }
+
+        // The picker's name of a language the list does not offer is Automatic's, as a saved choice of it loads as Automatic.
+        public static void PickerNameOnlyForListedLanguages()
+        {
+            Check(!I18n.PreviewsListed, "previews are hidden");
+            InLanguage("es", delegate
+            {
+                Same("\uD55C\uAD6D\uC5B4", LanguagePicker.DisplayName("ko"), "a listed language");
+                foreach (string hidden in new[] { "fr", "pt", "zh", "hi", "ar", "bn", "xx" })
+                    Same(I18n.Languages[0].Name, LanguagePicker.DisplayName(hidden), hidden + " shows as Automatic");
+            });
+        }
+
+        // The wellness reminders say a duration the way the language writes it, whatever its length ("2\uC2DC\uAC04", not "120\uBD84").
+        public static void KoreanReminderDurations()
+        {
+            Settings s = new Settings();
+            InLanguage("ko", delegate
+            {
+                HashSet<string> seen = new HashSet<string>();
+                for (int k = 0; k < WellKind.Count; k++)
+                    for (int p = 0; p < 3; p++)
+                    {
+                        s.MascotPersonality = p;
+                        for (int n = 0; n < 40; n++) { seen.Add(MascotTalk.Remind(s, k, 120)); seen.Add(MascotTalk.Remind(s, k, 90)); }
+                    }
+                Check(seen.Any(t => t.Contains("2\uC2DC\uAC04")), "no reminder says 2\uC2DC\uAC04");
+                Check(!seen.Any(t => t.Contains("120\uBD84") || t.Contains("90\uBD84")), "a reminder counts hours in minutes: " + string.Join(" | ", seen.Where(t => t.Contains("120\uBD84") || t.Contains("90\uBD84"))));
+            });
+        }
+
+        // German mascot wording: "auf dem Stuhl", and the dragon's name as the German books spell it.
+        public static void GermanMascotWording()
+        {
+            Settings s = new Settings();
+            InLanguage("de", delegate
+            {
+                Same("Gronckel", MascotParts.Kinds[MascotParts.KindGronckle], "German Gronckle name");
+                HashSet<string> seen = new HashSet<string>();
+                for (int p = 0; p < 3; p++)
+                {
+                    s.MascotPersonality = p;
+                    for (int n = 0; n < 40; n++) seen.Add(MascotTalk.Remind(s, WellKind.Move, 60));
+                }
+                Check(seen.Any(t => t.Contains("auf dem Stuhl")), "no reminder says auf dem Stuhl");
+                Check(!seen.Any(t => t.Contains("in dem Stuhl")), "in dem Stuhl");
+            });
+        }
+
+        // The search field says Strg+F in German, Ctrl+F elsewhere.
+        public static void SearchKeyIsStrgInGerman()
+        {
+            InLanguage("de", delegate { Same("Strg+F", Hotkeys.CtrlF, "German"); });
+            foreach (string lang in new[] { "es", "en", "ko" }) InLanguage(lang, delegate { Same("Ctrl+F", Hotkeys.CtrlF, lang); });
+            foreach (string f in new[] { "Home/HomeHistoryPage.cs", "Home/HomeSearch.cs" })
+                Check(!Regex.IsMatch(Src(f), "(Label\\(|SetHelpText\\(box, )\"Ctrl\\+F\""), f + " shows Ctrl+F as a literal");
+        }
+
+        // No Korean text pins \uB85C, \uC740, \uC744... after a quoted variable: the pair is written and settled from the value.
+        public static void KoreanParticlesAfterQuotedValues()
+        {
+            InLanguage("ko", delegate
+            {
+                FieldInfo f = typeof(I18n).GetField("KoreanCatalog", BindingFlags.NonPublic | BindingFlags.Static);
+                object lazy = f.GetValue(null);
+                Dictionary<string, string> catalog = (Dictionary<string, string>)lazy.GetType().GetProperty("Value").GetValue(lazy, null);
+                Regex pinned = new Regex("\\{\\d\\}[\u201D\u2019\"']+(?:\uC73C?\uB85C|[\uC640\uACFC\uC740\uB294\uC774\uAC00\uC744\uB97C])(?![\uAC00-\uD7A3(])");
+                List<string> bad = new List<string>();
+                foreach (KeyValuePair<string, string> p in catalog) if (pinned.IsMatch(p.Value)) bad.Add(p.Key + " => " + Show(p.Value));
+                foreach (string s in bad) Console.WriteLine("    pinned after a quote: " + s);
+                Check(bad.Count == 0, bad.Count + " Korean texts pin a particle after a quoted variable");
+                Same("Google\uC5D0\uC11C \u201Caccess_denied\u201D\uC744(\uB97C) \uBC18\uD658\uD588\uC2B5\uB2C8\uB2E4. \uD0ED\uC744 \uB2EB\uACE0 Stackshot\uC5D0\uC11C \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.", I18n.Fmt("", "Google returned \u201C{0}\u201D. Close this tab and try again from Stackshot.", "access_denied"), "an unknown ending keeps the pair");
+                Same("Google\uC5D0\uC11C \u201C\uAC70\uBD80\uB428\u201D\uC744 \uBC18\uD658\uD588\uC2B5\uB2C8\uB2E4. \uD0ED\uC744 \uB2EB\uACE0 Stackshot\uC5D0\uC11C \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.", I18n.Fmt("", "Google returned \u201C{0}\u201D. Close this tab and try again from Stackshot.", "\uAC70\uBD80\uB428"), "settled by the value");
+            });
+        }
+
+        // The scrolling capture's "saved as a normal capture" notice is read whole in a three-line toast at every scale.
+        public static void ScrollingPlainNoticeFits()
+        {
+            List<string> cut = new List<string>();
+            foreach (string lang in new[] { "es", "en", "de", "ko" })
+            {
+                I18n.Apply(lang);
+                string title = I18n.T("Captura con desplazamiento", "Scrolling capture"), body = ScrollSession.PlainNotice;
+                foreach (float scale in new[] { 1f, 1.25f, 1.5f, 2f })
+                {
+                    ToastLook look = ToastLook.For(new Notice(title, body, NoticeKind.Info), scale);
+                    if (look.Clipped || look.TitleClipped) cut.Add(lang + " at " + (int)(scale * 100) + " %: " + look.Lines + " lines, " + body.Length + " chars");
+                }
+            }
+            I18n.Apply("es");
+            foreach (string c in cut) Console.WriteLine("    cut: " + c);
+            Check(cut.Count == 0, cut.Count + " notices are cut");
+        }
+
+        // A folder in an error message is quoted the way the language quotes, and the folder-less wording of German is grammatical.
+        public static void FolderErrorsQuoteLikeTheLanguage()
+        {
+            Exception denied = new UnauthorizedAccessException(), missing = new DirectoryNotFoundException(), full = new IOException("disk", unchecked((int)0x80070070));
+            string path = "C:\\Zielordner\\a.png";
+            string[][] quotes = { new[] { "es", "\u00ABC:\\Zielordner\u00BB" }, new[] { "en", "\u201CC:\\Zielordner\u201D" }, new[] { "de", "\u201EC:\\Zielordner\u201C" }, new[] { "ko", "\u2018C:\\Zielordner\u2019" } };
+            foreach (string[] q in quotes)
+                InLanguage(q[0], delegate
+                {
+                    foreach (Exception ex in new[] { denied, missing, full })
+                    {
+                        string text = ShotStack.Explain(ex, path);
+                        Check(text.Contains(q[1]), q[0] + ": the folder is not quoted " + q[1] + ": " + text);
+                        if (q[0] != "es") Check(text.IndexOf('\u00AB') < 0 && text.IndexOf('\u00BB') < 0, q[0] + " uses Spanish quotes: " + text);
+                    }
+                });
+            InLanguage("de", delegate
+            {
+                Same("Windows kann nicht in den Ordner schreiben. Pr\u00FCfe die Ordnerberechtigungen oder ob der \u201Ekontrollierte Ordnerzugriff\u201C ihn sch\u00FCtzt.", ShotStack.Explain(denied, null), "write denied, no folder");
+                Same("Auf dem Laufwerk f\u00FCr den Ordner ist kein Platz mehr. Schaffe Platz und versuch es erneut.", ShotStack.Explain(full, null), "disk full, no folder");
+                Same("Der Ordner wurde nicht gefunden (ein getrenntes oder Netzlaufwerk?).", ShotStack.Explain(missing, null), "folder missing, no folder");
+                Same("Der Ordner \u201EC:\\Zielordner\u201C wurde nicht gefunden (ein getrenntes oder Netzlaufwerk?).", ShotStack.Explain(missing, path), "folder missing, with folder");
+            });
+            InLanguage("es", delegate { Same("Windows no deja escribir en \u00ABC:\\Zielordner\u00BB. Comprueba los permisos de la carpeta o si \u00ABAcceso controlado a carpetas\u00BB la protege.", ShotStack.Explain(denied, path), "Spanish unchanged"); });
+        }
+
+        // "None" as a choice is "Keine" in German; the lower-case word stays inside the sentence that needs it.
+        public static void GermanNoneChoiceIsCapitalized()
+        {
+            InLanguage("de", delegate
+            {
+                Same("Keine", I18n.T("Ninguno", "None"), "German None choice");
+                Same("Keine", I18n.T("No", "None"), "German None choice, second key");
+            });
+            Check(Src("Editor/ShareCheck.cs").Contains("I18n.T(\"ninguna\", \"none\", \"keine\")"), "the sentence in the share check lost its lower-case word");
+        }
+
+        // What people type that the settings search did not know yet (English, Korean), found in the language's own index.
+        public static void SettingsSearchGapsAreClosed()
+        {
+            string[][] queries =
+            {
+                new[] { "en", "privacy", "any" }, new[] { "en", "delete", "any" }, new[] { "en", "hotkey", "any" },
+                new[] { "en", "change language", "Language" }, new[] { "en", "screenshot folder", "folder" },
+                new[] { "ko", "\uB2E4\uD06C \uBAA8\uB4DC", "\uD14C\uB9C8" }, new[] { "ko", "\uC5B8\uC5B4 \uBCC0\uACBD", "\uC5B8\uC5B4" }, new[] { "ko", "\uC708\uB3C4\uC6B0 \uC2DC\uC791", "Windows \uC2DC\uC791 \uC2DC \uC2E4\uD589" },
+                new[] { "de", "tastenk\u00FCrzel", "any" }, new[] { "de", "Lautst\u00E4rke \u00E4ndern", "any" }, new[] { "de", "l\u00F6schen", "any" }
+            };
+            List<string> bad = new List<string>();
+            foreach (string lang in new[] { "en", "ko", "de" })
+            {
+                I18n.Apply(lang);
+                HomeWindow hw = AppTestsI18n.Make(1);
+                try
+                {
+                    List<SearchEntry> ix = hw.SearchIndexNow(null);
+                    foreach (string[] q in queries)
+                    {
+                        if (q[0] != lang) continue;
+                        List<SearchHit> hits = SettingsSearch.Find(ix, q[1]);
+                        string titles = string.Join(" | ", hits.Take(6).Select(h => h.Entry.Title));
+                        bool ok = q[2] == "any" ? hits.Count > 0 : q[2] == "folder" ? hits.Any(h => h.Entry.Icon == "folder") : hits.Take(3).Any(h => h.Entry.Title == q[2]);
+                        if (!ok) bad.Add(lang + " <" + q[1] + "> -> " + titles);
+                    }
+                }
+                finally { hw.Shutdown(); I18n.Apply("es"); }
+            }
+            foreach (string b in bad) Console.WriteLine("    search gap: " + b);
+            Check(bad.Count == 0, bad.Count + " searches find nothing useful");
+        }
+
+        // The Markdown/XML window's empty drop zone shows its help line whole, wrapped and centred, in every language.
+        public static void MarkdownZoneHelpLineFits()
+        {
+            List<string> bad = new List<string>();
+            foreach (string lang in new[] { "es", "en", "de", "ko" })
+            {
+                I18n.Apply(lang);
+                Ds.Apply(1);
+                MarkdownWindow w = (MarkdownWindow)typeof(MarkdownWindow).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)[0].Invoke(new object[] { null });
+                try
+                {
+                    w.Left = -6000; w.Top = 0; w.ShowActivated = false; w.ShowInTaskbar = false;
+                    w.Show();
+                    w.UpdateLayout();
+                    string help = I18n.T("Ctrl+V pega desde el portapapeles. Admite .md y .txt de hasta 2 MB, y .xml de hasta 8 MB.", "Ctrl+V pastes from the clipboard. Accepts .md and .txt up to 2 MB, and .xml up to 8 MB.");
+                    TextBlock line = null;
+                    AppTestsI18n.Walk((DependencyObject)w.Content, new HashSet<DependencyObject>(), delegate(DependencyObject d) { TextBlock t = d as TextBlock; if (t != null && t.Text == help) line = t; });
+                    if (line == null) { bad.Add(lang + ": help line not found"); continue; }
+                    FrameworkElement zone = (FrameworkElement)((FrameworkElement)line.Parent).Parent;
+                    if (line.TextWrapping != TextWrapping.Wrap) bad.Add(lang + ": the help line does not wrap");
+                    if (line.TextAlignment != TextAlignment.Center) bad.Add(lang + ": the help line is not centred");
+                    if (line.ActualWidth > zone.ActualWidth - 40) bad.Add(lang + ": the help line is " + (int)line.ActualWidth + " wide in a zone " + (int)zone.ActualWidth);
+                }
+                finally { try { w.Close(); } catch (Exception) { } }
+            }
+            I18n.Apply("es");
+            foreach (string b in bad) Console.WriteLine("    zone: " + b);
+            Check(bad.Count == 0, bad.Count + " empty-zone problems");
+        }
+
+        // The scrolling capture bar's two small buttons: Auto in Hangul in Korean, "\uBA48\uCDA4" for pause in its 64 px; others as they were.
+        public static void ScrollBarButtonLabels()
+        {
+            InLanguage("ko", delegate { Same("\uC790\uB3D9", ScrollCaptureBar.AutoLabel, "Korean Auto"); Same("\uBA48\uCDA4", ScrollCaptureBar.PauseLabel, "Korean pause"); });
+            InLanguage("de", delegate { Same("Auto", ScrollCaptureBar.AutoLabel, "German Auto"); Same("Pause", ScrollCaptureBar.PauseLabel, "German pause"); });
+            InLanguage("es", delegate { Same("Auto", ScrollCaptureBar.AutoLabel, "Spanish Auto"); Same("Pausa", ScrollCaptureBar.PauseLabel, "Spanish pause"); });
+            InLanguage("en", delegate { Same("Auto", ScrollCaptureBar.AutoLabel, "English Auto"); Same("Pause", ScrollCaptureBar.PauseLabel, "English pause"); });
+            Check(!Src("Capture/ScrollCapture.cs").Contains(": \"Auto\", Ds.Semibold"), "the bar paints a literal Auto");
+        }
+
+        // What a screen reader says for a backdrop slider is in the language.
+        public static void BackdropSliderHelpFollowsTheLanguage()
+        {
+            string[][] want = { new[] { "es", "De 0 a 100" }, new[] { "en", "From 0 to 100" }, new[] { "de", "Von 0 bis 100" }, new[] { "ko", "0~100" } };
+            foreach (string[] w in want) InLanguage(w[0], delegate { Same(w[1], BgPanel.SliderRange, w[0] + " slider help"); });
+            Check(!Src("Editor/BgPanel.Access.cs").Contains("PartHelp = \"De 0 a 100\""), "the slider help is a literal");
+        }
+
+        // Korean names the media and browser keys in Hangul (the keycaps of a Korean keyboard print them in English, but these
+        // have no legend of their own); the other languages keep theirs.
+        public static void KoreanNamesTheMediaKeys()
+        {
+            System.Windows.Forms.Keys[] keys = { System.Windows.Forms.Keys.VolumeMute, System.Windows.Forms.Keys.VolumeDown, System.Windows.Forms.Keys.VolumeUp, System.Windows.Forms.Keys.MediaPlayPause,
+                System.Windows.Forms.Keys.MediaNextTrack, System.Windows.Forms.Keys.MediaPreviousTrack, System.Windows.Forms.Keys.MediaStop, System.Windows.Forms.Keys.BrowserBack, System.Windows.Forms.Keys.BrowserForward,
+                System.Windows.Forms.Keys.BrowserRefresh, System.Windows.Forms.Keys.BrowserStop, System.Windows.Forms.Keys.BrowserSearch, System.Windows.Forms.Keys.BrowserFavorites, System.Windows.Forms.Keys.BrowserHome,
+                System.Windows.Forms.Keys.LaunchMail, System.Windows.Forms.Keys.LaunchApplication1, System.Windows.Forms.Keys.LaunchApplication2, System.Windows.Forms.Keys.SelectMedia, System.Windows.Forms.Keys.Sleep };
+            InLanguage("ko", delegate
+            {
+                foreach (System.Windows.Forms.Keys k in keys) Check(Regex.IsMatch(Hotkeys.KeyName(k), "[\uAC00-\uD7A3]"), "Korean key name of " + k + " is " + Hotkeys.KeyName(k));
+                Same("\uC74C\uC18C\uAC70", Hotkeys.KeyName(System.Windows.Forms.Keys.VolumeMute), "mute");
+            });
+            InLanguage("en", delegate { Same("Mute", Hotkeys.KeyName(System.Windows.Forms.Keys.VolumeMute), "English mute"); });
+            InLanguage("de", delegate { Same("Stumm", Hotkeys.KeyName(System.Windows.Forms.Keys.VolumeMute), "German mute"); });
+        }
+
         // ---- Pictures: with STACKSHOT_UI_SHOTS set to a folder, the screens this audit touched are saved there as PNG.
 
         static void SavePng(BitmapSource b, string name)
@@ -998,6 +1463,27 @@ namespace Stackshot.Tests
                         SaveElement((FrameworkElement)w.Content, 540, 0, "t18-" + lang + "-my-reports.png");
                     }
                     finally { try { w.Close(); } catch (Exception) { } }
+                }
+                // T28: the Settings pages with the seconds choices, Auto and the German "Keine", and the empty Markdown window.
+                foreach (string lang in new[] { "de", "ko" })
+                {
+                    I18n.Apply(lang);
+                    Ds.Apply(1);
+                    foreach (string page in new[] { "general", "record", "editor" })
+                    {
+                        HomeWindow hw = AppTestsI18n.Make(1);
+                        try { AppTestsI18n.SetPage(hw, page); AppTestsI18n.Layout(hw); SaveElement((FrameworkElement)hw.Content, 980, 660, "t28-" + lang + "-" + page + ".png"); }
+                        finally { hw.Shutdown(); }
+                    }
+                    MarkdownWindow mw = (MarkdownWindow)typeof(MarkdownWindow).GetConstructors(np)[0].Invoke(new object[] { null });
+                    try
+                    {
+                        mw.Left = -6000; mw.Top = 0; mw.ShowActivated = false; mw.ShowInTaskbar = false;
+                        mw.Show();
+                        mw.UpdateLayout();
+                        SaveElement((FrameworkElement)mw.Content, mw.ActualWidth, mw.ActualHeight, "t28-" + lang + "-markdown-empty.png");
+                    }
+                    finally { try { mw.Close(); } catch (Exception) { } }
                 }
             }
             finally { I18n.Apply("es"); }

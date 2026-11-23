@@ -751,7 +751,7 @@ namespace Stackshot
                 if (src.Width < 1 || src.Height < 1) return;
                 Bitmap shot = frozen.Clone(src, PixelFormat.Format32bppArgb);
                 start.DrawPointer(shot, new Point(src.X + vs.X, src.Y + vs.Y));
-                string name = I18n.T("Captura", "Capture");
+                string name = NameTemplate.CaptureWord;
                 if (window != IntPtr.Zero)
                 {
                     name = Grabber.ProcessName(window) ?? name;
@@ -1382,7 +1382,9 @@ namespace Stackshot
             if (code == 32 || code == 33)
                 return I18n.T("Otro programa est\u00E1 usando el archivo. Ci\u00E9rralo y vuelve a intentarlo.", "Another program is using the file. Close it and try again.");
             if (ex is DirectoryNotFoundException || ex is DriveNotFoundException || code == 3 || code == 21 || code == 53 || code == 67)
-                return I18n.Fmt("No se encuentra la carpeta {0} (\u00BFuna unidad desconectada o de red?).", "Cannot find folder {0} (a disconnected or network drive?).", Show(where));
+                return string.IsNullOrEmpty(where)
+                    ? I18n.T("No se encuentra la carpeta (\u00BFuna unidad desconectada o de red?).", "Cannot find the folder (a disconnected or network drive?).")
+                    : I18n.Fmt("No se encuentra la carpeta {0} (\u00BFuna unidad desconectada o de red?).", "Cannot find folder {0} (a disconnected or network drive?).", Show(where, "Der Ordner", "Der Ordner "));
             if (ex is FileNotFoundException || code == 2)
                 return I18n.T("El archivo ya no existe.", "The file no longer exists.");
             if (ex is PathTooLongException || code == 206)
@@ -1394,9 +1396,16 @@ namespace Stackshot
             return I18n.T("Ha fallado al leer o escribir el archivo. Vuelve a intentarlo; si se repite, el registro de Stackshot tiene los detalles.", "Failed to read or write the file. Try again; if it recurs, the Stackshot log has the details.");
         }
 
-        static string Show(string dir)
+        // The folder as a message names it: quoted the way the language quotes, or a plain "the folder" when there is no path.
+        // German needs the case its sentence asks for: the accusative after "in" and "f\u00FCr", the nominative before "wurde".
+        static string Show(string dir) { return Show(dir, "den Ordner", ""); }
+
+        static string Show(string dir, string deNoFolder, string dePrefix)
         {
-            return string.IsNullOrEmpty(dir) ? I18n.T("la carpeta", "the folder") : "\u00AB" + dir + "\u00BB";
+            if (string.IsNullOrEmpty(dir)) return I18n.T("la carpeta", "the folder", deNoFolder);
+            string open = I18n.IsSpanish ? "\u00AB" : I18n.IsGerman ? "\u201E" : I18n.IsKorean ? "\u2018" : "\u201C";
+            string close = I18n.IsSpanish ? "\u00BB" : I18n.IsGerman ? "\u201C" : I18n.IsKorean ? "\u2019" : "\u201D";
+            return (I18n.IsGerman ? dePrefix : "") + open + dir + close;
         }
 
         public bool IsKept(string path)

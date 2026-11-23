@@ -266,7 +266,7 @@ namespace Stackshot
             Rectangle r = a.Bounds;
             Bitmap shot = Grabber.Grab(r);
             start.DrawPointer(shot, r.Location);
-            string name = I18n.T("Captura", "Capture");
+            string name = NameTemplate.CaptureWord;
             // The window clicked last time, still exactly there: its name and its rounded corners, as then.
             if (a.Window != IntPtr.Zero && Grabber.Bounds(a.Window) == r)
             {

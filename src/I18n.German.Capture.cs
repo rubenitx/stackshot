@@ -81,7 +81,7 @@ namespace Stackshot
             reg("The capture stopped before finishing: what was captured so far has been saved.", null, "Die Aufnahme endete vorzeitig. Der bisher aufgenommene Teil wurde gespeichert.");
             reg("Could not compose the image: it is too large for available memory. Try a narrower or shorter area.", null, "Das Bild ist zu groß für den verfügbaren Arbeitsspeicher. Wähle einen schmaleren oder kürzeren Bereich.");
             reg("Could not finish capture. Please try again.", null, "Die Aufnahme konnte nicht abgeschlossen werden. Versuch es erneut.");
-            reg("The area did not scroll, so it was saved as a normal capture. Choose only the part that scrolls (the list or text), without the fixed header.", null, "Der Bereich wurde als normale Aufnahme gespeichert, weil er sich nicht bewegt hat. Wähle nur die scrollbare Liste oder den Textbereich ohne festen Kopfbereich.");
+            reg("The area did not scroll, so it was saved as a normal capture. Choose only the part that scrolls (the list or text), without the fixed header.", null, "Der Bereich hat sich nicht bewegt und wurde als normale Aufnahme gespeichert. Wähle nur den scrollbaren Teil, ohne festen Kopfbereich.");
             reg("Composing…", null, "Bild wird zusammengesetzt…");
             reg("Esc again to discard", null, "Zum Verwerfen erneut Esc drücken");
             reg("You haven't scrolled · Done again saves it", null, "Nichts gescrollt · Erneut „Fertig“ speichert");

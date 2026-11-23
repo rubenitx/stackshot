@@ -247,7 +247,7 @@ namespace Stackshot
             reg("Export quality: ", null, "Exportqualität: ");
             reg(" (email)", null, " (E-Mail)");
             reg("FAIL ", null, "FEHLER ");
-            reg("none", null, "keine");
+            reg("none", null, "Keine");
             reg(" %", null, " %");
             reg("Clip is {0} long: such a long GIF has a large file size and takes time to create. For such a clip, “Export clip” (MP4) is usually better.\n\nCreate GIF anyway?", null, "Der Ausschnitt dauert {0}: Ein so langes GIF wird sehr groß und braucht lange. Für so einen Ausschnitt passt meist „Ausschnitt exportieren“ (MP4) besser.\n\nGIF trotzdem erstellen?");
             reg("Arrows: frame by frame. Shift and arrows: second by second. Home and End: start and end of the trim.", null, "Pfeile: Einzelbild für Einzelbild. Umschalt und Pfeile: sekundenweise. Pos1 und Ende: Anfang und Ende des Zuschnitts.");

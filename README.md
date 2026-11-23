@@ -22,7 +22,7 @@ For Windows 10 and 11 · Version 2.1.0 · Also as an [MSI package](https://githu
 **Contents:** [Three steps](#three-steps-no-menus) · [What's new](#whats-new-in-21) · [Features](#features-at-a-glance) · [Modes](#seven-ways-to-capture) · [Capture](#select-snap-done) · [Mark up](#mark-it-up-in-seconds) · [Hide data](#hide-it-before-you-share-it) · [Scrolling](#capture-the-whole-page) · [Record](#record-your-screen-with-sound) · [History](#find-it-by-what-it-said) · [XML and Markdown](#xml-and-markdown-upgraded) · [Main window](#one-window-your-way) · [Pixel](#meet-pixel-39-costumes) · [More](#and-so-much-more) · [Performance](#small-fast-private) · [Installation](#installation) · [Command line](#command-line-and-it-policies) · [Shortcuts](#keyboard-shortcuts) · [Privacy](#privacy-and-security) · [FAQ](#faq) · [Build](#building-from-source) · [License](#license)
 
 > [!NOTE]
-> The user interface is in Spanish, English, German and Korean: a new installation follows your Windows language (Automatic), and **Settings › General › Appearance › Language** changes it at any time. Screenshots on this page show the Spanish interface.
+> The user interface is in Spanish, English, German and Korean: a new installation follows your Windows language (Auto), and **Settings › General › Appearance › Language** changes it at any time. Screenshots on this page show the Spanish interface.
 
 ## Three steps, no menus
 
@@ -649,7 +649,7 @@ Running `Stackshot.exe` offers to install it for your user (no administrator rig
 <summary><b>Is there an English interface?</b></summary>
 <br>
 
-Yes. Stackshot speaks Spanish, English, German and Korean. A new installation follows the Windows display language (Korean on a Korean Windows; Spanish on a Spanish, Catalan, Galician or Basque Windows; German on a German one; English everywhere else), and **Settings › General › Appearance › Language** switches it at once (Automatic, Español, English, Deutsch, 한국어), at setup or from the tray. Those who already used Stackshot keep Spanish; if their Windows is in another language, the matching language is offered once, and nothing changes unless they accept. The English translation was contributed by [@altmashnaveed](https://github.com/altmashnaveed) and the Korean one by [@Hobeom](https://github.com/Hobeom); German and the secrets redaction came from PR #13 by [@aamershahzad2](https://github.com/aamershahzad2).
+Yes. Stackshot speaks Spanish, English, German and Korean. A new installation follows the Windows display language (Korean on a Korean Windows; Spanish on a Spanish, Catalan, Galician or Basque Windows; German on a German one; English everywhere else), and **Settings › General › Appearance › Language** switches it at once (Auto, Español, English, Deutsch, 한국어), at setup or from the tray. Those who already used Stackshot keep Spanish; if their Windows is in another language, the matching language is offered once, and nothing changes unless they accept. The English translation was contributed by [@altmashnaveed](https://github.com/altmashnaveed) and the Korean one by [@Hobeom](https://github.com/Hobeom); German and the secrets redaction came from PR #13 by [@aamershahzad2](https://github.com/aamershahzad2).
 </details>
 
 ## Building from source

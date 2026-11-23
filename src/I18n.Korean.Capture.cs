@@ -211,7 +211,7 @@ namespace Stackshot
             map["Recording resumed from \u201C{0}\u201D."] = "\u2018{0}\u2019\uC5D0\uC11C \uB179\uC74C\uC744 \uC7AC\uAC1C\uD588\uC2B5\uB2C8\uB2E4.";
             map["Selected audio output is unavailable"] = "\uC120\uD0DD\uD55C \uC624\uB514\uC624 \uCD9C\uB825\uC744 \uC0AC\uC6A9\uD560 \uC218 \uC5C6\uC74C";
             map["Selected microphone disconnected"] = "\uC120\uD0DD\uD55C \uB9C8\uC774\uD06C \uC5F0\uACB0 \uB04A\uAE40";
-            map["Recording with \u201C{0}\u201D, default Windows device, until it returns."] = "\uC7A5\uCE58\uAC00 \uB2E4\uC2DC \uC5F0\uACB0\uB420 \uB54C\uAE4C\uC9C0 Windows \uAE30\uBCF8 \uC7A5\uCE58 \u2018{0}\u2019\uB85C \uB179\uC74C\uD569\uB2C8\uB2E4.";
+            map["Recording with \u201C{0}\u201D, default Windows device, until it returns."] = "\uC7A5\uCE58\uAC00 \uB2E4\uC2DC \uC5F0\uACB0\uB420 \uB54C\uAE4C\uC9C0 Windows \uAE30\uBCF8 \uC7A5\uCE58 \u2018{0}\u2019(\uC73C)\uB85C \uB179\uC74C\uD569\uB2C8\uB2E4.";
             map["No system audio"] = "\uC2DC\uC2A4\uD15C \uC18C\uB9AC \uC5C6\uC74C";
             map["No device available: this part will record without {0}."] = "\uC0AC\uC6A9\uD560 \uC218 \uC788\uB294 \uC7A5\uCE58\uAC00 \uC5C6\uC5B4 \uC774 \uAD6C\uAC04\uC740 {0} \uC5C6\uC774 \uB179\uD654\uD569\uB2C8\uB2E4.";
             map["FFmpeg closed during the recording. "] = "\uB179\uD654 \uC911 FFmpeg\uAC00 \uC885\uB8CC\uB418\uC5C8\uC2B5\uB2C8\uB2E4. ";
@@ -447,6 +447,19 @@ namespace Stackshot
             map["Check: not done."] = "\uAC80\uC99D: \uC218\uD589\uD558\uC9C0 \uC54A\uC74C.";
             map["Check: passed, {0} frames identical to the ones sent to the encoder."] = "\uAC80\uC99D \uD1B5\uACFC: \uC778\uCF54\uB354\uB85C \uBCF4\uB0B8 \uD504\uB808\uC784 {0}\uAC1C\uAC00 \uBAA8\uB450 \uC77C\uCE58\uD569\uB2C8\uB2E4.";
             map["Check: FAILED."] = "\uAC80\uC99D \uC2E4\uD328.";
+
+            map["Volume Down"] = "\uBCFC\uB968 \uC791\uAC8C";
+            map["Volume Up"] = "\uBCFC\uB968 \uD06C\uAC8C";
+            map["Play/Pause"] = "\uC7AC\uC0DD/\uC77C\uC2DC \uC815\uC9C0";
+            map["Next Track"] = "\uB2E4\uC74C \uD2B8\uB799";
+            map["Previous Track"] = "\uC774\uC804 \uD2B8\uB799";
+            map["Stop loading"] = "\uB85C\uB529 \uC911\uC9C0";
+            map["Browser Home"] = "\uBE0C\uB77C\uC6B0\uC800 \uD648";
+            map["Mail"] = "\uBA54\uC77C";
+            map["App 1"] = "\uC571 1";
+            map["Calculator"] = "\uACC4\uC0B0\uAE30";
+            map["Media"] = "\uBBF8\uB514\uC5B4";
+            map["From 0 to 100"] = "0~100";
 
             RegisterKoreanEditor(map);
         }

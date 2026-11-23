@@ -17,17 +17,25 @@ namespace Stackshot
         // symbol (50%), nothing at all, and a digit glued to a letter ("MP3" reads \uC4F0\uB9AC or \uC0BC).
         internal static bool? KoreanFinal(string text)
         {
-            if (string.IsNullOrEmpty(text)) return null;
+            int e = KoreanEnding(text);
+            return e < 0 ? (bool?)null : e > 0;
+        }
+
+        // -1 when the ending can't be told, 0 for a vowel, 1 for a final consonant, 2 for the final \u3139 (\uB2EC, \uC77C, \uD314), which
+        // takes "\uB85C" like a vowel does.
+        static int KoreanEnding(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return -1;
             int i = text.Length - 1;
             while (i >= 0 && (char.IsWhiteSpace(text[i]) || KoreanIgnorable.IndexOf(text[i]) >= 0)) i--;
-            if (i < 0) return null;
+            if (i < 0) return -1;
             char c = text[i];
-            if (c >= '\uAC00' && c <= '\uD7A3') return (c - '\uAC00') % 28 != 0;
-            if (c < '0' || c > '9') return null;
+            if (c >= '\uAC00' && c <= '\uD7A3') { int tail = (c - '\uAC00') % 28; return tail == 0 ? 0 : tail == 8 ? 2 : 1; }
+            if (c < '0' || c > '9') return -1;
             int j = i;
             while (j >= 0 && ((text[j] >= '0' && text[j] <= '9') || text[j] == '.' || text[j] == ',')) j--;
-            if (j >= 0 && ((text[j] >= 'A' && text[j] <= 'Z') || (text[j] >= 'a' && text[j] <= 'z'))) return null;
-            return "013678".IndexOf(c) >= 0;
+            if (j >= 0 && ((text[j] >= 'A' && text[j] <= 'Z') || (text[j] >= 'a' && text[j] <= 'z'))) return -1;
+            return c == '1' || c == '7' || c == '8' ? 2 : c == '0' || c == '3' || c == '6' ? 1 : 0;
         }
 
         // The particle after the word: whenFinal after a final consonant ("\uACFC", "\uC740", "\uC774", "\uC744"), whenOpen after a vowel
@@ -38,11 +46,20 @@ namespace Stackshot
             return f == null ? whenFinal + "(" + whenOpen + ")" : f.Value ? whenFinal : whenOpen;
         }
 
+        // The particle "\uB85C" or "\uC73C\uB85C" (direction, means) after the word, and both, "(\uC73C)\uB85C", when its script doesn't say.
+        internal static string Euro(string word)
+        {
+            int e = KoreanEnding(word);
+            return e < 0 ? "(\uC73C)\uB85C" : EuroAfter(e);
+        }
+
+        static string EuroAfter(int ending) { return ending == 1 ? "\uC73C\uB85C" : "\uB85C"; }
+
         // A variable of the text with the pair that follows it: the variable (with its format), the closing quotes or
         // brackets between them, and the pair. Without a variable before it (a word of the text itself), only the pair.
         static readonly Regex JosaSlot = new Regex(
             "(?<ph>(?<!\\{)\\{(?<n>[0-9]+)(?:,[-+]?[0-9]+)?(?::[^{}]*)?\\})?(?<mid>[\"'\u201D\u2019\u300D\u300F\\)\\]\u3011\uFF09>]*)" +
-            "(?<pair>\uC740\\(\uB294\\)|\uB294\\(\uC740\\)|\uC774\\(\uAC00\\)|\uAC00\\(\uC774\\)|\uC744\\(\uB97C\\)|\uB97C\\(\uC744\\)|\uACFC\\(\uC640\\)|\uC640\\(\uACFC\\))",
+            "(?<pair>\\(\uC73C\\)\uB85C|\uC740\\(\uB294\\)|\uB294\\(\uC740\\)|\uC774\\(\uAC00\\)|\uAC00\\(\uC774\\)|\uC744\\(\uB97C\\)|\uB97C\\(\uC744\\)|\uACFC\\(\uC640\\)|\uC640\\(\uACFC\\))",
             RegexOptions.CultureInvariant);
 
         // A catalog text writes a particle after a variable as the pair ("{0}\uC744(\uB97C)"). Settled here, in the text and
@@ -54,21 +71,22 @@ namespace Stackshot
             return JosaSlot.Replace(template, delegate(Match m)
             {
                 Group pair = m.Groups["pair"];
-                bool? f = null;
+                int e = -1;
                 if (m.Groups["ph"].Success)
                 {
                     int n;
                     if (args != null && int.TryParse(m.Groups["n"].Value, out n) && n < args.Length && args[n] != null)
                     {
-                        try { f = KoreanFinal(string.Format(Culture, m.Groups["ph"].Value, args)); }
-                        catch (FormatException) { f = null; }
+                        try { e = KoreanEnding(string.Format(Culture, m.Groups["ph"].Value, args)); }
+                        catch (FormatException) { e = -1; }
                     }
                 }
-                else f = KoreanFinal(template.Substring(0, pair.Index));
-                if (f == null) return m.Value;
-                string v = pair.Value;
+                else e = KoreanEnding(template.Substring(0, pair.Index));
+                if (e < 0) return m.Value;
+                string v = pair.Value, head = m.Value.Substring(0, pair.Index - m.Index);
+                if (v[0] == '(') return head + EuroAfter(e);
                 bool finalFirst = v[0] == '\uC740' || v[0] == '\uC774' || v[0] == '\uC744' || v[0] == '\uACFC';
-                return m.Value.Substring(0, pair.Index - m.Index) + (f.Value == finalFirst ? v[0] : v[2]);
+                return head + ((e > 0) == finalFirst ? v[0] : v[2]);
             });
         }
 

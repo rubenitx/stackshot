@@ -215,8 +215,7 @@ namespace Stackshot
 
         static string Hours(int minutes)
         {
-            if (I18n.IsKorean) return minutes / 60 + "\uC2DC\uAC04" + (minutes % 60 > 0 ? " " + minutes % 60 + "\uBD84" : "");
-            return minutes / 60 + " h" + (minutes % 60 > 0 ? " " + minutes % 60 + " min" : "");
+            return FocusClock.Minutes(minutes);
         }
 
         public bool WatchReading { get { return watchReading; } }

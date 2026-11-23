@@ -735,7 +735,7 @@ namespace Stackshot
             map["Example: "] = "\uC608: ";
             map["Try different words or fewer letters, such as \u201Cfolder\u201D, \u201Csound\u201D or \u201Cshortcut\u201D."] = "\u2018\uD3F4\uB354\u2019, \u2018\uC18C\uB9AC\u2019, \u2018\uB2E8\uCD95\uD0A4\u2019\uCC98\uB7FC \uB2E4\uB978 \uB2E8\uC5B4\uB098 \uB354 \uC9E7\uC740 \uAC80\uC0C9\uC5B4\uB97C \uC785\uB825\uD558\uC138\uC694.";
             map["{0} was assigned to {1}, which now has no shortcut."] = "{0} \uD0A4\uB97C \uC0AC\uC6A9\uD558\uB358 \u2018{1}\u2019\uC5D0 \uB2E8\uCD95\uD0A4\uAC00 \uB0A8\uC544 \uC788\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.";
-            map["{0} moved from {1} to {2}."] = "{0} \uD0A4 \uD560\uB2F9\uC744 \u2018{1}\u2019\uC5D0\uC11C \u2018{2}\u2019\uB85C \uC62E\uACBC\uC2B5\uB2C8\uB2E4.";
+            map["{0} moved from {1} to {2}."] = "{0} \uD0A4 \uD560\uB2F9\uC744 \u2018{1}\u2019\uC5D0\uC11C \u2018{2}\u2019(\uC73C)\uB85C \uC62E\uACBC\uC2B5\uB2C8\uB2E4.";
             map["{0}  \u00B7  {1} captures together"] = "{0}  \u00B7  \uD568\uAED8 \uCEA1\uCC98\uD55C \uD69F\uC218 {1}\uD68C";
             map["  \u00B7  {0} left until {1}"] = "  \u00B7  \u2018{1}\u2019\uAE4C\uC9C0 {0}\uD68C";
             map["  \u00B7  max level"] = "  \u00B7  \uCD5C\uACE0 \uB808\uBCA8";
@@ -772,7 +772,7 @@ namespace Stackshot
             map["Got it! No more {0} today."] = "\uC54C\uACA0\uC5B4! \uC624\uB298\uC740 {0}\uC744(\uB97C) \uADF8\uB9CC\uD560\uAC8C.";
             map["Alright, no more {0} for today."] = "\uC88B\uC544, \uC624\uB298\uC740 {0}\uC744(\uB97C) \uAEBC \uB458\uAC8C.";
             map["Fine, you're off the hook for {0} today."] = "\uC88B\uC544. \uC624\uB298\uC740 {0}\uC744(\uB97C) \uB354 \uC548 \uD574\uB3C4 \uB3FC.";
-            map["We are now {0}!"] = "\uC774\uC81C \uC6B0\uB9AC\uB294 \u2018{0}\u2019\uC57C!";
+            map["We are now {0}!"] = "\uC6B0\uB9AC \uC0AC\uC774\uAC00 \u2018{0}\u2019 \uB2E8\uACC4\uAC00 \uB410\uC5B4!";
             map["Press {0} to capture."] = "{0} \uD0A4\uB97C \uB20C\uB7EC \uCEA1\uCC98\uD558\uC138\uC694.";
             map["Today: {0} glasses of water, {1} eye rests, {2} movement breaks"] = "\uC624\uB298 \uBB3C {0}\uC794, \uB208 \uC26C\uAE30 {1}\uD68C, \uBAB8 \uC6C0\uC9C1\uC774\uAE30 {2}\uD68C";
             map[", {0} breathing breaks."] = ", \uD638\uD761 \uC6B4\uB3D9 {0}\uD68C.";

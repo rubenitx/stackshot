@@ -113,9 +113,9 @@ namespace Stackshot.Tests
             }
         }
 
-        // Files whose English texts are not translated on purpose: the key names of the hotkeys (Hotkeys.cs) and the
-        // comments of the settings file (Settings.cs), the same as in every other language.
-        static readonly string[] KoreanSkipFiles = { "Capture/Hotkeys.cs", "Settings.cs" };
+        // Files whose English texts are not translated on purpose: the comments of the settings file (Settings.cs), the
+        // same as in every other language.
+        static readonly string[] KoreanSkipFiles = { "Settings.cs" };
 
         // The English texts an argument can be: its literal, or every literal of a plain "cond ? \"one\" : \"other\"" choice.
         // Anything built at run time (a concatenation with a variable) has no fixed key and is left to the audits.
@@ -134,7 +134,8 @@ namespace Stackshot.Tests
         static readonly string[] KoreanSameAsEnglish =
         {
             "%", "\u201C{0}\u201D", " \u201C{0}\u201D", "6,000", "8,000", "10,000", "12,000", "15,000", "Ctrl + Enter", "Ctrl+Enter",
-            "Space", "FAIL ", "\u2026"
+            "Space", "FAIL ", "\u2026",
+            "PrtScn", "Backspace", "Del", "End", "Enter", "Insert", "Menu", "Num Lock", "Page Down", "Page Up", "Caps Lock", "Scroll Lock", "Shift"
         };
 
         // English texts that sit in the non-Korean half of a call site: an `if (I18n.IsKorean)` branch above them in the

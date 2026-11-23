@@ -16,6 +16,8 @@ namespace Stackshot
     {
         public const int MaxLength = 120;   // characters before the extension
 
+        internal static string CaptureWord { get { return I18n.T("Captura", "Capture", "Aufnahme"); } }
+
         // The tokens Ajustes offers, in its order.
         public static string[] Tokens
         {
@@ -209,7 +211,7 @@ namespace Stackshot
         public static string Example(string template, DateTime when)
         {
             Values v = new Values();
-            v.Type = I18n.T("Captura", "Capture");
+            v.Type = CaptureWord;
             v.App = "EXCEL";
             v.Window = I18n.T("Informe de ventas.xlsx - Excel", "Sales Report.xlsx - Excel");
             v.When = when;

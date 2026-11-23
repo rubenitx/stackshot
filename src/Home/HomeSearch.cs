@@ -74,7 +74,7 @@ namespace Stackshot
                 MaxLength = 80, VerticalContentAlignment = VerticalAlignment.Center, Template = DockFieldTemplate(), Text = searchText
             };
             AutomationProperties.SetName(box, I18n.T("Buscar ajustes", "Search settings"));
-            AutomationProperties.SetHelpText(box, "Ctrl+F");
+            AutomationProperties.SetHelpText(box, Hotkeys.CtrlF);
             g.Children.Add(box);
             Border clear = new TapBorder
             {

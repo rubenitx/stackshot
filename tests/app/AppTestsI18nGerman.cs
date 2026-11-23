@@ -89,7 +89,7 @@ namespace Stackshot.Tests
 
         // ReportWindow, NewsWindow, LinksWindow, QuickWindow (note and reminder), the StickyNote menu, the player, the
         // region picker's hint, RecordSetup, Welcome, UpdateNotice, the pet menu and a sample of toasts: built without
-        // showing them, then audited in English (nothing Spanish) and German (nothing Spanish or English).
+        // showing them, then audited in English (nothing Spanish), German and Korean (nothing Spanish or English).
         public static void ExtraWindowsAudit()
         {
             List<string> found = new List<string>();
@@ -97,6 +97,7 @@ namespace Stackshot.Tests
             {
                 AuditAll(found, "en", delegate(string s) { return AppTestsI18n.LooksSpanish(s) ? "es" : null; });
                 AuditAll(found, "de", WhyBad);
+                AuditAll(found, "ko", WhyBad);
                 foreach (string f in found) Console.WriteLine("    extra: " + f);
                 Check(found.Count == 0, found.Count + " unlocalized texts in the other windows (listed above)");
             }
@@ -105,7 +106,7 @@ namespace Stackshot.Tests
 
         static void AuditAll(List<string> found, string lang, Func<string, string> flag)
         {
-            Thread.CurrentThread.CurrentUICulture = new CultureInfo(lang == "de" ? "de-DE" : "en-US");
+            Thread.CurrentThread.CurrentUICulture = new CultureInfo(lang == "de" ? "de-DE" : lang == "ko" ? "ko-KR" : "en-US");
             I18n.Apply("auto");
             AuditInto(found, lang + "/report", 8, flag, ReportTexts);
             AuditInto(found, lang + "/news", 5, flag, NewsTexts);
@@ -278,9 +279,9 @@ namespace Stackshot.Tests
             string[][] sample =
             {
                 new[] { "No se pudo guardar", "Could not save the recording.", "Error" },
-                new[] { "Texto copiado", "Text copied to the clipboard.", "Success" },
-                new[] { "La grabaci\u00F3n ha ido a tirones", "Recording was choppy.", "Warning" },
-                new[] { "Algunos atajos est\u00E1n ocupados", "Some shortcuts are occupied.", "Warning" }
+                new[] { "Texto copiado", "Text copied", "Success" },
+                new[] { "La grabaci\u00F3n ha ido a tirones", "Recording was choppy", "Warning" },
+                new[] { "Algunos atajos est\u00E1n ocupados", "Some shortcuts are occupied", "Warning" }
             };
             ToastStack stack = new ToastStack();
             List<ToastWindow> windows = new List<ToastWindow>();

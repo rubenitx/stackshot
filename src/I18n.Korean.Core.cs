@@ -58,7 +58,7 @@ namespace Stackshot
             // Program.cs
             map["Could not open {0}.\n\n{1}"] = "{0}\uC744(\uB97C) \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.\n\n{1}";
             map["This machine has Stackshot {0} installed via MSI package.\n\nTo update to {1}, install Stackshot.msi for that version (or ask IT)."] = "\uC774 PC\uC5D0\uB294 MSI\uB85C \uC124\uCE58\uD55C Stackshot {0}\uC774(\uAC00) \uC788\uC2B5\uB2C8\uB2E4.\n\n{1} \uBC84\uC804\uC758 Stackshot.msi\uB97C \uC124\uCE58\uD558\uAC70\uB098 IT \uB2F4\uB2F9\uC790\uC5D0\uAC8C \uBB38\uC758\uD558\uC138\uC694.";
-            map["Update Stackshot from version {0} to {1}?"] = "Stackshot\uC744 {0}\uC5D0\uC11C {1}(\uC73C)\uB85C \uC5C5\uB370\uC774\uD2B8\uD560\uAE4C\uC694?";
+            map["Update Stackshot from version {0} to {1}?"] = "Stackshot\uC744 {0} \uBC84\uC804\uC5D0\uC11C {1} \uBC84\uC804\uC73C\uB85C \uC5C5\uB370\uC774\uD2B8\uD560\uAE4C\uC694?";
             map["Does not seem to be a valid image, or is corrupted."] = "\uC62C\uBC14\uB978 \uC774\uBBF8\uC9C0\uAC00 \uC544\uB2C8\uAC70\uB098 \uD30C\uC77C\uC774 \uC190\uC0C1\uB418\uC5C8\uC2B5\uB2C8\uB2E4.";
             map["The file cannot be opened in the editor."] = "\uD3B8\uC9D1\uAE30\uC5D0\uC11C \uD30C\uC77C\uC744 \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
             map["Could not install Stackshot.\n\n"] = "Stackshot\uC744 \uC124\uCE58\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.\n\n";
@@ -186,7 +186,7 @@ namespace Stackshot
 
             // Setup.cs
             map["Stackshot: screenshots, video and GIF"] = "Stackshot \uCEA1\uCC98 \uBC0F \uB3D9\uC601\uC0C1\u00B7GIF \uB179\uD654";
-            map["\n\nRecovered recordings ({0}) remain in {1}."] = "\n\n\uBCF5\uAD6C\uB41C \uB179\uD654 {0}\uAC1C\uB294 {1}\uC5D0 \uBCF4\uAD00\uB429\uB2C8\uB2E4.";
+            map["\n\nRecovered recordings ({0}) remain in {1}."] = "\n\n\uBCF5\uAD6C\uB41C \uB179\uD654({0})\uB294 {1}\uC5D0 \uBCF4\uAD00\uB429\uB2C8\uB2E4.";
             map["Uninstall Stackshot?\n\nCaptures saved in {0} will not be deleted.{1}"] = "Stackshot\uC744 \uC81C\uAC70\uD560\uAE4C\uC694?\n\n{0}\uC5D0 \uC800\uC7A5\uB41C \uCEA1\uCC98\uB294 \uBCF4\uC874\uB429\uB2C8\uB2E4.{1}";
             map["Stackshot is still open: there are unsaved changes or a recording is being saved.\n\nClose it and uninstall again."] = "\uC800\uC7A5\uD558\uC9C0 \uC54A\uC740 \uBCC0\uACBD \uC0AC\uD56D\uC774 \uC788\uAC70\uB098 \uB179\uD654\uB97C \uC800\uC7A5 \uC911\uC785\uB2C8\uB2E4.\n\nStackshot\uC744 \uC885\uB8CC\uD55C \uB4A4 \uB2E4\uC2DC \uC81C\uAC70\uD558\uC138\uC694.";
             map["Stackshot has been uninstalled. Thank you for trying it!"] = "Stackshot\uC744 \uC81C\uAC70\uD588\uC2B5\uB2C8\uB2E4. \uC0AC\uC6A9\uD574 \uC8FC\uC154\uC11C \uAC10\uC0AC\uD569\uB2C8\uB2E4!";
@@ -262,6 +262,7 @@ namespace Stackshot
             map["Windows cannot write to {0}. Check folder permissions or if Controlled Folder Access is protecting it."] = "{0}\uC5D0 \uC4F8 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uD3F4\uB354 \uAD8C\uD55C\uACFC Windows\uC758 \uC81C\uC5B4\uB41C \uD3F4\uB354 \uC561\uC138\uC2A4 \uC124\uC815\uC744 \uD655\uC778\uD558\uC138\uC694.";
             map["No space left on the disk of {0}. Free up space and try again."] = "{0} \uB4DC\uB77C\uC774\uBE0C\uC5D0 \uACF5\uAC04\uC774 \uBD80\uC871\uD569\uB2C8\uB2E4. \uACF5\uAC04\uC744 \uD655\uBCF4\uD55C \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.";
             map["Another program is using the file. Close it and try again."] = "\uB2E4\uB978 \uD504\uB85C\uADF8\uB7A8\uC5D0\uC11C \uD30C\uC77C\uC744 \uC0AC\uC6A9 \uC911\uC785\uB2C8\uB2E4. \uD30C\uC77C\uC744 \uB2EB\uACE0 \uB2E4\uC2DC \uC2DC\uB3C4\uD558\uC138\uC694.";
+            map["Cannot find the folder (a disconnected or network drive?)."] = "\uD3F4\uB354\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uB4DC\uB77C\uC774\uBE0C\uB098 \uB124\uD2B8\uC6CC\uD06C \uC5F0\uACB0\uC744 \uD655\uC778\uD558\uC138\uC694.";
             map["Cannot find folder {0} (a disconnected or network drive?)."] = "{0} \uD3F4\uB354\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uB4DC\uB77C\uC774\uBE0C\uB098 \uB124\uD2B8\uC6CC\uD06C \uC5F0\uACB0\uC744 \uD655\uC778\uD558\uC138\uC694.";
             map["The file no longer exists."] = "\uD30C\uC77C\uC774 \uB354 \uC774\uC0C1 \uC874\uC7AC\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.";
             map["The path is too long for Windows. Choose a folder with a shorter path."] = "Windows\uC5D0\uC11C \uCC98\uB9AC\uD558\uAE30\uC5D0 \uACBD\uB85C\uAC00 \uB108\uBB34 \uAE41\uB2C8\uB2E4. \uACBD\uB85C\uAC00 \uB354 \uC9E7\uC740 \uD3F4\uB354\uB97C \uC120\uD0DD\uD558\uC138\uC694.";
@@ -415,7 +416,7 @@ namespace Stackshot
             map["Verifying download\u2026"] = "\uB2E4\uC6B4\uB85C\uB4DC \uAC80\uC99D \uC911\u2026";
             map["Installing Stackshot {0}"] = "Stackshot {0} \uC124\uCE58 \uC911";
             map["Hide"] = "\uC228\uAE30\uAE30";
-            map["Could not update to {0}"] = "{0}(\uC73C)\uB85C \uC5C5\uB370\uC774\uD2B8\uD560 \uC218 \uC5C6\uC74C";
+            map["Could not update to {0}"] = "{0} \uBC84\uC804\uC73C\uB85C \uC5C5\uB370\uC774\uD2B8\uD560 \uC218 \uC5C6\uC74C";
             map["Stackshot {0} ready to install"] = "Stackshot {0} \uC124\uCE58 \uC900\uBE44 \uC644\uB8CC";
             map["Stackshot {0} available"] = "Stackshot {0} \uC0AC\uC6A9 \uAC00\uB2A5";
 

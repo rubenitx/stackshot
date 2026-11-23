@@ -1047,7 +1047,7 @@ namespace Stackshot
             Grid.SetRow(l2, 1);
             inner.Children.Add(l2);
             int[] cds = RecordSetup.Countdowns;
-            MacSegmented cd = new MacSegmented(new string[] { I18n.T("No", "Off", "Aus"), "3 s", "5 s", "10 s" }, Math.Max(0, Array.IndexOf(cds, Settings.Countdown(settings.RecordCountdown))));
+            MacSegmented cd = new MacSegmented(new string[] { I18n.T("No", "Off", "Aus"), RecordSetup.Seconds(3), RecordSetup.Seconds(5), RecordSetup.Seconds(10) }, Math.Max(0, Array.IndexOf(cds, Settings.Countdown(settings.RecordCountdown))));
             cd.Margin = new Thickness(0, 12, 0, 0);
             Access.Describe(cd, l2.Text, null);
             cd.Changed += delegate(int i) { settings.RecordCountdown = cds[i]; Changed(); };
