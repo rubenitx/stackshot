@@ -655,6 +655,7 @@ namespace Stackshot
             map["Search languages"] = "\uC5B8\uC5B4 \uAC80\uC0C9";
             map["Languages"] = "\uC5B8\uC5B4 \uBAA9\uB85D";
             map["No matching languages."] = "\uC77C\uCE58\uD558\uB294 \uC5B8\uC5B4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.";
+            map["More languages are coming soon."] = "\uB354 \uB9CE\uC740 \uC5B8\uC5B4\uAC00 \uACE7 \uCD94\uAC00\uB429\uB2C8\uB2E4.";
             map["Apply language"] = "\uC5B8\uC5B4 \uC801\uC6A9";
             map["Follow the Windows language"] = "Windows \uD45C\uC2DC \uC5B8\uC5B4 \uB530\uB974\uAE30";
             map["Partial translation"] = "\uC77C\uBD80 \uBC88\uC5ED";
