@@ -88,9 +88,7 @@ namespace Stackshot
             map["Uninstall Stackshot\u2026"] = "Stackshot \uC81C\uAC70\u2026";
             map["Updates"] = "\uC5C5\uB370\uC774\uD2B8";
             map["You have version {0}. Stackshot updates are managed by your organization."] = "\uD604\uC7AC \uBC84\uC804\uC740 {0}\uC785\uB2C8\uB2E4. \uC870\uC9C1\uC5D0\uC11C Stackshot \uC5C5\uB370\uC774\uD2B8\uB97C \uAD00\uB9AC\uD569\uB2C8\uB2E4.";
-            map["Downloading Stackshot {0}"] = "\uB2E4\uC6B4\uB85C\uB4DC \uC911 Stackshot {0}";
             map["Verifying Stackshot {0}"] = "\uAC80\uC99D \uC911 Stackshot {0}";
-            map["Installing Stackshot {0}"] = "\uC124\uCE58 \uC911 Stackshot {0}";
             map["Verifying SHA-256 checksum and signature before installing."] = "\uC124\uCE58\uD558\uAE30 \uC804\uC5D0 SHA-256 \uCCB4\uD06C\uC12C\uACFC \uC11C\uBA85\uC744 \uAC80\uC99D\uD569\uB2C8\uB2E4.";
             map["As soon as recording is saved, Stackshot will restart."] = "\uB179\uD654\uB97C \uC800\uC7A5\uD558\uBA74 Stackshot\uC774 \uB2E4\uC2DC \uC2DC\uC791\uB429\uB2C8\uB2E4.";
             map["Stackshot will restart in a few seconds."] = "\uC7A0\uC2DC \uD6C4 Stackshot\uC774 \uB2E4\uC2DC \uC2DC\uC791\uB429\uB2C8\uB2E4.";

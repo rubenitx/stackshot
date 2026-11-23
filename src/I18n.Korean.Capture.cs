@@ -353,7 +353,6 @@ namespace Stackshot
             // Webcam
             map["Connecting the camera\u2026"] = "\uCE74\uBA54\uB77C\uC5D0 \uC5F0\uACB0 \uC911\u2026";
             map["Cannot open the camera"] = "\uCE74\uBA54\uB77C\uB97C \uC5F4 \uC218 \uC5C6\uC74C";
-            map["No camera found"] = "\uCE74\uBA54\uB77C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC74C";
             map["no image for {0} s"] = "{0}\uCD08 \uB3D9\uC548 \uC601\uC0C1 \uC5C6\uC74C";
             map["no response in {0} s"] = "{0}\uCD08 \uB3D9\uC548 \uC751\uB2F5 \uC5C6\uC74C";
             map["FFmpeg closed"] = "FFmpeg \uC885\uB8CC\uB428";

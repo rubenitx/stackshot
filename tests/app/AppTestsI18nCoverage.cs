@@ -568,7 +568,7 @@ namespace Stackshot.Tests
         sealed class Source { public string Rel; public string Text; }
 
         // The repo root: the runner exports STACKSHOT_TESTS_ROOT; otherwise walk up from the test exe or the cwd.
-        static string RepoRoot()
+        internal static string RepoRoot()
         {
             string env = Environment.GetEnvironmentVariable("STACKSHOT_TESTS_ROOT");
             if (!string.IsNullOrEmpty(env) && File.Exists(Path.Combine(env, "src", "I18n.cs"))) return env;

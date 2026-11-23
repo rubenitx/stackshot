@@ -2,9 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -139,6 +141,31 @@ namespace Stackshot.Tests
             }
             I18n.Apply("es");
             Check(NoticeBody(r2).Contains(SpanishHeadline) && !NoticeBody(r2).Contains("Headline in English"), "Spanish keeps the Spanish news");
+        }
+
+        // The Korean catalog is a dictionary filled by assignments: a key assigned twice keeps only the last value, so
+        // the first one is dead text that looks like it counts (and hides which wording the screen shows).
+        public static void KoreanKeysNotRegisteredTwiceDifferently()
+        {
+            Regex assign = new Regex(@"map\[""((?:[^""\\]|\\.)*)""\]\s*=\s*""((?:[^""\\]|\\.)*)""\s*;");
+            Dictionary<string, KeyValuePair<string, string>> seen = new Dictionary<string, KeyValuePair<string, string>>(StringComparer.Ordinal);
+            List<string> twice = new List<string>();
+            foreach (string path in Directory.GetFiles(Path.Combine(AppTestsI18nCoverage.RepoRoot(), "src"), "I18n.Korean*.cs"))
+            {
+                string[] lines = File.ReadAllLines(path);
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    Match m = assign.Match(lines[i]);
+                    if (!m.Success) continue;
+                    string key = Regex.Unescape(m.Groups[1].Value), value = Regex.Unescape(m.Groups[2].Value);
+                    string at = Path.GetFileName(path) + ":" + (i + 1);
+                    KeyValuePair<string, string> first;
+                    if (!seen.TryGetValue(key, out first)) seen[key] = new KeyValuePair<string, string>(value, at);
+                    else if (first.Key != value) twice.Add("'" + key + "' at " + at + " and " + first.Value);
+                }
+            }
+            foreach (string t in twice) Console.WriteLine("    registered twice: " + Regex.Replace(t, "[^\\x20-\\x7e]", "?"));
+            Check(twice.Count == 0, twice.Count + " Korean keys are registered twice with different values");
         }
     }
 }

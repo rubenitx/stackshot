@@ -68,6 +68,7 @@ namespace Stackshot.Tests
                 T("every-list-text-has-german", AppTestsI18nAudit.EveryListTextHasGerman);
                 T("every-list-text-has-korean", AppTestsI18nAudit.EveryListTextHasKorean);
                 T("release-news-only-in-spanish", AppTestsI18nAudit.ReleaseNewsOnlyInSpanish);
+                T("korean-keys-not-registered-twice-differently", AppTestsI18nAudit.KoreanKeysNotRegisteredTwiceDifferently);
             }
             finally
             {
