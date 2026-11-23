@@ -938,13 +938,13 @@ namespace Stackshot.Tests
                     using (D.Bitmap ed = RenderEditor(new D.Size(1100, 700))) Save(ed, "editor-" + n + ".png");
                     using (D.Bitmap hd = RenderHeads()) Save(hd, "heads-" + n + ".png");
                     // The language picker of the 01-aurora artboard, in every theme (a contrast theme must show none of the
-                    // treatment), in Spanish, English and Korean.
+                    // treatment), in Spanish, English, Korean and Arabic (right to left).
                     bool mica = Sheet.HasMica;
                     Sheet.HasMica = false;
                     string uiNow = I18n.Language;
                     try
                     {
-                        foreach (string ui in new[] { "es", "en", "ko" })
+                        foreach (string ui in new[] { "es", "en", "ko", "ar" })
                         {
                             I18n.Apply(ui);
                             LanguagePicker pk = (LanguagePicker)typeof(LanguagePicker).GetConstructor(NP, null, new[] { typeof(string) }, null).Invoke(new object[] { ui });
