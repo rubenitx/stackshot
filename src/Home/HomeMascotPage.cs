@@ -753,13 +753,14 @@ namespace Stackshot
 
             TextBox box = new TextBox
             {
-                Width = 236, Height = 38, MaxLength = 16, HorizontalAlignment = HorizontalAlignment.Left, Visibility = Visibility.Collapsed,
+                Width = 236, Height = 38, HorizontalAlignment = HorizontalAlignment.Left, Visibility = Visibility.Collapsed,
                 FontFamily = Ds.Display, FontWeight = FontWeights.SemiBold, FontSize = 22, TextAlignment = TextAlignment.Left,
                 VerticalContentAlignment = VerticalAlignment.Center, Padding = new Thickness(4, 0, 8, 0),
                 Foreground = Ds.Brush(pal.Label), CaretBrush = Ds.Brush(pal.Accent), SelectionBrush = Ds.Brush(pal.Accent),
                 Background = Ds.Brush(pal.High ? pal.Window : pal.Dark ? Ds.Argb(0.08, 255, 255, 255) : Ds.Argb(0.8, 255, 255, 255)),
                 BorderBrush = Ds.Brush(pal.Accent), BorderThickness = new Thickness(1.5), Template = HeroFieldTemplate()
             };
+            MascotName.Guard(box);
             slot.Children.Add(box);
 
             stageName = name;
@@ -835,11 +836,7 @@ namespace Stackshot
 
         static string CleanName(string text)
         {
-            StringBuilder b = new StringBuilder();
-            foreach (char c in text ?? "") if (!char.IsControl(c)) b.Append(c);
-            string v = b.ToString().Trim();
-            if (v.Length > 16) v = v.Substring(0, char.IsHighSurrogate(v[15]) ? 15 : 16).Trim();
-            if (v.Length > 0 && char.IsHighSurrogate(v[v.Length - 1])) v = v.Substring(0, v.Length - 1).Trim();   // never half an emoji
+            string v = MascotName.Clean(text);
             return v.Length > 0 ? v : "Pixel";
         }
 
