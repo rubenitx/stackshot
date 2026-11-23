@@ -3,7 +3,7 @@
 A screenshot tool for Windows in the spirit of CleanShot X: its own capture (scrolling capture too), a stack of floating
 thumbnails, a quick editor with a presentation backdrop, video and GIF through FFmpeg, a main window with a customizable
 mascot, and a per-user installation. A single `.exe` (about 2.2 MB) written in C# 5 + WinForms and WPF on .NET Framework 4.8.
-Windows 10 and 11 only. The user interface is in Spanish, English, German and Korean (the language registry is in `src/I18n.Languages.cs`, the German catalog is split by area into `src/I18n.German.<Area>.cs` and the Korean one into `src/I18n.Korean*.cs`); code comments are in English.
+Windows 10 and 11 only. The user interface is in Spanish, English, German and Korean (the language registry is in `src/I18n.Languages.cs`, the German catalog is split by area into `src/I18n.German.<Area>.cs` and the Korean one into `src/I18n.Korean*.cs`); code comments are in English. French, Portuguese, Simplified Chinese, Hindi, Arabic and Bengali (`src/I18n.Preview.cs`) are kept hidden until they are complete.
 
 ## Build and test
 
@@ -87,6 +87,12 @@ Windows 10 and 11 only. The user interface is in Spanish, English, German and Ko
   `tests\app\run-tests.ps1 i18n` checks that Automatic follows Windows and that no page shows Spanish in English, and
   `tests\app\run-tests.ps1 news` checks that the four news files carry the same versions and that the program's version
   is the newest one.
+- **Adding a language.** Add a `LanguageOption` to `I18n.Known` in `src/I18n.Languages.cs` (code, native name, search
+  names) and its catalog: a `src/I18n.<Language>*.cs` keyed by the English text, like Korean, or a column in
+  `src/I18n.Preview.cs` for a partial one (give it a `previewIndex`). A language with a `previewIndex` is hidden
+  (`I18n.PreviewsListed` is off): the picker lists only complete languages, a saved choice of a hidden one reads as
+  Automatic, and Automatic never picks it. Make it complete (every screen, notice, news file and test in `tests\app`),
+  then remove its `previewIndex` so it is listed, and add it to the Windows languages Automatic follows if it should be.
 - **ASCII literals**: accented characters in strings are Unicode escapes. Some editing tools turn them into real
   characters; after editing, `perl tools/escape-literals.pl <file>` escapes them again.
 - The process is per-monitor DPI aware (PerMonitorV2 manifest): sizes are in physical pixels and scaled with

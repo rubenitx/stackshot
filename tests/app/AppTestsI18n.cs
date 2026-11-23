@@ -99,7 +99,7 @@ namespace Stackshot.Tests
         static void AutoFollowsWindows()
         {
             string[] spanish = { "es-ES", "es-MX", "es-AR", "ca-ES", "gl-ES", "eu-ES" };
-            string[] english = { "en-US", "en-GB", "fr-FR", "pt-BR" };
+            string[] english = { "en-US", "en-GB", "fr-FR", "pt-BR", "zh-CN", "hi-IN", "ar-SA", "bn-BD" };   // the hidden previews are never picked
             foreach (string c in new[] { "de-DE", "de-AT", "de-CH" })
             {
                 Thread.CurrentThread.CurrentUICulture = new CultureInfo(c);
@@ -176,6 +176,12 @@ namespace Stackshot.Tests
                     { "SaveAll = 1\nLanguage = de\n", "de" },
                     { "SaveAll = 1\nLanguage = ko\n", "ko" },
                     { "SaveAll = 1\nLanguage = xx\n", "auto" },
+                    { "SaveAll = 1\nLanguage = fr\n", "auto" },
+                    { "SaveAll = 1\nLanguage = pt\n", "auto" },
+                    { "SaveAll = 1\nLanguage = zh\n", "auto" },
+                    { "SaveAll = 1\nLanguage = hi\n", "auto" },
+                    { "SaveAll = 1\nLanguage = ar\n", "auto" },
+                    { "SaveAll = 1\nLanguage = bn\n", "auto" },
                     { "SaveAll = 1\nLanguage =\n", "auto" },
                     { "SaveAll = 1\n", "es" }
                 };
@@ -809,7 +815,17 @@ namespace Stackshot.Tests
             }
         }
 
+        // The picker with the preview languages listed (the switch flipped): their search names, rows and settings paths
+        // keep working while they are hidden. The listing as shipped is in AppTestsI18nFinal.
         static void LanguagePickerSearch()
+        {
+            bool listed = I18n.PreviewsListed;
+            I18n.PreviewsListed = true;
+            try { LanguagePickerSearchListed(); }
+            finally { I18n.PreviewsListed = listed; }
+        }
+
+        static void LanguagePickerSearchListed()
         {
             I18n.Apply("en");
             Check(I18n.FilterLanguages("francais").Exists(o => o.Code == "fr"), "accent-insensitive search");

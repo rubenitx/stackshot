@@ -17,7 +17,7 @@ Stackshot adds **German (Deutsch)** alongside English and Spanish, and it is com
   - All other display languages -> English (`en`)
 - **One-time offer**: If you already used Stackshot in Spanish and your Windows is in another language, Stackshot offers the matching language once in a notice; nothing changes unless you accept, and you can always change it later in the settings.
 - **Settings Selector**: Under **Settings › General › Appearance › Language**, open the picker and search by name or language code. Choose a language and select **Apply language**.
-- **Preview languages**: French, Portuguese, Simplified Chinese, Hindi, Arabic and Bengali translate the picker and common controls. Other text appears in English. Select these languages manually. Automatic mode continues to choose Spanish, German, Korean or English based on Windows.
+- **Complete languages only**: The picker lists only languages whose translation is complete: Spanish, English, German and Korean. Automatic mode chooses Spanish, German, Korean or English based on Windows.
 
 ---
 

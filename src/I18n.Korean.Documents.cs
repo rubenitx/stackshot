@@ -76,7 +76,7 @@ namespace Stackshot
             // Markdown/MarkdownWindow.Access.cs
             map["Mode"] = "\uBAA8\uB4DC";
             map["XML text"] = "XML \uD14D\uC2A4\uD2B8";
-            map["Markdown text"] = "Markdown \uD14D\uC2A4\uD2B8";
+            map["Markdown text"] = "\uB9C8\uD06C\uB2E4\uC6B4 \uD14D\uC2A4\uD2B8";
             map["Preview"] = "\uBBF8\uB9AC \uBCF4\uAE30";
             map["Search or filter"] = "\uAC80\uC0C9 \uB610\uB294 \uD544\uD130";
             map["Width of the text and the preview"] = "\uD14D\uC2A4\uD2B8\uC640 \uBBF8\uB9AC \uBCF4\uAE30 \uB108\uBE44";
@@ -84,7 +84,7 @@ namespace Stackshot
             // Markdown/MarkdownWindow.cs
             map["No earlier XML in the folder."] = "\uD3F4\uB354\uC5D0 \uC774\uC804 XML\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.";
             map["No later XML in the folder."] = "\uD3F4\uB354\uC5D0 \uB2E4\uC74C XML\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.";
-            map["Markdown and XML"] = "Markdown \uBC0F XML";
+            map["Markdown and XML"] = "\uB9C8\uD06C\uB2E4\uC6B4 \uBC0F XML";
             map["Save changes to \u201C{0}\u201D?"] = "\u2018{0}\u2019\uC758 \uBCC0\uACBD \uC0AC\uD56D\uC744 \uC800\uC7A5\uD560\uAE4C\uC694?";
             map["Untitled"] = "\uC81C\uBAA9 \uC5C6\uC74C";
             map["If you don't save them, they will be lost."] = "\uC800\uC7A5\uD558\uC9C0 \uC54A\uC73C\uBA74 \uBCC0\uACBD \uC0AC\uD56D\uC774 \uC0AC\uB77C\uC9D1\uB2C8\uB2E4.";
@@ -107,7 +107,7 @@ namespace Stackshot
             map["Copy XML"] = "XML \uBCF5\uC0AC";
             map["Tidy"] = "\uBB38\uC11C \uC815\uB9AC";
             map["Insert contents"] = "\uBAA9\uCC28 \uC0BD\uC785";
-            map["Copy Markdown"] = "Markdown \uBCF5\uC0AC";
+            map["Copy Markdown"] = "\uB9C8\uD06C\uB2E4\uC6B4 \uBCF5\uC0AC";
             map["Copy as image"] = "\uC774\uBBF8\uC9C0\uB85C \uBCF5\uC0AC";
             map["Bold (Ctrl+B)"] = "\uAD75\uAC8C (Ctrl+B)";
             map["Italic (Ctrl+I)"] = "\uAE30\uC6B8\uC784\uAF34 (Ctrl+I)";
@@ -165,7 +165,7 @@ namespace Stackshot
             map["Fix it in the editor: this view updates by itself."] = "\uD3B8\uC9D1\uAE30\uC5D0\uC11C \uC218\uC815\uD558\uBA74 \uC774 \uBCF4\uAE30\uC5D0 \uC790\uB3D9\uC73C\uB85C \uBC18\uC601\uB429\uB2C8\uB2E4.";
             map["Switch to Edit to fix it."] = "\uD3B8\uC9D1 \uBAA8\uB4DC\uB85C \uC804\uD658\uD574 \uC218\uC815\uD558\uC138\uC694.";
             map["Go to error"] = "\uC624\uB958 \uC704\uCE58\uB85C \uC774\uB3D9";
-            map["View, edit and turn Markdown or XML into a capture"] = "Markdown \uB610\uB294 XML \uBB38\uC11C\uB97C \uBCF4\uACE0 \uD3B8\uC9D1\uD558\uAC70\uB098 \uCEA1\uCC98\uB85C \uB9CC\uB4DC\uC138\uC694";
+            map["View, edit and turn Markdown or XML into a capture"] = "\uB9C8\uD06C\uB2E4\uC6B4 \uB610\uB294 XML \uBB38\uC11C\uB97C \uBCF4\uACE0 \uD3B8\uC9D1\uD558\uAC70\uB098 \uCEA1\uCC98\uB85C \uB9CC\uB4DC\uC138\uC694";
             map["unsaved"] = "\uC800\uC7A5 \uC548 \uB428";
             map["saved"] = "\uC800\uC7A5\uB428";
             map["no changes"] = "\uBCC0\uACBD \uC5C6\uC74C";
@@ -183,8 +183,8 @@ namespace Stackshot
             map["Some bytes are not valid {0}: they show as \u201C\uFFFD\u201D."] = "{0} \uD615\uC2DD\uC5D0 \uB9DE\uC9C0 \uC54A\uB294 \uBC14\uC774\uD2B8\uB294 \u2018\uFFFD\u2019\uB85C \uD45C\uC2DC\uD569\uB2C8\uB2E4.";
             map["Loading {0}\u2026"] = "{0} \uBD88\uB7EC\uC624\uB294 \uC911\u2026";
             map["Could not read the file."] = "\uD30C\uC77C\uC744 \uC77D\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
-            map["Open a Markdown or XML document"] = "Markdown \uB610\uB294 XML \uBB38\uC11C \uC5F4\uAE30";
-            map["Markdown, XML and text|*.md;*.markdown;*.mdown;*.mkd;*.xml;*.xsd;*.config;*.svg;*.xaml;*.txt|All files|*.*"] = "Markdown, XML \uBC0F \uD14D\uC2A4\uD2B8|*.md;*.markdown;*.mdown;*.mkd;*.xml;*.xsd;*.config;*.svg;*.xaml;*.txt|\uBAA8\uB4E0 \uD30C\uC77C|*.*";
+            map["Open a Markdown or XML document"] = "\uB9C8\uD06C\uB2E4\uC6B4 \uB610\uB294 XML \uBB38\uC11C \uC5F4\uAE30";
+            map["Markdown, XML and text|*.md;*.markdown;*.mdown;*.mkd;*.xml;*.xsd;*.config;*.svg;*.xaml;*.txt|All files|*.*"] = "\uB9C8\uD06C\uB2E4\uC6B4, XML \uBC0F \uD14D\uC2A4\uD2B8|*.md;*.markdown;*.mdown;*.mkd;*.xml;*.xsd;*.config;*.svg;*.xaml;*.txt|\uBAA8\uB4E0 \uD30C\uC77C|*.*";
             map["Could not open file picker."] = "\uD30C\uC77C \uC120\uD0DD \uCC3D\uC744 \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
             map["There is no text or .md/.xml file on the clipboard."] = "\uD074\uB9BD\uBCF4\uB4DC\uC5D0 \uD14D\uC2A4\uD2B8\uB098 .md/.xml \uD30C\uC77C\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.";
             map["Could not read clipboard."] = "\uD074\uB9BD\uBCF4\uB4DC\uB97C \uC77D\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
@@ -200,7 +200,7 @@ namespace Stackshot
             map["Saved at {0}."] = "{0}\uC5D0 \uC800\uC7A5\uD588\uC2B5\uB2C8\uB2E4.";
             map["Save as"] = "\uB2E4\uB978 \uC774\uB984\uC73C\uB85C \uC800\uC7A5";
             map["XML|*.xml|All files|*.*"] = "XML|*.xml|\uBAA8\uB4E0 \uD30C\uC77C|*.*";
-            map["Markdown|*.md|Text|*.txt|All files|*.*"] = "Markdown|*.md|\uD14D\uC2A4\uD2B8|*.txt|\uBAA8\uB4E0 \uD30C\uC77C|*.*";
+            map["Markdown|*.md|Text|*.txt|All files|*.*"] = "\uB9C8\uD06C\uB2E4\uC6B4|*.md|\uD14D\uC2A4\uD2B8|*.txt|\uBAA8\uB4E0 \uD30C\uC77C|*.*";
             map["Could not open save dialog."] = "\uC800\uC7A5 \uB300\uD654 \uC0C1\uC790\uB97C \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
             map["Could not open the folder."] = "\uD3F4\uB354\uB97C \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
             map["Reload \u201C{0}\u201D from disk?"] = "\uB514\uC2A4\uD06C\uC5D0\uC11C \u2018{0}\u2019\uC744(\uB97C) \uB2E4\uC2DC \uBD88\uB7EC\uC62C\uAE4C\uC694?";
@@ -242,7 +242,7 @@ namespace Stackshot
             map["As an image it would be over 16,000 pixels high and hard to view properly. In PDF it stays whole, split across pages."] = "\uC774\uBBF8\uC9C0 \uB192\uC774\uAC00 16,000\uD53D\uC140\uC744 \uB118\uC5B4 \uC77D\uAE30 \uC5B4\uB835\uC2B5\uB2C8\uB2E4. PDF\uB85C \uC800\uC7A5\uD558\uBA74 \uC804\uCCB4 \uB0B4\uC6A9\uC744 \uC5EC\uB7EC \uD398\uC774\uC9C0\uC5D0 \uB098\uB204\uC5B4 \uB2F4\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4.";
             map["Save as PDF"] = "PDF\uB85C \uC800\uC7A5";
             map["XML copied."] = "XML\uC744 \uBCF5\uC0AC\uD588\uC2B5\uB2C8\uB2E4.";
-            map["Markdown copied."] = "Markdown\uC744 \uBCF5\uC0AC\uD588\uC2B5\uB2C8\uB2E4.";
+            map["Markdown copied."] = "\uB9C8\uD06C\uB2E4\uC6B4\uC744 \uBCF5\uC0AC\uD588\uC2B5\uB2C8\uB2E4.";
             map["Copied"] = "\uBCF5\uC0AC\uB428";
             map["Image copied."] = "\uC774\uBBF8\uC9C0\uB97C \uBCF5\uC0AC\uD588\uC2B5\uB2C8\uB2E4.";
             map["Could not create image."] = "\uC774\uBBF8\uC9C0\uB97C \uB9CC\uB4E4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";

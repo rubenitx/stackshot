@@ -9,7 +9,7 @@ namespace Stackshot
         static void RegisterKoreanCore(Dictionary<string, string> map)
         {
             // FileAssoc.cs
-            map["Screenshots, video and GIF, with a video player and a Markdown and XML viewer"] = "\uCEA1\uCC98\uC640 \uB3D9\uC601\uC0C1\u00B7GIF \uB179\uD654, \uB3D9\uC601\uC0C1 \uD50C\uB808\uC774\uC5B4\uC640 Markdown\u00B7XML \uBDF0\uC5B4";
+            map["Screenshots, video and GIF, with a video player and a Markdown and XML viewer"] = "\uCEA1\uCC98\uC640 \uB3D9\uC601\uC0C1\u00B7GIF \uB179\uD654, \uB3D9\uC601\uC0C1 \uD50C\uB808\uC774\uC5B4\uC640 \uB9C8\uD06C\uB2E4\uC6B4\u00B7XML \uBDF0\uC5B4";
 
             // LinksWindow.cs
             map["Quick links"] = "\uBC14\uB85C\uAC00\uAE30";
@@ -208,7 +208,7 @@ namespace Stackshot
             map["Noted {0} folders in my quick links!"] = "\uD3F4\uB354 {0}\uAC1C\uB97C \uBC14\uB85C\uAC00\uAE30\uC5D0 \uCD94\uAC00\uD588\uC5B4\uC694!";
             map["And I'll open the file for you."] = "\uD30C\uC77C\uB3C4 \uC5F4\uC5B4 \uB4DC\uB9B4\uAC8C\uC694.";
             map["And I'll open the {0} files for you."] = "\uD30C\uC77C {0}\uAC1C\uB3C4 \uC5F4\uC5B4 \uB4DC\uB9B4\uAC8C\uC694.";
-            map["I don't know what to do with \u201C{0}\u201D. Drop images, videos, XML or Markdown."] = "\u2018{0}\u2019\uC740(\uB294) \uC5F4 \uC218 \uC5C6\uC5B4\uC694. \uC774\uBBF8\uC9C0, \uB3D9\uC601\uC0C1, XML \uB610\uB294 Markdown \uD30C\uC77C\uC744 \uB193\uC544 \uC8FC\uC138\uC694.";
+            map["I don't know what to do with \u201C{0}\u201D. Drop images, videos, XML or Markdown."] = "\u2018{0}\u2019\uC740(\uB294) \uC5F4 \uC218 \uC5C6\uC5B4\uC694. \uC774\uBBF8\uC9C0, \uB3D9\uC601\uC0C1, XML \uB610\uB294 \uB9C8\uD06C\uB2E4\uC6B4 \uD30C\uC77C\uC744 \uB193\uC544 \uC8FC\uC138\uC694.";
             map["Opening {0} files!"] = "\uD30C\uC77C {0}\uAC1C\uB97C \uC5F4\uAC8C\uC694!";
             map["To the editor!"] = "\uD3B8\uC9D1\uAE30\uC5D0\uC11C \uC5F4\uAC8C\uC694!";
             map["Let's watch it!"] = "\uAC19\uC774 \uBCFC\uAE4C\uC694?";
@@ -459,7 +459,9 @@ namespace Stackshot
             map["Settings"] = "\uC124\uC815";
             map["Language"] = "\uC5B8\uC5B4";
             map["Auto"] = "\uC790\uB3D9";
-            map["Markdown document"] = "Markdown \uBB38\uC11C";
+            map["GIF"] = "GIF";
+            map["Markdown"] = "\uB9C8\uD06C\uB2E4\uC6B4";
+            map["Markdown document"] = "\uB9C8\uD06C\uB2E4\uC6B4 \uBB38\uC11C";
             map["XML document"] = "XML \uBB38\uC11C";
             map["MKV video"] = "MKV \uB3D9\uC601\uC0C1";
             map["Red"] = "\uBE68\uAC15";

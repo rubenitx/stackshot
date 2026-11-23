@@ -40,6 +40,15 @@ namespace Stackshot.Tests
             T("mascot-name-cut-edge-cases", MascotNameCutEdgeCases);
             T("settings-rows-exempt-their-paths", SettingsRowsExemptTheirPaths);
             T("release-notices-read-their-language", ReleaseNoticesReadTheirLanguage);
+            T("tray-labels-follow-the-language", TrayLabelsFollowTheLanguage);
+            T("korean-writes-markdown-in-hangul", KoreanWritesMarkdownInHangul);
+            T("no-bare-markdown-label-in-src", NoBareMarkdownLabelInSrc);
+            T("tray-panel-has-no-foreign-leftovers", TrayPanelHasNoForeignLeftovers);
+            T("readmes-call-korean-complete", ReadmesCallKoreanComplete);
+            T("tray-recent-dates-follow-the-language", TrayRecentDatesFollowTheLanguage);
+            T("picker-lists-only-the-complete-languages", PickerListsOnlyTheCompleteLanguages);
+            T("hidden-languages-load-as-automatic", HiddenLanguagesLoadAsAutomatic);
+            T("previews-come-back-with-the-switch", PreviewsComeBackWithTheSwitch);
             T("last-audit-screens-as-pictures", Pictures);
         }
 
@@ -53,6 +62,18 @@ namespace Stackshot.Tests
         }
 
         static string Show(string s) { return s == null ? "null" : Regex.Replace(s, "[^\\x20-\\x7e]", m => "\\u" + ((int)m.Value[0]).ToString("X4")); }
+
+        // Korean is one of the four complete languages: no README may say some of its texts are still missing.
+        static void ReadmesCallKoreanComplete()
+        {
+            string root = AppTestsI18nCoverage.RepoRoot();
+            foreach (string f in new[] { "README.md", "README.es.md" })
+            {
+                string t = File.ReadAllText(Path.Combine(root, f), Encoding.UTF8);
+                Check(t.IndexOf("Korean text still missing", StringComparison.Ordinal) < 0 &&
+                      t.IndexOf("falten en coreano", StringComparison.Ordinal) < 0, f + " says Korean is incomplete");
+            }
+        }
 
         static string Src(string rel) { return File.ReadAllText(Path.Combine(AppTestsI18nCoverage.RepoRoot(), "src", rel), Encoding.UTF8); }
 
@@ -573,6 +594,289 @@ namespace Stackshot.Tests
             Check(News.FromRelease(lines + block("novedades-de", "Deutsch")).Count == 0, "a German block read as the Spanish one");
         }
 
+        // ---- Markdown in Korean, and the tray panel in every language
+
+        const string KoMarkdown = "\uB9C8\uD06C\uB2E4\uC6B4";
+
+        // The tray panel's rows (id, text) as BuildItems makes them, plus its status line under the id "status".
+        static List<KeyValuePair<string, string>> TrayRows(bool recording, bool scrolling)
+        {
+            BindingFlags np = BindingFlags.NonPublic | BindingFlags.Instance;
+            TrayPanel tp = new TrayPanel(new Settings());
+            try
+            {
+                typeof(TrayPanel).GetMethod("BuildItems", np).Invoke(tp, new object[] { recording, scrolling, false });
+                List<KeyValuePair<string, string>> rows = new List<KeyValuePair<string, string>>();
+                foreach (object it in (System.Collections.IEnumerable)typeof(TrayPanel).GetField("items", np).GetValue(tp))
+                    rows.Add(new KeyValuePair<string, string>((string)it.GetType().GetField("Id").GetValue(it), (string)it.GetType().GetField("Text").GetValue(it)));
+                rows.Add(new KeyValuePair<string, string>("status", (string)typeof(TrayPanel).GetField("status", np).GetValue(tp)));
+                return rows;
+            }
+            finally { try { tp.Dispose(); } catch (Exception) { } }
+        }
+
+        static string RowText(List<KeyValuePair<string, string>> rows, string id)
+        {
+            foreach (KeyValuePair<string, string> r in rows) if (r.Key == id) return r.Value;
+            return null;
+        }
+
+        // The tray panel's GIF and Markdown rows: GIF is GIF everywhere; Markdown is written in hangul in Korean and stays
+        // Markdown in the others (the preview languages show English by design).
+        public static void TrayLabelsFollowTheLanguage()
+        {
+            foreach (string lang in AllLanguages)
+                InLanguage(lang, delegate
+                {
+                    List<KeyValuePair<string, string>> rows = TrayRows(false, false);
+                    Same("GIF", RowText(rows, "gif"), lang + " tray GIF");
+                    Same(lang == "ko" ? KoMarkdown : "Markdown", RowText(rows, "markdown"), lang + " tray Markdown");
+                });
+        }
+
+        // Korean spells Markdown in hangul wherever the interface says it: the catalog, the Home action names, the document
+        // window's title and the prefix of its captures. GIF stays GIF.
+        public static void KoreanWritesMarkdownInHangul()
+        {
+            FieldInfo f = typeof(I18n).GetField("KoreanCatalog", BindingFlags.NonPublic | BindingFlags.Static);
+            object lazy = f.GetValue(null);
+            Dictionary<string, string> catalog = (Dictionary<string, string>)lazy.GetType().GetProperty("Value").GetValue(lazy, null);
+            List<string> latin = new List<string>(), unread = new List<string>(), particle = new List<string>();
+            Regex vowelParticle = new Regex(KoMarkdown + "(\uB97C|\uAC00|\uB294|\uC640)");
+            foreach (KeyValuePair<string, string> p in catalog)
+            {
+                if (p.Value.IndexOf("Markdown", StringComparison.Ordinal) >= 0) latin.Add(p.Key + " => " + Show(p.Value));
+                if (p.Key.IndexOf("Markdown", StringComparison.Ordinal) >= 0 && p.Value.IndexOf(KoMarkdown, StringComparison.Ordinal) < 0) unread.Add(p.Key);
+                if (vowelParticle.IsMatch(p.Value)) particle.Add(p.Key + " => " + Show(p.Value));
+            }
+            foreach (string s in latin) Console.WriteLine("    latin Markdown: " + s);
+            foreach (string s in particle) Console.WriteLine("    wrong particle: " + s);
+            Check(latin.Count == 0, latin.Count + " Korean catalog values still say Markdown in Latin letters");
+            Check(unread.Count == 0, unread.Count + " Korean catalog entries about Markdown do not say it in hangul");
+            Check(particle.Count == 0, "the name ends in a consonant (" + KoMarkdown + "), so its particles are \uC744 \uC774 \uC740 \uACFC: " + particle.Count + " texts differ");
+            Same(KoMarkdown, catalog["Markdown"], "the bare word");
+            Same(KoMarkdown + " \uBB38\uC11C", catalog["Markdown document"], "Markdown document");
+            Same("\uCEA1\uCC98\uC640 \uB3D9\uC601\uC0C1\u00B7GIF \uB179\uD654, \uB3D9\uC601\uC0C1 \uD50C\uB808\uC774\uC5B4\uC640 " + KoMarkdown + "\u00B7XML \uBDF0\uC5B4",
+                 catalog["Screenshots, video and GIF, with a video player and a Markdown and XML viewer"], "the app description");
+
+            foreach (string lang in AllLanguages)
+                InLanguage(lang, delegate
+                {
+                    bool ko = lang == "ko";
+                    string md = ko ? KoMarkdown : "Markdown";
+                    Check(HomeWindow.ActionShort[8].Contains(md) && (ko || HomeWindow.ActionShort[8] == "Markdown"), lang + " short action: " + HomeWindow.ActionShort[8]);
+                    Same(md, HomeWindow.ActionShortest[8], lang + " shortest action");
+                    Same("GIF", HomeWindow.ActionShortest[7], lang + " shortest GIF");
+                    Check(HomeWindow.ActionNames[8].Contains(md), lang + " action name: " + HomeWindow.ActionNames[8]);
+                    Same(md, MarkdownWindow.KindName(false), lang + " document kind");
+                    Same("XML", MarkdownWindow.KindName(true), lang + " XML kind");
+                });
+        }
+
+        // No user-visible text says "Markdown" outside I18n: every string literal that has the word is a routed text (an
+        // I18n call), a log line, an ini key or a registry name, or one of the Spanish/English action lists the Home window
+        // reads through I18n.
+        public static void NoBareMarkdownLabelInSrc()
+        {
+            string src = Path.Combine(AppTestsI18nCoverage.RepoRoot(), "src");
+            Regex literal = new Regex("\"(?:[^\"\\\\]|\\\\.)*Markdown(?:[^\"\\\\]|\\\\.)*\"");
+            List<string> bare = new List<string>();
+            foreach (string path in Directory.GetFiles(src, "*.cs", SearchOption.AllDirectories))
+            {
+                string name = Path.GetFileName(path);
+                if (name.StartsWith("I18n.", StringComparison.Ordinal)) continue;   // the catalogs
+                string[] lines = File.ReadAllLines(path, Encoding.UTF8);
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string line = lines[i];
+                    if (line.TrimStart().StartsWith("//", StringComparison.Ordinal) || !literal.IsMatch(line)) continue;
+                    bool routed = false;
+                    // The call may start on an earlier line of the same statement.
+                    for (int k = i; k >= Math.Max(0, i - 4) && !routed; k--)
+                    {
+                        routed = lines[k].Contains("I18n.T(") || lines[k].Contains("I18n.Fmt(") || lines[k].Contains("I18n.Own(") || lines[k].Contains("I18n.Localize(");
+                        string before = k > 0 ? lines[k - 1].TrimEnd() : ";";
+                        if (before.EndsWith(";", StringComparison.Ordinal) || before.EndsWith("{", StringComparison.Ordinal) || before.EndsWith("}", StringComparison.Ordinal)) break;
+                    }
+                    bool data = line.Contains("Log(") || line.Contains("new AssocKind(") || (name == "Settings.cs" && line.Contains("AppendLine(")) ||
+                                line.Contains("ActionNamesEs") || line.Contains("ActionNamesEn") || line.Contains("ActionShortEs") || line.Contains("ActionShortEn") ||
+                                line.Contains("ActionShortestEs") || line.Contains("ActionShortestEn");
+                    if (!routed && !data) bare.Add(name + ":" + (i + 1) + ": " + line.Trim());
+                }
+            }
+            foreach (string b in bare) Console.WriteLine("    bare Markdown: " + b);
+            Check(bare.Count == 0, bare.Count + " bare \"Markdown\" literals reach the interface without I18n (listed above)");
+        }
+
+        // Everything the tray panel says (rows while idle, recording and scrolling, and its status line) in the four complete
+        // languages: no Spanish or English left over except format names that read the same in that language.
+        public static void TrayPanelHasNoForeignLeftovers()
+        {
+            Dictionary<string, List<KeyValuePair<string, string>>[]> all = new Dictionary<string, List<KeyValuePair<string, string>>[]>();
+            foreach (string lang in new[] { "es", "en", "de", "ko" })
+                InLanguage(lang, delegate { all[lang] = new[] { TrayRows(false, false), TrayRows(true, false), TrayRows(false, true) }; });
+            Dictionary<string, string[]> same = new Dictionary<string, string[]>();
+            same["es"] = new[] { "GIF", "Markdown" };
+            same["en"] = new[] { "GIF", "Markdown" };
+            same["de"] = new[] { "GIF", "Markdown", "Video", "Text" };
+            same["ko"] = new[] { "GIF" };
+            List<string> found = new List<string>();
+            foreach (string lang in new[] { "es", "de", "ko" })
+                for (int state = 0; state < 3; state++)
+                {
+                    List<KeyValuePair<string, string>> mine = all[lang][state], en = all["en"][state], es = all["es"][state];
+                    Check(mine.Count == en.Count, lang + " tray has the same rows as English");
+                    for (int i = 0; i < mine.Count; i++)
+                    {
+                        string t = mine[i].Value;
+                        if (string.IsNullOrEmpty(t) || Array.IndexOf(same[lang], t) >= 0) continue;
+                        if (lang != "en" && t == en[i].Value) found.Add(lang + " [" + mine[i].Key + "] reads as English: " + t);
+                        if (lang != "es" && t == es[i].Value) found.Add(lang + " [" + mine[i].Key + "] reads as Spanish: " + t);
+                    }
+                }
+            foreach (KeyValuePair<string, string> r in all["ko"][0].Concat(all["ko"][1]).Concat(all["ko"][2]))
+                if (r.Value != null && Regex.IsMatch(Regex.Replace(r.Value, "GIF|Stackshot|XML", ""), "[A-Za-z]{2,}")) found.Add("ko [" + r.Key + "] has Latin words: " + r.Value);
+            // What a screen reader gets from the panel (names, actions, descriptions) in the same languages.
+            Dictionary<string, List<string>> heard = new Dictionary<string, List<string>>();
+            foreach (string lang in new[] { "en", "de", "ko" }) InLanguage(lang, delegate { heard[lang] = AppTestsI18n.AuditTray(); });
+            Check(heard["en"].Count >= 20 && heard["ko"].Count == heard["en"].Count && heard["de"].Count == heard["en"].Count, "the panel tells a reader the same things in every language");
+            foreach (string t in heard["ko"])
+                if (t != null && Regex.IsMatch(Regex.Replace(t, "GIF|Stackshot|XML|Ctrl|Alt|Shift|PrtScn", ""), "[A-Za-z]{2,}")) found.Add("ko (reader) has Latin words: " + t);
+            for (int i = 0; i < heard["de"].Count; i++)
+                if (heard["de"][i] != null && heard["de"][i] == heard["en"][i] && Array.IndexOf(same["de"], heard["de"][i]) < 0 && heard["de"][i] != "Stackshot") found.Add("de (reader) reads as English: " + heard["de"][i]);
+            foreach (string lang in new[] { "en" })
+                foreach (List<KeyValuePair<string, string>> rows in all[lang])
+                    foreach (KeyValuePair<string, string> r in rows) if (r.Value != null && AppTestsI18n.LooksSpanish(r.Value)) found.Add("en [" + r.Key + "] reads as Spanish: " + r.Value);
+            foreach (string s in found) Console.WriteLine("    tray: " + s);
+            Check(found.Count == 0, found.Count + " tray texts are in the wrong language (listed above)");
+        }
+
+        // The date of a recent capture in the tray: the weekday-less "5 Jan" in the language's own month names (German
+        // is not read with the Spanish ones) and Today / Yesterday in the language.
+        public static void TrayRecentDatesFollowTheLanguage()
+        {
+            MethodInfo when = typeof(TrayPanel).GetMethod("When", BindingFlags.NonPublic | BindingFlags.Static);
+            DateTime old = new DateTime(2020, 1, 5, 14, 30, 0), today = DateTime.Today.AddHours(9).AddMinutes(5);
+            Dictionary<string, string> want = new Dictionary<string, string> { { "es", "5 ene, 14:30" }, { "en", "Jan 5, 14:30" }, { "de", "5. Jan, 14:30" }, { "ko", "1/5 14:30" } };
+            Dictionary<string, string> now = new Dictionary<string, string> { { "es", "Hoy, 09:05" }, { "en", "Today, 09:05" } };
+            foreach (string lang in AllLanguages)
+                InLanguage(lang, delegate
+                {
+                    string d = (string)when.Invoke(null, new object[] { old }), n = (string)when.Invoke(null, new object[] { today });
+                    Same(want.ContainsKey(lang) ? want[lang] : want["en"], d, lang + " old date");
+                    if (now.ContainsKey(lang)) Same(now[lang], n, lang + " today");
+                    else if (lang == "de" || lang == "ko") Check(!n.StartsWith("Hoy") && !n.StartsWith("Today") && n.EndsWith("09:05"), lang + " today: " + n);
+                });
+        }
+
+        // ---- The six preview languages are hidden for this release
+
+        static readonly string[] Hidden = { "fr", "pt", "zh", "hi", "ar", "bn" };
+
+        static string[] Codes(IEnumerable<I18n.LanguageOption> options) { return options.Select(o => o.Code).ToArray(); }
+
+        static LanguagePicker NewPicker(string current)
+        {
+            return (LanguagePicker)typeof(LanguagePicker).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(string) }, null).Invoke(new object[] { current });
+        }
+
+        // As shipped, the picker (and the search behind Settings, Welcome and the tray's language row) offers Automatic,
+        // Spanish, English, German and Korean and nothing else, whatever the interface language is.
+        public static void PickerListsOnlyTheCompleteLanguages()
+        {
+            Check(!I18n.PreviewsListed, "the previews are hidden by default");
+            Same("auto,es,en,de,ko", string.Join(",", Codes(I18n.Languages)), "the languages on offer");
+            Same("auto,es,en,de,ko", string.Join(",", Codes(I18n.FilterLanguages(""))), "an empty search");
+            foreach (string q in new[] { "fr", "francais", "French", "pt", "Portuguese", "zh", "mandarin", "hi", "Hindi", "ar", "\u0627\u0644\u0639\u0631\u0628\u064A\u0629", "bn", "Bengali" })
+                Check(I18n.FilterLanguages(q).Count == 0, "searching '" + q + "' finds a hidden language");
+            Same("de", string.Join(",", Codes(I18n.FilterLanguages("German"))), "a complete language is still found");
+            foreach (string lang in AllLanguages)
+                InLanguage(lang, delegate
+                {
+                    LanguagePicker picker = NewPicker("de");
+                    try
+                    {
+                        ListBox list = (ListBox)typeof(LanguagePicker).GetField("list", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(picker);
+                        Same("auto,es,en,de,ko", string.Join(",", list.Items.Cast<ListBoxItem>().Select(i => (string)i.Tag).ToArray()), lang + " picker rows");
+                        // The hint under the title only makes sense with previews: it is gone, in every language.
+                        foreach (string t in AppTestsI18n.Strings(picker.Content))
+                            Check(t.IndexOf("preview", StringComparison.OrdinalIgnoreCase) < 0 && t.IndexOf("vista previa", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                  t.IndexOf("Vorschau", StringComparison.OrdinalIgnoreCase) < 0 && t.IndexOf("\uBBF8\uB9AC \uBCF4\uAE30", StringComparison.Ordinal) < 0, lang + " picker still mentions previews: " + t);
+                    }
+                    finally { picker.Close(); }
+                });
+            string hint = null;
+            foreach (string lang in new[] { "es", "en", "de", "ko" })
+                InLanguage(lang, delegate
+                {
+                    LanguagePicker picker = NewPicker("de");
+                    try { hint = AppTestsI18n.Strings(picker.Content).FirstOrDefault(t => t.StartsWith("Busca por") || t.StartsWith("Search by") || t.StartsWith("Suche nach") || t.StartsWith("\uC774\uB984\uC774\uB098")); }
+                    finally { picker.Close(); }
+                    Same(lang == "es" ? "Busca por nombre o c\u00F3digo." : lang == "en" ? "Search by name or code." : lang == "de" ? "Suche nach Name oder Sprachcode." : "\uC774\uB984\uC774\uB098 \uCF54\uB4DC\uB85C \uAC80\uC0C9\uD558\uC138\uC694.", hint, lang + " picker hint");
+                });
+        }
+
+        // A settings file that names a hidden language reads as Automatic, like an unknown code; the complete ones stay.
+        public static void HiddenLanguagesLoadAsAutomatic()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "t20-hidden-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                foreach (string code in Hidden.Concat(new[] { "FR", " ar " }))
+                {
+                    string file = Path.Combine(dir, "h" + code.Trim() + ".ini");
+                    File.WriteAllText(file, "SaveAll = 1\nLanguage = " + code + "\n");
+                    Same("auto", Settings.Load(file).Language, "Language = " + code);
+                }
+                foreach (string code in new[] { "es", "en", "de", "ko", "auto" })
+                {
+                    string file = Path.Combine(dir, "k" + code + ".ini");
+                    File.WriteAllText(file, "SaveAll = 1\nLanguage = " + code + "\n");
+                    Same(code, Settings.Load(file).Language, "Language = " + code);
+                }
+            }
+            finally { I18n.Apply("es"); try { Directory.Delete(dir, true); } catch (Exception) { } }
+        }
+
+        // One switch (I18n.PreviewsListed) brings the six languages back: listed, found, kept from the settings file, and
+        // the picker's hint about them returns. Their catalog is untouched, so they still translate when applied.
+        public static void PreviewsComeBackWithTheSwitch()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "t20-back-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            I18n.PreviewsListed = true;
+            try
+            {
+                Same("auto,es,en,de,ko,fr,pt,zh,hi,ar,bn", string.Join(",", Codes(I18n.Languages)), "the languages on offer");
+                Check(I18n.FilterLanguages("francais").Count == 1 && I18n.FilterLanguages("mandarin").Count == 1, "the previews are searchable again");
+                foreach (string code in Hidden)
+                {
+                    string file = Path.Combine(dir, code + ".ini");
+                    File.WriteAllText(file, "SaveAll = 1\nLanguage = " + code + "\n");
+                    Same(code, Settings.Load(file).Language, "Language = " + code);
+                    I18n.Apply(code);
+                    Check(I18n.Language == code && I18n.Save != "Save", code + " translates");
+                }
+                I18n.Apply("en");
+                LanguagePicker picker = NewPicker("de");
+                try
+                {
+                    ListBox list = (ListBox)typeof(LanguagePicker).GetField("list", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(picker);
+                    Check(list.Items.Count == 11, "Automatic and the ten languages in the list: " + list.Items.Count);
+                    Check(AppTestsI18n.Strings(picker.Content).Any(t => t.StartsWith("Search by name or code. Preview languages")), "the hint about previews returns");
+                }
+                finally { picker.Close(); }
+            }
+            finally
+            {
+                I18n.PreviewsListed = false;
+                I18n.Apply("es");
+                try { Directory.Delete(dir, true); } catch (Exception) { }
+            }
+            Check(I18n.Languages.Length == 5, "the switch back off hides them again");
+        }
+
         // ---- Pictures: with STACKSHOT_UI_SHOTS set to a folder, the screens this audit touched are saved there as PNG.
 
         static void SavePng(BitmapSource b, string name)
@@ -599,6 +903,34 @@ namespace Stackshot.Tests
             SavePng(rtb, name);
         }
 
+        // The tray panel as it paints on screen, in this language.
+        static void TrayPicture(string lang, int appearance, string file)
+        {
+            I18n.Apply(lang);
+            Ds.Apply(appearance);
+            Settings s = new Settings();
+            s.Appearance = appearance;
+            BindingFlags np = BindingFlags.NonPublic | BindingFlags.Instance;
+            TrayPanel tp = new TrayPanel(s);
+            try
+            {
+                typeof(TrayPanel).GetMethod("Rebuild", np).Invoke(tp, new object[] { 1f, 0 });
+                System.Drawing.Size body = (System.Drawing.Size)typeof(FloatWindow).GetField("body", np).GetValue(tp);
+                int pad = (int)typeof(FloatWindow).GetField("Pad", np).GetValue(tp);
+                int w = body.Width + 2 * pad, h = body.Height + 2 * pad;
+                DrawingVisual v = new DrawingVisual();
+                using (DrawingContext dc = v.RenderOpen())
+                {
+                    dc.DrawRectangle(new SolidColorBrush(appearance == 2 ? Color.FromRgb(30, 30, 32) : Color.FromRgb(214, 224, 238)), null, new Rect(0, 0, w, h));
+                    typeof(TrayPanel).GetMethod("PaintSurface", np).Invoke(tp, new object[] { dc, w, h });
+                }
+                RenderTargetBitmap rtb = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
+                rtb.Render(v);
+                SavePng(rtb, file);
+            }
+            finally { try { tp.Dispose(); } catch (Exception) { } }
+        }
+
         public static void Pictures()
         {
             string dir = Environment.GetEnvironmentVariable("STACKSHOT_UI_SHOTS");
@@ -607,6 +939,9 @@ namespace Stackshot.Tests
             BindingFlags np = BindingFlags.NonPublic | BindingFlags.Instance;
             try
             {
+                foreach (string lang in new[] { "es", "en", "de", "ko", "ar" }) TrayPicture(lang, 1, "t20-tray-" + lang + ".png");
+                TrayPicture("ko", 2, "t20-tray-ko-dark.png");
+
                 // The mascot's menu button on the Home page, in Korean, for names that end in a consonant, a vowel and Latin script.
                 foreach (string[] n in new[] { new[] { "\uD558\uB298", "hanul" }, new[] { "\uB098\uBE44", "nabi" }, new[] { "Pixel", "pixel" } })
                 {

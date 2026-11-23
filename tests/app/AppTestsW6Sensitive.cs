@@ -1374,7 +1374,7 @@ namespace Stackshot.Tests
             try
             {
                 string baseKinds = null;
-                string[] languages = Array.FindAll(Array.ConvertAll(I18n.Languages, delegate(I18n.LanguageOption o) { return o.Code; }),
+                string[] languages = Array.FindAll(Array.ConvertAll(I18n.Known, delegate(I18n.LanguageOption o) { return o.Code; }),   // the hidden previews too: their code stays safe
                                                    delegate(string code) { return code != "auto"; });
                 Check(languages.Length >= 10, "every interface language is checked, only " + languages.Length);
                 foreach (string lang in languages)

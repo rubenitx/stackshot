@@ -93,8 +93,9 @@ namespace Stackshot
             header.Children.Add(new TextBlock { Text = Title, FontFamily = Ds.Title.FontFamily, FontWeight = Ds.Title.Weight, FontSize = 25, Foreground = Ds.Brush(pal.Label) });
             header.Children.Add(new TextBlock
             {
-                Text = I18n.T("Busca por nombre o código. Los idiomas en vista previa usan inglés donde falte traducción.",
-                              "Search by name or code. Preview languages use English where translations are missing."),
+                Text = I18n.PreviewsListed ? I18n.T("Busca por nombre o código. Los idiomas en vista previa usan inglés donde falte traducción.",
+                                                    "Search by name or code. Preview languages use English where translations are missing.")
+                                           : I18n.T("Busca por nombre o código.", "Search by name or code.", "Suche nach Name oder Sprachcode."),
                 Margin = new Thickness(0, 5, 0, 10), TextWrapping = TextWrapping.Wrap, Foreground = Ds.Brush(pal.Label2)
             });
             var field = new Border
