@@ -197,7 +197,7 @@ namespace Stackshot
             if (kb < 1024) return kb + " KB";
             double mb = Math.Max(1, bytes / 1048576.0);
             if (mb < 1024 && Math.Round(mb) >= 1024) mb = 1024;
-            return mb >= 1024 ? (mb / 1024).ToString("0.0") + " GB" : mb.ToString(mb < 10 ? "0.0" : "0") + " MB";
+            return mb >= 1024 ? (mb / 1024).ToString("0.0", I18n.Culture) + " GB" : mb.ToString(mb < 10 ? "0.0" : "0", I18n.Culture) + " MB";
         }
 
         // Thumbnail of a capture at px (device pixels) on its long side; ready is called on the UI thread.

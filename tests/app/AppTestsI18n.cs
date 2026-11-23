@@ -76,6 +76,15 @@ namespace Stackshot.Tests
                 T("sensitive-notice-bodies-fit", AppTestsI18nAudit.SensitiveNoticeBodiesFit);
                 T("old-release-bodies-still-read", AppTestsI18nAudit.OldReleaseBodiesStillRead);
                 T("workflow-writes-the-markers", AppTestsI18nAudit.WorkflowWritesTheMarkers);
+                T("quick-window-buttons-fit-in-every-language", AppTestsI18nLayout.QuickWindowButtonsFit);
+                T("quick-reminder-choices-fit-in-every-language", AppTestsI18nLayout.QuickReminderChoicesFit);
+                T("confirmation-buttons-fit-in-every-language", AppTestsI18nLayout.AlertButtonsFit);
+                T("scroll-bar-texts-fit-in-every-language", AppTestsI18nLayout.ScrollBarTextsFit);
+                T("backdrop-panel-labels-fit-in-every-language", AppTestsI18nLayout.BackdropPanelLabelsFit);
+                T("sensitive-results-fit-the-editor-hint-in-every-language", AppTestsI18nLayout.SensitiveResultsFit);
+                T("numbers-follow-the-interface-language-not-windows", AppTestsI18nLayout.NumbersFollowTheInterfaceLanguage);
+                T("no-number-takes-the-windows-format", AppTestsI18nLayout.NoNumberTakesTheWindowsFormat);
+                T("focus-minutes-are-localized", AppTestsI18nLayout.FocusMinutesAreLocalized);
             }
             finally
             {

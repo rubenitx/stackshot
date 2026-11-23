@@ -149,7 +149,10 @@ namespace Stackshot
             // Gradients, five to a row.
             int gap = P(8), sw = (w - 4 * gap) / 5;
             Add(Kind.Header, 0, I18n.T("Degradados", "Gradients"), new Rectangle(m, y, w, P(16)));
-            Add(Kind.More, 0, allGradients ? I18n.T("Ver menos", "Show less") : I18n.T("Ver m\u00E1s", "Show more"), new Rectangle(m + w - P(84), y - P(3), P(84), P(22)));
+            // Wide enough for its own label (it is longer in some languages) so the whole word can be clicked.
+            string more = allGradients ? I18n.T("Ver menos", "Show less") : I18n.T("Ver m\u00E1s", "Show more");
+            int moreW = Math.Max(P(84), TextKit.Measure(more, Small(), Size.Empty, TextFormatFlags.NoPadding).Width + P(18));
+            Add(Kind.More, 0, more, new Rectangle(m + w - moreW, y - P(3), moreW, P(22)));
             y += P(26);
             int col = 0, shown = 0;
             for (int i = 0; i < Backdrop.Count; i++)

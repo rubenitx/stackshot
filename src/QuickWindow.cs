@@ -111,7 +111,7 @@ namespace Stackshot
             {
                 page.Children.Add(Text(I18n.T("\u00BFCu\u00E1ndo?", "When?"), Ds.Semibold, 12.5, pal.Label, new Thickness(0, 16, 0, 6)));
                 // Short labels across the whole width; the line below says exactly when.
-                MacSegmented seg = new MacSegmented(new string[] { "10 min", "30 min", "1 h", "2 h", I18n.T("Ma\u00F1ana", "Tomorrow"), I18n.T("A las\u2026", "At\u2026") }, when);
+                MacSegmented seg = new MacSegmented(new string[] { FocusClock.Minutes(Minutes[0]), FocusClock.Minutes(Minutes[1]), FocusClock.Minutes(Minutes[2]), FocusClock.Minutes(Minutes[3]), I18n.T("Ma\u00F1ana", "Tomorrow"), I18n.T("A las\u2026", "At\u2026") }, when);
                 seg.ClearValue(WidthProperty);
                 seg.HorizontalAlignment = HorizontalAlignment.Stretch;
                 seg.Changed += delegate(int i) { Keep(); when = i; Build(); if (i == 5 && time != null) { time.Focus(); time.SelectAll(); } };
@@ -225,15 +225,23 @@ namespace Stackshot
             StackPanel buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 18, 0, 0) };
             MacButton cancel = new MacButton(I18n.Cancel, ButtonKind.Secondary, null, null, 32) { Margin = new Thickness(8, 0, 0, 0) };
             cancel.Click += delegate { Close(); };
-            MacButton save = new MacButton(note ? I18n.T("Apuntar", "Take note") : I18n.T("Recu\u00E9rdamelo", "Remind me"), ButtonKind.Primary, note ? "check" : "clock", note ? I18n.T("Ctrl+Intro", "Ctrl+Enter") : null, 32);
-            save.Click += Save;
-            buttons.Children.Add(save);
+            MacButton savePin = null;
             if (note)
             {
-                MacButton savePin = new MacButton(I18n.T("Guardar y fijar", "Save and pin"), ButtonKind.Secondary, "pin", null, 32) { Margin = new Thickness(8, 0, 0, 0) };
+                savePin = new MacButton(I18n.T("Guardar y fijar", "Save and pin"), ButtonKind.Secondary, "pin", null, 32) { Margin = new Thickness(8, 0, 0, 0) };
                 savePin.Click += SavePin;
-                buttons.Children.Add(savePin);
             }
+            string saveLabel = note ? I18n.T("Apuntar", "Take note") : I18n.T("Recu\u00E9rdamelo", "Remind me");
+            string shortcut = note ? I18n.T("Ctrl+Intro", "Ctrl+Enter") : null;
+            MacButton save = new MacButton(saveLabel, ButtonKind.Primary, note ? "check" : "clock", shortcut, 32);
+            // The shortcut written inside the main button is the first thing to go when a language makes the row too long
+            // for the window; it stays in the tooltip.
+            double room = Width - page.Margin.Left - page.Margin.Right;
+            if (shortcut != null && save.Width + cancel.Width + cancel.Margin.Left + (savePin != null ? savePin.Width + savePin.Margin.Left : 0) > room)
+                save = new MacButton(saveLabel, ButtonKind.Primary, note ? "check" : "clock", null, 32) { ToolTip = shortcut };
+            save.Click += Save;
+            buttons.Children.Add(save);
+            if (savePin != null) buttons.Children.Add(savePin);
             buttons.Children.Add(cancel);
             page.Children.Add(buttons);
         }

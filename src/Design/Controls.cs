@@ -514,6 +514,9 @@ namespace Stackshot
         int selected, hover = -1;
         public event Action<int> Changed;
 
+        // Room left around a segment's text before it is cut with an ellipsis.
+        internal const double TextPad = 4;
+
         public MacSegmented(string[] options, int selected)
         {
             this.options = options;
@@ -613,7 +616,7 @@ namespace Stackshot
             {
                 bool on = i == selected;
                 FormattedText t = Text(options[i], on ? Ds.Semibold : Ds.Regular, 12.5, on ? pal.Label : Mix(pal.Label2, pal.Label, i == hov ? 0.6 : 0));
-                t.MaxTextWidth = Math.Max(1, seg - 8);
+                t.MaxTextWidth = Math.Max(1, seg - TextPad);
                 t.MaxLineCount = 1;
                 t.Trimming = TextTrimming.CharacterEllipsis;
                 Ink.Center(dc, t, new Rect(2 + seg * i, 0, seg, h));

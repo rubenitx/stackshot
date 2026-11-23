@@ -871,7 +871,7 @@ namespace Stackshot
             Screen scr = Screen.FromRectangle(area);
             s = ShotStack.ScaleFor(scr);
             Pad = P(22);
-            Size sz = new Size(P(480), P(48));
+            Size sz = new Size(P(BarWidth), P(48));
             Rectangle wa = scr.WorkingArea;
             int x = area.X + (area.Width - sz.Width) / 2;
             int y = area.Bottom + P(14);
@@ -903,28 +903,37 @@ namespace Stackshot
             Redraw();
         }
 
-        string State()
+        string State() { return StateText(saving, session.EscArmed, session.DoneArmed, session.Full, session.WentUp, session.Losing, hot, session.Auto, session.Stuck); }
+
+        // The status line, in the order that decides which of them is shown. It has StatusRoom pixels (before scaling) in
+        // one line: a text any longer is cut with an ellipsis.
+        internal static string StateText(bool saving, bool escArmed, bool doneArmed, bool full, bool wentUp, bool losing, int hot, bool auto, bool stuck)
         {
             if (saving) return I18n.T("Componiendo\u2026", "Composing\u2026");
-            if (session.EscArmed) return I18n.T("Esc otra vez para descartar", "Esc again to discard");
-            if (session.DoneArmed) return I18n.T("No has bajado \u00B7 Listo otra vez la guarda", "You haven't scrolled \u00B7 Done again saves it");
-            if (session.Full) return I18n.T("Altura m\u00E1xima", "Maximum height");
-            if (session.WentUp) return I18n.T("Solo hacia abajo", "Downward only");
-            if (session.Losing) return I18n.T("M\u00E1s despacio", "Slow down");
+            if (escArmed) return I18n.T("Esc otra vez para descartar", "Esc again to discard");
+            if (doneArmed) return I18n.T("No has bajado \u00B7 Listo otra vez la guarda", "You haven't scrolled \u00B7 Done again saves it");
+            if (full) return I18n.T("Altura m\u00E1xima", "Maximum height");
+            if (wentUp) return I18n.T("Solo hacia abajo", "Downward only");
+            if (losing) return I18n.T("M\u00E1s despacio", "Slow down");
             // What the button under the mouse does.
-            if (hot == 0) return session.Auto ? I18n.T("Pausa: paro y sigues t\u00FA con la rueda", "Pause: stop and continue scrolling with wheel") : I18n.T("Auto: bajo yo solo, poco a poco", "Auto: scroll automatically");
+            if (hot == 0) return auto ? I18n.T("Pausa: paro y sigues t\u00FA con la rueda", "Pause: stop and scroll with the wheel") : I18n.T("Auto: bajo yo solo, poco a poco", "Auto: scroll automatically");
             if (hot == 1) return I18n.T("Listo: guarda la captura (Enter)", "Done: save capture (Enter)");
             if (hot == 2) return I18n.T("Cancela sin guardar (Esc)", "Cancel without saving (Esc)");
-            if (session.Auto) return I18n.T("Bajando solo\u2026", "Scrolling down\u2026");
-            if (session.Stuck) return I18n.T("\u00BFNo baja? Pulsa Auto", "Not scrolling? Click Auto");
+            if (auto) return I18n.T("Bajando solo\u2026", "Scrolling down\u2026");
+            if (stuck) return I18n.T("\u00BFNo baja? Pulsa Auto", "Not scrolling? Click Auto");
             return I18n.T("Baja con la rueda \u00B7 Enter termina", "Scroll with wheel \u00B7 Enter to finish");
         }
 
+        // The room of the text beside the badge and before the buttons, at 100 % (the bar is BarWidth wide).
+        internal const int BarWidth = 480, StatusRoom = BarWidth - 50 - 8 - 6 - 64 - 78 - 40;
+
         // "2,5 pantallas · 2.140 px": how far it has gone, in screens of the area.
-        string HeightText(int h)
+        string HeightText(int h) { return HeightText(h, session.AreaHeight); }
+
+        internal static string HeightText(int h, int areaHeight)
         {
             if (h <= 0) return I18n.T("Preparando\u2026", "Preparing\u2026");
-            double screens = (double)h / Math.Max(1, session.AreaHeight);
+            double screens = (double)h / Math.Max(1, areaHeight);
             string sc = screens < 1.05 ? I18n.T("1 pantalla", "1 screen") : screens.ToString("0.#", I18n.Culture) + I18n.T(" pantallas", " screens");
             return sc + " \u00B7 " + h.ToString("N0", I18n.Culture) + " px";
         }
@@ -966,7 +975,7 @@ namespace Stackshot
             double gs = P(16);
             Glyph.Draw(dc, "down", ic.X + (ic.Width - gs) / 2, cy - gs / 2 + P(1), gs, Palette.OnHudFill(white), Math.Max(1.6, 2 * s));
 
-            int tx = P(50), tw = AutoRect().X - tx - P(8);
+            int tx = P(50), tw = AutoRect().X - tx - P(8);   // StatusRoom at 100 %
             string hs = HeightText(shownHeight);
             System.Windows.Media.FormattedText ht = Line(hs, Ds.Semibold, P(14), white, tw);
             dc.DrawText(ht, new System.Windows.Point(tx, Math.Round(cy - ht.Height + P(2))));

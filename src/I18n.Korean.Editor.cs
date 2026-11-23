@@ -64,7 +64,7 @@ namespace Stackshot
             map["Padding"] = "\uC5EC\uBC31";
             map["Corners"] = "\uBAA8\uC11C\uB9AC";
             map["Shadow"] = "\uADF8\uB9BC\uC790";
-            map["Border inset"] = "\uD14C\uB450\uB9AC \uC548\uCABD \uC5EC\uBC31";
+            map["Border inset"] = "\uC548\uCABD \uC5EC\uBC31";
 
             // BgPanel.Styles
             map[" \u00B7 padding "] = " \u00B7 \uC5EC\uBC31 ";

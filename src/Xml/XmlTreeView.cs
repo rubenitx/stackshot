@@ -180,7 +180,7 @@ namespace Stackshot
                 if (cut) v = v.Substring(0, Shown * 4);
                 v = WsRx.Replace(v, " ").Trim();
                 if (cut && v.Length <= Shown) { o.Add(new Piece(raw ? v : XmlDoc.Esc(v, attr), kind)); o.Add(new Piece("\u2026", Seg.Hint)); return; }
-                if (v.Length > Shown) { string rest = (cut ? total - Shown : v.Length - Shown).ToString("N0"); o.Add(new Piece(raw ? v.Substring(0, Shown) : XmlDoc.Esc(v.Substring(0, Shown), attr), kind)); o.Add(new Piece("\u2026 (+" + rest + ")", Seg.Hint)); return; }
+                if (v.Length > Shown) { string rest = (cut ? total - Shown : v.Length - Shown).ToString("N0", I18n.Culture); o.Add(new Piece(raw ? v.Substring(0, Shown) : XmlDoc.Esc(v.Substring(0, Shown), attr), kind)); o.Add(new Piece("\u2026 (+" + rest + ")", Seg.Hint)); return; }
             }
             else v = v.Trim();
             o.Add(new Piece(raw ? v : XmlDoc.Esc(v, attr), kind));
@@ -389,7 +389,7 @@ namespace Stackshot
         void Sync()
         {
             bool typed = Box.Text.Trim().Length > 0;
-            count.Text = !typed ? "" : total == 0 ? I18n.T("Sin resultados", "No results") : filter.On ? total.ToString("N0") : (at >= 0 ? I18n.Fmt("{0} de {1}", "{0} of {1}", (at + 1).ToString("N0"), total.ToString("N0")) : total.ToString("N0"));
+            count.Text = !typed ? "" : total == 0 ? I18n.T("Sin resultados", "No results") : filter.On ? total.ToString("N0", I18n.Culture) : (at >= 0 ? I18n.Fmt("{0} de {1}", "{0} of {1}", (at + 1).ToString("N0", I18n.Culture), total.ToString("N0", I18n.Culture)) : total.ToString("N0", I18n.Culture));
             Visibility nav = typed && !filter.On ? Visibility.Visible : Visibility.Collapsed;
             prev.Visibility = next.Visibility = nav;
             prev.IsEnabled = next.IsEnabled = total > 0;
@@ -813,7 +813,7 @@ namespace Stackshot
             bool cut;
             string t = SelectionText(out cut);
             int n = list.SelectedItems.Count;
-            if (t.Length > 0) Ask(t, cut ? I18n.T("Copiado en parte: la selecci\u00F3n es demasiado grande.", "Partially copied: selection is too large.") : n == 1 ? I18n.T("Copiado.", "Copied.") : I18n.Fmt("Copiadas {0} l\u00EDneas.", "{0} lines copied.", n.ToString("N0")));
+            if (t.Length > 0) Ask(t, cut ? I18n.T("Copiado en parte: la selecci\u00F3n es demasiado grande.", "Partially copied: selection is too large.") : n == 1 ? I18n.T("Copiado.", "Copied.") : I18n.Fmt("Copiadas {0} l\u00EDneas.", "{0} lines copied.", n.ToString("N0", I18n.Culture)));
         }
 
         // ---- Text positions (for moving between the tree and the editor)
@@ -893,7 +893,7 @@ namespace Stackshot
                 StackPanel sp = new StackPanel { Width = W };
                 for (int i = 0; i < n; i++) sp.Children.Add(new XmlRowView(ForExport(rows[i], look)));
                 if (n < rows.Count)
-                    sp.Children.Add(new TextBlock { Text = I18n.Fmt("\u2026 y {0} l\u00EDneas m\u00E1s (contrae lo que no necesites para verlas)", "\u2026 and {0} more lines (collapse what you don't need to see them)", (rows.Count - n).ToString("N0")), Foreground = look.Hint, FontSize = 12.5, Margin = new Thickness(XmlRowView.Gutter, 8, 0, 0) });
+                    sp.Children.Add(new TextBlock { Text = I18n.Fmt("\u2026 y {0} l\u00EDneas m\u00E1s (contrae lo que no necesites para verlas)", "\u2026 and {0} more lines (collapse what you don't need to see them)", (rows.Count - n).ToString("N0", I18n.Culture)), Foreground = look.Hint, FontSize = 12.5, Margin = new Thickness(XmlRowView.Gutter, 8, 0, 0) });
                 page = new Border { Background = Ds.Brush(look.Dark ? Ds.Rgb(30, 30, 32) : Colors.White), Padding = new Thickness(28, 26, 28, 28), Width = W + 56, UseLayoutRounding = true, Child = sp };
                 TextOptions.SetTextFormattingMode(page, TextFormattingMode.Ideal);
                 TextOptions.SetTextRenderingMode(page, TextRenderingMode.Grayscale);

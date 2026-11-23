@@ -74,7 +74,7 @@ namespace Stackshot
             map["Start a line with \u201C- [ ] \u201D for a task list."] = "\uD560 \uC77C \uBAA9\uB85D\uC740 \uAC01 \uC904\uC744 \u2018- [ ] \u2019\uB85C \uC2DC\uC791\uD558\uC138\uC694.";
             map["When?"] = "\uC5B8\uC81C \uC54C\uB824\uB4DC\uB9B4\uAE4C\uC694?";
             map["Tomorrow"] = "\uB0B4\uC77C";
-            map["At\u2026"] = "\uC2DC\uAC04 \uC9C0\uC815\u2026";
+            map["At\u2026"] = "\uC2DC\uAC01\u2026";
             map["I'll remind you {0}."] = "{0}\uC5D0 \uC54C\uB824\uB4DC\uB9B4\uAC8C\uC694.";
             map["Time"] = "\uC2DC\uAC04";
             map["(for example 16:30)"] = "(\uC608: 16:30)";

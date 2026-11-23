@@ -84,11 +84,11 @@ namespace Stackshot
             reg("The area did not scroll, so it was saved as a normal capture. Choose only the part that scrolls (the list or text), without the fixed header.", null, "Der Bereich wurde als normale Aufnahme gespeichert, weil er sich nicht bewegt hat. Wähle nur die scrollbare Liste oder den Textbereich ohne festen Kopfbereich.");
             reg("Composing…", null, "Bild wird zusammengesetzt…");
             reg("Esc again to discard", null, "Zum Verwerfen erneut Esc drücken");
-            reg("You haven't scrolled · Done again saves it", null, "Es wurde noch nicht gescrollt · Erneut „Fertig“ wählen, um zu speichern");
+            reg("You haven't scrolled · Done again saves it", null, "Nichts gescrollt · Erneut „Fertig“ speichert");
             reg("Maximum height", null, "Maximale Höhe");
             reg("Downward only", null, "Nur nach unten");
             reg("Slow down", null, "Langsamer scrollen");
-            reg("Pause: stop and continue scrolling with wheel", null, "Pausieren und mit dem Mausrad weiterscrollen");
+            reg("Pause: stop and scroll with the wheel", null, "Pausieren, per Mausrad weiterscrollen");
             reg("Auto: scroll automatically", null, "Auto: automatisch scrollen");
             reg("Done: save capture (Enter)", null, "Fertig: Aufnahme speichern (Eingabe)");
             reg("Cancel without saving (Esc)", null, "Ohne Speichern abbrechen (Esc)");

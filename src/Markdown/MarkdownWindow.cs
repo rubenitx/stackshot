@@ -1034,14 +1034,14 @@ namespace Stackshot
                 }
                 if (CompareShown()) { statusLabel.Text = CompareStatus(); return; }
                 if (selPath != null && !editing) { statusLabel.Text = selPath; return; }
-                string extra = tree != null && tree.Filtering ? "  \u00B7  " + tree.Matches.ToString("N0") + (tree.Matches == 1 ? I18n.T(" coincidencia", " match") : I18n.T(" coincidencias", " matches")) : "";
+                string extra = tree != null && tree.Filtering ? "  \u00B7  " + tree.Matches.ToString("N0", I18n.Culture) + (tree.Matches == 1 ? I18n.T(" coincidencia", " match") : I18n.T(" coincidencias", " matches")) : "";
                 int n = model != null ? model.Count : 0;
                 string ok = editing && model != null ? I18n.T("  \u00B7  bien formado", "  \u00B7  well-formed") : "";
-                statusLabel.Text = head + "  \u00B7  " + n.ToString("N0") + (n == 1 ? I18n.T(" nodo", " node") : I18n.T(" nodos", " nodes")) + (model != null && model.Truncated ? I18n.T(" (los primeros)", " (the first ones)") : "") + extra + ok + tail;
+                statusLabel.Text = head + "  \u00B7  " + n.ToString("N0", I18n.Culture) + (n == 1 ? I18n.T(" nodo", " node") : I18n.T(" nodos", " nodes")) + (model != null && model.Truncated ? I18n.T(" (los primeros)", " (the first ones)") : "") + extra + ok + tail;
                 return;
             }
             int w = MarkdownTools.Words(text);
-            statusLabel.Text = head + "  \u00B7  " + w.ToString("N0") + (w == 1 ? I18n.T(" palabra", " word") : I18n.T(" palabras", " words")) + tail;
+            statusLabel.Text = head + "  \u00B7  " + w.ToString("N0", I18n.Culture) + (w == 1 ? I18n.T(" palabra", " word") : I18n.T(" palabras", " words")) + tail;
         }
 
         void Say(string msg, bool bad)
@@ -1642,7 +1642,7 @@ namespace Stackshot
             editor.SetText(t);
             text = editor.Text;
             RefreshHits(false);
-            Say(n == 1 ? I18n.T("1 reemplazo.", "1 replacement.") : I18n.Fmt("{0} reemplazos.", "{0} replacements.", n.ToString("N0")), false);
+            Say(n == 1 ? I18n.T("1 reemplazo.", "1 replacement.") : I18n.Fmt("{0} reemplazos.", "{0} replacements.", n.ToString("N0", I18n.Culture)), false);
         }
 
         // ---- Input
