@@ -26,7 +26,7 @@ Format: one `## X.Y.Z` section per version and, in it, one line per item: `- **T
 
 ## 2.2.0
 
-- **Backdrops like CleanShot X.** In the editor, the Fondo button opens a side panel: gradients, your desktop wallpaper and your own pictures, the capture itself blurred, plain colours and any other colour, plus sliders for margin, inset (with auto-balancing), shadow and corners, and alignment and proportion.
+- **Backdrops like CleanShot X.** In the editor, the Backdrop button opens a side panel: gradients, your desktop wallpaper and your own pictures, the capture itself blurred, plain colours and any other colour, plus sliders for margin, inset (with auto-balancing), shadow and corners, and alignment and proportion.
 - **Drag me.** The editor's bottom bar has a handle to carry the capture dragging to a chat, an email or another app.
 - **Adjust before capturing.** An option (off by default) to move and adjust the area with a preview before capturing.
 - **Sharper text.** In every window, the menus and the area picker's notice, which now paints each key in its own colour.

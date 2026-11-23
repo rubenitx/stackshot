@@ -26,7 +26,7 @@ Format: ein Abschnitt `## X.Y.Z` pro Version und darin eine Zeile pro Neuerung: 
 
 ## 2.2.0
 
-- **Hintergründe wie CleanShot X.** Im Editor öffnet die Schaltfläche Fondo ein Seitenfenster: Verläufe, dein Desktop-Hintergrund und eigene Bilder, die Aufnahme selbst weichgezeichnet, einfarbige und jede andere Farbe, dazu Regler für Rand, Einrückung (mit automatischem Ausgleich), Schatten und Ecken sowie Ausrichtung und Seitenverhältnis.
+- **Hintergründe wie CleanShot X.** Im Editor öffnet die Schaltfläche Hintergrund ein Seitenfenster: Verläufe, dein Desktop-Hintergrund und eigene Bilder, die Aufnahme selbst weichgezeichnet, einfarbige und jede andere Farbe, dazu Regler für Rand, Einrückung (mit automatischem Ausgleich), Schatten und Ecken sowie Ausrichtung und Seitenverhältnis.
 - **Zieh mich.** In der unteren Leiste des Editors gibt es einen Griff, um die Aufnahme per Ziehen in einen Chat, eine E-Mail oder eine andere App zu tragen.
 - **Vor dem Aufnehmen anpassen.** Eine Option (standardmäßig aus), um den Bereich mit einer Vorschau zu verschieben und anzupassen, bevor aufgenommen wird.
 - **Schärfere Texte.** In jedem Fenster, in den Menüs und im Hinweis der Bereichsauswahl, die jetzt jede Taste in ihrer eigenen Farbe malt.
