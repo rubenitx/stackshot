@@ -42,6 +42,7 @@ namespace Stackshot.Tests
             T("release-notices-read-their-language", ReleaseNoticesReadTheirLanguage);
             T("tray-labels-follow-the-language", TrayLabelsFollowTheLanguage);
             T("korean-gif-action-reads-gif-recording", KoreanGifActionReadsGifRecording);
+            T("scene-home-actions-fit-the-stage", SceneHomeActionsFitTheStage);
             T("korean-writes-markdown-in-hangul", KoreanWritesMarkdownInHangul);
             T("no-bare-markdown-label-in-src", NoBareMarkdownLabelInSrc);
             T("tray-panel-has-no-foreign-leftovers", TrayPanelHasNoForeignLeftovers);
@@ -727,6 +728,79 @@ namespace Stackshot.Tests
             Check(catalog["Direct adds to stack; Adjust first lets you reposition/resize before Enter; Show options lets you pick capture, video, GIF or scroll."].Contains(KoGifRecording), "the picker's mode list names the action");
             foreach (string format in new[] { "Export GIF of clip", "Create a GIF from marked clip (E & S) \u00B7 {0}  (G)", "GIF image", "No GIFs", "GIF frames per second", "Saving GIF\u2026", "complete GIF" })
                 Check(catalog[format].Contains("GIF") && !catalog[format].Contains("\uB179\uD654"), "the format \"" + format + "\" stays GIF: " + Show(catalog[format]));
+        }
+
+        static IEnumerable<DependencyObject> VisualsBelow(DependencyObject o)
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(o); i++)
+            {
+                DependencyObject c = VisualTreeHelper.GetChild(o, i);
+                yield return c;
+                foreach (DependencyObject d in VisualsBelow(c)) yield return d;
+            }
+        }
+
+        // The action rows of the scene home as the window lays them out at its default size: for each, its top and bottom
+        // inside the stage, plus the bottom of the heading block above the first row, the top of that block and the stage's height.
+        static void SceneGeometry(string name, out List<double[]> rows, out double headingBottom, out double headingTop, out double stage)
+        {
+            Settings ss = new Settings();
+            ss.SaveFolder = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "t29-scene");
+            ss.ShowRecent = false; ss.ShowIntro = false; ss.Profile = 2; ss.Appearance = 1; ss.HomeStyle = 2; ss.MascotOn = true; ss.MascotName = name;
+            Ds.Apply(1);
+            HomeWindow hw = new HomeWindow((ShotStack)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(ShotStack)), ss);
+            try
+            {
+                AppTestsI18n.SetPage(hw, "home");
+                AppTestsI18n.Layout(hw);
+                stage = Convert.ToDouble(typeof(HomeWindow).GetField("SceneStage", BindingFlags.NonPublic | BindingFlags.Static).GetRawConstantValue());
+                FrameworkElement box = null;
+                foreach (DependencyObject d in VisualsBelow((DependencyObject)hw.Content))
+                    if (d is Grid && ((Grid)d).Height == stage) { box = (FrameworkElement)d; break; }
+                Check(box != null, "the scene's stage is in the window");
+                rows = new List<double[]>();
+                headingBottom = 0; headingTop = double.MaxValue;
+                foreach (DependencyObject d in VisualsBelow(box))
+                {
+                    TapBorder row = d as TapBorder;
+                    if (row == null || row.Height != 34) continue;
+                    Rect r = row.TransformToAncestor(box).TransformBounds(new Rect(0, 0, row.ActualWidth, row.ActualHeight));
+                    rows.Add(new[] { r.Top, r.Bottom });
+                    if (rows.Count > 1) continue;
+                    Panel list = (Panel)VisualTreeHelper.GetParent(row);
+                    foreach (UIElement head in list.Children)
+                    {
+                        if (head == row) break;
+                        Rect h = ((FrameworkElement)head).TransformToAncestor(box).TransformBounds(new Rect(0, 0, ((FrameworkElement)head).ActualWidth, ((FrameworkElement)head).ActualHeight));
+                        headingBottom = Math.Max(headingBottom, h.Bottom);
+                        headingTop = Math.Min(headingTop, h.Top);
+                    }
+                }
+            }
+            finally { hw.Shutdown(); }
+        }
+
+        // The Home "Scene" style lists the modes in a stage of fixed height: every row, the last (Markdown) too, ends inside
+        // it in each language, and the first row starts under the greeting and the question, not over them.
+        public static void SceneHomeActionsFitTheStage()
+        {
+            List<string> found = new List<string>();
+            foreach (string lang in new[] { "es", "en", "de", "ko" })
+                foreach (string name in new[] { "Pixel", "WWWWWWWWWWWWWWWW" })
+                    InLanguage(lang, delegate
+                    {
+                        List<double[]> rows;
+                        double headingBottom, headingTop, stage;
+                        SceneGeometry(name, out rows, out headingBottom, out headingTop, out stage);
+                        string at = lang + " " + name;
+                        if (rows.Count < 8) { found.Add(at + ": only " + rows.Count + " action rows"); return; }
+                        double last = rows[rows.Count - 1][1];
+                        if (last > stage) found.Add(at + ": the last row ends at " + last + ", past the stage (" + stage + ")");
+                        if (rows[0][0] < headingBottom) found.Add(at + ": the first row starts at " + rows[0][0] + ", over the heading that ends at " + headingBottom);
+                        if (headingTop < 30) found.Add(at + ": the heading starts at " + headingTop + ", under the window buttons");
+                    });
+            foreach (string s in found) Console.WriteLine("    scene: " + s);
+            Check(found.Count == 0, found.Count + " scene layouts are wrong (listed above)");
         }
 
         // Korean spells Markdown in hangul wherever the interface says it: the catalog, the Home action names, the document
@@ -1455,6 +1529,18 @@ namespace Stackshot.Tests
             {
                 foreach (string lang in new[] { "es", "en", "de", "ko", "ar" }) TrayPicture(lang, 1, "t20-tray-" + lang + ".png");
                 TrayPicture("ko", 2, "t20-tray-ko-dark.png");
+
+                foreach (string sl in new[] { "es", "en", "de", "ko" })
+                {
+                    I18n.Apply(sl);
+                    Ds.Apply(1);
+                    Settings ss = new Settings();
+                    ss.SaveFolder = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "t29-scene");
+                    ss.ShowRecent = false; ss.ShowIntro = false; ss.Profile = 2; ss.Appearance = 1; ss.HomeStyle = 2;
+                    HomeWindow sw = new HomeWindow((ShotStack)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(ShotStack)), ss);
+                    try { AppTestsI18n.SetPage(sw, "home"); AppTestsI18n.Layout(sw); SaveElement((FrameworkElement)sw.Content, 980, 660, "t29-scene-" + sl + ".png"); }
+                    finally { sw.Shutdown(); }
+                }
 
                 foreach (int shade in new[] { 1, 2 })
                     foreach (int style in new[] { 0, 1, 2 })
