@@ -489,8 +489,8 @@ namespace Stackshot
             AddCapture("video", recording ? I18n.T("Detener grabaci\u00F3n", "Stop recording") : I18n.T("V\u00EDdeo", "Video"), recording ? "stop!" : "video", 2).Alert = recording;
             bool paused = recording && Recorder.Paused;
             if (recording && Recorder.CanPause) Add(KRow, "pause", paused ? I18n.T("Reanudar grabaci\u00F3n", "Resume recording") : I18n.T("Pausar grabaci\u00F3n", "Pause recording"), paused ? "play" : "pause", 2);
-            if (!recording) AddCapture("gif", "GIF", "gif", 2);
-            AddCapture("markdown", "Markdown", "markdown", 2);
+            if (!recording) AddCapture("gif", I18n.T("GIF", "GIF", "GIF"), "gif", 2);
+            AddCapture("markdown", I18n.T("Markdown", "Markdown", "Markdown"), "markdown", 2);
             Add(KLine, null, null, null, 0);
             if (strip && recent.Count > 0)
             {
@@ -974,7 +974,7 @@ namespace Stackshot
             if (d == now) return I18n.T("Hoy, ", "Today, ") + hm;
             if (d == now.AddDays(-1)) return I18n.T("Ayer, ", "Yesterday, ") + hm;
             if (I18n.IsKorean) return t.ToString("M/d HH:mm", CultureInfo.InvariantCulture);
-            if (I18n.IsGerman) return t.ToString("d. MMM", Es).TrimEnd('.') + ", " + hm;
+            if (I18n.IsGerman) return t.ToString("d. MMM", I18n.Culture).TrimEnd('.') + ", " + hm;
             return (I18n.IsSpanish ? t.ToString("d MMM", Es).TrimEnd('.') : t.ToString("MMM d", CultureInfo.GetCultureInfo("en-US"))) + ", " + hm;
         }
 

@@ -1053,9 +1053,16 @@ namespace Stackshot
             fade.Start();
         }
 
+        // What the document is called in the title and in the name of its capture: a format name, written the way the
+        // interface language writes it (Korean spells Markdown in hangul).
+        internal static string KindName(bool xml)
+        {
+            return xml ? "XML" : I18n.T("Markdown", "Markdown", "Markdown");
+        }
+
         void SetTitle()
         {
-            string t = name != null ? name + " \u2014 " + (xml ? "XML" : "Markdown") : text != null ? I18n.T("Sin t\u00EDtulo \u2014 ", "Untitled \u2014 ") + (xml ? "XML" : "Markdown") : I18n.T("Markdown y XML", "Markdown and XML");
+            string t = name != null ? name + " \u2014 " + KindName(xml) : text != null ? I18n.T("Sin t\u00EDtulo \u2014 ", "Untitled \u2014 ") + KindName(xml) : I18n.T("Markdown y XML", "Markdown and XML");
             Title = (text != null && Dirty ? "\u25CF " : "") + t;
         }
 
@@ -1965,7 +1972,7 @@ namespace Stackshot
             {
                 BitmapSource img = RenderDoc(out err);
                 if (img == null) { NoImage(err); return; }
-                string path = owner.SaveCapture(Ink.ToGdi(img), xml ? "XML" : "Markdown");
+                string path = owner.SaveCapture(Ink.ToGdi(img), KindName(xml));
                 if (path == null) { Say(I18n.T("No he podido a\u00F1adir la captura.", "Could not add capture."), true); return; }
                 try { System.IO.File.WriteAllBytes(System.IO.Path.ChangeExtension(path, xml ? ".xml" : ".md"), Companion(text, xml, file)); }
                 catch (Exception ex) { ShotStack.Log("Markdown guardar: " + ex.Message); }

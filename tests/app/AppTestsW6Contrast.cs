@@ -1012,13 +1012,31 @@ namespace Stackshot.Tests
                         Check(row == wanted, "Deutsch's row in " + ui + ": '" + row + "' instead of '" + wanted + "'");
                         string ko = RowName(list, "\uD55C\uAD6D\uC5B4");
                         Check(ko == "\uD55C\uAD6D\uC5B4, " + complete + " \u00B7 ko", "the Korean row in " + ui + ": '" + ko + "'");
+                        Check(RowName(list, "Fran\u00E7ais") == null && list.Items.Count == 5, "the hidden French row is listed in " + ui);
+                    }
+                    finally { picker.Close(); }
+                }
+            }
+            finally { I18n.Apply(save); Drain(); }
+            // With the switch flipped the previews are listed again, as previews.
+            bool listed = I18n.PreviewsListed;
+            I18n.PreviewsListed = true;
+            try
+            {
+                foreach (string ui in new[] { "es", "en", "de", "ko" })
+                {
+                    I18n.Apply(ui);
+                    LanguagePicker picker = (LanguagePicker)typeof(LanguagePicker).GetConstructor(NP, null, new[] { typeof(string) }, null).Invoke(new object[] { "de" });
+                    try
+                    {
+                        System.Windows.Controls.ListBox list = (System.Windows.Controls.ListBox)typeof(LanguagePicker).GetField("list", NP).GetValue(picker);
                         string fr = RowName(list, "Fran\u00E7ais");
                         Check(fr == "Fran\u00E7ais, " + I18n.T("Vista previa", "Preview") + " \u00B7 fr", "the French preview row in " + ui + ": '" + fr + "'");
                     }
                     finally { picker.Close(); }
                 }
             }
-            finally { I18n.Apply(save); Drain(); }
+            finally { I18n.PreviewsListed = listed; I18n.Apply(save); Drain(); }
         }
 
         // The Aurora treatment keeps AA wherever it paints, shows the gradient in dark and light, and a contrast theme
@@ -1086,7 +1104,17 @@ namespace Stackshot.Tests
 
         // The picker's room (owner: "está muy apretado"): rows 56 tall with a gap between them so a selected ring never
         // meets the hover of its neighbour, the ring clear of the scrollbar, and the whole sheet inside a laptop's area.
+        // Measured with the ten languages listed: five rows never reach the scrollbar, and the room has to hold when the
+        // previews come back.
         static void PickerRoom()
+        {
+            bool listed = I18n.PreviewsListed;
+            I18n.PreviewsListed = true;
+            try { PickerRoomListed(); }
+            finally { I18n.PreviewsListed = listed; }
+        }
+
+        static void PickerRoomListed()
         {
             W.Size fit = LanguagePicker.Preferred(1366, 728);
             Check(fit.Width <= 1366 && fit.Height <= 728, "the sheet does not fit a 1366 x 728 work area: " + fit);
