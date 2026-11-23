@@ -602,7 +602,7 @@ namespace Stackshot
         internal static string WindowsVersion()
         {
             Version v = Environment.OSVersion.Version;
-            return v.Major + "." + v.Minor + "." + v.Build + (Environment.Is64BitOperatingSystem ? I18n.Own(" (64 bits)", " (64-bit)", " (64 Bit)", " (64\uBE44\uD2B8)") : "");
+            return v.Major + "." + v.Minor + "." + v.Build + (Environment.Is64BitOperatingSystem ? I18n.Own(" (64 bits)", " (64-bit)", " (64-Bit)", " (64\uBE44\uD2B8)") : "");
         }
 
         static string Screens()

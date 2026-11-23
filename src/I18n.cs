@@ -109,11 +109,12 @@ namespace Stackshot
         }
 
         // Formats a localized string, with the numbers in the interface language's culture. In Korean the particles that
-        // follow a filled-in name or number ("{0}\uC744(\uB97C)") are settled by how that last word ends.
+        // follow a variable ("{0}\uC744(\uB97C)") are settled in the text, from the value that fills it, before it is formatted:
+        // the values themselves go in as they are.
         public static string Fmt(string esFmt, string enFmt, params object[] args)
         {
-            string text = string.Format(Culture, T(esFmt, enFmt), args);
-            return IsKorean ? KoreanParticles(text) : text;
+            string text = T(esFmt, enFmt);
+            return string.Format(Culture, IsKorean ? KoreanTemplate(text, args) : text, args);
         }
 
         // Shown text back to the English key it translates (the key T starts from): the catalog maps every English key

@@ -574,7 +574,7 @@ namespace Stackshot
             map[" for an area"] = " \uC601\uC5ED \uC120\uD0DD";
             map[" to stop"] = " \uC911\uC9C0";
             map[" to record"] = " \uB179\uD654";
-            map["Play with {0}"] = "{0}\uC640(\uACFC) \uB180\uAE30";
+            map["Play with {0}"] = "{0}\uD558\uACE0 \uB180\uAE30";
             map["Ask {0} something"] = "{0}\uC5D0\uAC8C \uBB3C\uC5B4\uBCF4\uAE30";
             map["Recent captures"] = "\uCD5C\uADFC \uCEA1\uCC98";
             map["View all"] = "\uC804\uCCB4 \uBCF4\uAE30";

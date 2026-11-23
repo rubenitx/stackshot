@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -32,7 +33,11 @@ namespace Stackshot.Tests
             T("player-audio-button-is-localized", PlayerAudioButtonIsLocalized);
             T("report-machine-line-bits", ReportMachineLineBits);
             T("german-split-is-not-share", GermanSplitIsNotShare);
+            T("korean-particles-never-edit-values", KoreanParticlesNeverEditValues);
+            T("opening-several-files-notice-uses-fmt", OpeningSeveralFilesNoticeUsesFmt);
             T("mascot-name-is-clean-wherever-it-comes-from", MascotNameIsCleanWhereverItComesFrom);
+            T("mascot-name-field-never-alters-typing", MascotNameFieldNeverAltersTyping);
+            T("mascot-name-cut-edge-cases", MascotNameCutEdgeCases);
             T("settings-rows-exempt-their-paths", SettingsRowsExemptTheirPaths);
             T("release-notices-read-their-language", ReleaseNoticesReadTheirLanguage);
             T("last-audit-screens-as-pictures", Pictures);
@@ -97,13 +102,12 @@ namespace Stackshot.Tests
             InLanguage("ko", delegate
             {
                 string sky = "\uD558\uB298", butterfly = "\uB098\uBE44";
-                Same(sky + "\uACFC \uB180\uAE30", I18n.Fmt("", "Play with {0}", sky), "play with a name ending in a consonant");
-                Same(butterfly + "\uC640 \uB180\uAE30", I18n.Fmt("", "Play with {0}", butterfly), "play with a name ending in a vowel");
-                Same(sky + "\uACFC \uB180\uAE30", MascotTalk.PlayWith(sky), "the menu label, consonant");
-                Same(butterfly + "\uC640 \uB180\uAE30", MascotTalk.PlayWith(butterfly), "the menu label, vowel");
-                string latin = MascotTalk.PlayWith("Pixel");
-                Same("Pixel \uB180\uC544 \uC8FC\uAE30", latin, "a Latin name gets a wording without a particle");
-                Check(latin.IndexOf('\uC640') < 0 && latin.IndexOf('\uACFC') < 0, "a particle after Pixel: " + latin);
+                // The mascot's menu label has no particle at all: the same wording for every name, Latin script or not.
+                foreach (string name in new[] { sky, butterfly, "Pixel", "\uD83D\uDE00", "50%" })
+                {
+                    Same(name + "\uD558\uACE0 \uB180\uAE30", I18n.Fmt("", "Play with {0}", name), "play with " + name);
+                    Same(name + "\uD558\uACE0 \uB180\uAE30", MascotTalk.PlayWith(name), "the menu label for " + name);
+                }
                 Same("Pixel\uC744(\uB97C) \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.\n\nx", I18n.Fmt("", "Could not open {0}.\n\n{1}", "Pixel", "x"), "an unknown ending keeps the pair");
                 Same(sky + "\uC744 \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.\n\nx", I18n.Fmt("", "Could not open {0}.\n\n{1}", sky, "x"), "pair settled by the name");
 
@@ -121,7 +125,10 @@ namespace Stackshot.Tests
                 Same("\uC774", I18n.Josa(sky, "\uC774", "\uAC00"), "subject particle after a consonant");
                 Same("\uB97C", I18n.Josa("2", "\uC744", "\uB97C"), "a number read \uC774 ends in a vowel");
                 Same("\uC744", I18n.Josa("3", "\uC744", "\uB97C"), "a number read \uC0BC ends in a consonant");
+                Same("\uAC00", I18n.Josa("2", "\uC774", "\uAC00"), "2 is read \uC774, no final consonant");
                 Check(I18n.KoreanFinal("MP3") == null, "a digit glued to letters is not settled");
+                Check(I18n.KoreanFinal("50%") == null && I18n.KoreanFinal("\uD558\uB298\uD83D\uDE00") == null && I18n.KoreanFinal("") == null && I18n.KoreanFinal(null) == null, "%, an emoji and nothing are not settled");
+                Check(I18n.KoreanFinal("\uD558\uB298!") == true && I18n.KoreanFinal("\u201C\uB098\uBE44\u201D") == false, "closing punctuation does not count");
                 Check(I18n.KoreanFinal("2.2.3") == true && I18n.KoreanFinal("2.2.2") == false, "version numbers by their last digit");
 
                 // No catalog text pins a particle after a variable: the pair is written and settled when it is filled in.
@@ -169,7 +176,7 @@ namespace Stackshot.Tests
             InLanguage("ko", delegate { Same("Pixel: " + WellKind.Names[WellKind.Water], ShotStack.WellTitle("Pixel", WellKind.Water), "Korean title"); });
         }
 
-        // The report form's hint on the title: "Der Titel braucht noch 1 Buchstabe." / "... 3 Buchstaben.".
+        // The report form's hint on the title and on the other field: "braucht noch 1 Buchstaben" (accusative), "... 3 Buchstaben".
         public static void GermanTitleHintIsASentence()
         {
             MethodInfo letters = typeof(ReportWindow).GetMethod("Letters", BindingFlags.NonPublic | BindingFlags.Static);
@@ -178,7 +185,9 @@ namespace Stackshot.Tests
                 foreach (int n in new[] { 1, 3 })
                 {
                     string hint = I18n.Fmt("El t\u00EDtulo necesita {0} m\u00E1s.", "Title needs {0} more.", (string)letters.Invoke(null, new object[] { n }));
-                    Same(n == 1 ? "Der Titel braucht noch 1 Buchstabe." : "Der Titel braucht noch 3 Buchstaben.", hint, "German title hint for " + n);
+                    Same(n == 1 ? "Der Titel braucht noch 1 Buchstaben." : "Der Titel braucht noch 3 Buchstaben.", hint, "German title hint for " + n);
+                    string field = I18n.Fmt("{0} necesita {1} m\u00E1s.", "{0} needs {1} more.", "Thema", (string)letters.Invoke(null, new object[] { n }));
+                    Same(n == 1 ? "Thema braucht noch 1 Buchstaben." : "Thema braucht noch 3 Buchstaben.", field, "German field hint for " + n);
                 }
             });
             InLanguage("es", delegate { Same("El t\u00EDtulo necesita 3 letras m\u00E1s.", I18n.Fmt("El t\u00EDtulo necesita {0} m\u00E1s.", "Title needs {0} more.", (string)letters.Invoke(null, new object[] { 3 })), "Spanish hint unchanged"); });
@@ -284,7 +293,7 @@ namespace Stackshot.Tests
         public static void ReportMachineLineBits()
         {
             if (!Environment.Is64BitOperatingSystem) return;
-            Dictionary<string, string> want = new Dictionary<string, string> { { "es", " (64 bits)" }, { "en", " (64-bit)" }, { "de", " (64 Bit)" }, { "ko", " (64\uBE44\uD2B8)" } };
+            Dictionary<string, string> want = new Dictionary<string, string> { { "es", " (64 bits)" }, { "en", " (64-bit)" }, { "de", " (64-Bit)" }, { "ko", " (64\uBE44\uD2B8)" } };
             foreach (string lang in AllLanguages)
             {
                 I18n.Apply(lang);
@@ -299,6 +308,55 @@ namespace Stackshot.Tests
         public static void GermanSplitIsNotShare()
         {
             InLanguage("de", delegate { Same("Aufteilen", I18n.T("Dividir", "Split"), "German Split"); });
+        }
+
+        // The pair is settled in the catalog text, from the value that is going to fill the variable, before the text is
+        // formatted: what the user wrote (a file name, a mascot name) goes in untouched.
+        public static void KoreanParticlesNeverEditValues()
+        {
+            InLanguage("ko", delegate
+            {
+                string open = "Could not open {0}.\n\n{1}";
+                string tail = " \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.\n\n";
+                Same("\uAC51\uC740(\uB294).md\uC744(\uB97C)" + tail + "x", I18n.Fmt("", open, "\uAC51\uC740(\uB294).md", "x"), "a file name that holds a pair stays intact");
+                Same("\uAC51\uC740(\uB294)\uC744" + tail + "x", I18n.Fmt("", open, "\uAC51\uC740(\uB294)", "x"), "a value ending in a pair stays intact (\uB294 has a final consonant)");
+                Same("\uD83D\uDE00\uC744(\uB97C)" + tail + "x", I18n.Fmt("", open, "\uD83D\uDE00", "x"), "an emoji keeps the pair");
+                Same("\uD558\uB298\uD83D\uDE00\uC744(\uB97C)" + tail + "x", I18n.Fmt("", open, "\uD558\uB298\uD83D\uDE00", "x"), "the word before an emoji is not read");
+                Same("50%\uC744(\uB97C)" + tail + "x", I18n.Fmt("", open, "50%", "x"), "a percentage keeps the pair");
+                Same("\uC744(\uB97C)" + tail + "x", I18n.Fmt("", open, "", "x"), "an empty value keeps the pair");
+                Same("\uD558\uB298\uC744" + tail + "\uC740(\uB294) \uC774(\uAC00) \uC744(\uB97C) \uACFC(\uC640)", I18n.Fmt("", open, "\uD558\uB298", "\uC740(\uB294) \uC774(\uAC00) \uC744(\uB97C) \uACFC(\uC640)"), "the other values are never touched");
+                Same("Stackshot 2.2.2\uAC00 \uCD5C\uC2E0 \uBC84\uC804\uC785\uB2C8\uB2E4. \uD655\uC778 \uC2DC\uAC01: \uC774(\uAC00)", I18n.Fmt("", "Stackshot {0} is the latest version. Checked {1}.", "2.2.2", "\uC774(\uAC00)"), "a later value that is a pair");
+                Same("2.2.3\uC774", I18n.Fmt("", "Stackshot {0} is the latest version. Checked {1}.", "2.2.3", "x").Substring("Stackshot ".Length, "2.2.3\uC774".Length), "2.2.3");
+                Check(I18n.Fmt("", "FFmpeg exited with code {0}.", 1).Contains("\uCF54\uB4DC 1\uC744 "), "1 read as a number");
+
+                // The template: a closing quote or bracket between the variable and the pair does not hide the variable.
+                string attach = "Open attachment \u201C{0}\u201D?";
+                Same("\uCCA8\uBD80 \uD30C\uC77C \u2018\uD558\uB298\u2019\uC744 \uC5F4\uAE4C\uC694?", I18n.Fmt("", attach, "\uD558\uB298"), "quotes around the name, consonant");
+                Same("\uCCA8\uBD80 \uD30C\uC77C \u2018\uB098\uBE44\u2019\uB97C \uC5F4\uAE4C\uC694?", I18n.Fmt("", attach, "\uB098\uBE44"), "quotes around the name, vowel");
+                Same("\uCCA8\uBD80 \uD30C\uC77C \u2018\uD83D\uDE00\u2019\uC744(\uB97C) \uC5F4\uAE4C\uC694?", I18n.Fmt("", attach, "\uD83D\uDE00"), "quotes around an emoji");
+                Same("({0})\uC744 \uC5F4\uAE30 {0:N0}\uAC1C", I18n.KoreanTemplate("({0})\uC744(\uB97C) \uC5F4\uAE30 {0:N0}\uAC1C", new object[] { "\uD558\uB298" }), "a bracket between");
+                Same("{0:N0}\uC744 \uC5F4\uAE30", I18n.KoreanTemplate("{0:N0}\uC744(\uB97C) \uC5F4\uAE30", new object[] { 1000 }), "a format is read as the text it makes (1,000: a zero)");
+                Same("{0}\uC744(\uB97C) \uC5F4\uAE30", I18n.KoreanTemplate("{0}\uC744(\uB97C) \uC5F4\uAE30", new object[] { null }), "a missing value keeps the pair");
+            });
+            // Spanish, English and German do not go through any of this.
+            foreach (string lang in new[] { "es", "en", "de" })
+                InLanguage(lang, delegate
+                {
+                    string s = I18n.Fmt("No se pudo abrir {0}.\n\n{1}", "Could not open {0}.\n\n{1}", "\uAC51\uC740(\uB294).md", "\uC744(\uB97C)");
+                    Check(s.Contains("\uAC51\uC740(\uB294).md") && s.EndsWith("\uC744(\uB97C)", StringComparison.Ordinal), lang + ": a value changed: " + Show(s));
+                });
+        }
+
+        // The notice that says how many other files were left out of the viewer is a catalog text: formatted by Fmt, so the
+        // Korean pair after the file name is settled and never shown as it is written.
+        public static void OpeningSeveralFilesNoticeUsesFmt()
+        {
+            Check(!Regex.IsMatch(Src("ShotStack.cs"), "string\\.Format\\(I18n\\.T\\(\"Se abre"), "ShotStack still formats the notice by hand");
+            InLanguage("ko", delegate
+            {
+                string text = I18n.Fmt("Se abre {0}. {1} {2} (el visor muestra uno cada vez).", "Opening {0}. {1} {2} (the viewer shows one at a time).", "\uD558\uB298", 2, I18n.T("archivos m\u00E1s", "more files"));
+                Check(text.StartsWith("\uD558\uB298\uC744 \uC5FD\uB2C8\uB2E4.", StringComparison.Ordinal) && text.IndexOf("(\uB97C)", StringComparison.Ordinal) < 0, "Korean notice: " + Show(text));
+            });
         }
 
         // A name from the settings file loses control and bidi characters like a typed one, and the 16 units are cut by
@@ -352,18 +410,124 @@ namespace Stackshot.Tests
                                   "the cut leaves a piece of a letter: " + Show(cut) + " | " + Show(tail));
                         }
                     }
-
-                // The field itself drops what is forbidden as it is typed or pasted.
-                TextBox box = new TextBox();
-                MascotName.Guard(box);
-                box.Text = "ab\u202Ec\u2067d";
-                Same("abcd", box.Text, "typed text loses bidi characters");
-                box.Text = family + family;
-                Same(family, box.Text, "pasted text is cut by letters");
-                box.Text = "Mr Pixel ";
-                Same("Mr Pixel ", box.Text, "a space typed at the end stays while typing");
             }
             finally { try { Directory.Delete(dir, true); } catch { } }
+        }
+
+        static bool TypeInto(TextBox box, string text)
+        {
+            TextCompositionEventArgs pre = new TextCompositionEventArgs(Keyboard.PrimaryDevice, new TextComposition(InputManager.Current, box, text));
+            pre.RoutedEvent = UIElement.PreviewTextInputEvent;
+            box.RaiseEvent(pre);
+            if (pre.Handled) return false;
+            TextCompositionEventArgs input = new TextCompositionEventArgs(Keyboard.PrimaryDevice, new TextComposition(InputManager.Current, box, text));
+            input.RoutedEvent = UIElement.TextInputEvent;
+            box.RaiseEvent(input);
+            return true;
+        }
+
+        // What the clipboard command does: the pasting handlers may change or cancel it, and what is left goes in.
+        static void PasteInto(TextBox box, string text, bool dragDrop)
+        {
+            DataObject data = new DataObject(DataFormats.UnicodeText, text);
+            DataObjectPastingEventArgs e = new DataObjectPastingEventArgs(data, dragDrop, DataFormats.UnicodeText);
+            e.RoutedEvent = DataObject.PastingEvent;
+            box.RaiseEvent(e);
+            if (!e.CommandCancelled) box.SelectedText = (string)e.DataObject.GetData(DataFormats.UnicodeText);
+        }
+
+        // The name's field never rewrites what is in it: a full name refuses one more letter instead of dropping another
+        // one, wherever the caret is; a paste is cleaned and cut by letters, and what was there stays.
+        public static void MascotNameFieldNeverAltersTyping()
+        {
+            string full = "1234567890123456";
+            string family = "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67";
+            TextBox box = new TextBox();
+            MascotName.Guard(box);
+
+            box.Text = full;
+            box.CaretIndex = 3;
+            Check(!TypeInto(box, "X"), "a full name accepted a letter in the middle");
+            Same(full, box.Text, "typing into a full name leaves it as it is");
+            Same("3", box.CaretIndex.ToString(), "and the caret stays");
+            box.CaretIndex = 16;
+            Check(!TypeInto(box, "X"), "a full name accepted a letter at the end");
+            Same(full, box.Text, "typing at the end of a full name");
+            Check(!TypeInto(box, "\uD83D\uDE00"), "a full name accepted an emoji");
+            Same(full, box.Text, "an emoji into a full name");
+            Check(!TypeInto(box, "\u202E"), "a bidi override was accepted");
+            Same(full, box.Text, "a bidi override into a full name");
+
+            box.Text = "Mr Pixel ";
+            box.CaretIndex = 9;
+            Check(TypeInto(box, "X"), "a name with room refused a letter");
+            Same("Mr Pixel X", box.Text, "typing with room keeps the spaces");
+            box.Text = "ab";
+            box.CaretIndex = 1;
+            Check(TypeInto(box, "X"), "typing in the middle was refused");
+            Same("aXb", box.Text, "typing in the middle");
+            box.Text = full;
+            box.SelectAll();
+            Check(TypeInto(box, "X"), "typing over the selection was refused");
+            Same("X", box.Text, "typing over a selection frees the room");
+            box.Text = "ab";
+            box.CaretIndex = 2;
+            Check(!TypeInto(box, "\u202E"), "a bidi override typed into a name was kept");
+            Check(!TypeInto(box, "\u200B"), "a zero-width space typed into a name was kept");
+            Same("ab", box.Text, "forbidden characters are not typed");
+
+            // Pasting: cleaned, then cut by letters to what room is left.
+            box.Text = "abc";
+            box.CaretIndex = 3;
+            PasteInto(box, "\u202E" + "de\u0007\r\nf\u2066", false);
+            Same("abcdef", box.Text, "a paste loses bidi and control characters");
+            box.Text = "abc";
+            box.CaretIndex = 3;
+            PasteInto(box, family + family, false);
+            Same("abc" + family, box.Text, "a paste is cut by letters, not in the middle of a family");
+            box.Text = "abcd";
+            box.CaretIndex = 1;
+            PasteInto(box, "1234567890123456789", false);
+            Same("a" + "123456789012" + "bcd", box.Text, "a paste in the middle keeps both sides and is cut");
+            Check(box.Text.Length == 16, "16 units after the paste");
+            box.Text = full;
+            box.CaretIndex = 4;
+            PasteInto(box, "zz", false);
+            Same(full, box.Text, "a paste into a full name changes nothing");
+            box.Text = "abc";
+            PasteInto(box, "dropped", true);
+            Same("abc", box.Text, "a drop is refused");
+        }
+
+        // The cut at 16 units: decomposed Hangul is put together first, a flag made of tag characters stays whole, and the
+        // invisible spaces and direction marks that would make two names look alike are removed.
+        public static void MascotNameCutEdgeCases()
+        {
+            // NFD Hangul (three jamo per syllable) counts as the syllables it reads as.
+            string syllables = "\uD558\uB298\uB098\uBE44\uD558\uB298\uB098\uBE44\uD558\uB298\uB098\uBE44\uD558\uB298\uB098\uBE44\uD558\uB298\uB098\uBE44";
+            string jamo = syllables.Normalize(NormalizationForm.FormD);
+            Check(jamo.Length > 40, "the test text is decomposed");
+            Same(syllables.Substring(0, 16), MascotName.Clean(jamo), "decomposed Hangul is cut by syllables, composed");
+            Same("\uD55C\uAE00", MascotName.Clean("\u1112\u1161\u11AB\u1100\u1173\u11AF"), "two decomposed syllables read as two");
+            // A flag drawn with tag characters (England) is one letter of 14 units: whole or not at all.
+            string england = "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F";
+            Same(england.Length.ToString(), "14", "the flag is 14 units");
+            Same("ab" + england, MascotName.Clean("ab" + england), "a flag that fits stays whole");
+            Same("abc", MascotName.Clean("abc" + england), "a flag that does not fit is left out, not cut");
+            Same("abc", MascotName.Clean("abc" + england + england), "two flags");
+            Same(england, MascotName.Clean(england + england), "one flag of two");
+            Same("a" + england + "b", MascotName.Clean("a" + england + "bcd"), "the letters after a whole flag still count");
+            // Invisible characters and direction marks are not part of a name.
+            Same("abcdef", MascotName.Clean("a\u200Bb\uFEFFc\u200Ed\u200Fe\u061Cf"), "zero-width space, BOM, LRM, RLM and ALM");
+            Same("Pixel", HomeWindowCleanName("\u200B\uFEFF\u200E\u200F\u061C"), "nothing left is Pixel");
+            Same("a\u200Db", MascotName.Clean("a\u200Db"), "the joiner of emoji and scripts stays");
+            Same("\u0645\u06CC\u200C\u062E\u0648\u0627\u0647\u0645", MascotName.Clean("\u0645\u06CC\u200C\u062E\u0648\u0627\u0647\u0645"), "the Persian half-space stays");
+        }
+
+        static string HomeWindowCleanName(string s)
+        {
+            MethodInfo typed = typeof(HomeWindow).GetMethod("CleanName", BindingFlags.NonPublic | BindingFlags.Static);
+            return (string)typed.Invoke(null, new object[] { s });
         }
 
         // The rows test leaves out texts that are the user's own: a folder in any form Stackshot shows it.
@@ -482,7 +646,7 @@ namespace Stackshot.Tests
                     ReportWindow w = (ReportWindow)typeof(ReportWindow).GetConstructor(np, null, Type.EmptyTypes, null).Invoke(null);
                     try
                     {
-                        typeof(ReportWindow).GetField("title", np).SetValue(w, "Ab");
+                        typeof(ReportWindow).GetField("title", np).SetValue(w, "Abc");
                         typeof(ReportWindow).GetMethod("Build", np).Invoke(w, null);
                         SaveElement((FrameworkElement)w.Content, 540, 0, "t18-" + lang + "-report-form.png");
 

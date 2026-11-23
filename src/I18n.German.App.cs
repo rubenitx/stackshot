@@ -286,7 +286,7 @@ namespace Stackshot
             reg("Title needs {0} more.", "El t\u00EDtulo necesita {0} m\u00E1s.", "Der Titel braucht noch {0}.");
             reg("{0} needs {1} more.", "{0} necesita {1} m\u00E1s.", "{0} braucht noch {1}.");
             reg("minimum {0} characters", "m\u00EDnimo {0} letras", "mindestens {0} Zeichen");
-            reg("1 letter", "1 letra", "1 Buchstabe");
+            reg("1 letter", "1 letra", "1 Buchstaben");
             reg("{0} letters", "{0} letras", "{0} Buchstaben");
             reg("Discard report?", "\u00BFDescartar el reporte?", "Meldung verwerfen?");
             reg("Your report is number {0}. Under \u201CMy reports\u201D you will see its progress and replies, right here with no account.",

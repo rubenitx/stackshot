@@ -316,7 +316,7 @@ namespace Stackshot
             if (docs.Count == 0) return;
             OpenViewerFile(docs[0]);
             if (docs.Count > 1)
-                Notify("Stackshot", string.Format(I18n.T("Se abre {0}. {1} {2} (el visor muestra uno cada vez).", "Opening {0}. {1} {2} (the viewer shows one at a time)."), Path.GetFileName(docs[0]), docs.Count - 1, docs.Count == 2 ? I18n.T("archivo m\u00E1s", "more file") : I18n.T("archivos m\u00E1s", "more files")));
+                Notify("Stackshot", I18n.Fmt("Se abre {0}. {1} {2} (el visor muestra uno cada vez).", "Opening {0}. {1} {2} (the viewer shows one at a time).", Path.GetFileName(docs[0]), docs.Count - 1, docs.Count == 2 ? I18n.T("archivo m\u00E1s", "more file") : I18n.T("archivos m\u00E1s", "more files")));
         }
 
         void OpenViewerFile(string path)
