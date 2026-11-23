@@ -94,9 +94,9 @@ namespace Stackshot
             reg("{0} results", "{0} resultados", "{0} Ergebnisse");
             reg("1 item", "1 elemento", "1 Element");
             reg("{0} items", "{0} elementos", "{0} Elemente");
-            reg("{0} cannot be opened in the editor.", " no se puede abrir en el editor.", "{0} l\u00E4sst sich im Editor nicht \u00F6ffnen.");
+            reg("{0} cannot be opened in the editor.", null, "{0} l\u00E4sst sich im Editor nicht \u00F6ffnen.");
             reg("Capture not found", "No se encuentra la captura", "Aufnahme nicht gefunden");
-            reg("{0} is no longer in its folder: moved or deleted.", " ya no est\u00E1 en su carpeta: se ha movido o borrado.", "{0} ist nicht mehr in seinem Ordner: verschoben oder gel\u00F6scht.");
+            reg("{0} is no longer in its folder: moved or deleted.", null, "{0} ist nicht mehr in seinem Ordner: verschoben oder gel\u00F6scht.");
             reg(" While search remains on, Stackshot will gradually re-read them.", " Mientras la b\u00FAsqueda siga activada, Stackshot volver\u00E1 a leerlas poco a poco.", " Bei eingeschalteter Suche liest Stackshot sie nach und nach erneut.");
             reg("Delete text index?", "\u00BFBorrar el \u00EDndice de texto?", "Textindex l\u00F6schen?");
             reg("Your captures are untouched.", "Tus capturas no se tocan.", "Deine Aufnahmen bleiben unber\u00FChrt.");
@@ -331,8 +331,8 @@ namespace Stackshot
             reg("Month, like {0}", "El mes, como {0}", "Monat, etwa {0}");
             reg("Day, like {0}", "El d\u00EDa, como {0}", "Tag, etwa {0}");
             reg("Sequential unique number: 1, 2, 3\u2026 (with {date}, resets daily)", "Un n\u00FAmero que no se repite: 1, 2, 3\u2026 (con {fecha}, empieza cada d\u00EDa)", "Fortlaufende Nummer: 1, 2, 3\u2026 (mit {date} beginnt sie jeden Tag neu)");
-            reg("{0} is not one of the tokens above: kept as-is.", " no es ninguno de los de arriba: se queda tal cual.", "{0} geh\u00F6rt zu keinem der Platzhalter oben: bleibt unver\u00E4ndert.");
-            reg("{0} are not tokens above: kept as-is.", " no son de los de arriba: se quedan tal cual.", "{0} sind keine der Platzhalter oben: bleiben unver\u00E4ndert.");
+            reg("{0} is not one of the tokens above: kept as-is.", null, "{0} geh\u00F6rt zu keinem der Platzhalter oben: bleibt unver\u00E4ndert.");
+            reg("{0} are not tokens above: kept as-is.", null, "{0} sind keine der Platzhalter oben: bleiben unver\u00E4ndert.");
             reg("\\ / : * ? \" < > | are invalid in file names: replaced with _.", "\\ / : * ? \" < > | no valen en un nombre de archivo: se cambian por _.", "\\ / : * ? \" < > | sind in Dateinamen unzul\u00E4ssig: werden durch _ ersetzt.");
             reg("If left empty, default file name is used.", "Si lo dejas vac\u00EDo, se usa el nombre de siempre.", "Ist das Feld leer, wird der gewohnte Name verwendet.");
             reg("Without {time} or {n}, duplicate names will append (2), (3)\u2026 at the end.", "Sin {hora} ni {n}, las capturas que se llamen igual llevar\u00E1n (2), (3)\u2026 al final.", "Ohne {time} oder {n} bekommen gleichnamige Aufnahmen (2), (3)\u2026 ans Ende angeh\u00E4ngt.");
