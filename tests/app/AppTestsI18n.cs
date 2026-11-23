@@ -70,6 +70,7 @@ namespace Stackshot.Tests
                 T("release-news-only-in-spanish", AppTestsI18nAudit.ReleaseNewsOnlyInSpanish);
                 T("korean-keys-not-registered-twice-differently", AppTestsI18nAudit.KoreanKeysNotRegisteredTwiceDifferently);
                 T("notice-titles-fit-their-line", AppTestsI18nAudit.NoticeTitlesFitTheirLine);
+                T("language-offer-fits-its-toast", AppTestsI18nAudit.LanguageOfferFitsItsToast);
             }
             finally
             {

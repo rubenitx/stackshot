@@ -25,7 +25,7 @@ namespace Stackshot.Tests
         {
             // ShotStack.Language.cs: the offer of English is shown only to users whose interface is Spanish, on purpose
             // in English, and it names the settings route in their language so they can find it.
-            "ShotStack.Language.cs|. Switch Stackshot to English? You can change it any time in Ajustes \u203A General \u203A Apariencia \u203A Idioma (Settings \u203A General \u203A Appearance \u203A Language).|the English offer names the route in the user's current (Spanish) interface on purpose"
+            "ShotStack.Language.cs|Switch Stackshot to English? Later in Ajustes \u203A General \u203A Apariencia \u203A Idioma (Settings \u203A General \u203A Appearance \u203A Language).|the English offer names the route in the user's current (Spanish) interface on purpose"
         };
 
         const int Cap = 60;

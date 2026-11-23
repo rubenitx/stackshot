@@ -188,5 +188,26 @@ namespace Stackshot.Tests
             foreach (string c in cut) Console.WriteLine("    cut: " + c);
             Check(cut.Count == 0, cut.Count + " notice titles are cut with an ellipsis");
         }
+
+        // The one-time offer of a language is three lines at most; what the toast cannot show is the route to the setting.
+        public static void LanguageOfferFitsItsToast()
+        {
+            string[][] cases = { new[] { "en", "en-US" }, new[] { "en", "fr-FR" }, new[] { "en", "pt-BR" }, new[] { "en", "vi-VN" }, new[] { "de", "de-DE" }, new[] { "ko", "ko-KR" } };
+            List<string> bad = new List<string>();
+            foreach (string[] c in cases)
+            {
+                string title, body, button;
+                ShotStack.OfferTexts(c[0], new CultureInfo(c[1]), out title, out body, out button);
+                Notice n = new Notice(title, body, NoticeKind.Info);
+                n.ActionLabel = button;
+                n.Action = delegate { };
+                ToastLook look = ToastLook.For(n, 1f);
+                if (look.Clipped || look.TitleClipped) bad.Add(c[1] + " -> " + c[0] + ": clipped (" + (look.TitleClipped ? "title" : "text") + ", " + look.Lines + " lines)");
+                int at = body.IndexOf("\u203A", StringComparison.Ordinal);
+                if (c[0] != "ko" && at < 0) bad.Add(c[1] + ": the route to the setting is missing");
+            }
+            foreach (string b in bad) Console.WriteLine("    offer: " + b);
+            Check(bad.Count == 0, bad.Count + " language offers do not fit their notice");
+        }
     }
 }

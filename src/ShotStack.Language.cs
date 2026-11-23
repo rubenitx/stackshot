@@ -17,6 +17,19 @@ namespace Stackshot
             return I18n.GermanWindows(windows) ? "de" : windows.TwoLetterISOLanguageName == "ko" ? "ko" : "en";
         }
 
+        // The words of the offer, in the language it offers. The settings route is named as the user sees it now (Spanish)
+        // and as it will read after the switch; the toast has three lines, so the sentence around it stays short.
+        internal static void OfferTexts(string target, CultureInfo windows, out string title, out string body, out string button)
+        {
+            bool korean = target == "ko", german = target == "de";
+            title = korean ? "Stackshot\uC744 \uD55C\uAD6D\uC5B4\uB85C \uC0AC\uC6A9\uD560 \uC218 \uC788\uC5B4\uC694" :
+                    german ? "Stackshot gibt es jetzt auf Deutsch" : "Stackshot is now available in English";
+            body = korean ? "Stackshot\uC744 \uD55C\uAD6D\uC5B4\uB85C \uBC14\uAFC0\uAE4C\uC694? \uB098\uC911\uC5D0 \uC124\uC815\uC758 \uC77C\uBC18 > \uD654\uBA74 \uBAA8\uC591 > \uC5B8\uC5B4\uC5D0\uC11C \uBCC0\uACBD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." :
+                   german ? "Umstellen? Sp\u00E4ter unter Ajustes \u203A General \u203A Apariencia \u203A Idioma (Einstellungen \u203A Allgemein \u203A Erscheinungsbild \u203A Sprache)." :
+                   "Switch Stackshot to English? Later in Ajustes \u203A General \u203A Apariencia \u203A Idioma (Settings \u203A General \u203A Appearance \u203A Language).";
+            button = korean ? "\uD55C\uAD6D\uC5B4 \uC0AC\uC6A9" : german ? "Deutsch verwenden" : "Use English";
+        }
+
         // Keep the current UI in Spanish until the user accepts the offer.
         void OfferLanguage()
         {
@@ -25,16 +38,9 @@ namespace Stackshot
             settings.LanguageOffered = true;
             settings.Save();
             string target = OfferedLanguage(windows);
-            bool korean = target == "ko", german = target == "de";
-            string language;
-            try { language = new CultureInfo(windows.TwoLetterISOLanguageName).EnglishName; }
-            catch (CultureNotFoundException) { language = "another language"; }
-            string title = korean ? "Stackshot\uC744 \uD55C\uAD6D\uC5B4\uB85C \uC0AC\uC6A9\uD560 \uC218 \uC788\uC5B4\uC694" :
-                           german ? "Stackshot gibt es jetzt auf Deutsch" : "Stackshot is now available in English";
-            string body = korean ? "Stackshot\uC744 \uD55C\uAD6D\uC5B4\uB85C \uBC14\uAFC0\uAE4C\uC694? \uB098\uC911\uC5D0 \uC124\uC815\uC758 \uC77C\uBC18 > \uD654\uBA74 \uBAA8\uC591 > \uC5B8\uC5B4\uC5D0\uC11C \uBCC0\uACBD\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4." :
-                          german ? "Dein Windows ist auf Deutsch. Stackshot auf Deutsch umstellen? Du kannst das jederzeit unter Ajustes \u203A General \u203A Apariencia \u203A Idioma (Einstellungen \u203A Allgemein \u203A Erscheinungsbild \u203A Sprache) \u00E4ndern." :
-                          "Your Windows is in " + language + ". Switch Stackshot to English? You can change it any time in Ajustes \u203A General \u203A Apariencia \u203A Idioma (Settings \u203A General \u203A Appearance \u203A Language).";
-            Notify(title, body, NoticeKind.Info, korean ? "\uD55C\uAD6D\uC5B4 \uC0AC\uC6A9" : german ? "Deutsch verwenden" : "Use English", delegate
+            string title, body, button;
+            OfferTexts(target, windows, out title, out body, out button);
+            Notify(title, body, NoticeKind.Info, button, delegate
                    {
                        LanguagePicker.Apply(settings, target);
                        Log("Idioma: " + target + ", aceptado desde el aviso");
