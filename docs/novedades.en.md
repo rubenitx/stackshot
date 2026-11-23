@@ -11,6 +11,7 @@ Format: one `## X.Y.Z` section per version and, in it, one line per item: `- **T
 - **German, complete.** German now covers the whole app: capture, editor, recording, the mascot, Home, history and reports.
 - **Korean interface.** Choose 한국어 under Settings › General › Appearance › Language. Thanks to @Hobeom for the translation.
 - **New language picker.** Search languages by name or code; each one says its translation is complete.
+- **More languages, coming soon.** The language picker now says that more interface languages are on the way.
 - **Automatic language and a one-time offer.** Automatic follows the Windows language (Spanish, English, German or Korean). If you already used Stackshot in Spanish on a Windows in another language, you are offered the matching language once; if you do not accept, nothing changes.
 - **Sensitive data covered in any language.** Finding and covering the sensitive data in a capture works the same whatever the interface language is.
 

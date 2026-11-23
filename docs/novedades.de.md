@@ -11,6 +11,7 @@ Format: ein Abschnitt `## X.Y.Z` pro Version und darin eine Zeile pro Neuerung: 
 - **Deutsch, vollständig.** Deutsch deckt jetzt die ganze App ab: Aufnahme, Editor, Aufzeichnung, das Maskottchen, Startseite, Verlauf und Berichte.
 - **Oberfläche auf Koreanisch.** Wähle 한국어 unter Einstellungen › Allgemein › Erscheinungsbild › Sprache. Danke an @Hobeom für die Übersetzung.
 - **Neue Sprachauswahl.** Suche Sprachen nach Name oder Code; jede zeigt, dass ihre Übersetzung vollständig ist.
+- **Bald mehr Sprachen.** Die Sprachauswahl weist darauf hin, dass weitere Oberflächensprachen in Vorbereitung sind.
 - **Automatische Sprache und ein einmaliges Angebot.** Automatisch folgt der Windows-Sprache (Spanisch, Englisch, Deutsch oder Koreanisch). Wenn du Stackshot schon auf Spanisch benutzt hast und Windows in einer anderen Sprache läuft, wird dir die passende Sprache einmal angeboten; wenn du nicht zustimmst, ändert sich nichts.
 - **Sensible Daten in jeder Sprache abgedeckt.** Sensible Daten in einer Aufnahme zu finden und abzudecken funktioniert gleich, egal welche Oberflächensprache eingestellt ist.
 

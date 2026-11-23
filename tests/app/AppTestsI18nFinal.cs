@@ -79,6 +79,10 @@ namespace Stackshot.Tests
             T("backdrop-slider-help-follows-the-language", BackdropSliderHelpFollowsTheLanguage);
             T("korean-names-the-media-keys", KoreanNamesTheMediaKeys);
             T("last-audit-screens-as-pictures", Pictures);
+            T("picker-shows-more-languages-note", PickerShowsMoreLanguagesNote);
+            T("news-mentions-more-languages", NewsMentionsMoreLanguages);
+            T("fresh-install-is-automatic", FreshInstallIsAutomatic);
+            T("picker-note-as-pictures", PickerNotePictures);
         }
 
         static string[] AllLanguages { get { return AppTestsI18nLayout.AllLanguages; } }
@@ -1463,6 +1467,240 @@ namespace Stackshot.Tests
             });
             InLanguage("en", delegate { Same("Mute", Hotkeys.KeyName(System.Windows.Forms.Keys.VolumeMute), "English mute"); });
             InLanguage("de", delegate { Same("Stumm", Hotkeys.KeyName(System.Windows.Forms.Keys.VolumeMute), "German mute"); });
+        }
+
+        // ---- T30: the language picker says that more languages are coming, and the news say it too.
+
+        static readonly Dictionary<string, string> SoonNote = new Dictionary<string, string>
+        {
+            { "es", "Pronto habr\u00E1 m\u00E1s idiomas." },
+            { "en", "More languages are coming soon." },
+            { "de", "Weitere Sprachen folgen bald." },
+            { "ko", "\uB354 \uB9CE\uC740 \uC5B8\uC5B4\uAC00 \uACE7 \uCD94\uAC00\uB429\uB2C8\uB2E4." }
+        };
+
+        static object FieldOf(object o, string name)
+        {
+            FieldInfo f = o.GetType().GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
+            Check(f != null, o.GetType().Name + " has no field " + name);
+            return f.GetValue(o);
+        }
+
+        static TextBlock NoteText(LanguagePicker picker)
+        {
+            Border note = FieldOf(picker, "note") as Border;
+            Check(note != null, "the picker keeps its note");
+            TextBlock found = null;
+            AppTestsI18n.Walk(note, new HashSet<DependencyObject>(), d => { if (d is TextBlock && found == null) found = (TextBlock)d; });
+            Check(found != null, "the note has its text");
+            return found;
+        }
+
+        static Rect Where(FrameworkElement e, FrameworkElement root) { return e.TransformToAncestor(root).TransformBounds(new Rect(0, 0, e.ActualWidth, e.ActualHeight)); }
+
+        static void LayPicker(LanguagePicker picker, Size size)
+        {
+            FrameworkElement root = (FrameworkElement)picker.Content;
+            root.Measure(size);
+            root.Arrange(new Rect(size));
+            root.UpdateLayout();
+        }
+
+        // Under the list and above Cancel / Apply sits a quiet note (not a toast, not a row): it names no language, it is
+        // there in every shown language, it is no row and nothing to pick or to find, it stays while the search filters the
+        // list, it reads as one line (two at the narrowest work area) aligned with the rows, and screen readers get its text.
+        public static void PickerShowsMoreLanguagesNote()
+        {
+            foreach (string lang in new[] { "es", "en", "de", "ko" })
+                InLanguage(lang, delegate
+                {
+                    string want = SoonNote[lang];
+                    LanguagePicker picker = NewPicker("auto");
+                    try
+                    {
+                        Check(AppTestsI18n.Strings(picker.Content).Contains(want), lang + ": the picker lacks <" + Show(want) + ">");
+                        ListBox list = (ListBox)FieldOf(picker, "list");
+                        TextBox search = (TextBox)FieldOf(picker, "search");
+                        Same("auto,es,en,de,ko", string.Join(",", list.Items.Cast<ListBoxItem>().Select(i => (string)i.Tag).ToArray()), lang + " rows: the note is no language");
+                        Check(list.Items.Cast<ListBoxItem>().All(i => !AppTestsI18n.Strings(i).Contains(want)), lang + ": the note sits inside a row");
+                        Same("auto", (string)((ListBoxItem)list.SelectedItem).Tag, lang + " opens on Automatic");
+
+                        TextBlock text = NoteText(picker);
+                        Border note = (Border)FieldOf(picker, "note");
+                        Check(!note.Focusable && !text.Focusable, lang + ": the note can be picked");
+                        Check(System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(text).GetName() == want, lang + ": a screen reader does not get the text");
+
+                        foreach (string q in new[] { want, want.Split(' ')[0], "soon", "bald", "pronto", "\uACE7" })
+                        {
+                            Check(I18n.FilterLanguages(q).Count == 0, lang + ": searching '" + Show(q) + "' finds a language");
+                            search.Text = q;
+                            Check(list.Items.Count == 0, lang + ": searching '" + Show(q) + "' lists rows");
+                            Check(AppTestsI18n.Strings(picker.Content).Contains(want), lang + ": the note left while searching '" + Show(q) + "'");
+                        }
+                        search.Text = "de";
+                        Check(list.Items.Count == 1 && AppTestsI18n.Strings(picker.Content).Contains(want), lang + ": the note stays while the search filters");
+                        search.Text = "";
+
+                        foreach (double width in new[] { 1920.0, 320.0 })
+                        {
+                            Size size = LanguagePicker.Preferred(width, 1080);
+                            LayPicker(picker, size);
+                            FrameworkElement root = (FrameworkElement)picker.Content;
+                            Rect n = Where(note, root), rows = Where(list, root), apply = Where((FrameworkElement)FieldOf(picker, "apply"), root);
+                            Check(n.Left >= 0 && n.Right <= size.Width && n.Bottom <= size.Height && n.Height > 16, lang + " @" + width + ": the note is cut: " + n);
+                            Check(rows.Bottom <= n.Top + 0.5 && n.Bottom <= apply.Top + 0.5, lang + " @" + width + ": the note overlaps the list or the buttons: " + n + " / " + rows + " / " + apply);
+                            Check(text.ActualHeight <= text.FontSize * 1.8 * (width > 400 ? 1 : 2) && text.ActualWidth > 0, lang + " @" + width + ": the note is too tall (" + text.ActualHeight + ")");
+                            Rect ring = Where((FrameworkElement)((ListBoxItem)list.Items[0]).Content, root);
+                            Check(Math.Abs(ring.Left - n.Left) < 1.5 && Math.Abs(ring.Right - n.Right) < 1.5, lang + " @" + width + ": the note is not aligned with the rows: " + n + " vs " + ring);
+                        }
+                    }
+                    finally { picker.Close(); }
+                });
+        }
+
+        static string Section(string md, string version)
+        {
+            return Regex.Match(md, "^## " + Regex.Escape(version) + @"\s*$(.*?)(?=^## |\z)", RegexOptions.Multiline | RegexOptions.Singleline).Groups[1].Value;
+        }
+
+        // "More languages are on the way" is one 2.2.2 news line in each of the four news files and in the changelog, as the
+        // same meaning, and names none of the languages that are not on offer yet.
+        public static void NewsMentionsMoreLanguages()
+        {
+            string root = AppTestsI18nCoverage.RepoRoot();
+            Dictionary<string, string> titles = new Dictionary<string, string>
+            {
+                { "novedades.md", "**M\u00E1s idiomas, muy pronto.**" },
+                { "novedades.en.md", "**More languages, coming soon.**" },
+                { "novedades.de.md", "**Bald mehr Sprachen.**" },
+                { "novedades.ko.md", "**\uB354 \uB9CE\uC740 \uC5B8\uC5B4, \uACE7 \uB9CC\uB098\uC694.**" }
+            };
+            string[] hidden = { "French", "Fran\u00E7ais", "Franc\u00E9s", "Franz\u00F6sisch", "\uD504\uB791\uC2A4\uC5B4", "Portug", "Portugi", "\uD3EC\uB974\uD22C\uAC08",
+                                "Chin", "\u4E2D\u6587", "Mandarin", "\uC911\uAD6D\uC5B4", "Hindi", "\uD78C\uB514", "Arab", "\u0627\u0644\u0639\u0631\u0628\u064A\u0629", "\u00C1rabe", "\uC544\uB78D", "Bengal", "\u09AC\u09BE\u0982\u09B2\u09BE", "\uBCB5\uACE8" };
+            foreach (KeyValuePair<string, string> f in titles)
+            {
+                string md = File.ReadAllText(Path.Combine(root, "docs", f.Key), Encoding.UTF8);
+                string[] lines = Section(md, "2.2.2").Replace("\r", "").Split('\n').Where(l => l.StartsWith("- " + f.Value + " ", StringComparison.Ordinal)).ToArray();
+                Check(lines.Length == 1, f.Key + ": 2.2.2 has " + lines.Length + " lines titled " + f.Value);
+                foreach (string h in hidden)
+                    Check(lines[0].IndexOf(h, StringComparison.OrdinalIgnoreCase) < 0, f.Key + ": the line names " + h);
+            }
+            string log = File.ReadAllText(Path.Combine(root, "CHANGELOG.md"), Encoding.UTF8);
+            string unreleased = Regex.Match(log, @"^## (?:Unreleased|2\.2\.2)\s*$(.*?)(?=^## |\z)", RegexOptions.Multiline | RegexOptions.Singleline).Groups[1].Value;
+            string[] more = unreleased.Replace("\r", "").Split('\n').Where(l => l.StartsWith("- **More languages", StringComparison.Ordinal)).ToArray();
+            Check(more.Length == 1, "CHANGELOG Unreleased/2.2.2 has " + more.Length + " 'More languages' lines");
+            foreach (string h in hidden) Check(more[0].IndexOf(h, StringComparison.OrdinalIgnoreCase) < 0, "CHANGELOG names " + h);
+        }
+
+        // A new install (no settings.ini) is on Automatic: it loads, saves and reloads Language = auto, follows the Windows
+        // display language, and the picker opens on Automatic. An old file with no Language line keeps the Spanish it had
+        // (ExistingUsers in AppTestsI18n, and the one-time offer in AppTestsI18n's offer test).
+        public static void FreshInstallIsAutomatic()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "t30-fresh-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            System.Globalization.CultureInfo was = System.Threading.Thread.CurrentThread.CurrentUICulture;
+            try
+            {
+                string none = Path.Combine(dir, "settings.ini");
+                Settings fresh = Settings.Load(none);
+                Same("auto", fresh.Language, "a new install's Language");
+                Check(!fresh.LanguageOffered, "a new install has not been offered a language");
+                typeof(Settings).GetMethod("Write", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(Policy.ForFile(fresh), new object[] { none });
+                Check(Regex.IsMatch(File.ReadAllText(none, Encoding.UTF8), @"^Language = auto\r?$", RegexOptions.Multiline), "a new install saves Language = auto");
+                Same("auto", Settings.Load(none).Language, "the saved file reads back as Automatic");
+                string[][] windows = { new[] { "es-ES", "es" }, new[] { "es-MX", "es" }, new[] { "de-DE", "de" }, new[] { "ko-KR", "ko" },
+                                       new[] { "en-US", "en" }, new[] { "en-GB", "en" }, new[] { "fr-FR", "en" }, new[] { "ja-JP", "en" } };
+                foreach (string[] w in windows)
+                {
+                    System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(w[0]);
+                    I18n.Apply(Settings.Load(none).Language);
+                    Same("auto", I18n.Mode, w[0] + " mode");
+                    Same(w[1], I18n.Language, "Windows in " + w[0]);
+                    LanguagePicker picker = NewPicker(Settings.Load(none).Language);
+                    try
+                    {
+                        ListBox list = (ListBox)FieldOf(picker, "list");
+                        Same("auto", (string)((ListBoxItem)list.SelectedItem).Tag, w[0] + ": the picker opens on Automatic");
+                        Check(AutomationName(list.SelectedItem).Contains(I18n.T("Actual", "Current", "Aktuell")), w[0] + ": Automatic is marked as the current one");
+                    }
+                    finally { picker.Close(); }
+                }
+            }
+            finally
+            {
+                System.Threading.Thread.CurrentThread.CurrentUICulture = was;
+                I18n.Apply("es");
+                try { Directory.Delete(dir, true); } catch (Exception) { }
+            }
+        }
+
+        static string AutomationName(object item) { return System.Windows.Automation.AutomationProperties.GetName((DependencyObject)item) ?? ""; }
+
+        static HcColors HighContrastBlack()
+        {
+            Func<int, Color> c = v => Color.FromRgb((byte)(v >> 16), (byte)(v >> 8), (byte)v);
+            HcColors h = new HcColors();
+            h.Window = c(0x000000); h.WindowText = c(0xFFFFFF); h.ButtonFace = c(0x000000); h.ButtonText = c(0xFFFFFF);
+            h.Highlight = c(0x1AEBFF); h.HighlightText = c(0x000000); h.HotTrack = c(0xFFFF00); h.GrayText = c(0x3FF23F);
+            return h;
+        }
+
+        // The note pictured: es, en, de, ko in light, Korean in dark and in a contrast theme; with STACKSHOT_UI_SHOTS set the
+        // sheets are saved as PNG, and the note's colours follow the theme either way.
+        public static void PickerNotePictures()
+        {
+            string dir = Environment.GetEnvironmentVariable("STACKSHOT_UI_SHOTS");
+            int saved = (int)typeof(Ds).GetField("mode", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+            string[][] shots = { new[] { "es", "1" }, new[] { "en", "1" }, new[] { "de", "1" }, new[] { "ko", "1" }, new[] { "ko", "2" }, new[] { "en", "3" }, new[] { "ko", "3" } };
+            try
+            {
+                foreach (string[] s in shots)
+                {
+                    int theme = int.Parse(s[1]);
+                    HighContrast.Fake = theme == 3 ? HighContrastBlack() : null;
+                    HighContrast.Force = theme == 3 ? 1 : -1;
+                    Ds.Apply(theme == 2 ? 2 : 1);
+                    I18n.Apply(s[0]);
+                    LanguagePicker picker = NewPicker("auto");
+                    try
+                    {
+                        Palette pal = Ds.Brushes;
+                        Check(pal.High == (theme == 3), "the theme is on");
+                        TextBlock text = NoteText(picker);
+                        Check(((SolidColorBrush)text.Foreground).Color == pal.Label2, s[0] + "/" + s[1] + ": the note's text is the secondary colour");
+                        Border note = (Border)FieldOf(picker, "note");
+                        SolidColorBrush fill = note.Background as SolidColorBrush;
+                        if (pal.High) Check(fill == null || fill.Color.A == 0, "a contrast theme has no tint");
+                        else Check(fill != null && fill.Color.A > 0 && fill.Color.A < 60, s[0] + "/" + s[1] + ": a soft tint, not a block");
+                        Check(note.BorderBrush is SolidColorBrush && ((SolidColorBrush)note.BorderBrush).Color.A > 0, "the note has an edge");
+                        if (!string.IsNullOrEmpty(dir))
+                        {
+                            Directory.CreateDirectory(dir);
+                            FrameworkElement root = (FrameworkElement)picker.Content;
+                            Size size = LanguagePicker.Preferred(1920, 1080);
+                            LayPicker(picker, size);
+                            DrawingVisual dv = new DrawingVisual();
+                            using (DrawingContext dc = dv.RenderOpen())
+                            {
+                                dc.DrawRectangle(Ds.Brush(pal.Window), null, new Rect(size));
+                                dc.DrawRectangle(new VisualBrush(root), null, new Rect(size));
+                            }
+                            RenderTargetBitmap rtb = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96, 96, PixelFormats.Pbgra32);
+                            rtb.Render(dv);
+                            SavePng(rtb, "t30-picker-" + s[0] + (theme == 2 ? "-dark" : theme == 3 ? "-contrast" : "-light") + ".png");
+                        }
+                    }
+                    finally { picker.Close(); }
+                }
+            }
+            finally
+            {
+                HighContrast.Force = 0;
+                HighContrast.Fake = null;
+                Ds.Apply(saved);
+                I18n.Apply("es");
+            }
         }
 
         // ---- Pictures: with STACKSHOT_UI_SHOTS set to a folder, the screens this audit touched are saved there as PNG.

@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 2.2.2
 
 - **Language picker.** Under Settings › General › Appearance › Language, search by name or code and choose Auto, Español, English, Deutsch or 한국어, each marked as complete.
+- **More languages, coming soon.** The language picker shows a calm note under the list, in the interface language (Spanish, English, German and Korean), that more interface languages are on the way; it is not a row and does not appear in search.
 - **English interface.** Stackshot follows the Windows language: English on an English Windows, and English can be chosen under Settings › General › Appearance › Language. Contributed by @altmashnaveed (PR #12).
 - **Korean interface.** Select 한국어 in the language picker or use Automatic on Korean Windows. Existing language preferences are preserved. Contributed by @Hobeom (PR #30).
 - **German, complete.** The German interface that arrived with PR #13 (by Aamer Shahzad) now covers the whole app: capture and the area picker, the editor, recording and the video tools, the desktop mascot included, the Home window, history, reports and the Markdown and XML viewers. Notices keep their kind in every language (their kind comes from the text's key, not from the words of one language), a document that is not UTF-8 is rescued the same in all languages, and shown numbers use each language's own thousands and decimal marks. The in-app news come in the interface language (Spanish, English, German and Korean).

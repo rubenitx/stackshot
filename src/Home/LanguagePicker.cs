@@ -16,6 +16,7 @@ namespace Stackshot
         readonly TextBox search;
         readonly ListBox list;
         readonly TextBlock empty;
+        readonly Border note;
         readonly MacButton apply;
         string picked;
 
@@ -87,6 +88,7 @@ namespace Stackshot
             layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             layout.RowDefinitions.Add(new RowDefinition());
             layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             Root.Children.Add(layout);
 
             var header = new StackPanel();
@@ -156,6 +158,27 @@ namespace Stackshot
             Grid.SetRow(results, 1);
             layout.Children.Add(results);
 
+            // A calm line, not a toast: the languages still to come, in the picker's own language, aligned with the rows'
+            // rings. It is no row (nothing to pick, search or focus); a contrast theme drops the tint and keeps the edge.
+            string soon = I18n.T("Pronto habr\u00E1 m\u00E1s idiomas.", "More languages are coming soon.", "Weitere Sprachen folgen bald.");
+            var noteRow = new Grid();
+            noteRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            noteRow.ColumnDefinitions.Add(new ColumnDefinition());
+            noteRow.Children.Add(new GlyphView("globe", 15, pal.Link, 1.5) { Margin = new Thickness(0, 0, 9, 0), VerticalAlignment = VerticalAlignment.Center });
+            var noteText = new TextBlock { Text = soon, FontSize = 12.5, TextWrapping = TextWrapping.Wrap, Foreground = Ds.Brush(pal.Label2), VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(noteText, 1);
+            noteRow.Children.Add(noteText);
+            note = new Border
+            {
+                Margin = new Thickness(P(RowInset), P(6), P(RowInset), 0), Padding = new Thickness(13, 9, 13, 9),
+                CornerRadius = new CornerRadius(Ds.RPanel), SnapsToDevicePixels = true, Focusable = false, Child = noteRow,
+                Background = pal.High ? null : Ds.Brush(Ds.Argb(pal.Dark ? 0.12 : 0.07, pal.Accent.R, pal.Accent.G, pal.Accent.B)),
+                BorderBrush = pal.High ? Ds.Brush(pal.Hairline) : Ds.Brush(Ds.Argb(pal.Dark ? 0.20 : 0.14, pal.Accent.R, pal.Accent.G, pal.Accent.B)),
+                BorderThickness = new Thickness(1)
+            };
+            Grid.SetRow(note, 2);
+            layout.Children.Add(note);
+
             var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 12, 0, 0) };
             // The custom buttons draw their own text. Keep their drawing coordinates
             // left-to-right so WPF mirrors their placement without mirroring the glyphs.
@@ -166,7 +189,7 @@ namespace Stackshot
             apply.Click += Commit;
             actions.Children.Add(cancel);
             actions.Children.Add(apply);
-            Grid.SetRow(actions, 2);
+            Grid.SetRow(actions, 3);
             layout.Children.Add(actions);
 
             list.SelectionChanged += delegate { apply.IsEnabled = list.SelectedItem != null; };

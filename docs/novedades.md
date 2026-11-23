@@ -11,6 +11,7 @@ Formato: una sección `## X.Y.Z` por versión y, en ella, una línea por novedad
 - **Alemán completo.** El alemán cubre ya toda la aplicación: captura, editor, grabación, la mascota, Inicio, el historial y los informes.
 - **Interfaz en coreano.** Elige 한국어 en Ajustes › General › Apariencia › Idioma. Gracias a @Hobeom por la traducción.
 - **Selector de idioma nuevo.** Busca el idioma por nombre o por código; cada uno indica que su traducción está completa.
+- **Más idiomas, muy pronto.** El selector de idioma avisa de que se están preparando más idiomas para la interfaz.
 - **Idioma automático y una oferta única.** El modo automático sigue el idioma de Windows (español, inglés, alemán o coreano). Si ya usabas Stackshot en español en un Windows en otro idioma, se te ofrece una sola vez el idioma que corresponde; si no aceptas, no cambia nada.
 - **Datos sensibles tapados en cualquier idioma.** Detectar y tapar los datos sensibles de una captura funciona igual sea cual sea el idioma de la interfaz.
 
