@@ -168,7 +168,7 @@ namespace Stackshot.Tests
             Check(twice.Count == 0, twice.Count + " Korean keys are registered twice with different values");
         }
 
-        // A notice title has one line of the toast, 268 px at 100 %: a longer one ends in an ellipsis and loses its end.
+        // A notice title has one line of the toast, 268 px at 100 % (and its share at every scale): a longer one ends in an ellipsis and loses its end.
         public static void NoticeTitlesFitTheirLine()
         {
             List<AppTestsI18nCoverage.TitleSite> sites = AppTestsI18nCoverage.NoticeTitleSites();
@@ -181,8 +181,9 @@ namespace Stackshot.Tests
                 {
                     string title = s.Fmt ? string.Format(CultureInfo.InvariantCulture, I18n.T(s.Es, s.En), new object[] { "Stackshot", "2", "3" }) :
                                    s.De != null ? I18n.T(s.Es, s.En, s.De) : I18n.T(s.Es, s.En);
-                    if (ToastLook.For(new Notice(title, "", NoticeKind.Info), 1f).TitleClipped)
-                        cut.Add(lang + " " + s.Where + ": " + Regex.Replace(title, "[^\\x20-\\x7e]", "?"));
+                    foreach (float scale in new[] { 1f, 1.25f, 1.5f, 2f })
+                        if (ToastLook.For(new Notice(title, "", NoticeKind.Info), scale).TitleClipped)
+                            cut.Add(lang + " " + s.Where + " at " + (int)(scale * 100) + " %: " + Regex.Replace(title, "[^\\x20-\\x7e]", "?"));
                 }
             }
             foreach (string c in cut) Console.WriteLine("    cut: " + c);
