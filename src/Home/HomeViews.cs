@@ -299,7 +299,7 @@ namespace Stackshot
 
             if (settings.MascotOn)
             {
-                MacButton chips = new MacButton(I18n.Fmt("Jugar con {0}", "Play with {0}", settings.MascotName), ButtonKind.Plain, "play", null, 26);
+                MacButton chips = new MacButton(MascotTalk.PlayWith(settings.MascotName), ButtonKind.Plain, "play", null, 26);
                 chips.ToolTip = I18n.Fmt("P\u00EDdele algo a {0}", "Ask {0} something", settings.MascotName);
                 chips.HorizontalAlignment = HorizontalAlignment.Center;
                 chips.Margin = new Thickness(0, 12, 0, 0);
@@ -734,7 +734,7 @@ namespace Stackshot
 
             TextBox box = new TextBox
             {
-                MaxLength = 16, MinWidth = 60, Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Center,
+                MinWidth = 60, Visibility = Visibility.Collapsed, VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = centred ? HorizontalAlignment.Center : HorizontalAlignment.Left,
                 FontFamily = face.FontFamily, FontWeight = face.Weight, FontSize = size, Padding = new Thickness(4, 0, 4, 1),
                 Margin = new Thickness(0),
@@ -743,6 +743,7 @@ namespace Stackshot
                 Background = Ds.Brush(pal.Control), BorderBrush = Ds.Brush(Ds.WithAlpha(pal.Accent, 0.85)), BorderThickness = new Thickness(0, 0, 0, 1.5),
                 Template = HomeFieldTemplate()
             };
+            MascotName.Guard(box);
             slot.Children.Add(box);
             System.Windows.Automation.AutomationProperties.SetName(box, I18n.T("Nombre de la mascota", "Mascot name"));
 
@@ -810,12 +811,7 @@ namespace Stackshot
         // Saves the new name (empty means Pixel) and lets the mascot say it.
         void HomeRename(string typed, TextBlock shown)
         {
-            System.Text.StringBuilder b = new System.Text.StringBuilder();
-            foreach (char c in typed ?? "") if (!char.IsControl(c)) b.Append(c);
-            string v = b.ToString().Trim();
-            if (v.Length > 16) v = v.Substring(0, 16);
-            if (v.Length > 0 && char.IsHighSurrogate(v[v.Length - 1])) v = v.Substring(0, v.Length - 1);   // never half an emoji
-            v = v.Trim();
+            string v = MascotName.Clean(typed);
             if (v.Length == 0) v = "Pixel";
             if (shown != null) shown.Text = v;
             if (v == settings.MascotName) return;
@@ -1417,7 +1413,7 @@ namespace Stackshot
                 host.Margin = new Thickness(left, 0, 0, bottom);
                 stage.Children.Add(host);
                 UseMascot(host);
-                MacButton play = new MacButton(I18n.Fmt("Jugar con {0}", "Play with {0}", settings.MascotName), ButtonKind.Plain, "play", null, 26);
+                MacButton play = new MacButton(MascotTalk.PlayWith(settings.MascotName), ButtonKind.Plain, "play", null, 26);
                 play.ToolTip = I18n.Fmt("P\u00EDdele algo a {0}", "Ask {0} something", settings.MascotName);
                 play.Click += delegate { CommandMenu(play); };
                 play.HorizontalAlignment = HorizontalAlignment.Left;

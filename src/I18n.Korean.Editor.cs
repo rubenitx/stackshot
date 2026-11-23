@@ -217,8 +217,8 @@ namespace Stackshot
             map["Could not play the video."] = "\uB3D9\uC601\uC0C1\uC744 \uC7AC\uC0DD\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
 
             // PlayerKit
-            map["100 % (actual size: 1 video pixel = 1 screen pixel)"] = "100%(\uC2E4\uC81C \uD06C\uAE30: \uC601\uC0C1 1\uD53D\uC140 = \uD654\uBA74 1\uD53D\uC140)";
-            map[" % (scaled to fill window)"] = "%(\uCC3D \uD06C\uAE30\uC5D0 \uB9DE\uCDA4)";
+            map["100 % (actual size: 1 video pixel = 1 screen pixel)"] = "100% (\uC2E4\uC81C \uD06C\uAE30: \uC601\uC0C1 1\uD53D\uC140 = \uD654\uBA74 1\uD53D\uC140)";
+            map[" % (scaled to fill window)"] = "% (\uCC3D \uD06C\uAE30\uC5D0 \uB9DE\uCDA4)";
             map["window is smaller than video: maximize or press F"] = "\uCC3D\uC774 \uC601\uC0C1\uBCF4\uB2E4 \uC791\uC2B5\uB2C8\uB2E4. \uCD5C\uB300\uD654\uD558\uAC70\uB098 F\uB97C \uB204\uB974\uC138\uC694";
             map["video is larger than screen"] = "\uC601\uC0C1\uC774 \uD654\uBA74\uBCF4\uB2E4 \uD07D\uB2C8\uB2E4";
             map["File"] = "\uD30C\uC77C";

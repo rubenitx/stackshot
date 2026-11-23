@@ -379,7 +379,7 @@ namespace Stackshot
             string label;
             Color ink;
             if (s == null) { label = states == null ? I18n.T("Enviado", "Sent") : I18n.T("No disponible", "Not available"); ink = pal.Label2; }
-            else if (s.Open) { label = I18n.T("Abierto", "Open"); ink = pal.High ? pal.Label : pal.Accent; }
+            else if (s.Open) { label = OpenStatus; ink = pal.High ? pal.Label : pal.Accent; }
             else if (s.Reason == "completed") { label = e.Idea ? I18n.T("Hecho", "Done") : I18n.T("Arreglado", "Fixed"); ink = pal.High ? pal.Label : pal.Green; }
             else if (s.Reason == "duplicate") { label = I18n.T("Repetido", "Duplicate"); ink = pal.Label2; }
             else if (s.Reason == "not_planned") { label = I18n.T("Descartado", "Discarded"); ink = pal.Label2; }
@@ -596,10 +596,13 @@ namespace Stackshot
             return machine;
         }
 
-        static string WindowsVersion()
+        // A report that is still waiting. Not the verb "Abrir" / "Open" / "\u00D6ffnen" / "\uC5F4\uAE30" the catalog gives for the word.
+        internal static string OpenStatus { get { return I18n.Own("Abierto", "Open", "Offen", "\uC9C4\uD589 \uC911"); } }
+
+        internal static string WindowsVersion()
         {
             Version v = Environment.OSVersion.Version;
-            return v.Major + "." + v.Minor + "." + v.Build + (Environment.Is64BitOperatingSystem ? " (64 bits)" : "");
+            return v.Major + "." + v.Minor + "." + v.Build + (Environment.Is64BitOperatingSystem ? I18n.Own(" (64 bits)", " (64-bit)", " (64-Bit)", " (64\uBE44\uD2B8)") : "");
         }
 
         static string Screens()

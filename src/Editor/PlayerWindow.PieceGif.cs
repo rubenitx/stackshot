@@ -158,7 +158,7 @@ namespace Stackshot
             try
             {
                 Directory.CreateDirectory(dir);
-                output = ShotStack.Reserve(Path.Combine(dir, Path.GetFileNameWithoutExtension(path) + " (tramo).gif"));
+                output = ShotStack.Reserve(Path.Combine(dir, Path.GetFileNameWithoutExtension(path) + ExportName.Clip + ".gif"));
             }
             catch (Exception ex)
             {
@@ -261,7 +261,7 @@ namespace Stackshot
             string kept = output;
             try
             {
-                kept = ShotStack.Unique(Path.Combine(Path.GetDirectoryName(output), Path.GetFileNameWithoutExtension(output) + " (sin validar)" + Path.GetExtension(output)));
+                kept = ShotStack.Unique(Path.Combine(Path.GetDirectoryName(output), Path.GetFileNameWithoutExtension(output) + ExportName.Unverified + Path.GetExtension(output)));
                 File.Move(output, kept);
             }
             catch (Exception ex) { kept = output; ShotStack.Log("Reproductor: no se pudo renombrar: " + ex.Message); }

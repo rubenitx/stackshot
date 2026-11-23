@@ -283,10 +283,10 @@ namespace Stackshot
             reg("You can retry or open on GitHub.", "Puedes reintentarlo o abrirlo en GitHub.", "Du kannst es erneut versuchen oder auf GitHub \u00F6ffnen.");
             reg("Tell us what happened", "Cu\u00E9ntanos qu\u00E9 pasa", "Erz\u00E4hl uns, was passiert ist");
             reg("Type a title and {0}.", "Escribe un t\u00EDtulo y {0}.", "Schreib einen Titel und {0}.");
-            reg("Title needs {0} more.", "El t\u00EDtulo necesita {0} m\u00E1s.", "Dem Titel fehlen noch {0}.");
+            reg("Title needs {0} more.", "El t\u00EDtulo necesita {0} m\u00E1s.", "Der Titel braucht noch {0}.");
             reg("{0} needs {1} more.", "{0} necesita {1} m\u00E1s.", "{0} braucht noch {1}.");
             reg("minimum {0} characters", "m\u00EDnimo {0} letras", "mindestens {0} Zeichen");
-            reg("1 letter", "1 letra", "1 Buchstabe");
+            reg("1 letter", "1 letra", "1 Buchstaben");
             reg("{0} letters", "{0} letras", "{0} Buchstaben");
             reg("Discard report?", "\u00BFDescartar el reporte?", "Meldung verwerfen?");
             reg("Your report is number {0}. Under \u201CMy reports\u201D you will see its progress and replies, right here with no account.",
@@ -313,13 +313,13 @@ namespace Stackshot
             reg("Mark as pending", "Marcar como pendiente", "Als offen markieren");
             reg("Not available", "No disponible", "Nicht verf\u00FCgbar");
             reg("Could not capture", "No se pudo capturar", "Es konnte nicht aufgenommen werden");
-            reg("Could not {0} ({1}).", "No se pudo {0} ({1}).", "{0} fehlgeschlagen ({1}).");
-            reg("Could not {0}. ", "No se pudo {0}. ", "{0} schlug fehl. ");
-            reg("Could not {0}. Will try again later.", "No se pudo {0}. Se volver\u00E1 a intentar m\u00E1s tarde.", "{0} war nicht m\u00F6glich. Es wird sp\u00E4ter erneut versucht.");
-            reg("Could not {0} (error {1}).", "No se pudo {0} (error {1}).", "{0} fehlgeschlagen (Fehler {1}).");
-            reg("The network proxy does not let Stackshot {0}.", "El proxy de la red no deja {0}.", "Der Netzwerk-Proxy l\u00E4sst Stackshot {0} nicht zu.");
-            reg("download the update", "descargar la actualizaci\u00F3n", "das Herunterladen des Updates");
-            reg("check GitHub", "consultar GitHub", "das \u00DCberpr\u00FCfen von GitHub");
+            reg("Could not {0} ({1}).", "No se pudo {0} ({1}).", "Beim {0} ist ein Fehler aufgetreten ({1}).");
+            reg("Could not {0}. ", "No se pudo {0}. ", "Beim {0} ist ein Fehler aufgetreten. ");
+            reg("Could not {0}. Will try again later.", "No se pudo {0}. Se volver\u00E1 a intentar m\u00E1s tarde.", "Beim {0} ist ein Fehler aufgetreten. Es wird sp\u00E4ter erneut versucht.");
+            reg("Could not {0} (error {1}).", "No se pudo {0} (error {1}).", "Beim {0} ist ein Fehler aufgetreten (Fehler {1}).");
+            reg("The network proxy does not let Stackshot {0}.", "El proxy de la red no deja {0}.", "Der Netzwerk-Proxy blockiert Stackshot beim {0}.");
+            reg("download the update", "descargar la actualizaci\u00F3n", "Herunterladen des Updates");
+            reg("check GitHub", "consultar GitHub", "Abfragen von GitHub");
             reg("Failed to open the file. Try again; if it recurs, the Stackshot log has the details.",
                 "Ha fallado al abrir el archivo. Vuelve a intentarlo; si se repite, el registro de Stackshot tiene los detalles.",
                 "Die Datei lie\u00DF sich nicht \u00F6ffnen. Versuch es erneut; wenn es wieder passiert, stehen die Details im Stackshot-Protokoll.");

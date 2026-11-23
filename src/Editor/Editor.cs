@@ -1870,7 +1870,7 @@ namespace Stackshot
             // Next to a saved video (kept like it), else with the temporary captures.
             string dir = owner != null ? owner.ExportFolder(path) : Path.GetDirectoryName(path);
             string ext = toGif ? ".gif" : ".mp4";
-            string suffix = IsMaster && !bg && !marks && !cropped && !trimmed && !cuts && !joined ? " (para compartir)" : " (editado)";
+            string suffix = IsMaster && !bg && !marks && !cropped && !trimmed && !cuts && !joined ? ExportName.ForSharing : ExportName.Edited;
             exportOut = ShotStack.Reserve(Path.Combine(dir, Path.GetFileNameWithoutExtension(path) + suffix + ext));
 
             ExportSpec spec = new ExportSpec();
@@ -2124,7 +2124,7 @@ namespace Stackshot
             string kept = exportOut;
             try
             {
-                kept = ShotStack.Unique(Path.Combine(Path.GetDirectoryName(exportOut), Path.GetFileNameWithoutExtension(exportOut) + " (sin validar)" + Path.GetExtension(exportOut)));
+                kept = ShotStack.Unique(Path.Combine(Path.GetDirectoryName(exportOut), Path.GetFileNameWithoutExtension(exportOut) + ExportName.Unverified + Path.GetExtension(exportOut)));
                 File.Move(exportOut, kept);
                 exportOut = kept;
             }

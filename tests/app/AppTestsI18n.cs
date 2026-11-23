@@ -85,6 +85,7 @@ namespace Stackshot.Tests
                 T("numbers-follow-the-interface-language-not-windows", AppTestsI18nLayout.NumbersFollowTheInterfaceLanguage);
                 T("no-number-takes-the-windows-format", AppTestsI18nLayout.NoNumberTakesTheWindowsFormat);
                 T("focus-minutes-are-localized", AppTestsI18nLayout.FocusMinutesAreLocalized);
+                AppTestsI18nFinal.Suite(T);
             }
             finally
             {

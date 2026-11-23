@@ -11,6 +11,13 @@ namespace Stackshot
         static readonly Random rnd = new Random();
         static readonly List<string> recent = new List<string>();
 
+        // The label that opens the mascot's menu: "Jugar con Pixel". Korean says it with \uD558\uACE0, which needs no particle
+        // chosen by how the name ends, so every name reads the same way, in any script.
+        public static string PlayWith(string name)
+        {
+            return I18n.Fmt("Jugar con {0}", "Play with {0}", name);
+        }
+
         static string Pick(string[] lines)
         {
             string line = null;
@@ -452,9 +459,9 @@ namespace Stackshot
             if (I18n.IsKorean)
             {
                 string whatEn = I18n.Localize(kind == WellKind.Water ? "water reminders" : kind == WellKind.Eyes ? "eye rest reminders" : kind == WellKind.Move ? "movement breaks" : "breathing breaks");
-                if (!s.MascotTalks) return string.Format(I18n.Localize("No more {0} today."), whatEn);
-                return By(s.MascotPersonality, new string[] { string.Format(I18n.Localize("Got it! No more {0} today."), whatEn) }, new string[] { string.Format(I18n.Localize("Alright, no more {0} for today."), whatEn) },
-                          new string[] { string.Format(I18n.Localize("Fine, you're off the hook for {0} today."), whatEn) });
+                if (!s.MascotTalks) return I18n.KoreanFormat(I18n.Localize("No more {0} today."), whatEn);
+                return By(s.MascotPersonality, new string[] { I18n.KoreanFormat(I18n.Localize("Got it! No more {0} today."), whatEn) }, new string[] { I18n.KoreanFormat(I18n.Localize("Alright, no more {0} for today."), whatEn) },
+                          new string[] { I18n.KoreanFormat(I18n.Localize("Fine, you're off the hook for {0} today."), whatEn) });
             }
             string what = kind == WellKind.Water ? I18n.T("lo del agua", "water reminders", "Wasser-Erinnerungen")
                         : kind == WellKind.Eyes ? I18n.T("lo de la vista", "eye rest reminders", "Augenpausen")

@@ -105,7 +105,7 @@ namespace Stackshot
             map["Could not check"] = "\uD655\uC778\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4";
             map[" Last checked: {0}."] = " \uB9C8\uC9C0\uB9C9 \uD655\uC778: {0}.";
             map["You're up to date"] = "\uCD5C\uC2E0 \uBC84\uC804\uC785\uB2C8\uB2E4";
-            map["Stackshot {0} is the latest version. Checked {1}."] = "Stackshot {0}\uC774 \uCD5C\uC2E0 \uBC84\uC804\uC785\uB2C8\uB2E4. \uD655\uC778 \uC2DC\uAC01: {1}";
+            map["Stackshot {0} is the latest version. Checked {1}."] = "Stackshot {0}\uC774(\uAC00) \uCD5C\uC2E0 \uBC84\uC804\uC785\uB2C8\uB2E4. \uD655\uC778 \uC2DC\uAC01: {1}";
             map["Check now"] = "\uC9C0\uAE08 \uD655\uC778";
             map["You have version {0}. Not checked for updates yet."] = "\uD604\uC7AC \uBC84\uC804\uC740 {0}\uC785\uB2C8\uB2E4. \uC544\uC9C1 \uC5C5\uB370\uC774\uD2B8\uB97C \uD655\uC778\uD558\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.";
             map["View all release notes"] = "\uBAA8\uB4E0 \uB9B4\uB9AC\uC2A4 \uB178\uD2B8 \uBCF4\uAE30";
@@ -574,7 +574,7 @@ namespace Stackshot
             map[" for an area"] = " \uC601\uC5ED \uC120\uD0DD";
             map[" to stop"] = " \uC911\uC9C0";
             map[" to record"] = " \uB179\uD654";
-            map["Play with {0}"] = "{0}\uC640 \uB180\uAE30";
+            map["Play with {0}"] = "{0}\uD558\uACE0 \uB180\uAE30";
             map["Ask {0} something"] = "{0}\uC5D0\uAC8C \uBB3C\uC5B4\uBCF4\uAE30";
             map["Recent captures"] = "\uCD5C\uADFC \uCEA1\uCC98";
             map["View all"] = "\uC804\uCCB4 \uBCF4\uAE30";

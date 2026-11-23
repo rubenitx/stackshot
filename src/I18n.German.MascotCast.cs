@@ -69,9 +69,9 @@ namespace Stackshot
             reg("A little burst of flame, and the tail burns brighter", "Una peque\u00F1a llamarada, y la cola arde m\u00E1s", "Ein kleiner Feuersto\u00DF, und der Schwanz brennt heller");
             reg("Ohana!", "\u00A1Ohana!", "Ohana!");
             reg("Poyo!", "\u00A1Poyo!", "Poyo!");
-            reg("Eevee!", "\u00A1Eevee!", "Eevee!");
+            reg("Eevee!", "\u00A1Eevee!", "Evoli!");
             reg("Pika pika!", "\u00A1Pika pika!", "Pika pika!");
-            reg("Char!", "\u00A1Char!", "Char!");
+            reg("Char!", "\u00A1Char!", "Glum!");
 
             // Rhythm: what the mascot says at the coffee, before bed and on Friday afternoon.
             reg("A little coffee to get going.", "Un cafecito para empezar.", "Erst mal ein kleiner Kaffee.");

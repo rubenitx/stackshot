@@ -76,7 +76,7 @@ namespace Stackshot
             reg("Move left", null, "Nach links verschieben");
             reg("Move right", null, "Nach rechts verschieben");
             reg("Remove this video", null, "Dieses Video entfernen");
-            reg("Split", null, "Teilen");
+            reg("Split", null, "Aufteilen");
             reg("Remove piece", null, "Abschnitt entfernen");
             reg("+ Video", null, "+ Video");
             reg("Playback error: ", null, "Wiedergabefehler: ");

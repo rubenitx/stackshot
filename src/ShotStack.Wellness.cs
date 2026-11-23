@@ -61,13 +61,21 @@ namespace Stackshot
             else
             {
                 int k = kind;
-                Notify(settings.MascotName + ": " + WellKind.Names[kind].ToLowerInvariant(), text, NoticeKind.Info, I18n.T("Hecho", "Done"), delegate
+                Notify(WellTitle(settings.MascotName, kind), text, NoticeKind.Info, I18n.T("Hecho", "Done"), delegate
                 {
                     string up;
                     int today = WellDone(k, out up);
                     Notify(settings.MascotName, MascotTalk.WellCount(k, today, settings.WaterGoal) + (up != null ? " " + up : ""));
                 });
             }
+        }
+
+        // "Pixel: beber agua": the name of the break after the mascot's. Spanish and English write it in lower case after
+        // the colon; German keeps the capital its nouns have ("Pixel: Wasser trinken").
+        internal static string WellTitle(string name, int kind)
+        {
+            string what = WellKind.Names[kind];
+            return name + ": " + (I18n.IsGerman ? what : what.ToLowerInvariant());
         }
 
         // Not now: Windows asks for quiet (full screen, presenting, quiet time, locked), an area is being picked, a
