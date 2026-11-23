@@ -1586,9 +1586,9 @@ namespace Stackshot.Tests
                     Check(lines[0].IndexOf(h, StringComparison.OrdinalIgnoreCase) < 0, f.Key + ": the line names " + h);
             }
             string log = File.ReadAllText(Path.Combine(root, "CHANGELOG.md"), Encoding.UTF8);
-            string unreleased = Regex.Match(log, @"^## Unreleased\s*$(.*?)(?=^## |\z)", RegexOptions.Multiline | RegexOptions.Singleline).Groups[1].Value;
+            string unreleased = Regex.Match(log, @"^## (?:Unreleased|2\.2\.2)\s*$(.*?)(?=^## |\z)", RegexOptions.Multiline | RegexOptions.Singleline).Groups[1].Value;
             string[] more = unreleased.Replace("\r", "").Split('\n').Where(l => l.StartsWith("- **More languages", StringComparison.Ordinal)).ToArray();
-            Check(more.Length == 1, "CHANGELOG Unreleased has " + more.Length + " 'More languages' lines");
+            Check(more.Length == 1, "CHANGELOG Unreleased/2.2.2 has " + more.Length + " 'More languages' lines");
             foreach (string h in hidden) Check(more[0].IndexOf(h, StringComparison.OrdinalIgnoreCase) < 0, "CHANGELOG names " + h);
         }
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.2.2
 
 - **Language picker.** Under Settings › General › Appearance › Language, search by name or code and choose Auto, Español, English, Deutsch or 한국어, each marked as complete.
 - **More languages, coming soon.** The language picker shows a calm note under the list, in the interface language (Spanish, English, German and Korean), that more interface languages are on the way; it is not a row and does not appear in search.
