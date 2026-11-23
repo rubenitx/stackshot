@@ -399,7 +399,7 @@ namespace Stackshot
             map["Removes temporary captures; saved files are untouched."] = "\uC784\uC2DC \uCEA1\uCC98\uB97C \uC0AD\uC81C\uD569\uB2C8\uB2E4. \uC800\uC7A5\uD55C \uD30C\uC77C\uC740 \uC720\uC9C0\uD569\uB2C8\uB2E4.";
             map["When capturing"] = "\uCEA1\uCC98\uD560 \uB54C";
             map["After selecting an area"] = "\uC601\uC5ED \uC120\uD0DD \uD6C4";
-            map["Direct adds to stack; Adjust first lets you reposition/resize before Enter; Show options lets you pick capture, video, GIF or scroll."] = "\uBC14\uB85C \uCEA1\uCC98\uD558\uBA74 \uC378\uB124\uC77C\uC5D0 \uCD94\uAC00\uD569\uB2C8\uB2E4. \u2018\uCEA1\uCC98 \uC804 \uC870\uC815\u2019\uC5D0\uC11C\uB294 \uC704\uCE58\uC640 \uD06C\uAE30\uB97C \uC870\uC808\uD55C \uB4A4 Enter\uB97C \uB204\uB974\uC138\uC694. \u2018\uC635\uC158 \uD45C\uC2DC\u2019\uC5D0\uC11C\uB294 \uCEA1\uCC98, \uB3D9\uC601\uC0C1, GIF, \uC2A4\uD06C\uB864 \uCEA1\uCC98\uB97C \uC120\uD0DD\uD569\uB2C8\uB2E4.";
+            map["Direct adds to stack; Adjust first lets you reposition/resize before Enter; Show options lets you pick capture, video, GIF or scroll."] = "\uBC14\uB85C \uCEA1\uCC98\uD558\uBA74 \uC378\uB124\uC77C\uC5D0 \uCD94\uAC00\uD569\uB2C8\uB2E4. \u2018\uCEA1\uCC98 \uC804 \uC870\uC815\u2019\uC5D0\uC11C\uB294 \uC704\uCE58\uC640 \uD06C\uAE30\uB97C \uC870\uC808\uD55C \uB4A4 Enter\uB97C \uB204\uB974\uC138\uC694. \u2018\uC635\uC158 \uD45C\uC2DC\u2019\uC5D0\uC11C\uB294 \uCEA1\uCC98, \uB3D9\uC601\uC0C1, GIF \uB179\uD654, \uC2A4\uD06C\uB864 \uCEA1\uCC98\uB97C \uC120\uD0DD\uD569\uB2C8\uB2E4.";
             map["Direct to stack"] = "\uBC14\uB85C \uCEA1\uCC98";
             map["Adjust before capture"] = "\uCEA1\uCC98 \uC804 \uC870\uC815";
             map["Show options"] = "\uC635\uC158 \uD45C\uC2DC";
@@ -477,7 +477,7 @@ namespace Stackshot
             map["Last area"] = "\uB9C8\uC9C0\uB9C9 \uC601\uC5ED";
             map["Full screen"] = "\uC804\uCCB4 \uD654\uBA74";
             map["A window"] = "\uCC3D";
-            map["Animated GIF"] = "\uC6C0\uC9C1\uC774\uB294 GIF";
+            map["Animated GIF"] = "GIF \uB179\uD654";
             map["With timer"] = "\uD0C0\uC774\uBA38 \uC0AC\uC6A9";
             map["Performance"] = "\uC131\uB2A5";
             map["Balanced"] = "\uADE0\uD615";

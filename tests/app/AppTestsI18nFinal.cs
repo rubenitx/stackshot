@@ -41,6 +41,7 @@ namespace Stackshot.Tests
             T("settings-rows-exempt-their-paths", SettingsRowsExemptTheirPaths);
             T("release-notices-read-their-language", ReleaseNoticesReadTheirLanguage);
             T("tray-labels-follow-the-language", TrayLabelsFollowTheLanguage);
+            T("korean-gif-action-reads-gif-recording", KoreanGifActionReadsGifRecording);
             T("korean-writes-markdown-in-hangul", KoreanWritesMarkdownInHangul);
             T("no-bare-markdown-label-in-src", NoBareMarkdownLabelInSrc);
             T("tray-panel-has-no-foreign-leftovers", TrayPanelHasNoForeignLeftovers);
@@ -643,6 +644,7 @@ namespace Stackshot.Tests
         // ---- Markdown in Korean, and the tray panel in every language
 
         const string KoMarkdown = "\uB9C8\uD06C\uB2E4\uC6B4";
+        const string KoGifRecording = "GIF \uB179\uD654";
 
         // The tray panel's rows (id, text) as BuildItems makes them, plus its status line under the id "status".
         static List<KeyValuePair<string, string>> TrayRows(bool recording, bool scrolling)
@@ -667,7 +669,7 @@ namespace Stackshot.Tests
             return null;
         }
 
-        // The tray panel's GIF and Markdown rows: GIF is GIF everywhere; Markdown is written in hangul in Korean and stays
+        // The tray panel's GIF and Markdown rows: GIF is GIF except in Korean, where the action reads GIF recording; Markdown is written in hangul in Korean and stays
         // Markdown in the others (the preview languages show English by design).
         public static void TrayLabelsFollowTheLanguage()
         {
@@ -675,9 +677,56 @@ namespace Stackshot.Tests
                 InLanguage(lang, delegate
                 {
                     List<KeyValuePair<string, string>> rows = TrayRows(false, false);
-                    Same("GIF", RowText(rows, "gif"), lang + " tray GIF");
+                    Same(lang == "ko" ? KoGifRecording : "GIF", RowText(rows, "gif"), lang + " tray GIF");
                     Same(lang == "ko" ? KoMarkdown : "Markdown", RowText(rows, "markdown"), lang + " tray Markdown");
                 });
+        }
+
+        static List<string> PickerBarLabels()
+        {
+            ConstructorInfo ci = typeof(RegionPicker).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).First(c => c.GetParameters().Length == 6);
+            RegionPicker w = (RegionPicker)ci.Invoke(new object[] { new Dib(80, 60), new System.Drawing.Rectangle(0, 0, 80, 60), new List<Grabber.Win>(), RegionPicker.Mode.Image, true, false });
+            try
+            {
+                BindingFlags np = BindingFlags.NonPublic | BindingFlags.Instance;
+                typeof(RegionPicker).GetMethod("BuildBar", np).Invoke(w, null);
+                List<string> labels = new List<string>();
+                foreach (object b in (System.Collections.IEnumerable)typeof(RegionPicker).GetField("bar", np).GetValue(w)) labels.Add((string)b.GetType().GetField("Label").GetValue(b));
+                return labels;
+            }
+            finally { try { w.Dispose(); } catch (Exception) { } }
+        }
+
+        // Korean says GIF recording wherever GIF is the action the user starts (tray row and its reader name, Home quick
+        // actions, the area picker's mode button) and GIF wherever it names the file format; the others keep their wording.
+        public static void KoreanGifActionReadsGifRecording()
+        {
+            FieldInfo f = typeof(I18n).GetField("KoreanCatalog", BindingFlags.NonPublic | BindingFlags.Static);
+            object lazy = f.GetValue(null);
+            Dictionary<string, string> catalog = (Dictionary<string, string>)lazy.GetType().GetProperty("Value").GetValue(lazy, null);
+            foreach (string lang in AllLanguages)
+                InLanguage(lang, delegate
+                {
+                    bool ko = lang == "ko";
+                    string action = ko ? KoGifRecording : "GIF";
+                    Same(action, RowText(TrayRows(false, false), "gif"), lang + " tray row");
+                    Same(action, HomeWindow.ActionShortest[7], lang + " shortest action");
+                    Check(PickerBarLabels().Contains(action) && (ko || PickerBarLabels().Contains("GIF")), lang + " picker mode button: " + string.Join("|", PickerBarLabels()));
+                    List<string> heard = AppTestsI18n.AuditTray();
+                    Check(heard.Contains(action), lang + " the tray tells a reader \"" + Show(action) + "\"");
+                    if (ko) Check(!heard.Contains("GIF"), "Korean reader still hears a bare GIF in the tray");
+                });
+            string[] shortWord = { "es", "GIF animado", "en", "Animated GIF", "de", "Animiertes GIF", "ko", KoGifRecording };
+            for (int i = 0; i < shortWord.Length; i += 2)
+            {
+                string lang = shortWord[i], want = shortWord[i + 1];
+                InLanguage(lang, delegate { Same(want, HomeWindow.ActionShort[7], lang + " short action"); });
+            }
+            Same("GIF", catalog["GIF"], "the format name");
+            Same("GIF \uB179\uD654", catalog["Record GIF"], "the record action");
+            Check(catalog["Direct adds to stack; Adjust first lets you reposition/resize before Enter; Show options lets you pick capture, video, GIF or scroll."].Contains(KoGifRecording), "the picker's mode list names the action");
+            foreach (string format in new[] { "Export GIF of clip", "Create a GIF from marked clip (E & S) \u00B7 {0}  (G)", "GIF image", "No GIFs", "GIF frames per second", "Saving GIF\u2026", "complete GIF" })
+                Check(catalog[format].Contains("GIF") && !catalog[format].Contains("\uB179\uD654"), "the format \"" + format + "\" stays GIF: " + Show(catalog[format]));
         }
 
         // Korean spells Markdown in hangul wherever the interface says it: the catalog, the Home action names, the document
@@ -712,7 +761,7 @@ namespace Stackshot.Tests
                     string md = ko ? KoMarkdown : "Markdown";
                     Check(HomeWindow.ActionShort[8].Contains(md) && (ko || HomeWindow.ActionShort[8] == "Markdown"), lang + " short action: " + HomeWindow.ActionShort[8]);
                     Same(md, HomeWindow.ActionShortest[8], lang + " shortest action");
-                    Same("GIF", HomeWindow.ActionShortest[7], lang + " shortest GIF");
+                    Same(ko ? KoGifRecording : "GIF", HomeWindow.ActionShortest[7], lang + " shortest GIF");
                     Check(HomeWindow.ActionNames[8].Contains(md), lang + " action name: " + HomeWindow.ActionNames[8]);
                     Same(md, MarkdownWindow.KindName(false), lang + " document kind");
                     Same("XML", MarkdownWindow.KindName(true), lang + " XML kind");
@@ -1406,6 +1455,19 @@ namespace Stackshot.Tests
             {
                 foreach (string lang in new[] { "es", "en", "de", "ko", "ar" }) TrayPicture(lang, 1, "t20-tray-" + lang + ".png");
                 TrayPicture("ko", 2, "t20-tray-ko-dark.png");
+
+                foreach (int shade in new[] { 1, 2 })
+                    foreach (int style in new[] { 0, 1, 2 })
+                    {
+                        I18n.Apply("ko");
+                        Ds.Apply(shade);
+                        Settings hs = new Settings();
+                        hs.SaveFolder = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "t29-shots");
+                        hs.ShowRecent = false; hs.ShowIntro = false; hs.Profile = 2; hs.Appearance = shade; hs.HomeStyle = style;
+                        HomeWindow hw = new HomeWindow((ShotStack)System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(ShotStack)), hs);
+                        try { AppTestsI18n.SetPage(hw, "home"); AppTestsI18n.Layout(hw); SaveElement((FrameworkElement)hw.Content, 980, 660, "t29-ko-home-" + style + "-" + shade + ".png"); }
+                        finally { hw.Shutdown(); }
+                    }
 
                 // The mascot's menu button on the Home page, in Korean, for names that end in a consonant, a vowel and Latin script.
                 foreach (string[] n in new[] { new[] { "\uD558\uB298", "hanul" }, new[] { "\uB098\uBE44", "nabi" }, new[] { "Pixel", "pixel" } })

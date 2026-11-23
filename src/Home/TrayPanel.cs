@@ -489,7 +489,7 @@ namespace Stackshot
             AddCapture("video", recording ? I18n.T("Detener grabaci\u00F3n", "Stop recording") : I18n.T("V\u00EDdeo", "Video"), recording ? "stop!" : "video", 2).Alert = recording;
             bool paused = recording && Recorder.Paused;
             if (recording && Recorder.CanPause) Add(KRow, "pause", paused ? I18n.T("Reanudar grabaci\u00F3n", "Resume recording") : I18n.T("Pausar grabaci\u00F3n", "Pause recording"), paused ? "play" : "pause", 2);
-            if (!recording) AddCapture("gif", I18n.T("GIF", "GIF", "GIF"), "gif", 2);
+            if (!recording) AddCapture("gif", I18n.GifAction, "gif", 2);
             AddCapture("markdown", I18n.T("Markdown", "Markdown", "Markdown"), "markdown", 2);
             Add(KLine, null, null, null, 0);
             if (strip && recent.Count > 0)

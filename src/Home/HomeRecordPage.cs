@@ -133,7 +133,7 @@ namespace Stackshot
                 string combo = settings.HotkeysFor(action);
                 if (Hotkeys.Split(combo).Count == 0) continue;
                 keys.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                TextBlock name = Label(action == "video" ? I18n.T("V\u00EDdeo", "Video") : "GIF", Ds.Regular, 11.5, pal.Label2, new Thickness(0, r > 0 ? 6 : 0, 10, 0));
+                TextBlock name = Label(action == "video" ? I18n.T("V\u00EDdeo", "Video") : I18n.GifAction, Ds.Regular, 11.5, pal.Label2, new Thickness(0, r > 0 ? 6 : 0, 10, 0));
                 name.HorizontalAlignment = HorizontalAlignment.Right;
                 Grid.SetRow(name, r);
                 keys.Children.Add(name);

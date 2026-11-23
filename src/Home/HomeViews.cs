@@ -328,7 +328,7 @@ namespace Stackshot
             {
                 if (I18n.IsSpanish) return ActionShortestEs;
                 if (I18n.IsEnglish) return ActionShortestEn;
-                return Array.ConvertAll(ActionShortestEn, label => I18n.T(null, label));
+                return Array.ConvertAll(ActionShortestEn, label => label == "GIF" && I18n.IsKorean ? I18n.GifAction : I18n.T(null, label));
             }
         }
 

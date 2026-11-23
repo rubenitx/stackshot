@@ -108,6 +108,10 @@ namespace Stackshot
             return IsSpanish ? es : IsGerman ? de : IsKorean ? ko : en;
         }
 
+        // GIF as the action the user starts (a tray row, a quick action, a mode button): Korean names the action, every other
+        // language keeps the format's name. GIF as a file format is plain "GIF" everywhere.
+        internal static string GifAction { get { return Own("GIF", "GIF", "GIF", "GIF \uB179\uD654"); } }
+
         // Formats a localized string, with the numbers in the interface language's culture. In Korean the particles that
         // follow a variable ("{0}\uC744(\uB97C)") are settled in the text, from the value that fills it, before it is formatted:
         // the values themselves go in as they are.
