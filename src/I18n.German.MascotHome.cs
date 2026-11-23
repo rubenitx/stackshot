@@ -300,6 +300,8 @@ namespace Stackshot
             reg("Sip by sip\u2026", "Sorbo a sorbo…", "Schluck für Schluck …");
             reg("Look at something far away, over 20 feet\u2026 {0}", "Mira algo lejano, a más de 6 metros… {0}", "Schau etwas in der Ferne an, über 6 Meter entfernt … {0}");
             reg("Done!", "¡Listo!", "Fertig!");
+            reg("Coming right up!", "¡Marchando!", "Kommt sofort!");
+            reg("Here it goes!", "¡Ahí va!", "Los geht's!");
             reg("Arms up and stretch your back\u2026 {0} of 3", "Brazos arriba y estira la espalda… {0} de 3", "Arme hoch und streck den Rücken … {0} von 3");
             reg("Squat {0} of 8", "Sentadilla {0} de 8", "Kniebeuge {0} von 8");
             reg("Breathe in slowly through your nose\u2026 {0} of 6", "Inspira despacio por la nariz… {0} de 6", "Atme langsam durch die Nase ein … {0} von 6");

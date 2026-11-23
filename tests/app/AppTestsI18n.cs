@@ -65,6 +65,8 @@ namespace Stackshot.Tests
                 T("changed-listeners-are-independent", ChangedListeners);
                 T("reader-seek-parses-any-language", ReaderSeek);
                 T("settings-rows-not-squeezed", AppTestsI18nAudit.SettingsRowsNotSqueezed);
+                T("every-list-text-has-german", AppTestsI18nAudit.EveryListTextHasGerman);
+                T("every-list-text-has-korean", AppTestsI18nAudit.EveryListTextHasKorean);
             }
             finally
             {

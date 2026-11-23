@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -45,5 +47,50 @@ namespace Stackshot.Tests
             foreach (string s in squeezed) Console.WriteLine("    squeezed: " + s);
             Check(squeezed.Count == 0, squeezed.Count + " squeezed text blocks");
         }
+
+        // Texts that are the same in every language: formats and product names.
+        static readonly string[] SameEverywhere = { "Markdown", "GIF", "PDF", "OK", "HTML", "XML", "OCR", "Stackshot" };
+
+        // Words German spells the same as English.
+        static readonly string[] GermanSameWords = { "Extras", "Video", "Standard", "Maximum", "Text", "Timer" };
+
+        // A list of English lines beside its Spanish partner (FooEn / FooEs) with no German partner (FooDe) is translated
+        // through the catalog, one entry at a time: an entry the catalog lacks reaches the screen in English.
+        static List<string> ListLeaks(string lang)
+        {
+            List<string> leaks = new List<string>();
+            foreach (Type type in typeof(I18n).Assembly.GetTypes())
+            {
+                FieldInfo[] fields = type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                foreach (FieldInfo en in fields)
+                {
+                    if (en.FieldType != typeof(string[]) || !en.Name.EndsWith("En", StringComparison.Ordinal)) continue;
+                    string stem = en.Name.Substring(0, en.Name.Length - 2);
+                    FieldInfo es = fields.FirstOrDefault(f => f.Name == stem + "Es" && f.FieldType == typeof(string[]));
+                    if (es == null || fields.Any(f => f.Name == stem + "De")) continue;
+                    string[] enList = (string[])en.GetValue(null), esList = (string[])es.GetValue(null);
+                    for (int i = 0; i < enList.Length; i++)
+                    {
+                        string english = enList[i];
+                        if (string.IsNullOrWhiteSpace(english) || SameEverywhere.Contains(english) || (lang == "de" && GermanSameWords.Contains(english))) continue;
+                        if (!english.Any(char.IsLetter)) continue;
+                        string shown = I18n.T(i < esList.Length ? esList[i] : english, english);
+                        if (shown == english) leaks.Add(type.Name + "." + en.Name + "[" + i + "] " + english);
+                    }
+                }
+            }
+            return leaks;
+        }
+
+        static void ListsLeak(string lang)
+        {
+            I18n.Apply(lang);
+            List<string> leaks = ListLeaks(lang);
+            foreach (string l in leaks) Console.WriteLine("    english in " + lang + ": " + l);
+            Check(leaks.Count == 0, leaks.Count + " list entries stay in English in " + lang);
+        }
+
+        public static void EveryListTextHasGerman() { ListsLeak("de"); }
+        public static void EveryListTextHasKorean() { ListsLeak("ko"); }
     }
 }
