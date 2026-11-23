@@ -13,14 +13,18 @@ namespace Stackshot
     {
         protected override AccessibleObject CreateAccessibilityInstance() { return new PlayerAccess(this); }
 
-        // "1:05" or "65" (seconds) typed by a reader.
+        // "1:05" or "65" (seconds) typed by a reader, with or without what the interface puts after it
+        // ("0:05 de 1:00", "0:05 von 1:00", "0:05 of 1:00"): the leading time is what counts, whatever the language.
         static bool AccessTime(string typed, out double seconds)
         {
             seconds = 0;
             if (string.IsNullOrEmpty(typed)) return false;
             string t = typed.Trim();
-            int de = t.IndexOf(" de ", StringComparison.Ordinal);
-            if (de > 0) t = t.Substring(0, de);
+            int i = 0;
+            while (i < t.Length && (char.IsDigit(t[i]) || t[i] == ':' || t[i] == '.' || t[i] == ',' || char.IsWhiteSpace(t[i]))) i++;
+            if (i == 0) return false;
+            t = t.Substring(0, i).Trim();
+            if (t.Length == 0) return false;
             double total = 0;
             foreach (string part in t.Split(':'))
             {
@@ -75,7 +79,7 @@ namespace Stackshot
                     if (x.Id == "mute" && !vol.IsEmpty)
                     {
                         PartAccessible v = NewPart(into, I18n.T("Volumen", "Volume"), AccessibleRole.Slider, w.vol);
-                        v.PartValue = Math.Round(w.volume * 100).ToString(CultureInfo.CurrentCulture) + (I18n.IsSpanish ? " %" : "%");
+                        v.PartValue = Math.Round(w.volume * 100).ToString(CultureInfo.CurrentCulture) + I18n.T(" %", "%");
                         v.PartKeys = I18n.T("Arriba / Abajo", "Up / Down");
                         v.SetValue = delegate(string s)
                         {

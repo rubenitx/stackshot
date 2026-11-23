@@ -22,6 +22,10 @@ namespace Stackshot
         public bool Mixed;
         public bool Xml;
         public bool Lossy;            // some bytes were not valid in Enc and show as U+FFFD: saving an edit would lose them
+
+        // The last Encode/Save was refused because a character does not fit the encoding (not because the bytes on disk
+        // are unreadable, which is Lossy): what offers the switch to UTF-8, whatever the language of the message.
+        public bool CharsetRefused { get; private set; }
         public DateTime StampUtc;
         public long Length;
         byte[] hash, original;
@@ -221,6 +225,7 @@ namespace Stackshot
         public byte[] Encode(string text, out string warning)
         {
             warning = null;
+            CharsetRefused = false;
             Encoding enc; bool bom;
             Target(text, out enc, out bom);
             if (text == Text && original != null && enc.CodePage == Enc.CodePage && bom == Bom) return (byte[])original.Clone();
@@ -238,18 +243,13 @@ namespace Stackshot
             }
             catch (EncoderFallbackException)
             {
+                CharsetRefused = true;
                 warning = I18n.Fmt("Hay caracteres que no caben en {0}.", "Some characters don't fit in {0}.", Display(enc, false));
                 return null;
             }
         }
 
         public string LossyWarning { get { return I18n.Fmt("El archivo tiene bytes que no son {0} v\u00E1lido.", "The file has bytes that are not valid {0}.", EncodingName); } }
-
-        // The message Encode gives when a character does not fit the encoding (in either language).
-        public static bool IsCharsetError(string err)
-        {
-            return err != null && (err.StartsWith("Hay caracteres que no caben", StringComparison.Ordinal) || err.StartsWith("Some characters don't fit in", StringComparison.Ordinal));
-        }
 
         // The user agreed to write the unreadable bytes as U+FFFD.
         public void AcceptLoss() { Lossy = false; }

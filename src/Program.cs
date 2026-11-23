@@ -2,6 +2,7 @@
 // MIT License - https://github.com/rubenitx/stackshot
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
@@ -201,7 +202,14 @@ namespace Stackshot
                     }
                     else if (Installer.MyVersion == Installer.InstalledVersion && (Has("--replace") || Has("--reinstall")))
                     {
-                        if (!TryInstall(Installer.StartupEnabled)) return 1;
+                        // Reinstalling the same version over the installed copy replaces the program files: it asks,
+                        // like an update does. Nothing internal calls this silently, a downgrade never reaches here
+                        // (only this same version does) and the MSI keeps deciding for itself (branch above).
+                        if (MessageBox.Show(string.Format(CultureInfo.CurrentCulture, I18n.T("\u00BFVolver a instalar Stackshot {0} sobre la copia ya instalada?",
+                                                                                       "Reinstall Stackshot {0} over the installed copy?",
+                                                                                       "Stackshot {0} erneut \u00FCber die installierte Kopie installieren?"),
+                                                                        Installer.MyVersion.ToString(3)),
+                                           "Stackshot", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes && !TryInstall(Installer.StartupEnabled)) return 1;
                     }
                     Start(Settings.InstalledExe, view != null ? "\"" + view + "\"" : null);
                     return 0;

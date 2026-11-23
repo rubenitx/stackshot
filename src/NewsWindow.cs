@@ -50,10 +50,15 @@ namespace Stackshot
             Icon = AppIcon;
             DragAnywhere();
             KeyDown += delegate(object o, KeyEventArgs e) { if (!e.Handled && e.Key == Key.Escape) { e.Handled = true; Close(); } };
+            I18n.Changed += OnLanguageChanged;
+            Closed += delegate { I18n.Changed -= OnLanguageChanged; };
             Build();
         }
 
         protected override void ThemeChanged() { Build(); }
+
+        // The page is rebuilt with its texts when the language changes, like on a theme change.
+        void OnLanguageChanged() { Build(); Title = I18n.T("Novedades", "What's new"); }
 
         void Build()
         {

@@ -298,14 +298,14 @@ namespace Stackshot
             if (q != searchShownQuery) searchScroller.ScrollToVerticalOffset(0);
             searchShownQuery = q;
             searchList.Children.Add(Label(I18n.T("Resultados", "Results"), Ds.Title, 26, pal.Label, new Thickness(0, 58, 0, 0)));
-            string quoted = I18n.IsSpanish ? "\u00AB" + q + "\u00BB" : "\u201C" + q + "\u201D";
+            string quoted = I18n.IsSpanish ? "\u00AB" + q + "\u00BB" : I18n.IsGerman ? "\u201E" + q + "\u201C" : "\u201C" + q + "\u201D";
             if (hits.Count == 0)
             {
                 searchList.Children.Add(complete ? SearchNothing(quoted) : SearchWaiting());
                 return;
             }
             string countMsg = hits.Count == 1
-                ? I18n.Fmt("{0} ajuste coincide con {1}.", "{0} setting matches {1}.", hits.Count, quoted)
+                ? I18n.Fmt("1 ajuste coincide con {0}.", "1 setting matches {0}.", quoted)
                 : I18n.Fmt("{0} ajustes coinciden con {1}.", "{0} settings match {1}.", hits.Count, quoted);
             TextBlock count = Paragraph(countMsg, 13, pal.Label2);
             count.Margin = new Thickness(0, 6, 0, 0);

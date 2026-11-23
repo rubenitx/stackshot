@@ -35,11 +35,13 @@ $cscArgs += '/r:' + (Join-Path (Split-Path $csc) 'System.Runtime.WindowsRuntime.
 foreach ($md in 'Foundation', 'Graphics', 'Media', 'Storage', 'Globalization') { $cscArgs += '/r:' + (Join-Path $env:WINDIR "System32\WinMetadata\Windows.$md.winmd") }
 if (Test-Path $icon) { $cscArgs += "/win32icon:$icon"; $cscArgs += "/resource:$icon,stackshot.ico" }
 if (Test-Path $logo) { $cscArgs += "/resource:$logo,logo.png" }
-# What each version brings, shown inside the app (Novedades).
+# What each version brings, shown inside the app (Novedades), in the interface language.
 $news = Join-Path $root 'docs\novedades.md'
 if (Test-Path $news) { $cscArgs += "/resource:$news,novedades.md" }
-$koreanNews = Join-Path $root 'docs\novedades.ko.md'
-if (Test-Path $koreanNews) { $cscArgs += "/resource:$koreanNews,novedades.ko.md" }
+foreach ($lang in 'en', 'de', 'ko') {
+    $f = Join-Path $root "docs\novedades.$lang.md"
+    if (Test-Path $f) { $cscArgs += "/resource:$f,novedades.$lang.md" }
+}
 
 # Build to a temp file and swap it in, so a failed build leaves the previous .exe intact.
 $output = & $csc @cscArgs $sources 2>&1

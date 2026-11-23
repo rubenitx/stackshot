@@ -937,6 +937,22 @@ namespace Stackshot.Tests
                     finally { CloseDoc(xml); }
                     using (D.Bitmap ed = RenderEditor(new D.Size(1100, 700))) Save(ed, "editor-" + n + ".png");
                     using (D.Bitmap hd = RenderHeads()) Save(hd, "heads-" + n + ".png");
+                    // The language picker of the 01-aurora artboard, in every theme (a contrast theme must show none of the
+                    // treatment), in Spanish, English, Korean and Arabic (right to left).
+                    bool mica = Sheet.HasMica;
+                    Sheet.HasMica = false;
+                    string uiNow = I18n.Language;
+                    try
+                    {
+                        foreach (string ui in new[] { "es", "en", "ko", "ar" })
+                        {
+                            I18n.Apply(ui);
+                            LanguagePicker pk = (LanguagePicker)typeof(LanguagePicker).GetConstructor(NP, null, new[] { typeof(string) }, null).Invoke(new object[] { ui });
+                            try { Save(RenderWindow(pk, (int)pk.Width, (int)pk.Height), "picker-" + ui + "-" + n + ".png"); }
+                            finally { pk.Close(); }
+                        }
+                    }
+                    finally { I18n.Apply(uiNow); Sheet.HasMica = mica; }
                 }
             }
             finally { Restore(); }
@@ -963,6 +979,192 @@ namespace Stackshot.Tests
             finally { Restore(); }
         }
 
+        static string RowName(System.Windows.Controls.ListBox list, string start)
+        {
+            foreach (object o in list.Items)
+            {
+                System.Windows.Controls.ListBoxItem it = (System.Windows.Controls.ListBoxItem)o;
+                string name = W.Automation.AutomationProperties.GetName(it);
+                if (name != null && name.StartsWith(start, StringComparison.Ordinal)) return name;
+            }
+            return null;
+        }
+
+        // Deutsch and 한국어 read complete in every interface language ("Completo" / "Complete" / "Vollständig" / "번역 완료"),
+        // the previews stay previews, and no row keeps the old "partial translation" line.
+        static void LanguageRows()
+        {
+            string save = I18n.Language;
+            try
+            {
+                foreach (string ui in new[] { "es", "en", "de", "ko" })
+                {
+                    I18n.Apply(ui);
+                    string complete = I18n.T("Completo", "Complete", "Vollst\u00E4ndig");
+                    Check((ui != "de" && ui != "ko") || complete != "Complete", "no word for 'complete' in " + ui);
+                    LanguagePicker picker = (LanguagePicker)typeof(LanguagePicker).GetConstructor(NP, null, new[] { typeof(string) }, null).Invoke(new object[] { "de" });
+                    try
+                    {
+                        System.Windows.Controls.ListBox list = (System.Windows.Controls.ListBox)typeof(LanguagePicker).GetField("list", NP).GetValue(picker);
+                        string row = RowName(list, "Deutsch");
+                        Check(row != null, "there is no Deutsch row");
+                        string wanted = "Deutsch, " + complete + " \u00B7 de \u00B7 " + I18n.T("Actual", "Current");
+                        Check(row == wanted, "Deutsch's row in " + ui + ": '" + row + "' instead of '" + wanted + "'");
+                        string ko = RowName(list, "\uD55C\uAD6D\uC5B4");
+                        Check(ko == "\uD55C\uAD6D\uC5B4, " + complete + " \u00B7 ko", "the Korean row in " + ui + ": '" + ko + "'");
+                        string fr = RowName(list, "Fran\u00E7ais");
+                        Check(fr == "Fran\u00E7ais, " + I18n.T("Vista previa", "Preview") + " \u00B7 fr", "the French preview row in " + ui + ": '" + fr + "'");
+                    }
+                    finally { picker.Close(); }
+                }
+            }
+            finally { I18n.Apply(save); Drain(); }
+        }
+
+        // The Aurora treatment keeps AA wherever it paints, shows the gradient in dark and light, and a contrast theme
+        // turns all of it off (plain system colours); the untouched primary keeps its old vertical gradient.
+        static void AuroraContrast()
+        {
+            try
+            {
+                for (int t = 0; t < 2; t++)
+                {
+                    Theme(t);
+                    Palette p = Ds.Brushes;
+                    Check(!p.High, "a contrast palette without a contrast theme");
+                    // The gradient primary's white label: both ends, hovered as well (the ends are never lighter).
+                    Check(Ratio(WM.Colors.White, Aurora.Primary1) >= 4.5, "white on the aurora primary's indigo end is under 4.5");
+                    Check(Ratio(WM.Colors.White, p.Accent) >= 4.5, "white on the aurora primary's accent end is under 4.5");
+                    Check(Ratio(WM.Colors.White, Mix(Aurora.Primary1, WM.Colors.White, 0.06)) >= 4.5, "white on the hovered indigo end is under 4.5");
+                    Check(Ratio(WM.Colors.White, Mix(p.Accent, WM.Colors.White, 0.02)) >= 4.5, "white on the hovered accent end is under 4.5");
+                    // The selected row's texts on its wash over the thumbnail colour (the strongest stops).
+                    WM.Color topFill = Over(Ds.WithAlpha(Aurora.Brand1, p.Dark ? 0.16 : 0.10), p.Thumb);
+                    WM.Color lowFill = Over(Ds.WithAlpha(Aurora.Brand3, 0.10), p.Thumb);
+                    foreach (WM.Color bg in new[] { topFill, lowFill })
+                    {
+                        Check(Ratio(p.Label, bg) >= 4.5, "the selected row's label is under 4.5 on " + bg);
+                        Check(Ratio(p.Label2, bg) >= 4.5, "the selected row's secondary text is under 4.5 on " + bg);
+                    }
+                    // Rendered: the gradient primary really grades from indigo into the accent, and the selected row's
+                    // ring really is the brand gradient.
+                    MacButton pri = new MacButton("Aplicar idioma", ButtonKind.Primary);
+                    pri.BrandPrimary = true;
+                    WMI.BitmapSource g = RenderVisual(pri, (int)pri.Width, (int)pri.Height);
+                    WM.Color left = Pixel(g, (int)(pri.Width * 0.12), (int)(pri.Height * 0.18));
+                    WM.Color right = Pixel(g, (int)(pri.Width * 0.88), (int)(pri.Height * 0.18));
+                    Check(left != right, "the aurora primary has no gradient: " + left + " == " + right);
+                    Aurora.Ring ring = new Aurora.Ring { Width = 160, Height = 40, Selected = true };
+                    WMI.BitmapSource rg = RenderVisual(ring, 160, 40);
+                    Check(Pixel(rg, 12, 20) != Pixel(rg, 148, 20), "the selected row's ring has no gradient");
+                    // The old primary keeps its vertical accent gradient (the aurora one is opt-in); the inner glow bends
+                    // both sampled pixels a few units, so they are compared with a small tolerance.
+                    MacButton plain = new MacButton("Aceptar", ButtonKind.Primary);
+                    WMI.BitmapSource og = RenderVisual(plain, (int)plain.Width, (int)plain.Height);
+                    WM.Color topPx = Pixel(og, (int)(plain.Width / 2), 4), bottomPx = Pixel(og, (int)(plain.Width / 2), (int)plain.Height - 5);
+                    Check(Near(topPx, p.Accent, 12), "the plain primary's top is not the accent: " + topPx);
+                    Check(Near(bottomPx, Mix(p.Accent, WM.Colors.Black, 0.16), 12), "the plain primary's bottom changed: " + bottomPx);
+                }
+                // A contrast theme: flat, nothing translucent, no band.
+                ThemeWith(HcBlack(), 1);
+                Check(Ds.Brushes.High, "the contrast theme did not come on");
+                MacButton hc = new MacButton("Aplicar idioma", ButtonKind.Primary);
+                hc.BrandPrimary = true;
+                WMI.BitmapSource hg = RenderVisual(hc, (int)hc.Width, (int)hc.Height);
+                WM.Color hl = Pixel(hg, (int)(hc.Width * 0.12), (int)(hc.Height * 0.18)), hrEnd = Pixel(hg, (int)(hc.Width * 0.88), (int)(hc.Height * 0.18));
+                Check(hl == hrEnd, "the primary kept a gradient under a contrast theme: " + hl + " vs " + hrEnd);
+                Aurora.Band band = new Aurora.Band { Width = 200, Height = 90 };
+                WMI.BitmapSource hb = RenderVisual(band, 200, 90);
+                Check(Pixel(hb, 100, 45).A == 0, "the aurora band drew a glow under a contrast theme");
+                Aurora.Ring hring = new Aurora.Ring { Width = 160, Height = 40, Selected = true };
+                WMI.BitmapSource hrg = RenderVisual(hring, 160, 40);
+                WM.Color r1 = Pixel(hrg, 12, 20), r2 = Pixel(hrg, 148, 20);
+                Check(r1 == r2, "the selected row's ring kept a gradient under a contrast theme: " + r1 + " vs " + r2);
+                Check(r1.A == 0 || r1 == Ds.Brushes.Accent || r1 == Ds.Brushes.Window, "the ring under a contrast theme is neither plain nor empty: " + r1);
+            }
+            finally { Restore(); }
+        }
+
+        // The picker's room (owner: "está muy apretado"): rows 56 tall with a gap between them so a selected ring never
+        // meets the hover of its neighbour, the ring clear of the scrollbar, and the whole sheet inside a laptop's area.
+        static void PickerRoom()
+        {
+            W.Size fit = LanguagePicker.Preferred(1366, 728);
+            Check(fit.Width <= 1366 && fit.Height <= 728, "the sheet does not fit a 1366 x 728 work area: " + fit);
+            Check(fit.Width > 480 || fit.Height > 540, "the sheet was given no more room: " + fit);
+            LanguagePicker picker = (LanguagePicker)typeof(LanguagePicker).GetConstructor(NP, null, new[] { typeof(string) }, null).Invoke(new object[] { "en" });
+            try
+            {
+                W.FrameworkElement content = (W.FrameworkElement)picker.Content;
+                content.Measure(new W.Size(picker.Width, picker.Height));
+                content.Arrange(new W.Rect(0, 0, picker.Width, picker.Height));
+                content.UpdateLayout();
+                System.Windows.Controls.ListBox list = (System.Windows.Controls.ListBox)typeof(LanguagePicker).GetField("list", NP).GetValue(picker);
+                double bottom = double.NaN, left = double.NaN, right = double.NaN;
+                int rows = 0;
+                foreach (object o in list.Items)
+                {
+                    System.Windows.Controls.ListBoxItem item = o as System.Windows.Controls.ListBoxItem;
+                    if (item == null || item.ActualHeight <= 0) continue;   // past the list's edge: not laid out
+                    Aurora.Ring ring = item.Content as Aurora.Ring;
+                    Check(ring != null, "a row without its ring");
+                    Check(item.ActualHeight >= 56, "a row is under 56 px tall: " + item.ActualHeight);
+                    W.Rect r = Bounds(ring, content);
+                    if (!double.IsNaN(bottom)) Check(r.Top - bottom >= 4, "two rows are under 4 px apart: " + (r.Top - bottom));
+                    bottom = r.Bottom;
+                    if (double.IsNaN(left)) left = r.Left;
+                    right = r.Right;
+                    rows++;
+                }
+                Check(rows >= 6, "only " + rows + " rows were laid out");
+                Check(left >= 8, "the ring runs into the list's edge: " + left);
+                // The ring of the bottom row never slides under the vertical bar: the gutter between them.
+                System.Windows.Controls.Primitives.ScrollBar bar = VertBar(list);
+                Check(bar != null, "the list shows no vertical scrollbar");
+                double gutter = Bounds(bar, content).Left - right;
+                Check(gutter >= 8, "the ring is " + gutter + " px from the scrollbar, under 8");
+            }
+            finally { picker.Close(); }
+        }
+
+        // An element's rectangle in the coordinates of one of its ancestors.
+        static W.Rect Bounds(W.FrameworkElement e, WM.Visual ancestor)
+        {
+            return e.TransformToAncestor(ancestor).TransformBounds(new W.Rect(0, 0, e.ActualWidth, e.ActualHeight));
+        }
+
+        // The vertical bar of a list (its horizontal one is disabled).
+        static System.Windows.Controls.Primitives.ScrollBar VertBar(W.DependencyObject o)
+        {
+            System.Windows.Controls.Primitives.ScrollBar b = o as System.Windows.Controls.Primitives.ScrollBar;
+            if (b != null) return b.Orientation == System.Windows.Controls.Orientation.Vertical ? b : null;
+            for (int i = 0; i < WM.VisualTreeHelper.GetChildrenCount(o); i++)
+            {
+                b = VertBar(WM.VisualTreeHelper.GetChild(o, i));
+                if (b != null) return b;
+            }
+            return null;
+        }
+
+        // One element rendered into pixels without a window.
+        static WMI.RenderTargetBitmap RenderVisual(W.Media.Visual v, int w, int h)
+        {
+            W.FrameworkElement fe = v as W.FrameworkElement;
+            if (fe != null)
+            {
+                fe.Measure(new W.Size(w, h));
+                fe.Arrange(new W.Rect(0, 0, w, h));
+            }
+            WMI.RenderTargetBitmap rtb = new WMI.RenderTargetBitmap(w, h, 96, 96, WM.PixelFormats.Pbgra32);
+            rtb.Render(v);
+            rtb.Freeze();
+            return rtb;
+        }
+
+        static bool Near(WM.Color a, WM.Color b, int tol = 0)
+        {
+            return Math.Abs(a.R - b.R) <= tol && Math.Abs(a.G - b.G) <= tol && Math.Abs(a.B - b.B) <= tol;
+        }
+
         public static void Suite()
         {
             AppTests.Test(S, "contrast of every text colour on its surfaces, light and dark (table)", ContrastTable);
@@ -970,6 +1172,9 @@ namespace Stackshot.Tests
             AppTests.Test(S, "without a contrast theme only the secondary greys and the accent changed", NothingElseChanges);
             AppTests.Test(S, "live switch: Home, the Markdown window and the editor follow, and come back", LiveSwitch);
             AppTests.Test(S, "captures and exports are the same under a contrast theme", ExportsUnchanged);
+            AppTests.Test(S, "Deutsch and Korean read complete in every language and the previews stay previews", LanguageRows);
+            AppTests.Test(S, "the picker's rows are taller and apart and the sheet still fits a laptop", PickerRoom);
+            AppTests.Test(S, "the aurora treatment keeps AA and a contrast theme draws none of it", AuroraContrast);
             AppTests.Test(S, "player chrome follows only under a contrast theme", PlayerChrome);
             AppTests.Test(S, "surfaces rendered in light, dark and high contrast", Snapshots);
         }

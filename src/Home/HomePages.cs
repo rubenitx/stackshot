@@ -29,7 +29,14 @@ namespace Stackshot
 
         internal static readonly string[] ActionShortEs = { "Un \u00E1rea", "La \u00FAltima \u00E1rea", "Pantalla completa", "Una ventana", "Con desplazamiento", "Copiar texto", "V\u00EDdeo", "GIF animado", "Markdown", "Con temporizador" };
         internal static readonly string[] ActionShortEn = { "An area", "Last area", "Full screen", "A window", "Scrolling", "Copy text", "Video", "Animated GIF", "Markdown", "With timer" };
-        internal static string[] ActionShort { get { return I18n.IsSpanish ? ActionShortEs : I18n.LocalizeList(ActionShortEn); } }
+        internal static string[] ActionShort
+        {
+            get
+            {
+                if (I18n.IsSpanish) return ActionShortEs;
+                return Array.ConvertAll(ActionShortEn, label => label == "Scrolling" ? I18n.T(null, label, "Mit Bildlauf") : I18n.T(null, label));
+            }
+        }
         static readonly string[] ActionIcons = { "area", "update", "screen", "window", "scroll", "textscan", "video", "gif", "markdown", "clock" };
         static readonly D.Color[,] ActionColors =
         {
@@ -607,11 +614,10 @@ namespace Stackshot
                         w.settings.SetHotkeys(a, string.Join(", ", others.ToArray()));
                         w.keysMoved = I18n.IsKorean ? (others.Count == 0
                             ? string.Format(I18n.Localize("{0} was assigned to {1}, which now has no shortcut."), Hotkeys.DisplayOne(combo), ActionNames[i])
-                            : string.Format(I18n.Localize("{0} moved from {1} to {2}."), Hotkeys.DisplayOne(combo), ActionNames[i], Title)) : I18n.IsSpanish
-                            ? (Hotkeys.DisplayOne(combo) + " era de \u00AB" + ActionNames[i] + "\u00BB" +
-                               (others.Count == 0 ? ", que se ha quedado sin atajo." : "; ahora es de \u00AB" + Title + "\u00BB."))
-                            : (Hotkeys.DisplayOne(combo) + " was assigned to \u201C" + ActionNames[i] + "\u201D" +
-                               (others.Count == 0 ? ", which now has no shortcut." : "; it now belongs to \u201C" + Title + "\u201D."));
+                            : string.Format(I18n.Localize("{0} moved from {1} to {2}."), Hotkeys.DisplayOne(combo), ActionNames[i], Title))
+                            : Hotkeys.DisplayOne(combo) + " " + I18n.Fmt("era de \u00AB{0}\u00BB", "was assigned to \u201C{0}\u201D", ActionNames[i]) +
+                                       (others.Count == 0 ? I18n.T(", que se ha quedado sin atajo.", ", which now has no shortcut.")
+                                                          : I18n.Fmt("; ahora es de \u00AB{0}\u00BB.", "; it now belongs to \u201C{0}\u201D.", Title));
                     }
                 }
                 w.settings.SetHotkeys(action, string.Join(", ", list.ToArray()));
@@ -681,7 +687,7 @@ namespace Stackshot
         {
             if (items.Count == 0) return "";
             if (items.Count == 1) return items[0];
-            return string.Join(", ", items.GetRange(0, items.Count - 1).ToArray()) + (I18n.IsSpanish ? " y " : I18n.IsKorean ? ", " : " and ") + items[items.Count - 1];
+            return string.Join(", ", items.GetRange(0, items.Count - 1).ToArray()) + (I18n.IsKorean ? ", " : I18n.T(" y ", " and ")) + items[items.Count - 1];
         }
 
         // ---- Atajos
@@ -897,9 +903,11 @@ namespace Stackshot
                 new ToggleRow(I18n.T("Incluir el puntero", "Include mouse cursor"), I18n.T("El puntero del rat\u00F3n aparece en la captura, donde estaba al empezarla.", "The mouse cursor is captured where it was when capture started."), "cursor", Mac.Blue, Mac.Indigo,
                               delegate { return settings.CaptureCursor; }, delegate(bool v) { settings.CaptureCursor = v; }),
                 print);
+            HookOcrWarm();
             Group(I18n.T("Datos sensibles", "Sensitive data"),
                 new ToggleRow(PolicyTitles.Sensitive, I18n.T("DNI, NIE, n\u00FAmero de la Seguridad Social, IBAN, tarjetas, correos y tel\u00E9fonos se tapan solos en cada captura. Se leen en tu equipo; nada sale de \u00E9l.", "National IDs, Social Security numbers, IBANs, cards, emails and phone numbers are covered automatically in every capture. They are read on your computer; nothing leaves it."), "redact!", Mac.Red, Mac.Orange,
-                              delegate { return settings.SensitiveAuto; }, delegate(bool v) { settings.SensitiveAuto = v; }));
+                              delegate { return settings.SensitiveAuto; }, delegate(bool v) { SetSensitiveAuto(settings, v); })
+                    { When = delegate { return SensitiveToggleEnabled(settings); }, WhenOff = OcrMissingNote() });
             Note(I18n.T("Apagado, decides t\u00FA: en el editor, \u00ABDatos sensibles\u00BB los tapa con marcas que puedes quitar.", "When off, you decide: in the editor, \u201CSensitive data\u201D covers them with marks you can remove."));
             Group(I18n.T("Capturas guardadas", "Saved captures"),
                 new ToggleRow(I18n.T("Guardar todas las capturas", "Automatically save all captures"), I18n.T("Cada captura y grabaci\u00F3n va tambi\u00E9n a tu carpeta. Apagado, solo las que guardas con Guardar.", "Every capture and recording is saved to your folder. When off, only those manually kept."), "folder", Mac.Blue, Mac.Teal,
@@ -910,6 +918,36 @@ namespace Stackshot
         }
 
         // The folder watch: only where it is already set up or the organization sets its folder; elsewhere nothing at all.
+        // The sensitive-data setting needs OCR to be turned on: without it the switch is off limits and says how to get
+        // one. One already on stays reachable (the user must be able to turn it off, or every capture would be lost
+        // with no way back); the setter still refuses to turn it on while OCR is missing. What a policy forces is
+        // handled above, where the row is locked and says who decides. Missing reads the answer the background probe
+        // left at startup; it never runs the search on the UI thread.
+        internal static bool SensitiveToggleEnabled(Settings s) { return !Ocr.Missing || s.SensitiveAuto; }
+
+        internal static void SetSensitiveAuto(Settings s, bool v) { if (v && Ocr.Missing) return; s.SensitiveAuto = v; }
+
+        // When the background probe answers after the page was built (a rare, very early open), the rows sync again.
+        bool ocrWarmHooked;
+
+        void HookOcrWarm()
+        {
+            if (ocrWarmHooked) return;
+            ocrWarmHooked = true;
+            Ocr.Warmed += delegate
+            {
+                try { Dispatcher.BeginInvoke((Action)delegate { SyncRows(); }); }
+                catch (Exception ex) { ShotStack.Log("OCR: " + ex.Message); }
+            };
+        }
+
+        static string OcrMissingNote()
+        {
+            return I18n.T("Este Windows no tiene reconocimiento de texto (OCR): no se puede activar, porque cada captura se descartar\u00EDa sin revisar. Instala un idioma de OCR en Configuraci\u00F3n de Windows > Aplicaciones > Caracter\u00EDsticas opcionales.",
+                          "This Windows has no text recognition (OCR): it cannot be turned on, because every capture would be discarded unchecked. Install an OCR language under Windows Settings > Apps > Optional features.",
+                          "Dieses Windows hat keine Texterkennung (OCR): Sie l\u00E4sst sich nicht einschalten, weil jede Aufnahme ungepr\u00FCft verworfen w\u00FCrde. Installiere eine OCR-Sprache unter Windows-Einstellungen > Apps > Optionale Features.");
+        }
+
         void BuildAdvanced()
         {
             if (!XmlWatch.Offered(settings)) return;

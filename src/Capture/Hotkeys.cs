@@ -232,130 +232,55 @@ namespace Stackshot
         // The name printed on the key, as on a Spanish keyboard; punctuation as the current layout prints it.
         public static string KeyName(Keys key)
         {
-            if (I18n.IsGerman)
+            switch (key)
             {
-                switch (key)
-                {
-                    case Keys.PrintScreen: return "Druck";
-                    case Keys.Space: return "Leertaste";
-                    case Keys.Return: return "Eingabe";
-                    case Keys.Back: return "Rücktaste";
-                    case Keys.Delete: return "Entf";
-                    case Keys.Insert: return "Einfg";
-                    case Keys.Home: return "Pos1";
-                    case Keys.End: return "Ende";
-                    case Keys.PageUp: return "Bild auf";
-                    case Keys.PageDown: return "Bild ab";
-                    case Keys.Apps: return "Menü";
-                    case Keys.Capital: return "Feststelltaste";
-                    case Keys.Scroll: return "Rollen";
-                }
-            }
-            if (I18n.IsSpanish)
-            {
-                switch (key)
-                {
-                    case Keys.PrintScreen: return "Impr Pant";
-                    case Keys.Escape: return "Esc";
-                    case Keys.Space: return "Espacio";
-                    case Keys.Return: return "Intro";
-                    case Keys.Back: return "Retroceso";
-                    case Keys.Tab: return "Tab";
-                    case Keys.Delete: return "Supr";
-                    case Keys.Insert: return "Insert";
-                    case Keys.Home: return "Inicio";
-                    case Keys.End: return "Fin";
-                    case Keys.PageUp: return "Re P\u00E1g";
-                    case Keys.PageDown: return "Av P\u00E1g";
-                    case Keys.Left: return "\u2190";
-                    case Keys.Right: return "\u2192";
-                    case Keys.Up: return "\u2191";
-                    case Keys.Down: return "\u2193";
-                    case Keys.Pause: case Keys.Cancel: return "Pausa";  // Ctrl + Pausa arrives as Cancel
-                    case Keys.Scroll: return "Bloq Despl";
-                    case Keys.Capital: return "Bloq May\u00FAs";
-                    case Keys.NumLock: return "Bloq Num";
-                    case Keys.Apps: return "Men\u00FA";
-                    case Keys.Clear: return "Num 5";
-                    case Keys.Multiply: return "Num *";
-                    case Keys.Add: return "Num +";
-                    case Keys.Subtract: return "Num -";
-                    case Keys.Divide: return "Num /";
-                    case Keys.Decimal: return "Num .";
-                    case Keys.Separator: return "Num ,";
-                    case Keys.VolumeMute: return "Silenciar";
-                    case Keys.VolumeDown: return "Bajar volumen";
-                    case Keys.VolumeUp: return "Subir volumen";
-                    case Keys.MediaPlayPause: return "Reproducir";
-                    case Keys.MediaNextTrack: return "Siguiente";
-                    case Keys.MediaPreviousTrack: return "Anterior";
-                    case Keys.MediaStop: return "Detener";
-                    case Keys.BrowserBack: return "Atr\u00E1s";
-                    case Keys.BrowserForward: return "Adelante";
-                    case Keys.BrowserRefresh: return "Actualizar";
-                    case Keys.BrowserStop: return "Detener carga";
-                    case Keys.BrowserSearch: return "Buscar";
-                    case Keys.BrowserFavorites: return "Favoritos";
-                    case Keys.BrowserHome: return "Inicio web";
-                    case Keys.LaunchMail: return "Correo";
-                    case Keys.LaunchApplication1: return "Aplicaci\u00F3n 1";
-                    case Keys.LaunchApplication2: return "Calculadora";
-                    case Keys.SelectMedia: return "Multimedia";
-                    case Keys.Sleep: return "Suspender";
-                }
-            }
-            else
-            {
-                switch (key)
-                {
-                    case Keys.PrintScreen: return "PrtScn";
-                    case Keys.Escape: return "Esc";
-                    case Keys.Space: return "Space";
-                    case Keys.Return: return "Enter";
-                    case Keys.Back: return "Backspace";
-                    case Keys.Tab: return "Tab";
-                    case Keys.Delete: return "Del";
-                    case Keys.Insert: return "Insert";
-                    case Keys.Home: return "Home";
-                    case Keys.End: return "End";
-                    case Keys.PageUp: return "Page Up";
-                    case Keys.PageDown: return "Page Down";
-                    case Keys.Left: return "\u2190";
-                    case Keys.Right: return "\u2192";
-                    case Keys.Up: return "\u2191";
-                    case Keys.Down: return "\u2193";
-                    case Keys.Pause: case Keys.Cancel: return "Pause";
-                    case Keys.Scroll: return "Scroll Lock";
-                    case Keys.Capital: return "Caps Lock";
-                    case Keys.NumLock: return "Num Lock";
-                    case Keys.Apps: return "Menu";
-                    case Keys.Clear: return "Num 5";
-                    case Keys.Multiply: return "Num *";
-                    case Keys.Add: return "Num +";
-                    case Keys.Subtract: return "Num -";
-                    case Keys.Divide: return "Num /";
-                    case Keys.Decimal: return "Num .";
-                    case Keys.Separator: return "Num ,";
-                    case Keys.VolumeMute: return "Mute";
-                    case Keys.VolumeDown: return "Volume Down";
-                    case Keys.VolumeUp: return "Volume Up";
-                    case Keys.MediaPlayPause: return "Play/Pause";
-                    case Keys.MediaNextTrack: return "Next Track";
-                    case Keys.MediaPreviousTrack: return "Previous Track";
-                    case Keys.MediaStop: return "Stop";
-                    case Keys.BrowserBack: return "Back";
-                    case Keys.BrowserForward: return "Forward";
-                    case Keys.BrowserRefresh: return "Refresh";
-                    case Keys.BrowserStop: return "Stop loading";
-                    case Keys.BrowserSearch: return "Search";
-                    case Keys.BrowserFavorites: return "Favorites";
-                    case Keys.BrowserHome: return "Browser Home";
-                    case Keys.LaunchMail: return "Mail";
-                    case Keys.LaunchApplication1: return "App 1";
-                    case Keys.LaunchApplication2: return "Calculator";
-                    case Keys.SelectMedia: return "Media";
-                    case Keys.Sleep: return "Sleep";
-                }
+                case Keys.PrintScreen: return I18n.T("Impr Pant", "PrtScn", "Druck");
+                case Keys.Escape: return "Esc";
+                case Keys.Space: return I18n.T("Espacio", "Space", "Leertaste");
+                case Keys.Return: return I18n.T("Intro", "Enter", "Eingabe");
+                case Keys.Back: return I18n.T("Retroceso", "Backspace", "R\u00FCcktaste");
+                case Keys.Tab: return "Tab";
+                case Keys.Delete: return I18n.T("Supr", "Del", "Entf");
+                case Keys.Insert: return I18n.T("Insert", "Insert", "Einfg");
+                case Keys.Home: return I18n.T("Inicio", "Home", "Pos1");
+                case Keys.End: return I18n.T("Fin", "End", "Ende");
+                case Keys.PageUp: return I18n.T("Re P\u00E1g", "Page Up", "Bild auf");
+                case Keys.PageDown: return I18n.T("Av P\u00E1g", "Page Down", "Bild ab");
+                case Keys.Left: return "\u2190";
+                case Keys.Right: return "\u2192";
+                case Keys.Up: return "\u2191";
+                case Keys.Down: return "\u2193";
+                case Keys.Pause: case Keys.Cancel: return I18n.T("Pausa", "Pause", "Pause");  // Ctrl + Pausa arrives as Cancel
+                case Keys.Scroll: return I18n.T("Bloq Despl", "Scroll Lock", "Rollen");
+                case Keys.Capital: return I18n.T("Bloq May\u00FAs", "Caps Lock", "Feststelltaste");
+                case Keys.NumLock: return I18n.T("Bloq Num", "Num Lock", "Num");
+                case Keys.Apps: return I18n.T("Men\u00FA", "Menu", "Men\u00FC");
+                case Keys.Clear: return "Num 5";
+                case Keys.Multiply: return "Num *";
+                case Keys.Add: return "Num +";
+                case Keys.Subtract: return "Num -";
+                case Keys.Divide: return "Num /";
+                case Keys.Decimal: return "Num .";
+                case Keys.Separator: return "Num ,";
+                case Keys.VolumeMute: return I18n.T("Silenciar", "Mute", "Stumm");
+                case Keys.VolumeDown: return I18n.T("Bajar volumen", "Volume Down", "Leiser");
+                case Keys.VolumeUp: return I18n.T("Subir volumen", "Volume Up", "Lauter");
+                case Keys.MediaPlayPause: return I18n.T("Reproducir", "Play/Pause", "Wiedergabe/Pause");
+                case Keys.MediaNextTrack: return I18n.T("Siguiente", "Next Track", "Weiter");
+                case Keys.MediaPreviousTrack: return I18n.T("Anterior", "Previous Track", "Zur\u00FCck");
+                case Keys.MediaStop: return I18n.T("Detener", "Stop", "Stopp");
+                case Keys.BrowserBack: return I18n.T("Atr\u00E1s", "Back", "Zur\u00FCck");
+                case Keys.BrowserForward: return I18n.T("Adelante", "Forward", "Weiter");
+                case Keys.BrowserRefresh: return I18n.T("Actualizar", "Refresh", "Aktualisieren");
+                case Keys.BrowserStop: return I18n.T("Detener carga", "Stop loading", "Laden beenden");
+                case Keys.BrowserSearch: return I18n.T("Buscar", "Search", "Suchen");
+                case Keys.BrowserFavorites: return I18n.T("Favoritos", "Favorites", "Favoriten");
+                case Keys.BrowserHome: return I18n.T("Inicio web", "Browser Home", "Startseite");
+                case Keys.LaunchMail: return I18n.T("Correo", "Mail", "E-Mail");
+                case Keys.LaunchApplication1: return I18n.T("Aplicaci\u00F3n 1", "App 1", "App 1");
+                case Keys.LaunchApplication2: return I18n.T("Calculadora", "Calculator", "Rechner");
+                case Keys.SelectMedia: return I18n.T("Multimedia", "Media", "Medien");
+                case Keys.Sleep: return I18n.T("Suspender", "Sleep", "Ruhezustand");
             }
             if (key >= Keys.D0 && key <= Keys.D9) return ((char)('0' + (key - Keys.D0))).ToString();
             if (key >= Keys.NumPad0 && key <= Keys.NumPad9) return "Num " + (char)('0' + (key - Keys.NumPad0));

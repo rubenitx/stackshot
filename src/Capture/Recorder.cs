@@ -664,7 +664,9 @@ namespace Stackshot
 
         public static string Chip(double minutes)
         {
-            return I18n.Fmt("~{0} min de disco", "~{0} min disk space", Math.Max(0, (int)Math.Floor(minutes)));
+            int whole = Math.Max(0, (int)Math.Floor(minutes));
+            if (I18n.IsKorean) return I18n.Fmt("", "~{0} min disk space", whole);
+            return "~" + whole + I18n.T(" min de disco", " min disk space");
         }
 
         public static string Range(double fromMin, double toMin)
@@ -683,7 +685,7 @@ namespace Stackshot
 
         public static string Gb(long bytes)
         {
-            return (bytes / 1073741824.0).ToString("0.0", CultureInfo.InvariantCulture).Replace('.', I18n.IsSpanish ? ',' : '.') + " GB";
+            return (bytes / 1073741824.0).ToString("0.0", I18n.Culture) + " GB";
         }
     }
 
@@ -723,19 +725,17 @@ namespace Stackshot
                 return r;
             }
             string what = many
-                ? (I18n.IsSpanish
-                    ? "Tu equipo no ha podido seguir el ritmo: " + r.Affected + " fotogramas (" + Num(r.Percent) + " %) salieron tarde o repetidos."
-                    : "Your computer couldn't keep up: " + r.Affected + " frames (" + Num(r.Percent) + "%) were late or repeated.")
-                : (I18n.IsSpanish
-                    ? "Tu equipo se atasc\u00F3 un momento (" + Num(maxLateMs / 1000) + " s) y alg\u00FAn fotograma pudo repetirse."
-                    : "Your computer hitched for a moment (" + Num(maxLateMs / 1000) + " s) and some frames may have repeated.");
-            r.Text = what + (I18n.IsSpanish ? " Prueba a " : " Try to ") + Join(r.Advice, 3) + ".";
+                ? I18n.Fmt("Tu equipo no ha podido seguir el ritmo: {0} fotogramas ({1} %) salieron tarde o repetidos.",
+                           "Your computer couldn't keep up: {0} frames ({1}%) were late or repeated.", r.Affected, Num(r.Percent))
+                : I18n.Fmt("Tu equipo se atasc\u00F3 un momento ({0} s) y alg\u00FAn fotograma pudo repetirse.",
+                           "Your computer hitched for a moment ({0} s) and some frames may have repeated.", Num(maxLateMs / 1000));
+            r.Text = what + I18n.T(" Prueba a ", " Try to ") + Join(r.Advice, 3) + ".";
             return r;
         }
 
         static string Num(double d)
         {
-            return d.ToString("0.0", CultureInfo.InvariantCulture).Replace('.', I18n.IsSpanish ? ',' : '.');
+            return d.ToString("0.0", I18n.Culture);
         }
 
         static string Join(List<string> items, int max)
@@ -1059,7 +1059,7 @@ namespace Stackshot
             }
             else if (source.OutputCount > 1)
             {
-                string hz = (source.RefreshNum / (double)source.RefreshDen).ToString("0.##", CultureInfo.InvariantCulture).Replace('.', I18n.IsSpanish ? ',' : '.');
+                string hz = (source.RefreshNum / (double)source.RefreshDen).ToString("0.##", I18n.Culture);
                 string cadence = source.MixedRefresh
                     ? I18n.T(" y la otra va a otra frecuencia, as\u00ED que su parte puede verse a saltos.", " and the other runs at a different refresh rate, so its portion may appear choppy.")
                     : I18n.T("; si una se mueve a otro ritmo, su parte puede verse a saltos.", "; if one runs at a different rate, its portion may appear choppy.");
@@ -2184,7 +2184,7 @@ namespace Stackshot
                 notes.Add(t.Trim());
             }
             if (a.SilenceFrames > 0)
-                notes.Add(name + ": " + (a.SilenceFrames / (double)AudioCapture.Rate).ToString("0.0", I18n.IsGerman ? CultureInfo.GetCultureInfo("de-DE") : CultureInfo.InvariantCulture) +
+                notes.Add(name + ": " + (a.SilenceFrames / (double)AudioCapture.Rate).ToString("0.0", I18n.Culture) +
                           I18n.T("", " s of silence inserted (gaps, or nothing playing).", " s Stille eingefügt (Lücken oder keine Wiedergabe)."));
             if (a.Joins > 0)
             {
@@ -2207,7 +2207,7 @@ namespace Stackshot
             double total = a.ClipFrames / (double)AudioCapture.Rate;
             int first = (int)Math.Max(0, a.FirstClipSeconds);
             string held = total < 0.9995 ? Math.Max(1, (int)Math.Round(total * 1000)) + " ms"
-                                         : total.ToString("0.0", I18n.IsSpanish ? CultureInfo.CurrentCulture : CultureInfo.InvariantCulture) + " s";
+                                         : total.ToString("0.0", I18n.Culture) + " s";
             string when = first >= 3600 ? (first / 3600) + ":" + (first / 60 % 60).ToString("00") + ":" + (first % 60).ToString("00")
                                         : (first / 60) + ":" + (first % 60).ToString("00");
             if (I18n.IsKorean)

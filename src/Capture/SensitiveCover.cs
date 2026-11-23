@@ -57,11 +57,15 @@ namespace Stackshot
         }
 
         // The pending thumbnail has no source pixels. Takes the preview over.
+        // Tests make the veil fail (as when the memory runs out) without needing a machine out of memory.
+        internal static Func<Bitmap, Bitmap> VeilHook = null;
+
         public static Bitmap Veil(Bitmap preview)
         {
             Bitmap placeholder = null;
             try
             {
+                if (VeilHook != null) return VeilHook(preview);
                 placeholder = new Bitmap(preview.Width, preview.Height, PixelFormat.Format32bppPArgb);
                 using (Graphics g = Graphics.FromImage(placeholder)) g.Clear(Color.FromArgb(128, 128, 132));
                 return placeholder;
@@ -112,11 +116,13 @@ namespace Stackshot
 
     // What checking one capture gave: what was found (nothing when it could not be read: Error says why), the thumbnail
     // and the copy for the clipboard of the image as it is now (both the receiver's to dispose; Copy is null when it
-    // wasn't asked for or the capture could not be checked), and how long it took.
+    // wasn't asked for or the capture could not be checked), and how long it took. OcrMissing says the capture was
+    // discarded because this Windows has no OCR at all (one warning per session, not one per capture).
     public sealed class CoverOutcome
     {
         public List<SensitiveFinding> Found = new List<SensitiveFinding>();
         public string Error;
+        public bool OcrMissing;
         public Bitmap Preview, Copy;
         public Size Size;
         public long Ms;
@@ -136,7 +142,7 @@ namespace Stackshot
 
         // Jobs run one after another on their own thread: a burst of captures waits its turn instead of running several
         // OCRs at once or holding pool threads the PNG writes need.
-        static readonly Queue<CoverJob> queue = new Queue<CoverJob>();
+        static readonly List<CoverJob> queue = new List<CoverJob>();
         static bool running;
 
         // Captures started and not yet handed to Write: their file is not even on its way.
@@ -182,7 +188,7 @@ namespace Stackshot
             if (Path != null) lock (checking) checking.Add(Path);
             lock (queue)
             {
-                queue.Enqueue(this);
+                queue.Add(this);
                 if (running) return;
                 running = true;
             }
@@ -194,7 +200,8 @@ namespace Stackshot
                     lock (queue)
                     {
                         if (queue.Count == 0) { running = false; return; }
-                        next = queue.Dequeue();
+                        next = queue[0];
+                        queue.RemoveAt(0);
                     }
                     try { next.Run(); }
                     catch (Exception ex) { ShotStack.Log("Datos sensibles: " + ex); }
@@ -203,7 +210,56 @@ namespace Stackshot
             t.IsBackground = true;
             t.SetApartmentState(ApartmentState.MTA);
             t.Name = "Datos sensibles";
-            t.Start();
+            try
+            {
+                if (StartHook != null) StartHook();
+                t.Start();
+            }
+            catch (Exception ex)
+            {
+                // The worker is gone before it took anything: every job waiting is answered as failed and let go, so no
+                // card stays at «Revisando datos…» until restart and the next capture can start a worker again.
+                ShotStack.Log("Datos sensibles: " + ex.Message);
+                List<CoverJob> dropped;
+                lock (queue)
+                {
+                    dropped = new List<CoverJob>(queue);
+                    queue.Clear();
+                    running = false;
+                }
+                foreach (CoverJob j in dropped) j.Fail(ex);
+            }
+        }
+
+        // Tests make starting the worker fail (as when the memory runs out) without needing a machine out of memory.
+        internal static Action StartHook = null;
+
+        // Everything the job held is let go, and whoever waits is answered as if the check had failed.
+        void Fail(Exception ex)
+        {
+            try
+            {
+                if (Shot != null) Shot.Dispose();
+                Checked(Path);
+                CoverStore.Settle(Path);
+                if (Done != null)
+                {
+                    CoverOutcome r = new CoverOutcome();
+                    r.Error = I18n.T("No se ha podido revisar la imagen.", "Could not check the image.");
+                    try { Done(r); }
+                    catch (Exception again) { ShotStack.Log("Datos sensibles: " + again.Message); }
+                }
+            }
+            catch (Exception e) { ShotStack.Log("Datos sensibles: " + e.Message); }
+        }
+
+        // A job that never got to run (starting its thread failed, for instance with no memory): everything it held is
+        // let go, so nothing waits for a check that will never happen. The caller answers for the capture.
+        internal void Abort()
+        {
+            if (Shot != null) Shot.Dispose();
+            Checked(Path);
+            CoverStore.Settle(Path);
         }
 
         public void Run()
@@ -219,19 +275,33 @@ namespace Stackshot
                     r.Size = Shot.Size;
                     CoverStore.DropStale(Path);
                     string error;
-                    List<Ocr.Word> words = Ocr.ReadWords(Shot, out error);
-                    if (words == null) r.Error = error ?? I18n.T("No se ha podido leer la imagen.", "Could not read the image.");
+                    Ocr.ReadError status;
+                    List<Ocr.Word> words = Ocr.ReadWords(Shot, out error, out status);
+                    if (words == null)
+                    {
+                        r.Error = error ?? I18n.T("No se ha podido leer la imagen.", "Could not read the image.");
+                        r.OcrMissing = status == Ocr.ReadError.Unavailable;
+                    }
                     else
                     {
                         r.Found = Sensitive.Find(words, Shot.Size);
                         if (r.Found.Count > 0)
                         {
-                            // Keep reversible covers for personal data, but never persist
-                            // an unredacted original when the scan found a credential.
-                            if (!r.Found.Exists(delegate(SensitiveFinding f) { return f.Kind == SensitiveKind.Secret; }))
+                            // The original is kept so the covers stay reversible marks. When the scan found a credential,
+                            // the kept copy has just those boxes painted over: no unredacted pixel of a key ever reaches
+                            // the disk, and the other covers can still be undone in the editor.
+                            List<Rectangle> secrets = new List<Rectangle>();
+                            foreach (SensitiveFinding f in r.Found) if (f.Kind == SensitiveKind.Secret && !f.Box.IsEmpty) secrets.Add(f.Box);
+                            try
                             {
-                                try { original = TrackedData.DeepCopy(Shot); }
-                                catch (Exception ex) { ShotStack.Log("Datos sensibles, original: " + ex.Message); }
+                                original = TrackedData.DeepCopy(Shot);
+                                SensitiveCover.Paint(original, secrets);
+                            }
+                            catch (Exception ex)
+                            {
+                                if (original != null) original.Dispose();
+                                original = null;
+                                ShotStack.Log("Datos sensibles, original: " + ex.Message);
                             }
                             SensitiveCover.Paint(Shot, SensitiveCover.Boxes(r.Found));
                         }

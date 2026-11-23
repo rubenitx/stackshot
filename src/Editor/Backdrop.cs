@@ -68,22 +68,22 @@ namespace Stackshot
             if (I18n.IsSpanish) return n;
             switch (idx)
             {
-                case 0: return "Stackshot";
-                case 1: return I18n.Localize("Sunset");
-                case 2: return I18n.Localize("Mint");
-                case 3: return I18n.Localize("Ocean");
-                case 4: return I18n.Localize("Peach");
-                case 5: return I18n.Localize("Lavender");
-                case 6: return I18n.Localize("Rose");
-                case 7: return I18n.Localize("Aurora");
-                case 8: return I18n.Localize("Night");
-                case 9: return I18n.Localize("Graphite");
-                case 10: return I18n.Localize("Light");
-                case 11: return I18n.Localize("Dark");
-                case 12: return I18n.Localize("Your desktop");
+                case 0: return n;
+                case 1: return I18n.T("Atardecer", "Sunset", "Abendrot");
+                case 2: return I18n.T("Menta", "Mint", "Minze");
+                case 3: return I18n.T("Oc\u00E9ano", "Ocean", "Ozean");
+                case 4: return I18n.T("Melocot\u00F3n", "Peach", "Pfirsich");
+                case 5: return I18n.T("Lavanda", "Lavender", "Lavendel");
+                case 6: return I18n.T("Rosa", "Rose", "Rosa");
+                case 7: return I18n.T(n, "Aurora", "Aurora");
+                case 8: return I18n.T("Noche", "Night", "Nacht");
+                case 9: return I18n.T("Grafito", "Graphite", "Graphit");
+                case 10: return I18n.T("Claro", "Light", "Hell");
+                case 11: return I18n.T("Oscuro", "Dark", "Dunkel");
+                case 12: return I18n.T("Tu escritorio", "Your desktop", "Dein Desktop");
             }
             if (n != null && n.StartsWith("Tu imagen "))
-                return I18n.Localize("Your image ") + n.Substring("Tu imagen ".Length);
+                return I18n.T("Tu imagen ", "Your image ", "Dein Bild ") + n.Substring("Tu imagen ".Length);
             return n;
         }
 

@@ -1944,7 +1944,7 @@ namespace Stackshot
             if (export == null) return;
             hint.Progress = duration > 0 ? fr : 0.5;
             hint.LeftText = (toGif ? I18n.T("Creando el GIF\u2026 ", "Creating the GIF\u2026 ") : I18n.T("Creando el v\u00EDdeo\u2026 ", "Creating the video\u2026 ")) +
-                            (duration > 0 ? (int)Math.Round(fr * 100) + (I18n.IsSpanish ? " %" : "%") : "");
+                            (duration > 0 ? (int)Math.Round(fr * 100) + I18n.T(" %", "%") : "");
             hint.RightText = I18n.T("Esc cancela", "Esc cancels");
             hint.Invalidate();
         }

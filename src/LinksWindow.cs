@@ -47,6 +47,14 @@ namespace Stackshot
             };
             Build();
             Loaded += delegate { if (targetBox != null) targetBox.Focus(); };
+            I18n.Changed += Relocalize;
+            Closed += delegate { I18n.Changed -= Relocalize; };
+        }
+
+        // The window can stay open for a while: when the language changes, it says so again.
+        void Relocalize()
+        {
+            Dispatcher.BeginInvoke((Action)delegate { if (!IsDisposed) { Keep(); Build(); } });
         }
 
         protected override void ThemeChanged() { Keep(); Build(); }

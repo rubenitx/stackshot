@@ -304,8 +304,8 @@ namespace Stackshot
             reg("Open attachment ({0})", null, "Anhang öffnen ({0})");
             reg("Open attachment", null, "Anhang öffnen");
             reg("It is {0}: can only be saved", null, "Dateityp {0}. Der Anhang kann nur gespeichert werden.");
-            reg("Its name is for a program or a script: can only be saved", null, "Der Dateiname gehört zu einem Programm oder Skript. Der Anhang kann nur gespeichert werden.");
             reg("Unknown type: can only be saved", null, "Unbekannter Dateityp. Der Anhang kann nur gespeichert werden.");
+            reg("Find", null, "Suchen");
             reg("Save attachment as\u2026", null, "Anhang speichern unter\u2026");
             reg("JSON copied.", null, "JSON kopiert.");
             reg("Could not convert to JSON.", null, "Die Umwandlung in JSON ist fehlgeschlagen.");
@@ -395,10 +395,6 @@ namespace Stackshot
             reg("Could not save {0}: {1}", null, "{0} konnte nicht gespeichert werden: {1}");
             reg("Markdown document", "Documento Markdown", "Markdown-Dokument");
             reg("XML document", "Documento XML", "XML-Dokument");
-            reg("Find\u2026", "Buscar\u2026", "Suchen\u2026");
-            reg("Replace\u2026", "Reemplazar\u2026", "Ersetzen\u2026");
-            reg("Export to PDF", "Exportar a PDF", "Als PDF exportieren");
-            reg("Export to HTML", "Exportar a HTML", "Als HTML exportieren");
         }
     }
 }

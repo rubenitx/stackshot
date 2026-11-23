@@ -91,9 +91,7 @@ namespace Stackshot
         const string FileName = "indice.gz";
         static readonly string[] Images = { ".png", ".jpg", ".jpeg" };
         static readonly string[] Kinds = { ".png", ".jpg", ".jpeg", ".gif", ".mp4", ".mkv" };
-        static readonly string[] GroupNamesEs = { "Hoy", "Ayer", "Esta semana", "Este mes", "Anteriores" };
-        static readonly string[] GroupNamesEn = { "Today", "Yesterday", "This week", "This month", "Earlier" };
-        public static string[] GroupNames { get { return I18n.IsSpanish ? GroupNamesEs : I18n.LocalizeList(GroupNamesEn); } }
+        public static string[] GroupNames { get { return new string[] { I18n.T("Hoy", "Today"), I18n.T("Ayer", "Yesterday"), I18n.T("Esta semana", "This week"), I18n.T("Este mes", "This month"), I18n.T("Anteriores", "Earlier") }; } }
 
         public static string Dir = System.IO.Path.Combine(Settings.DataDir, "historial");   // tests point both elsewhere
         public static string TempFolder = Settings.TempDir;
@@ -595,7 +593,7 @@ namespace Stackshot
                                 text = Clean(text);
                                 state = Read;
                             }
-                            else if (error == Ocr.Unavailable)
+                            else if (Ocr.IsUnavailable(error))
                             {
                                 // Nothing to read with: the pass stops, and the history is searched by name only.
                                 lock (gate) unavailable = true;

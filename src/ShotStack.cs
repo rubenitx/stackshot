@@ -70,6 +70,9 @@ namespace Stackshot
             upChip = new Chip(this, -1);
             downChip = new Chip(this, 1);
             Ds.Changed += delegate { Ui(Restyle); };
+            // The recognizer languages are looked for once in the background, so the settings never run the search on
+            // the UI thread.
+            Ocr.Warm();
 
             // Watch the temp folder to refresh a card when its file changes (the editor rewrites it) and drop it if the
             // file is deleted or moved.
@@ -871,7 +874,26 @@ namespace Stackshot
             Size size = shot.Size;
             Bitmap preview = Preview(shot, 600);
             Bitmap forClipboard = settings.CopyToClipboard && !Test ? TrackedData.DeepCopy(shot) : null;
-            bool covering = CoverBeforeShowing(shot, path, ref preview, ref forClipboard);
+            bool covering;
+            CoverDiscarded = false;
+            try { covering = CoverBeforeShowing(shot, path, ref preview, ref forClipboard); }
+            catch (OutOfMemoryException ex)
+            {
+                // Fail closed: without the veil the capture must never be shown, copied or written uncovered.
+                Log("Datos sensibles, velo: " + ex.Message);
+                lock (writing) writing.Remove(path);
+                if (preview != null) preview.Dispose();
+                if (forClipboard != null) forClipboard.Dispose();
+                shot.Dispose();
+                DiscardCaptureNotice();
+                return null;
+            }
+            if (covering && CoverDiscarded)
+            {
+                // The covering step itself had to discard the capture: nothing to add, and the veil goes with it.
+                if (preview != null) preview.Dispose();
+                return null;
+            }
             if (!covering) BeginWrite(path, shot, delegate(Exception ex)
             {
                 Ui(delegate
@@ -1489,9 +1511,10 @@ namespace Stackshot
             WorkFiles.Rescued last = moved[moved.Count - 1];
             // Spanish as it always was; English with the month spelled out (3/11 reads differently in the US).
             string when = last.Started == DateTime.MinValue ? "" : I18n.IsKorean
-                ? " (" + last.Started.ToString(last.Started.Date == DateTime.Today ? "HH:mm" : "M/d HH:mm") + ")" : I18n.IsSpanish
-                ? " (la de las " + last.Started.ToString("HH:mm") + (last.Started.Date != DateTime.Today ? " del " + last.Started.ToString("d/M") : "") + ")"
-                : " (the one from " + last.Started.ToString("HH:mm") + (last.Started.Date != DateTime.Today ? " on " + last.Started.ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture) : "") + ")";
+                ? " (" + last.Started.ToString(last.Started.Date == DateTime.Today ? "HH:mm" : "M/d HH:mm") + ")"
+                : I18n.Fmt(" (la de las {0}{1})", " (the one from {0}{1})",
+                last.Started.ToString("HH:mm"),
+                last.Started.Date != DateTime.Today ? I18n.Fmt(" del {0}", " on {0}", last.Started.ToString(I18n.IsSpanish ? "d/M" : I18n.IsGerman ? "d. MMM" : "MMM d", I18n.IsSpanish ? System.Globalization.CultureInfo.InvariantCulture : I18n.Culture)) : "");
             string text = (moved.Count == 1 ? I18n.Fmt("Stackshot se cerr\u00F3 mientras grababa{0}. Lo grabado est\u00E1 a salvo", "Stackshot closed while recording{0}. The recording is safe", when) : I18n.Fmt("Stackshot se cerr\u00F3 durante {0} grabaciones. Lo grabado est\u00E1 a salvo", "Stackshot closed during {0} recordings. The recordings are safe", moved.Count)) +
                           " " + I18n.T("en la carpeta \u00ABrecuperado\u00BB.", "in the \u201Crecuperado\u201D folder.");
             string dir = moved.Count == 1 ? last.Folder : RecoveredDir;
@@ -1868,7 +1891,7 @@ namespace Stackshot
             {
                 Log("Pegada: " + Path.GetFileName(td.FilePath));
                 Card c = Find(td.FilePath);
-                if (c != null) c.Used("Pegada", delegate { Remove(c); });
+                if (c != null) c.Used(I18n.T("Pegada", "Pasted"), delegate { Remove(c); });
                 else Log("Pegada sin miniatura en la pila (" + cards.Count + " miniaturas)");
             });
         }

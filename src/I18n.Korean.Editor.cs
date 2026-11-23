@@ -260,6 +260,7 @@ namespace Stackshot
             map["Frame at {0} added to stack"] = "{0}\uC758 \uD504\uB808\uC784\uC744 \uC378\uB124\uC77C \uBAA9\uB85D\uC5D0 \uCD94\uAC00\uD588\uC2B5\uB2C8\uB2E4";
             map[" frame "] = " \uD504\uB808\uC784 ";
             map["Frame saved: {0}"] = "\uD504\uB808\uC784 \uC800\uC7A5\uB428: {0}";
+            map["Frame "] = "\uD504\uB808\uC784 ";
             map["Could not save frame: "] = "\uD504\uB808\uC784 \uC800\uC7A5 \uC2E4\uD328: ";
             map["Could not prepare export."] = "\uB0B4\uBCF4\uB0B4\uAE30\uB97C \uC900\uBE44\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
             map["Could not create MP4.\n\n"] = "MP4\uB97C \uB9CC\uB4E4\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.\n\n";
@@ -394,12 +395,12 @@ namespace Stackshot
             map["about {0} s"] = "\uC57D {0}\uCD08";
 
             // Player dialogs and diagnostics
-            map["File not found."] = "\uD30C\uC77C\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
-            map["FFmpeg could not find a video stream to play in this file."] = "FFmpeg\uAC00 \uC774 \uD30C\uC77C\uC5D0\uC11C \uC7AC\uC0DD\uD560 \uC601\uC0C1 \uC2A4\uD2B8\uB9BC\uC744 \uCC3E\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
-            map["Cannot fit a video of unknown duration into {0}. Mark a clip (E and S) or change More options > Export quality."] = "\uC7AC\uC0DD \uC2DC\uAC04\uC744 \uC54C \uC218 \uC5C6\uC5B4 {0}\uC5D0 \uB9DE\uCD9C \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. E\uC640 S\uB85C \uAD6C\uAC04\uC744 \uC9C0\uC815\uD558\uAC70\uB098 \uCD94\uAC00 \uC635\uC158 > \uB0B4\uBCF4\uB0B4\uAE30 \uD654\uC9C8\uC5D0\uC11C \uD654\uC9C8\uC744 \uBCC0\uACBD\uD558\uC138\uC694.";
-            map["Too long to fit into {0} at good quality (limit: {1}). Mark a shorter clip (E and S) or change More options > Export quality."] = "\uB3D9\uC601\uC0C1\uC774 \uB108\uBB34 \uAE38\uC5B4 {0} \uC548\uC5D0 \uC88B\uC740 \uD654\uC9C8\uB85C \uB2F4\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4(\uAC00\uB2A5\uD55C \uAE38\uC774: {1}). E\uC640 S\uB85C \uC9E7\uC740 \uAD6C\uAC04\uC744 \uC9C0\uC815\uD558\uAC70\uB098 \uCD94\uAC00 \uC635\uC158 > \uB0B4\uBCF4\uB0B4\uAE30 \uD654\uC9C8\uC5D0\uC11C \uD654\uC9C8\uC744 \uBCC0\uACBD\uD558\uC138\uC694.";
-            map["Creating MP4\u2026 {0}%  \u00B7  Esc cancels"] = "MP4 \uB9CC\uB4DC\uB294 \uC911\u2026 {0}%  \u00B7  Esc: \uCDE8\uC18C";
-            map["Checking video\u2026  \u00B7  Esc cancels"] = "\uB3D9\uC601\uC0C1 \uD655\uC778 \uC911\u2026  \u00B7  Esc: \uCDE8\uC18C";
+            map["The file cannot be found."] = "\uD30C\uC77C\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
+            map["This file cannot be played: FFmpeg does not find a video to show."] = "FFmpeg\uAC00 \uC774 \uD30C\uC77C\uC5D0\uC11C \uC7AC\uC0DD\uD560 \uC601\uC0C1 \uC2A4\uD2B8\uB9BC\uC744 \uCC3E\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.";
+            map["The duration of this video is unknown, so it cannot be fit to {0}. Mark a clip (E and S) or choose another quality in More options > Quality when exporting."] = "\uC7AC\uC0DD \uC2DC\uAC04\uC744 \uC54C \uC218 \uC5C6\uC5B4 {0}\uC5D0 \uB9DE\uCD9C \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. E\uC640 S\uB85C \uAD6C\uAC04\uC744 \uC9C0\uC815\uD558\uAC70\uB098 \uCD94\uAC00 \uC635\uC158 > \uB0B4\uBCF4\uB0B4\uAE30 \uD654\uC9C8\uC5D0\uC11C \uD654\uC9C8\uC744 \uBCC0\uACBD\uD558\uC138\uC694.";
+            map["It is too long to fit in {0} with good quality ({1} fit). Mark a shorter clip (E and S) or choose another quality in More options > Quality when exporting."] = "\uB3D9\uC601\uC0C1\uC774 \uB108\uBB34 \uAE38\uC5B4 {0} \uC548\uC5D0 \uC88B\uC740 \uD654\uC9C8\uB85C \uB2F4\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4(\uAC00\uB2A5\uD55C \uAE38\uC774: {1}). E\uC640 S\uB85C \uC9E7\uC740 \uAD6C\uAC04\uC744 \uC9C0\uC815\uD558\uAC70\uB098 \uCD94\uAC00 \uC635\uC158 > \uB0B4\uBCF4\uB0B4\uAE30 \uD654\uC9C8\uC5D0\uC11C \uD654\uC9C8\uC744 \uBCC0\uACBD\uD558\uC138\uC694.";
+            map["Creating the MP4\u2026 {0}%  \u00B7  Esc cancels"] = "MP4 \uB9CC\uB4DC\uB294 \uC911\u2026 {0}%  \u00B7  Esc: \uCDE8\uC18C";
+            map["Checking the video\u2026  \u00B7  Esc cancels"] = "\uB3D9\uC601\uC0C1 \uD655\uC778 \uC911\u2026  \u00B7  Esc: \uCDE8\uC18C";
             map["  (normal)"] = "  (\uAE30\uBCF8)";
             map["Audio"] = "\uC624\uB514\uC624";
             map["Audio {0}"] = "\uC624\uB514\uC624 {0}";

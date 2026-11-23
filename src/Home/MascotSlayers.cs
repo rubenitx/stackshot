@@ -202,6 +202,12 @@ namespace Stackshot
 
         static string[] SlayerLines(int k)
         {
+            if (I18n.IsGerman)
+            {
+                if (k == KindTanjiroSd)
+                    return new string[] { "Wasseratmung, erste Form!", "Nezuko, mach dir keine Sorgen.", "Ich rieche einen Dämon\u2026", "Ich habe einen ganz schön harten Schädel!", "Ich gebe alles!" };
+                return new string[] { "Mmm!", "Mmm-mmh.", "Mm-mm!", "Mmm\u2026 \u266A" };
+            }
             if (!I18n.IsSpanish)
             {
                 if (k == KindTanjiroSd)

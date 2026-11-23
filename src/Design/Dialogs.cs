@@ -42,12 +42,12 @@ namespace Stackshot
                     cancel = 1;
                     break;
                 case MessageBoxButtons.YesNo:
-                    labels = new string[] { I18n.T("S\u00ED", "Yes"), "No" };
+                    labels = new string[] { I18n.T("S\u00ED", "Yes", "Ja"), I18n.T("No", "No", "Nein") };
                     results = new DialogResult[] { DialogResult.Yes, DialogResult.No };
                     cancel = 1;
                     break;
                 case MessageBoxButtons.YesNoCancel:
-                    labels = new string[] { I18n.T("S\u00ED", "Yes"), "No", I18n.Cancel };
+                    labels = new string[] { I18n.T("S\u00ED", "Yes", "Ja"), I18n.T("No", "No", "Nein"), I18n.Cancel };
                     results = new DialogResult[] { DialogResult.Yes, DialogResult.No, DialogResult.Cancel };
                     cancel = 2;
                     break;

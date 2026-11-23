@@ -31,7 +31,7 @@ namespace Stackshot
             {
                 if (countdown == c) countdown = null;
                 if (exiting) return;
-                if (cancelled) { if (PetShown) pet.FocusSay("Vale, no la hago."); return; }
+                if (cancelled) { if (PetShown) pet.FocusSay(I18n.T("Vale, no la hago.", "Okay, I won't.")); return; }
                 // A moment for the countdown to leave the screen (it is left out of captures anyway).
                 Delay(90, delegate
                 {

@@ -899,29 +899,21 @@ namespace Stackshot
             foreach (Hint old in hints) { old.OnBright.Dispose(); old.OnDim.Dispose(); }
             hints.Clear();
             string text;
-            if (I18n.IsSpanish)
-            {
-                text = mode == Mode.Image
-                        ? (allInOne ? "Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Despu\u00E9s eliges qu\u00E9 hacer  \u00B7  C: color  \u00B7  May\u00FAs: medir  \u00B7  Esc: cancelar"
-                           : adjustFirst ? "Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Despu\u00E9s la ajustas  \u00B7  C: color  \u00B7  May\u00FAs: medir  \u00B7  Esc: cancelar"
-                                    : "Arrastra para capturar un \u00E1rea  \u00B7  Clic: ventana o pantalla entera  \u00B7  C: color  \u00B7  May\u00FAs: medir  \u00B7  Esc: cancelar")
-                        : mode == Mode.Video ? "Grabar v\u00EDdeo  \u00B7  Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Esc: cancelar"
-                        : mode == Mode.Text ? "Copiar texto  \u00B7  Arrastra sobre el texto o haz clic en una ventana  \u00B7  Esc: cancelar"
-                        : mode == Mode.Gif ? "Grabar GIF  \u00B7  Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Esc: cancelar"
-                        : "Captura con desplazamiento  \u00B7  Arrastra sobre la parte que se mueve, sin la cabecera fija  \u00B7  Esc: cancelar";
-            }
-            else
-            {
-                text = mode == Mode.Image
-                        ? (allInOne ? "Drag an area or click a window  \u00B7  Then choose what to do  \u00B7  C: color  \u00B7  Shift: measure  \u00B7  Esc: cancel"
-                           : adjustFirst ? "Drag an area or click a window  \u00B7  Then adjust it  \u00B7  C: color  \u00B7  Shift: measure  \u00B7  Esc: cancel"
-                                    : "Drag to capture an area  \u00B7  Click: window or full screen  \u00B7  C: color  \u00B7  Shift: measure  \u00B7  Esc: cancel")
-                        : mode == Mode.Video ? "Record video  \u00B7  Drag an area or click a window  \u00B7  Esc: cancel"
-                        : mode == Mode.Text ? "Copy text  \u00B7  Drag over text or click a window  \u00B7  Esc: cancel"
-                        : mode == Mode.Gif ? "Record GIF  \u00B7  Drag an area or click a window  \u00B7  Esc: cancel"
-                        : "Scrolling capture  \u00B7  Drag over the scrolling area, excluding fixed header  \u00B7  Esc: cancel";
-                text = I18n.Localize(text);
-            }
+            if (mode == Mode.Image)
+                text = allInOne ? I18n.T("Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Despu\u00E9s eliges qu\u00E9 hacer  \u00B7  C: color  \u00B7  May\u00FAs: medir  \u00B7  Esc: cancelar",
+                                         "Drag an area or click a window  \u00B7  Then choose what to do  \u00B7  C: color  \u00B7  Shift: measure  \u00B7  Esc: cancel")
+                      : adjustFirst ? I18n.T("Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Despu\u00E9s la ajustas  \u00B7  C: color  \u00B7  May\u00FAs: medir  \u00B7  Esc: cancelar",
+                                             "Drag an area or click a window  \u00B7  Then adjust it  \u00B7  C: color  \u00B7  Shift: measure  \u00B7  Esc: cancel")
+                                    : I18n.T("Arrastra para capturar un \u00E1rea  \u00B7  Clic: ventana o pantalla entera  \u00B7  C: color  \u00B7  May\u00FAs: medir  \u00B7  Esc: cancelar",
+                                             "Drag to capture an area  \u00B7  Click: window or full screen  \u00B7  C: color  \u00B7  Shift: measure  \u00B7  Esc: cancel");
+            else if (mode == Mode.Video) text = I18n.T("Grabar v\u00EDdeo  \u00B7  Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Esc: cancelar",
+                                                       "Record video  \u00B7  Drag an area or click a window  \u00B7  Esc: cancel");
+            else if (mode == Mode.Text) text = I18n.T("Copiar texto  \u00B7  Arrastra sobre el texto o haz clic en una ventana  \u00B7  Esc: cancelar",
+                                                      "Copy text  \u00B7  Drag over text or click a window  \u00B7  Esc: cancel");
+            else if (mode == Mode.Gif) text = I18n.T("Grabar GIF  \u00B7  Arrastra un \u00E1rea o haz clic en una ventana  \u00B7  Esc: cancelar",
+                                                     "Record GIF  \u00B7  Drag an area or click a window  \u00B7  Esc: cancel");
+            else text = I18n.T("Captura con desplazamiento  \u00B7  Arrastra sobre la parte que se mueve, sin la cabecera fija  \u00B7  Esc: cancelar",
+                               "Scrolling capture  \u00B7  Drag over the scrolling area, excluding fixed header  \u00B7  Esc: cancel");
             string icon = mode == Mode.Image ? "area" : mode == Mode.Video ? "video" : mode == Mode.Gif ? "gif" : mode == Mode.Text ? "textscan" : "scroll";
             HintPart[] parts = SplitHint(text.Split(new string[] { "  \u00B7  " }, StringSplitOptions.None));
             Rectangle client = new Rectangle(0, 0, bright.Width, bright.Height);

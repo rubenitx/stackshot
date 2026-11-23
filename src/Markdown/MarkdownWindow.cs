@@ -589,7 +589,7 @@ namespace Stackshot
             {
                 string p = r.Path;
                 bool current = onDisk && string.Equals(p, file.Path, StringComparison.OrdinalIgnoreCase);
-                string when = r.Written.ToString(r.Written.Date == DateTime.Today ? "HH:mm:ss" : I18n.T("dd/MM HH:mm", "MMM d HH:mm"), I18n.IsSpanish ? System.Globalization.CultureInfo.CurrentCulture : System.Globalization.CultureInfo.InvariantCulture);
+                string when = r.Written.ToString(r.Written.Date == DateTime.Today ? "HH:mm:ss" : I18n.IsGerman ? "dd.MM. HH:mm" : I18n.T("dd/MM HH:mm", "MMM d HH:mm"), I18n.Culture);
                 MenuEntry e = MenuEntry.Item(when + "   " + (r.Operation.Length > 0 ? r.Operation : System.IO.Path.GetFileName(p)), null, current, delegate { LoadFile(p); });
                 e.Detail = System.IO.Path.GetFileName(p);
                 m.Add(e);
@@ -1263,7 +1263,7 @@ namespace Stackshot
                 if (r != 0) return false;
                 lock (file) { file.AcceptLoss(); ok = file.Save(text, target, out err); if (!ok) file.Lossy = true; }
             }
-            if (!ok && err != null && DocFile.IsCharsetError(err))
+            if (!ok && file.CharsetRefused)
             {
                 int r = DocAlert.Ask(this, err, I18n.T("Puedo guardarlo en UTF-8, que admite cualquier car\u00E1cter.", "I can save it in UTF-8, which supports any character."),
                                      new string[] { I18n.T("Guardar en UTF-8", "Save in UTF-8"), I18n.T("Cancelar", "Cancel") }, 0, 1);

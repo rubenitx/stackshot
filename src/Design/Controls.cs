@@ -648,6 +648,13 @@ namespace Stackshot
             AcceptFocus();
         }
 
+        bool brandPrimary;
+
+        // The aurora look of the language picker (01-aurora): the primary paints the brand gradient (indigo → accent).
+        // It is ignored under a contrast theme, which paints system colours, and is opt-in: without it the button is
+        // exactly as before.
+        public bool BrandPrimary { set { brandPrimary = value; InvalidateVisual(); } }
+
         public string Label { get { return label; } set { if (label == value) return; label = value; Width = Measure(); InvalidateVisual(); } }
 
         string done;
@@ -711,6 +718,27 @@ namespace Stackshot
             {
                 case ButtonKind.Primary:
                 {
+                    if (brandPrimary)
+                    {
+                        // The aurora primary (01-aurora): indigo into the accent diagonally, with its deep blue shadow.
+                        // Hovered or pressed the ends are never darker than 4.5:1 under the white label: the indigo
+                        // end lifts up to 6 % white, the accent end (4.7:1 already) barely at all.
+                        Color start = Aurora.Primary1, end = pal.Accent;
+                        if (hot > 0) { start = Mix(start, Colors.White, 0.06 * hot); end = Mix(end, Colors.White, 0.02 * hot); }
+                        if (down > 0) { start = Mix(start, Colors.Black, 0.12 * down); end = Mix(end, Colors.Black, 0.12 * down); }
+                        Rect ash = r;
+                        ash.Offset(0, Ink.Snap(this, 1.5));
+                        dc.DrawRoundedRectangle(Ds.Brush(Ds.Argb(0.32 * (1 - down), 0, 110, 240)), null, ash, radius, radius);
+                        LinearGradientBrush g = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
+                        g.GradientStops.Add(new GradientStop(start, 0));
+                        g.GradientStops.Add(new GradientStop(end, 1));
+                        dc.DrawRoundedRectangle(g, null, r, radius, radius);
+                        Pen aglow = new Pen(new LinearGradientBrush(Ds.Argb(0.45, 255, 255, 255), Ds.Argb(0.0, 255, 255, 255), 90), px);
+                        Rect agr = Ink.Inset(r, px / 2);
+                        dc.DrawRoundedRectangle(null, aglow, agr, radius - px / 2, radius - px / 2);
+                        fg = Colors.White;
+                        break;
+                    }
                     // Never lighter than the accent, so the white label keeps 4.5:1; hovering flattens the gradient.
                     Color top = pal.Accent, bottom = Mix(pal.Accent, Colors.Black, 0.16 - 0.10 * hot);
                     if (down > 0) { top = Mix(top, Colors.Black, 0.12 * down); bottom = Mix(bottom, Colors.Black, 0.12 * down); }

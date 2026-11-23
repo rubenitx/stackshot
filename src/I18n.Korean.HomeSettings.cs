@@ -15,7 +15,7 @@ namespace Stackshot
 
         static void RegisterKoreanHomeSettings(Dictionary<string, string> map)
         {
-            map["{0} setting matches {1}."] = "{1}\uC5D0 \uC77C\uCE58\uD558\uB294 \uC124\uC815 {0}\uAC1C";
+            map["1 setting matches {0}."] = "{0}\uC5D0 \uC77C\uCE58\uD558\uB294 \uC124\uC815 1\uAC1C";
             map["Lv. {0}"] = "\uB808\uBCA8 {0}";
             map["Only counts active time at the PC: if you step away for 5 minutes, your eyes and body have rested and timer resets. Never interrupts during calls, presentations, recordings, full screen, or Windows Focus Assist: waits until you finish. Take a break anytime from the desktop mascot menu (\u201CTake a break with me\u201D)."] = "PC\uB97C \uC2E4\uC81C\uB85C \uC0AC\uC6A9\uD558\uB294 \uC2DC\uAC04\uB9CC \uC149\uB2C8\uB2E4. \uC790\uB9AC\uB97C 5\uBD84 \uBE44\uC6B0\uBA74 \uD734\uC2DD\uC73C\uB85C \uBCF4\uACE0 \uD0C0\uC774\uBA38\uB97C \uCD08\uAE30\uD654\uD569\uB2C8\uB2E4. \uD1B5\uD654, \uBC1C\uD45C, \uB179\uD654, \uC804\uCCB4 \uD654\uBA74 \uB610\uB294 Windows \uC9D1\uC911 \uC9C0\uC6D0 \uC0AC\uC6A9 \uC911\uC5D0\uB294 \uB05D\uB0A0 \uB54C\uAE4C\uC9C0 \uAE30\uB2E4\uB9BD\uB2C8\uB2E4. \uBC14\uD0D5 \uD654\uBA74 \uB9C8\uC2A4\uCF54\uD2B8 \uBA54\uB274\uC758 \u2018\uD568\uAED8 \uC26C\uAE30\u2019\uB85C \uC5B8\uC81C\uB4E0\uC9C0 \uC274 \uC218 \uC788\uC2B5\uB2C8\uB2E4.";
             map["Start from here or from the mascot desktop menu (\u201CFocus\u201D). During focus, mascot quietly reads by your side without speaking, wearing a timer on its head. Healthy breaks wait until rest periods. If you step away for 5+ minutes, timer pauses. Without the mascot on desktop, runs quietly and notifies via system toasts."] = "\uC5EC\uAE30 \uB610\uB294 \uBC14\uD0D5 \uD654\uBA74 \uB9C8\uC2A4\uCF54\uD2B8\uC758 \u2018\uC9D1\uC911\u2019 \uBA54\uB274\uC5D0\uC11C \uC2DC\uC791\uD558\uC138\uC694. \uC9D1\uC911\uD558\uB294 \uB3D9\uC548 \uB9C8\uC2A4\uCF54\uD2B8\uB294 \uBA38\uB9AC\uC5D0 \uD0C0\uC774\uBA38\uB97C \uC5B9\uACE0 \uC870\uC6A9\uD788 \uCC45\uC744 \uC77D\uC2B5\uB2C8\uB2E4. \uAC74\uAC15 \uC54C\uB9BC\uC740 \uD734\uC2DD \uC2DC\uAC04\uAE4C\uC9C0 \uAE30\uB2E4\uB9AC\uACE0, \uC790\uB9AC\uB97C 5\uBD84 \uC774\uC0C1 \uBE44\uC6B0\uBA74 \uD0C0\uC774\uBA38\uAC00 \uBA48\uCDA5\uB2C8\uB2E4. \uBC14\uD0D5 \uD654\uBA74 \uB9C8\uC2A4\uCF54\uD2B8\uAC00 \uAEBC\uC838 \uC788\uC73C\uBA74 \uC2DC\uC2A4\uD15C \uC54C\uB9BC\uC73C\uB85C \uC54C\uB824 \uC90D\uB2C8\uB2E4.";
@@ -88,9 +88,9 @@ namespace Stackshot
             map["Uninstall Stackshot\u2026"] = "Stackshot \uC81C\uAC70\u2026";
             map["Updates"] = "\uC5C5\uB370\uC774\uD2B8";
             map["You have version {0}. Stackshot updates are managed by your organization."] = "\uD604\uC7AC \uBC84\uC804\uC740 {0}\uC785\uB2C8\uB2E4. \uC870\uC9C1\uC5D0\uC11C Stackshot \uC5C5\uB370\uC774\uD2B8\uB97C \uAD00\uB9AC\uD569\uB2C8\uB2E4.";
-            map["Downloading"] = "\uB2E4\uC6B4\uB85C\uB4DC \uC911";
-            map["Verifying"] = "\uAC80\uC99D \uC911";
-            map["Installing"] = "\uC124\uCE58 \uC911";
+            map["Downloading Stackshot {0}"] = "\uB2E4\uC6B4\uB85C\uB4DC \uC911 Stackshot {0}";
+            map["Verifying Stackshot {0}"] = "\uAC80\uC99D \uC911 Stackshot {0}";
+            map["Installing Stackshot {0}"] = "\uC124\uCE58 \uC911 Stackshot {0}";
             map["Verifying SHA-256 checksum and signature before installing."] = "\uC124\uCE58\uD558\uAE30 \uC804\uC5D0 SHA-256 \uCCB4\uD06C\uC12C\uACFC \uC11C\uBA85\uC744 \uAC80\uC99D\uD569\uB2C8\uB2E4.";
             map["As soon as recording is saved, Stackshot will restart."] = "\uB179\uD654\uB97C \uC800\uC7A5\uD558\uBA74 Stackshot\uC774 \uB2E4\uC2DC \uC2DC\uC791\uB429\uB2C8\uB2E4.";
             map["Stackshot will restart in a few seconds."] = "\uC7A0\uC2DC \uD6C4 Stackshot\uC774 \uB2E4\uC2DC \uC2DC\uC791\uB429\uB2C8\uB2E4.";
@@ -105,7 +105,7 @@ namespace Stackshot
             map["Checking GitHub for the latest version of Stackshot."] = "GitHub\uC5D0\uC11C Stackshot \uCD5C\uC2E0 \uBC84\uC804\uC744 \uD655\uC778\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4.";
             map["Checking\u2026"] = "\uD655\uC778 \uC911\u2026";
             map["Could not check"] = "\uD655\uC778\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4";
-            map["Last checked: "] = "\uB9C8\uC9C0\uB9C9 \uD655\uC778: ";
+            map[" Last checked: {0}."] = " \uB9C8\uC9C0\uB9C9 \uD655\uC778: {0}.";
             map["You're up to date"] = "\uCD5C\uC2E0 \uBC84\uC804\uC785\uB2C8\uB2E4";
             map["Stackshot {0} is the latest version. Checked {1}."] = "Stackshot {0}\uC774 \uCD5C\uC2E0 \uBC84\uC804\uC785\uB2C8\uB2E4. \uD655\uC778 \uC2DC\uAC01: {1}";
             map["Check now"] = "\uC9C0\uAE08 \uD655\uC778";
@@ -120,8 +120,8 @@ namespace Stackshot
             map["{0}%  \u00B7  SHA-256 checksum and signature verified after"] = "{0}%  \u00B7  \uC644\uB8CC \uD6C4 SHA-256 \uCCB4\uD06C\uC12C \uBC0F \uC11C\uBA85 \uAC80\uC99D";
             map["just now"] = "\uBC29\uAE08";
             map["{0} min ago"] = "{0}\uBD84 \uC804";
-            map["today at "] = "\uC624\uB298 ";
-            map["yesterday at "] = "\uC5B4\uC81C ";
+            map["today at {0}"] = "\uC624\uB298 {0}";
+            map["yesterday at {0}"] = "\uC5B4\uC81C {0}";
             map["What to "] = "\uBB34\uC5C7\uC744 ";
             map["capture?"] = "\uCEA1\uCC98\uD560\uAE4C\uC694?";
             map["History"] = "\uAE30\uB85D";
@@ -131,6 +131,7 @@ namespace Stackshot
             map["Clear search"] = "\uAC80\uC0C9 \uC9C0\uC6B0\uAE30";
             map["Show"] = "\uD45C\uC2DC";
             map["This Windows does not have text recognition (OCR): searching by name only for now."] = "\uC774 Windows\uC5D0\uC11C\uB294 \uD14D\uC2A4\uD2B8 \uC778\uC2DD(OCR)\uC744 \uC0AC\uC6A9\uD560 \uC218 \uC5C6\uC5B4 \uC774\uB984\uC73C\uB85C\uB9CC \uAC80\uC0C9\uD569\uB2C8\uB2E4.";
+            map["This Windows has no text recognition (OCR): it cannot be turned on, because every capture would be discarded unchecked. Install an OCR language under Windows Settings > Apps > Optional features."] = "\uC774 Windows\uC5D0\uB294 \uD14D\uC2A4\uD2B8 \uC778\uC2DD(OCR)\uC774 \uC5C6\uC5B4 \uCF24 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uCF1C\uBA74 \uBAA8\uB4E0 \uCEA1\uCC98\uAC00 \uAC80\uC0AC \uC5C6\uC774 \uC0AD\uC81C\uB418\uAE30 \uB54C\uBB38\uC785\uB2C8\uB2E4. Windows \uC124\uC815 > \uC571 > \uC120\uD0DD\uC801 \uAE30\uB2A5\uC5D0\uC11C OCR \uC5B8\uC5B4\uB97C \uC124\uCE58\uD558\uC138\uC694.";
             map[" \u00B7 paused while recording"] = " \u00B7 \uB179\uD654 \uC911 \uC77C\uC2DC \uC911\uC9C0";
             map[" \u00B7 paused while capturing"] = " \u00B7 \uCEA1\uCC98 \uC911 \uC77C\uC2DC \uC911\uC9C0";
             map["Text search is turned off"] = "\uD14D\uC2A4\uD2B8 \uAC80\uC0C9\uC774 \uAEBC\uC838 \uC788\uC2B5\uB2C8\uB2E4";
@@ -147,16 +148,15 @@ namespace Stackshot
             map["No GIFs"] = "GIF \uC5C6\uC74C";
             map["No captures"] = "\uCEA1\uCC98 \uC5C6\uC74C";
             map["Try \u201CAll\u201D."] = "\u2018\uC804\uCCB4\u2019\uB97C \uC120\uD0DD\uD574 \uBCF4\uC138\uC694.";
-            map[" cannot be opened in the editor."] = " \uD30C\uC77C\uC744 \uD3B8\uC9D1\uAE30\uC5D0\uC11C \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
+            map["{0} cannot be opened in the editor."] = "{0} \uD30C\uC77C\uC744 \uD3B8\uC9D1\uAE30\uC5D0\uC11C \uC5F4 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.";
             map["Capture not found"] = "\uCEA1\uCC98\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4";
-            map[" is no longer in its folder: moved or deleted."] = " \uD30C\uC77C\uC774 \uD3F4\uB354\uC5D0 \uC5C6\uC2B5\uB2C8\uB2E4. \uC774\uB3D9\uD558\uAC70\uB098 \uC0AD\uC81C\uD588\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4.";
+            map["{0} is no longer in its folder: moved or deleted."] = "{0} \uD30C\uC77C\uC774 \uD3F4\uB354\uC5D0 \uC5C6\uC2B5\uB2C8\uB2E4. \uC774\uB3D9\uD558\uAC70\uB098 \uC0AD\uC81C\uD588\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4.";
             map[" While search remains on, Stackshot will gradually re-read them."] = " \uAC80\uC0C9\uC744 \uCF1C \uB450\uBA74 Stackshot\uC774 \uCC28\uB840\uB85C \uB2E4\uC2DC \uC77D\uC2B5\uB2C8\uB2E4.";
             map["Delete text index?"] = "\uD14D\uC2A4\uD2B8 \uC0C9\uC778\uC744 \uC0AD\uC81C\uD560\uAE4C\uC694?";
             map["Your captures are untouched."] = "\uCEA1\uCC98 \uD30C\uC77C\uC740 \uADF8\uB300\uB85C \uC720\uC9C0\uB429\uB2C8\uB2E4.";
             map["Delete index"] = "\uC0C9\uC778 \uC0AD\uC81C";
             map["Delete text index"] = "\uD14D\uC2A4\uD2B8 \uC0C9\uC778 \uC0AD\uC81C";
-            map["What Stackshot has indexed from your captures ("] = "\uCEA1\uCC98\uC5D0\uC11C \uB9CC\uB4E0 \uD14D\uC2A4\uD2B8 \uC0C9\uC778(";
-            map["). Rebuilt automatically while search is on."] = "). \uAC80\uC0C9\uC744 \uCF1C \uB450\uBA74 \uC790\uB3D9\uC73C\uB85C \uB2E4\uC2DC \uB9CC\uB4ED\uB2C8\uB2E4.";
+            map["What Stackshot has indexed from your captures ({0}). Rebuilt automatically while search is on."] = "\uCEA1\uCC98\uC5D0\uC11C \uB9CC\uB4E0 \uD14D\uC2A4\uD2B8 \uC0C9\uC778({0}). \uAC80\uC0C9\uC744 \uCF1C \uB450\uBA74 \uC790\uB3D9\uC73C\uB85C \uB2E4\uC2DC \uB9CC\uB4ED\uB2C8\uB2E4.";
             map["Captures"] = "\uCEA1\uCC98";
             map["All"] = "\uC804\uCCB4";
             map["Videos"] = "\uB3D9\uC601\uC0C1";
@@ -510,13 +510,9 @@ namespace Stackshot
             map["Memory for motion peaks"] = "\uBE60\uB978 \uC6C0\uC9C1\uC784\uC5D0 \uC0AC\uC6A9\uD560 \uBA54\uBAA8\uB9AC";
             map["Smooth motion. If the area is too large for your PC, it will ask before recording."] = "\uC6C0\uC9C1\uC784\uC744 \uBD80\uB4DC\uB7FD\uAC8C \uB179\uD654\uD569\uB2C8\uB2E4. \uC774 PC\uC5D0\uC11C \uC601\uC5ED\uC774 \uB108\uBB34 \uD06C\uBA74 \uC2DC\uC791\uD558\uAE30 \uC804\uC5D0 \uC54C\uB824 \uC90D\uB2C8\uB2E4.";
             map["Half the data and workload: more headroom for large areas or modest PCs. Fast motion looks less smooth."] = "\uB370\uC774\uD130\uC640 \uBD80\uD558\uB97C \uC808\uBC18\uC73C\uB85C \uC904\uC5EC \uD070 \uC601\uC5ED\uC774\uB098 \uC800\uC0AC\uC591 PC\uC5D0 \uC801\uD569\uD569\uB2C8\uB2E4. \uBE60\uB978 \uC6C0\uC9C1\uC784\uC740 \uB35C \uBD80\uB4DC\uB7FD\uAC8C \uBCF4\uC785\uB2C8\uB2E4.";
-            map["up to "] = "\uCD5C\uB300 ";
-            map[" (about "] = " (\uC57D ";
-            map[" s of peaks at "] = "\uCD08\uAC04 \uBE60\uB978 \uC6C0\uC9C1\uC784, ";
-            map["Normal: "] = "\uBCF4\uD1B5: ";
-            map[". Only uses what is needed; if full, recording stops and keeps what was recorded."] = ". \uD544\uC694\uD55C \uB9CC\uD07C\uB9CC \uC0AC\uC6A9\uD569\uB2C8\uB2E4. \uBA54\uBAA8\uB9AC\uAC00 \uAC00\uB4DD \uCC28\uBA74 \uB179\uD654\uB97C \uC911\uC9C0\uD558\uACE0 \uC9C0\uAE08\uAE4C\uC9C0\uC758 \uB0B4\uC6A9\uC744 \uC800\uC7A5\uD569\uB2C8\uB2E4.";
-            map["High: "] = "\uB192\uC74C: ";
-            map[". For captures that stop with heavy motion; with low free memory the PC may slow down."] = ". \uBE60\uB978 \uC6C0\uC9C1\uC784\uC5D0\uC11C \uB179\uD654\uAC00 \uBA48\uCD9C \uB54C \uC0AC\uC6A9\uD558\uC138\uC694. \uC5EC\uC720 \uBA54\uBAA8\uB9AC\uAC00 \uBD80\uC871\uD558\uBA74 PC\uAC00 \uB290\uB824\uC9C8 \uC218 \uC788\uC2B5\uB2C8\uB2E4.";
+            map["up to {0} (about {1} s of peaks at {2} \u00D7 {3})"] = "\uCD5C\uB300 {0} (\uC57D {1}\uCD08\uAC04 \uBE60\uB978 \uC6C0\uC9C1\uC784, {2} \u00D7 {3})";
+            map["Normal: {0}. Only uses what is needed; if full, recording stops and keeps what was recorded."] = "\uBCF4\uD1B5: {0}. \uD544\uC694\uD55C \uB9CC\uD07C\uB9CC \uC0AC\uC6A9\uD569\uB2C8\uB2E4. \uBA54\uBAA8\uB9AC\uAC00 \uAC00\uB4DD \uCC28\uBA74 \uB179\uD654\uB97C \uC911\uC9C0\uD558\uACE0 \uC9C0\uAE08\uAE4C\uC9C0\uC758 \uB0B4\uC6A9\uC744 \uC800\uC7A5\uD569\uB2C8\uB2E4.";
+            map["High: {0}. For captures that stop with heavy motion; with low free memory the PC may slow down."] = "\uB192\uC74C: {0}. \uBE60\uB978 \uC6C0\uC9C1\uC784\uC5D0\uC11C \uB179\uD654\uAC00 \uBA48\uCD9C \uB54C \uC0AC\uC6A9\uD558\uC138\uC694. \uC5EC\uC720 \uBA54\uBAA8\uB9AC\uAC00 \uBD80\uC871\uD558\uBA74 PC\uAC00 \uB290\uB824\uC9C8 \uC218 \uC788\uC2B5\uB2C8\uB2E4.";
             map["Sharpness and smoothness: more bars are better. Size: file space used."] = "\uC120\uBA85\uB3C4\uC640 \uBD80\uB4DC\uB7EC\uC6C0\uC740 \uB9C9\uB300\uAC00 \uB9CE\uC744\uC218\uB85D \uC88B\uC2B5\uB2C8\uB2E4. \uD06C\uAE30\uB294 \uD30C\uC77C\uC774 \uCC28\uC9C0\uD558\uB294 \uC6A9\uB7C9\uC785\uB2C8\uB2E4.";
             map["Records what you turn on, each from the device you choose."] = "\uCF1C \uB454 \uAC01 \uC7A5\uCE58\uC5D0\uC11C \uC18C\uB9AC\uB97C \uB179\uC74C\uD569\uB2C8\uB2E4.";
             map["While recording, the bar shows each sound level and clicking the mic mutes it. Sound is synced with video and never clips even if both play at once."] = "\uB179\uD654 \uD45C\uC2DC\uC904\uC5D0\uC11C \uC18C\uB9AC \uD06C\uAE30\uB97C \uD655\uC778\uD558\uACE0 \uB9C8\uC774\uD06C\uB97C \uD074\uB9AD\uD574 \uC74C\uC18C\uAC70\uD569\uB2C8\uB2E4. \uC591\uCABD \uC18C\uB9AC\uB97C \uC601\uC0C1\uC5D0 \uB9DE\uCDB0 \uB179\uC74C\uD558\uBA70 \uB3D9\uC2DC\uC5D0 \uC7AC\uC0DD\uD574\uB3C4 \uC798\uB9AC\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.";
@@ -524,7 +520,7 @@ namespace Stackshot
             map["Your voice while recording, at a clear, constant volume."] = "\uB179\uD654\uD560 \uB54C \uBAA9\uC18C\uB9AC\uB97C \uB610\uB837\uD558\uACE0 \uC77C\uC815\uD55C \uC74C\uB7C9\uC73C\uB85C \uB2F4\uC2B5\uB2C8\uB2E4.";
             map["Record audio from"] = "\uB179\uC74C\uD560 \uC624\uB514\uC624 \uC7A5\uCE58";
             map["Microphone to record"] = "\uB179\uC74C\uD560 \uB9C8\uC774\uD06C";
-            map["Windows default: "] = "Windows \uAE30\uBCF8\uAC12: ";
+            map["Windows default: {0}"] = "Windows \uAE30\uBCF8\uAC12: {0}";
             map["No audio output available"] = "\uC0AC\uC6A9 \uAC00\uB2A5\uD55C \uC624\uB514\uC624 \uCD9C\uB825\uC774 \uC5C6\uC2B5\uB2C8\uB2E4";
             map["No microphone connected"] = "\uC5F0\uACB0\uB41C \uB9C8\uC774\uD06C\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4";
             map["Disconnected: using Windows default"] = "\uC5F0\uACB0 \uB04A\uAE40: Windows \uAE30\uBCF8\uAC12 \uC0AC\uC6A9 \uC911";
@@ -535,11 +531,11 @@ namespace Stackshot
             map["Appears in a corner of the recorded area. Drag it; double-click changes shape and right-click changes size."] = "\uB179\uD654 \uC601\uC5ED \uBAA8\uC11C\uB9AC\uC5D0 \uD45C\uC2DC\uD569\uB2C8\uB2E4. \uB04C\uC5B4\uC11C \uC774\uB3D9\uD558\uACE0 \uB450 \uBC88 \uD074\uB9AD\uD574 \uBAA8\uC591\uC744, \uB9C8\uC6B0\uC2A4 \uC624\uB978\uCABD \uBC84\uD2BC\uC73C\uB85C \uD06C\uAE30\uB97C \uBC14\uAFC9\uB2C8\uB2E4.";
             map["Download video engine to select camera"] = "\uCE74\uBA54\uB77C\uB97C \uC120\uD0DD\uD558\uB824\uBA74 \uB3D9\uC601\uC0C1 \uC5D4\uC9C4\uC744 \uB2E4\uC6B4\uB85C\uB4DC\uD558\uC138\uC694";
             map["Searching for cameras\u2026"] = "\uCE74\uBA54\uB77C \uAC80\uC0C9 \uC911\u2026";
-            map["First one found: "] = "\uCC98\uC74C \uCC3E\uC740 \uCE74\uBA54\uB77C: ";
+            map["First one found: {0}"] = "\uCC98\uC74C \uCC3E\uC740 \uCE74\uBA54\uB77C: {0}";
             map["First one found"] = "\uCC98\uC74C \uCC3E\uC740 \uCE74\uBA54\uB77C";
             map["Camera to record"] = "\uB179\uD654\uD560 \uCE74\uBA54\uB77C";
             map["Not connected now"] = "\uD604\uC7AC \uC5F0\uACB0\uB418\uC9C0 \uC54A\uC74C";
-            map["No cameras found"] = "\uCE74\uBA54\uB77C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4";
+            map["No camera found"] = "\uCE74\uBA54\uB77C\uB97C \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4";
             map["Search again"] = "\uB2E4\uC2DC \uAC80\uC0C9";
             map["frames per second"] = "\uCD08\uB2F9 \uD504\uB808\uC784 \uC218";
             map["GIF frames per second"] = "GIF \uCD08\uB2F9 \uD504\uB808\uC784 \uC218";
@@ -637,7 +633,7 @@ namespace Stackshot
             map["Go to Home"] = "\uD648\uC73C\uB85C \uC774\uB3D9";
             map["Sections"] = "\uC139\uC158";
             map["Version {0}"] = "\uBC84\uC804 {0}";
-            map["Level "] = "\uB808\uBCA8 ";
+            map["Level {0} \u00B7 {1}"] = "\uB808\uBCA8 {0} \u00B7 {1}";
             map["Maximum level"] = "\uCD5C\uACE0 \uB808\uBCA8";
             map["Capture an area of the screen"] = "\uD654\uBA74 \uC601\uC5ED \uCEA1\uCC98";
             map["Version {0} available"] = "\uBC84\uC804 {0} \uC0AC\uC6A9 \uAC00\uB2A5";
@@ -663,6 +659,7 @@ namespace Stackshot
             map["Apply language"] = "\uC5B8\uC5B4 \uC801\uC6A9";
             map["Follow the Windows language"] = "Windows \uD45C\uC2DC \uC5B8\uC5B4 \uB530\uB974\uAE30";
             map["Partial translation"] = "\uC77C\uBD80 \uBC88\uC5ED";
+            map["Complete"] = "\uBC88\uC5ED \uC644\uB8CC";
             map["Current"] = "\uD604\uC7AC";
             map["Off through the vent\u2026 don't let anyone see me!"] = "\uD658\uD48D\uAD6C\uB85C \uC3D9\u2026 \uC544\uBB34\uB3C4 \uBCF4\uBA74 \uC548 \uB3FC!";
             map["Heading home! See you later!"] = "\uC9D1\uC5D0 \uAC08\uAC8C! \uB098\uC911\uC5D0 \uBD10!";
@@ -726,15 +723,12 @@ namespace Stackshot
             map["Let's leave it for 10 minutes."] = "10\uBD84 \uB4A4\uC5D0 \uB2E4\uC2DC \uBCF4\uC790.";
             map["A glass of water! Drink with me."] = "\uBB3C \uD55C \uC794! \uB098\uB791 \uAC19\uC774 \uB9C8\uC154.";
             map["Sip by sip\u2026"] = "\uD55C \uBAA8\uAE08\uC529\u2026";
-            map["Look at something far away, over 20 feet\u2026 "] = "6m \uC774\uC0C1 \uB5A8\uC5B4\uC9C4 \uACF3\uC744 \uBC14\uB77C\uBD10\u2026 ";
+            map["Look at something far away, over 20 feet\u2026 {0}"] = "6m \uC774\uC0C1 \uB5A8\uC5B4\uC9C4 \uACF3\uC744 \uBC14\uB77C\uBD10\u2026 {0}";
             map["Done!"] = "\uB2E4 \uD588\uC5B4!";
-            map["Arms up and stretch your back\u2026 "] = "\uD314\uC744 \uB4E4\uACE0 \uB4F1\uC744 \uCB49 \uD3B4\u2026 ";
-            map[" of 3"] = " / 3";
-            map["Squat "] = "\uC2A4\uCFFC\uD2B8 ";
-            map[" of 8"] = " / 8";
-            map["Breathe in slowly through your nose\u2026 "] = "\uCF54\uB85C \uCC9C\uCC9C\uD788 \uB4E4\uC774\uB9C8\uC154\u2026 ";
-            map["Let the air out little by little\u2026 "] = "\uC870\uAE08\uC529 \uB0B4\uC26C\uC5B4\u2026 ";
-            map[" of 6"] = " / 6";
+            map["Arms up and stretch your back\u2026 {0} of 3"] = "\uD314\uC744 \uB4E4\uACE0 \uB4F1\uC744 \uCB49 \uD3B4\u2026 {0} / 3";
+            map["Squat {0} of 8"] = "\uC2A4\uCFFC\uD2B8 {0} / 8";
+            map["Breathe in slowly through your nose\u2026 {0} of 6"] = "\uCF54\uB85C \uCC9C\uCC9C\uD788 \uB4E4\uC774\uB9C8\uC154\u2026 {0} / 6";
+            map["Let the air out little by little\u2026 {0} of 6"] = "\uC870\uAE08\uC529 \uB0B4\uC26C\uC5B4\u2026 {0} / 6";
             map["Record a video"] = "\uB3D9\uC601\uC0C1 \uB179\uD654";
             map["Open my captures"] = "\uB0B4 \uCEA1\uCC98 \uC5F4\uAE30";
             map["Add a quick link\u2026"] = "\uBC14\uB85C\uAC00\uAE30 \uCD94\uAC00\u2026";

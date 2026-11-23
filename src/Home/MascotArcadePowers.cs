@@ -100,7 +100,7 @@ namespace Stackshot
 
         static string[] OwnLinesOf(int kind)
         {
-            return I18n.IsSpanish ? OwnLinesEs(kind) : OwnLinesEn(kind);
+            return I18n.IsSpanish ? OwnLinesEs(kind) : I18n.IsGerman ? OwnLinesDe(kind) : OwnLinesEn(kind);
         }
 
         static string[] OwnLinesEn(int kind)
@@ -169,6 +169,76 @@ namespace Stackshot
                 case KindQBlock: return new string[] { "?", "Hit me from below!" };
                 case KindMetroid: return new string[] { "Kriii\u2026" };
                 case KindWaddleDee: return new string[] { "Wadi!", "Always ready!" };
+                default: return null;
+            }
+        }
+
+        static string[] OwnLinesDe(int kind)
+        {
+            switch (kind)
+            {
+                case KindNightFury: return new string[] { "Mrrr\u2026 hast du Fisch?", "Plasma bereit!" };
+                case KindLightFury: return new string[] { "Jetzt siehst du mich\u2026 jetzt nicht." };
+                case KindNadder: return new string[] { "Schau mir diese Stacheln an!" };
+                case KindNightmare: return new string[] { "Ich leuchte, wann immer ich will!" };
+                case KindGronckle: return new string[] { "Noch ein Stein und ich mache ein Nickerchen." };
+                case KindStitch: return new string[] { "Ohana!", "Ohana hei\u00DFt Familie.", "Meega nala kweesta!" };
+                case KindKirby: return new string[] { "Poyo!", "Hai!", "Ich habe Hunger\u2026 poyo!" };
+                case KindGrogu: return new string[] { "Mmm\u2026", "Ein blaues Pl\u00E4tzchen?" };
+                case KindEevee: return new string[] { "Vee!", "Eevee!" };
+                case KindCharmander: return new string[] { "Char!", "Charmander!" };
+                case KindPikachu: return new string[] { "Pika pika!", "Pikachu!", "Pika!" };
+                case KindBmo: return new string[] { "Wer will Videospiele spielen?", "Piep bop, ich bin BMO.", "BMO sagt: Schnappschuss!" };
+                case KindDoraemon: return new string[] { "Daf\u00FCr habe ich ein Gadget!", "Hat jemand Dorayaki?" };
+                case KindTotoro: return new string[] { "Grooaar!", "Warten wir auf den Bus?" };
+                case KindBulbasaur: return new string[] { "Bulba!", "Bulbasaur!" };
+                case KindSquirtle: return new string[] { "Squirtle!", "Alle mal chillen!" };
+                case KindJigglypuff: return new string[] { "Jiggly\u2026 puuuff \u266A", "Eingeschlafen? Dann mal ich dir ins Gesicht!" };
+                case KindSnorlax: return new string[] { "Zzz\u2026", "Ist es schon Zeit zum Essen?", "Nur noch f\u00FCnf Minuten\u2026" };
+                case KindGengar: return new string[] { "Gen\u2026 gar\u2026 hihihi", "Ich bin in deinem Schatten." };
+                case KindMew: return new string[] { "Mew!", "Mew mew \u266A" };
+                case KindPsyduck: return new string[] { "Psy\u2026?", "Mein Kopf tut so weh\u2026", "Psyduck?" };
+                case KindTogepi: return new string[] { "Toge toge priii!", "Togepi!" };
+                case KindMeowth: return new string[] { "Meowth, genau so ist es!", "Gl\u00E4nzt das? Dann geh\u00F6rt es mir!" };
+                case KindPiplup: return new string[] { "Piplup!", "Pip pip!" };
+                case KindMimikyu: return new string[] { "Ich will doch nur einen Freund\u2026", "Mimiky\u2026" };
+                case KindLucario: return new string[] { "Ich sp\u00FCre deine Aura.", "Aurasph\u00E4re!" };
+                case KindDragonite: return new string[] { "Drago!", "Soll ich dich irgendwohin fliegen?" };
+                case KindDitto: return new string[] { "Ditto!", "Ich kann alles sein, was du willst." };
+                case KindMewtwo: return new string[] { "Es z\u00E4hlt, was du aus deinem Leben machst.", "Ich sp\u00FCre deinen Verstand\u2026" };
+                case KindNoFace: return new string[] { "Ah\u2026 ah\u2026" };
+                case KindCalcifer: return new string[] { "Ich bin ein sehr m\u00E4chtiger Feuerd\u00E4mon!", "Gib mir einen Holzscheit!", "Gie\u00DF mich nicht mit Wasser\u2026" };
+                case KindKodama: return new string[] { "Klack, klack, klack\u2026" };
+                case KindYoshi: return new string[] { "Yoshi!", "Yoshi, Yoshi!" };
+                case KindPacman: return new string[] { "Waka waka!", "Waka waka waka!", "Sind hier noch Punkte \u00FCbrig?" };
+                case KindCreeper: return new string[] { "Sss\u2026", "Ssssss\u2026", "Entspann dich, ich will nur dich umarmen." };
+                case KindCrewmate: return new string[] { "War ich nicht.", "Machen wir ein paar Aufgaben?", "Notfallknopf!", "Das ist mega verd\u00E4chtig\u2026" };
+                case KindBlinky: return new string[] { "Buuu!", "Ich krieg dich, Pac-Man!" };
+                case KindDqSlime: return new string[] { "Ein wilder Slime erscheint!", "Boing, boing." };
+                case KindSnoopy: return new string[] { "Zeit zum Tanzen!", "Ich brauche meine Hundeh\u00FCtte\u2026" };
+                case KindKitty: return new string[] { "\u266A", "Hallo, Freund." };
+                case KindGroot: return new string[] { "Ich bin Groot.", "Ich\u2026 bin\u2026 Groot." };
+                case KindRilakkuma: return new string[] { "Entspann dich ein bisschen\u2026", "Heute ist ein Nichtstun-Tag." };
+                case KindPusheen: return new string[] { "Prrr\u2026", "Gibt's Kekse?", "Miau \u266A" };
+                case KindPochacco: return new string[] { "Los, wir rennen!", "Wollen wir Ball spielen?" };
+                case KindInvader: return new string[] { "Piep bop piep bop\u2026", "Wir kommen in Frieden. Mehr oder weniger." };
+                case KindGoomba: return new string[] { "Tritt nicht auf mich!", "Grrr\u2026" };
+                case KindBoo: return new string[] { "Sieh mich nicht an\u2026", "Buu!", "Ich bewege mich nur, wenn du nicht hinsiehst." };
+                case KindToad: return new string[] { "Die Prinzessin ist in einem anderen Schloss!", "Wahoo!" };
+                case KindMushroom: return new string[] { "Power up!", "Iss mich, und du w\u00E4chst." };
+                case KindBobomb: return new string[] { "Tick, tack\u2026", "Lass mich nicht platzen!" };
+                case KindChomp: return new string[] { "Wuff, wuff!", "CHOMP!" };
+                case KindRedBird: return new string[] { "Diese Schweine!", "Ab auf die Schleuder!" };
+                case KindGreenPig: return new string[] { "Oink, oink.", "Hihihi, die Eier geh\u00F6ren uns." };
+                case KindKnight: return new string[] { "\u2026", "*neigt den Kopf*" };
+                case KindCube: return new string[] { "Der Begleiterw\u00FCrfel wird dir nie etwas tun.", "Lass mich nicht zur\u00FCck." };
+                case KindBomberman: return new string[] { "Bomben frei!", "Da komme ich!" };
+                case KindPooka: return new string[] { "Pump mich nicht auf!" };
+                case KindFallGuy: return new string[] { "Juchhu!", "Hol dir die Krone!" };
+                case KindMcPig: return new string[] { "Oink.", "Hast du eine Karotte?" };
+                case KindQBlock: return new string[] { "?", "Triff mich von unten!" };
+                case KindMetroid: return new string[] { "Kriii\u2026" };
+                case KindWaddleDee: return new string[] { "Wadi!", "Immer bereit!" };
                 default: return null;
             }
         }

@@ -20,11 +20,8 @@ namespace Stackshot
 {
     public partial class HomeWindow
     {
-        static readonly string[] HistoryFiltersEs = { "Todo", "Capturas", "V\u00EDdeos", "GIF" };
-        static readonly string[] HistoryFiltersEn = { "All", "Captures", "Videos", "GIF" };
-        static string[] HistoryFilters { get { return I18n.IsSpanish ? HistoryFiltersEs : I18n.LocalizeList(HistoryFiltersEn); } }
-        static readonly CultureInfo HistoryEsCulture = new CultureInfo("es-ES");
-        static CultureInfo HistoryEs { get { return I18n.IsSpanish ? HistoryEsCulture : CultureInfo.GetCultureInfo(I18n.IsKorean ? "ko-KR" : "en-US"); } }
+        static string[] HistoryFilters { get { return new string[] { I18n.T("Todo", "All"), I18n.T("Capturas", "Captures"), I18n.T("V\u00EDdeos", "Videos"), "GIF" }; } }
+        static CultureInfo HistoryEs { get { return I18n.IsKorean ? CultureInfo.GetCultureInfo("ko-KR") : I18n.Culture; } }
 
         string historyQuery = "";
         int historyFilter;
@@ -325,8 +322,7 @@ namespace Stackshot
                     // A single new capture is read in a moment: no line for it.
                     if (total > 1 && done < total)
                     {
-                        text = string.Format(HistoryEs, I18n.T("Leyendo el texto de las capturas\u2026 {0:N0} de {1:N0}",
-                            "Reading capture text\u2026 {0:N0} of {1:N0}"), done, total);
+                        text = I18n.Fmt("Leyendo el texto de las capturas\u2026 {0} de {1}", "Reading capture text\u2026 {0} of {1}", done.ToString("N0", HistoryEs), total.ToString("N0", HistoryEs));
                         if (HistoryIndex.Paused) text += Recorder.Recording
                             ? I18n.T(" \u00B7 en pausa mientras grabas", " \u00B7 paused while recording")
                             : I18n.T(" \u00B7 en pausa mientras capturas", " \u00B7 paused while capturing");
@@ -565,15 +561,13 @@ namespace Stackshot
                 if (historyAll == null || historyAll.Count == 0 || n == 0) historyCount.Text = "";
                 else if (words.Length > 0)
                 {
-                    historyCount.Text = I18n.IsKorean ? string.Format(I18n.Localize("{0:N0} results"), n) : I18n.IsSpanish
-                        ? (n == 1 ? "1 resultado" : n.ToString("N0", HistoryEs) + " resultados")
-                        : (n == 1 ? "1 result" : n.ToString("N0", CultureInfo.InvariantCulture) + " results");
+                    historyCount.Text = I18n.IsKorean ? string.Format(I18n.Localize("{0:N0} results"), n)
+                        : n == 1 ? I18n.T("1 resultado", "1 result") : I18n.Fmt("{0} resultados", "{0} results", n.ToString("N0", HistoryEs));
                 }
                 else
                 {
-                    historyCount.Text = I18n.IsKorean ? string.Format(I18n.Localize("{0:N0} items"), n) : I18n.IsSpanish
-                        ? (n == 1 ? "1 elemento" : n.ToString("N0", HistoryEs) + " elementos")
-                        : (n == 1 ? "1 item" : n.ToString("N0", CultureInfo.InvariantCulture) + " items");
+                    historyCount.Text = I18n.IsKorean ? string.Format(I18n.Localize("{0:N0} items"), n)
+                        : n == 1 ? I18n.T("1 elemento", "1 item") : I18n.Fmt("{0} elementos", "{0} items", n.ToString("N0", HistoryEs));
                 }
             }
             HistoryPaintNotice(n);
@@ -624,8 +618,10 @@ namespace Stackshot
                 return char.ToUpper(day[0], HistoryEs) + day.Substring(1) + ", " + hm;
             }
             if (I18n.IsKorean) return t.Year == DateTime.Now.Year ? t.ToString("M/d HH:mm", HistoryEs) : t.ToString("yyyy/M/d", HistoryEs);
-            if (t.Year == DateTime.Now.Year) return t.ToString(I18n.IsSpanish ? "d MMM" : "MMM d", HistoryEs).Replace(".", "") + ", " + hm;
-            return t.ToString(I18n.IsSpanish ? "d MMM yyyy" : "MMM d, yyyy", HistoryEs).Replace(".", "");
+            bool thisYear = t.Year == DateTime.Now.Year;
+            string date = t.ToString(thisYear ? I18n.T("d MMM", "MMM d", "d. MMM") : I18n.T("d MMM yyyy", "MMM d, yyyy", "d. MMM yyyy"), HistoryEs);
+            if (!I18n.IsGerman) date = date.Replace(".", "");
+            return thisYear ? date + ", " + hm : date;
         }
 
         sealed class HistoryTile : TapPanel
@@ -732,7 +728,7 @@ namespace Stackshot
                 if (pos < sn.Text.Length) s.Inlines.Add(new Run(sn.Text.Substring(pos)));
                 t.Children.Add(s);
             }
-            t.ToolTip = it.Name + "\n" + it.When.ToString(I18n.IsSpanish ? "dddd, d 'de' MMMM 'de' yyyy, HH:mm" : I18n.IsKorean ? "yyyy/M/d dddd HH:mm" : "dddd, MMMM d, yyyy, HH:mm", HistoryEs);
+            t.ToolTip = it.Name + "\n" + it.When.ToString(I18n.IsGerman ? "dddd, d. MMMM yyyy, HH:mm" : I18n.IsSpanish ? "dddd, d 'de' MMMM 'de' yyyy, HH:mm" : I18n.IsKorean ? "yyyy/M/d dddd HH:mm" : "dddd, MMMM d, yyyy, HH:mm", HistoryEs);
             ToolTipService.SetInitialShowDelay(t, 700);
             bool pressed = false;
             t.MouseEnter += delegate { HomeGlide(ring, OpacityProperty, 1, 120, null); };
@@ -787,7 +783,7 @@ namespace Stackshot
             }
             if (how == 2)
             {
-                if (!owner.OpenEditor(it.Path)) owner.Notify(I18n.T("No se pudo abrir", "Could not open"), it.Name + I18n.T(" no se puede abrir en el editor.", " cannot be opened in the editor."));
+                if (!owner.OpenEditor(it.Path)) owner.Notify(I18n.T("No se pudo abrir", "Could not open"), I18n.Fmt("{0} no se puede abrir en el editor.", "{0} cannot be opened in the editor.", it.Name));
                 return;
             }
             OpenCapture(it.Path);
@@ -813,7 +809,7 @@ namespace Stackshot
         // Deleted or moved since the list was made: said once, and the list catches up.
         void HistoryMissing(HistoryItem it)
         {
-            owner.Notify(I18n.T("No se encuentra la captura", "Capture not found"), it.Name + I18n.T(" ya no est\u00E1 en su carpeta: se ha movido o borrado.", " is no longer in its folder: moved or deleted."));
+            owner.Notify(I18n.T("No se encuentra la captura", "Capture not found"), I18n.Fmt("{0} ya no est\u00E1 en su carpeta: se ha movido o borrado.", "{0} is no longer in its folder: moved or deleted.", it.Name));
             HistoryLoad(false);
         }
 
@@ -838,7 +834,7 @@ namespace Stackshot
         {
             public HistoryIndexRow(Action act) : base(I18n.T("Borrar el \u00EDndice de texto", "Delete text index"), null, "trash", Mac.Red, Mac.Orange, I18n.T("Borrar", "Delete"), act)
             {
-                SubNow = delegate { return I18n.T("Lo que Stackshot ha le\u00EDdo en tus capturas (", "What Stackshot has indexed from your captures (") + Recents.Size(HistoryIndex.Bytes) + I18n.T("). Se vuelve a crear solo mientras la b\u00FAsqueda est\u00E9 activada.", "). Rebuilt automatically while search is on."); };
+                SubNow = delegate { return I18n.Fmt("Lo que Stackshot ha le\u00EDdo en tus capturas ({0}). Se vuelve a crear solo mientras la b\u00FAsqueda est\u00E9 activada.", "What Stackshot has indexed from your captures ({0}). Rebuilt automatically while search is on.", Recents.Size(HistoryIndex.Bytes)); };
             }
 
             // Gone once deleted, with the separator above it.

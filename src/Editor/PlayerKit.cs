@@ -24,7 +24,7 @@ namespace Stackshot
         public static readonly string[] EditorFormats = ShotStack.VideoExtensions;
         public static string CineDir = Path.Combine(Settings.DataDir, "cine");   // tests point it elsewhere
 
-        static string Dec(double v, string f) { return v.ToString(f, CultureInfo.InvariantCulture).Replace('.', I18n.IsSpanish ? ',' : '.'); }
+        static string Dec(double v, string f) { return v.ToString(f, I18n.Culture); }
 
         // 1:07 or 1:02:03.
         public static string Clock(double seconds)

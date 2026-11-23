@@ -17,12 +17,11 @@ namespace Stackshot
         bool watchReading;
         double nextWatchRead;
         const double WatchEveryMs = 30 * 60 * 1000;
-        static readonly CultureInfo Es = CultureInfo.GetCultureInfo("es-ES");
 
         static string Today { get { return DateTime.Today.ToString("yyyy-MM-dd"); } }
 
-        // 4.343 in Spanish, 4,343 in English.
-        static string N0(int n) { return n.ToString("N0", I18n.IsSpanish ? Es : CultureInfo.InvariantCulture); }
+        // 4.343 in Spanish and German, 4,343 in English: the separators of the interface language.
+        static string N0(int n) { return n.ToString("N0", I18n.Culture); }
 
         void StartHealth()
         {
@@ -112,7 +111,7 @@ namespace Stackshot
             if ((want & Settings.SummaryFocus) != 0 && settings.FocusBlocks > 0)
                 parts.Add(I18n.Fmt(settings.FocusBlocks == 1 ? "{0} bloque de concentraci\u00F3n ({1})" : "{0} bloques de concentraci\u00F3n ({1})", settings.FocusBlocks == 1 ? "{0} focus block ({1})" : "{0} focus blocks ({1})", settings.FocusBlocks, FocusClock.Minutes(settings.FocusMinutes)));
             if ((want & Settings.SummarySteps) != 0 && GoogleHealth.Connected && watch != null && watch.ReadAt.Date == DateTime.Today && watch.Steps > 0)
-                parts.Add(watch.Steps.ToString("N0", I18n.IsSpanish ? Es : CultureInfo.InvariantCulture) + I18n.T(" pasos", " steps"));
+                parts.Add(watch.Steps.ToString("N0", I18n.Culture) + I18n.T(" pasos", " steps"));
             StatsDayCheck();
             if ((want & Settings.SummaryCaptures) != 0 && settings.StatsCaptures > 0)
                 parts.Add(I18n.Fmt(settings.StatsCaptures == 1 ? "{0} captura" : "{0} capturas", settings.StatsCaptures == 1 ? "{0} capture" : "{0} captures", settings.StatsCaptures));
@@ -194,24 +193,14 @@ namespace Stackshot
                     sentences.Add(I18n.Fmt("", "{0} to go: about {1} min of walking.", N0(goal - w.Steps), WalkMinutes(goal - w.Steps)));
                 return string.Join(" ", sentences.ToArray());
             }
-            if (!I18n.IsSpanish)
-            {
-                string stepsEn = w.Steps >= goal ? "You've already walked " + N0(w.Steps) + " steps today: goal reached!"
-                               : "You've walked " + N0(w.Steps) + " steps today, " + w.Steps * 100 / goal + "% of your " + N0(goal) + " goal.";
-                List<string> moreEn = new List<string>();
-                if (w.SleepMinutes > 0) moreEn.Add("you slept " + Hours(w.SleepMinutes) + " last night");
-                if (w.ActiveMinutes > 0) moreEn.Add("you have " + w.ActiveMinutes + " min of moderate or vigorous activity");
-                string extraEn = moreEn.Count == 0 ? "" : " " + char.ToUpper(moreEn[0][0]) + string.Join(" and ", moreEn.ToArray()).Substring(1) + ".";
-                if (w.Steps < goal && DateTime.Now.Hour >= 12) extraEn += " " + N0(goal - w.Steps) + " to go: about " + WalkMinutes(goal - w.Steps) + " min of walking.";
-                return stepsEn + extraEn;
-            }
-            string steps = w.Steps >= goal ? "\u00A1Hoy ya llevas " + w.Steps.ToString("N0", Es) + " pasos: objetivo cumplido!"
-                         : "Hoy llevas " + w.Steps.ToString("N0", Es) + " pasos, el " + w.Steps * 100 / goal + " % de tu objetivo de " + goal.ToString("N0", Es) + ".";
+            string steps = w.Steps >= goal
+                ? I18n.Fmt("\u00A1Hoy ya llevas {0} pasos: objetivo cumplido!", "You've already walked {0} steps today: goal reached!", N0(w.Steps))
+                : I18n.Fmt("Hoy llevas {0} pasos, el {1} % de tu objetivo de {2}.", "You've walked {0} steps today, {1}% of your {2} goal.", N0(w.Steps), w.Steps * 100 / goal, N0(goal));
             List<string> more = new List<string>();
-            if (w.SleepMinutes > 0) more.Add("anoche dormiste " + Hours(w.SleepMinutes));
-            if (w.ActiveMinutes > 0) more.Add("llevas " + w.ActiveMinutes + " min de actividad moderada o intensa");
-            string extra = more.Count == 0 ? "" : " " + char.ToUpper(more[0][0]) + string.Join(" y ", more.ToArray()).Substring(1) + ".";
-            if (w.Steps < goal && DateTime.Now.Hour >= 12) extra += " Te faltan " + (goal - w.Steps).ToString("N0", Es) + ": unos " + WalkMinutes(goal - w.Steps) + " min andando.";
+            if (w.SleepMinutes > 0) more.Add(I18n.Fmt("anoche dormiste {0}", "you slept {0} last night", Hours(w.SleepMinutes)));
+            if (w.ActiveMinutes > 0) more.Add(I18n.Fmt("llevas {0} min de actividad moderada o intensa", "you have {0} min of moderate or vigorous activity", w.ActiveMinutes));
+            string extra = more.Count == 0 ? "" : " " + char.ToUpper(more[0][0]) + string.Join(I18n.T(" y ", " and "), more.ToArray()).Substring(1) + ".";
+            if (w.Steps < goal && DateTime.Now.Hour >= 12) extra += I18n.Fmt(" Te faltan {0}: unos {1} min andando.", " {0} to go: about {1} min of walking.", N0(goal - w.Steps), WalkMinutes(goal - w.Steps));
             return steps + extra;
         }
 
@@ -409,10 +398,14 @@ namespace Stackshot
             if (now.Hour >= 9 && now.Hour < 19 && still > 0 && still < 150 && ago <= 120 && Said("quieto" + now.Hour / 2))
             {
                 if (settings.WellOn) WellLater(WellKind.Move, 40 * 60 * 1000);
-                pet.HealthAskMove(I18n.IsSpanish
-                    ? "En " + (ago >= 90 ? "la \u00FAltima hora y media" : "la \u00FAltima hora") + " solo has dado " + still + " pasos. \u00BFEstiramos las piernas un par de minutos?"
-                    : I18n.Fmt("", "In the last {0} you have only taken {1} steps. Shall we stretch our legs for a couple of minutes?",
-                               I18n.Localize(ago >= 90 ? "hour and a half" : "hour"), still));
+                pet.HealthAskMove(I18n.IsKorean
+                    ? I18n.Fmt("", "In the last {0} you have only taken {1} steps. Shall we stretch our legs for a couple of minutes?",
+                               I18n.Localize(ago >= 90 ? "hour and a half" : "hour"), still)
+                    : ago >= 90
+                    ? I18n.Fmt("En la última hora y media solo has dado {0} pasos. ¿Estiramos las piernas un par de minutos?",
+                               "In the last hour and a half you have only taken {0} steps. Shall we stretch our legs for a couple of minutes?", still)
+                    : I18n.Fmt("En la última hora solo has dado {0} pasos. ¿Estiramos las piernas un par de minutos?",
+                               "In the last hour you have only taken {0} steps. Shall we stretch our legs for a couple of minutes?", still));
                 return;
             }
             // A slow morning: before lunch, up for a glass of water and a short round.
@@ -459,8 +452,7 @@ namespace Stackshot
             }
             // How it is going, now and then through the working day.
             if (now.Hour >= 10 && now.Hour < 19 && w.Steps > 0 && w.Steps < goal && Said("dato" + now.Hour / 3))
-                pet.FocusSay(I18n.IsSpanish ? "Llevas " + w.Steps.ToString("N0", Es) + " pasos, el " + (w.Steps * 100 / Math.Max(1, goal)) + " % de tu objetivo de hoy."
-                                            : I18n.Fmt("", "{0} steps so far, {1}% of today's goal.", N0(w.Steps), w.Steps * 100 / Math.Max(1, goal)));
+                pet.FocusSay(I18n.Fmt("Llevas {0} pasos, el {1} % de tu objetivo de hoy.", "{0} steps so far, {1}% of today's goal.", N0(w.Steps), w.Steps * 100 / Math.Max(1, goal)));
         }
 
         // True the first time this is said today (and remembered); false if it was already said.

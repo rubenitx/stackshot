@@ -187,7 +187,7 @@ namespace Stackshot
                         DockPanel.SetDock(x, Dock.Right);
                         row.Children.Add(x);
                         bool pinned = StickyNotes.IsPinned(it.Key);
-                        string pinLabel = pinned ? I18n.T("Quitar del escritorio", "Unpin from desktop") : I18n.T("Fijar en el escritorio", "Pin to desktop");
+                        string pinLabel = pinned ? I18n.T("Quitar del escritorio", "Unpin from desktop", "Vom Desktop lösen") : I18n.T("Fijar en el escritorio", "Pin to desktop");
                         TapBorder pin = new TapBorder { Width = 22, Height = 22, CornerRadius = new CornerRadius(11), Background = Brushes.Transparent, Cursor = Cursors.Hand, Label = pinLabel, ToolTip = pinLabel, Margin = new Thickness(6, 0, 0, 0) };
                         pin.Child = new GlyphView("pin", 11, pinned ? pal.Accent : pal.Label2, 1.8) { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
                         Action togglePin = delegate

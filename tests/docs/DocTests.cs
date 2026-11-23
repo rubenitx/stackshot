@@ -66,7 +66,7 @@ namespace Stackshot.Tests
         {
             switch (suite.ToLowerInvariant())
             {
-                case "io": IoSuite(); break;
+                case "io": IoSuite(); IoExtras(); break;
                 case "tools": ToolsSuite(); break;
                 case "commands": CommandsSuite(); break;
                 case "find": FindSuite(); break;
@@ -85,6 +85,34 @@ namespace Stackshot.Tests
                 case "w6md": W6MdSuite(); break;
                 default: Test("main", suite, delegate { throw new TestFailed("unknown suite"); }); break;
             }
+        }
+
+        // The charset refusal is a typed flag, not a match on the message's words: the UTF-8 rescue must reach German
+        // ("Einige Zeichen lassen sich in … nicht darstellen.") too.
+        static void IoExtras()
+        {
+            Test("io", "charset-refusal-is-typed-in-german", delegate
+            {
+                I18n.Apply("de");
+                try
+                {
+                    string dir = WorkDir("emoji-de");
+                    string p = Path.Combine(dir, "a.xml");
+                    byte[] orig = Encoding.GetEncoding(1252).GetBytes("<?xml version=\"1.0\" encoding=\"windows-1252\"?>\n<a>caf\u00E9</a>\n");
+                    File.WriteAllBytes(p, orig);
+                    string err;
+                    DocFile d = DocFile.Load(p, out err);
+                    string t = d.Text.Replace("caf\u00E9", "caf\u00E9 \uD83D\uDE00");
+                    Check(!d.Save(t, null, out err) && d.CharsetRefused, "save did not refuse by flag: " + err);
+                    Check(err.Contains("nicht darstellen"), "German message, got: " + err);
+                    Check(SameBytes(orig, File.ReadAllBytes(p)), "file touched");
+                    // After the switch to UTF-8 the same document saves, with its declaration rewritten.
+                    string t2 = d.ToUtf8(t);
+                    Check(d.Save(t2, null, out err) && !d.CharsetRefused, err);
+                    Same(t2, Encoding.UTF8.GetString(File.ReadAllBytes(p)), "utf-8 file");
+                }
+                finally { I18n.Apply("es"); }
+            });
         }
 
         static void Test(string suite, string name, Action body)

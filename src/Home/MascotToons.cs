@@ -1329,6 +1329,11 @@ namespace Stackshot
         {
             if (IsPersona(kind)) return PersonaLines(kind);
             if (IsSoftFig(kind)) return PkLines(kind);
+            if (I18n.IsGerman)
+            {
+                string[] de = ToonLinesDe(kind);
+                if (de != null) return de;
+            }
             if (!I18n.IsSpanish)
             {
                 string[] en = ToonLinesEn(kind);
@@ -1401,6 +1406,43 @@ namespace Stackshot
                                                          "Woodstock, come here!" };
                 default: return new string[] { "Yo.", "My first impression of you guys\u2026 I hate you.", "Those who break the rules are scum, but those who abandon their friends are worse than scum.",
                                                "Sorry I'm late: I got lost on the path of life." };
+            }
+        }
+
+        // The German lines of the ones ToonLines writes itself; null for those it hands to another file (each of
+        // those answers in all languages).
+        static string[] ToonLinesDe(int kind)
+        {
+            switch (kind)
+            {
+                case KindFinn: return new string[] { "Mathematisch!", "Algebraisch!", "Es ist Abenteuerzeit!", "Komm, Jake!", "Ich bin Finn, der Mensch." };
+                case KindJake: return new string[] { "Abenteuerzeit!", "Alter, das war mathematisch!", "In etwas schlecht zu sein ist der erste Schritt, um darin richtig gut zu werden.", "Ich bin Jake, der Hund." };
+                case KindBmoAt: return new string[] { "Wer will Videospiele spielen?", "BMO ist hier!", "BMO liebt dich." };
+                case KindPakkun: return new string[] { "Jo.", "Meine Nase verfehlt nie.", "Rufst du mich wieder, Kakashi?" };
+                case KindNarutoSd: return new string[] { "Dattebayo!", "Ich werde der nächste Hokage sein!", "Ich breche mein Wort nie! Das ist mein Ninja-Weg!", "Kage Bunshin no Jutsu!", "Ich könnte etwas Ramen vertragen!" };
+                case KindSasukeSd: return new string[] { "Hmph.", "Du bist lästig.", "Was ich habe, ist kein Traum, denn ich werde es Wirklichkeit werden lassen.", "Chidori!" };
+                case KindChopper: return new string[] { "Mich niedlich zu nennen macht mich überhaupt nicht glücklich, du Idiot!", "Ein Arzt! Soll jemand einen Arzt rufen! \u2026Ah, Moment, ich bin der Arzt.",
+                                                        "Ich bin kein Waschbär, ich bin ein Rentier!", "Zuckerwatte!", "Ich bin Tony Tony Chopper, der Arzt der Strohhut-Bande." };
+                case KindKeroSd: return new string[] { "Lass das Kero-chan machen!", "Ich bin Kerberos, die Wächterbestie des Siegels.", "Ist noch Pudding da?", "Sakura, hol dir diese Karte!",
+                                                       "Wollen wir eine Runde an der Konsole spielen?" };
+                case KindGonSd:
+                case KindKilluaSd:
+                case KindHisokaSd:
+                case KindTanjiroSd:
+                case KindNezukoSd:
+                case KindLuffySd:
+                case KindZoroSd:
+                case KindKaminaSd:
+                case KindShinSd:
+                case KindKantamSd:
+                case KindUltraSd:
+                case KindWaniSd:
+                case KindPiggySd:
+                case KindNevadoSd: return null;
+                case KindSnoopySd: return new string[] { "Zeit zum Tanzen!", "Ich brauche meine Hundehütte\u2026", "Verflucht sei der Rote Baron!", "Ist es schon Zeit fürs Abendessen?",
+                                                         "Woodstock, komm her!" };
+                default: return new string[] { "Jo.", "Mein erster Eindruck von euch\u2026 ich hasse euch.", "Wer Regeln bricht, ist Abschaum, aber wer seine Freunde im Stich lässt, ist noch schlimmer als Abschaum.",
+                                               "Sorry, dass ich zu spät bin: Ich habe mich auf dem Weg des Lebens verlaufen." };
             }
         }
     }

@@ -108,7 +108,7 @@ namespace Stackshot
             reg("Welcome to Stackshot", "Te damos la bienvenida", "Willkommen bei Stackshot");
             reg("Capture, markup and share in seconds.", "Captura, marca y comparte en segundos.", "Aufnehmen, markieren und in Sekunden teilen.");
             reg("Start with Windows", "Iniciar con Windows", "Mit Windows starten");
-            reg("Launch with Windows", "Iniciar con Windows", "Mit Windows starten");
+            reg("Launch with Windows", null, "Mit Windows starten");
             reg("Starts in background when your PC boots.", "Arranca en segundo plano al encender el equipo.", "Startet im Hintergrund beim Hochfahren des PCs.");
             reg("Opens automatically in the background on startup.", "Se abre solo, en segundo plano, al encender el equipo.", "Startet automatisch im Hintergrund beim Hochfahren.");
             reg("Use Print Screen key", "Usar la tecla Impr Pant", "Druck-Taste verwenden");
@@ -128,7 +128,6 @@ namespace Stackshot
             reg("Record the screen", null, "Bildschirm aufnehmen");
             reg("on thumbnail to edit it", null, "auf die Miniaturansicht zum Bearbeiten");
             reg("Install & get started", null, "Installieren und loslegen");
-            reg("Where captures are saved", "D\u00F3nde se guardan las capturas", "Speicherort f\u00FCr Aufnahmen.");
             reg("Where your saved captures go.", "Donde van las capturas que guardas.", "Hier werden deine gespeicherten Aufnahmen abgelegt.");
             reg("Where do you want to save your captures?", "\u00BFD\u00F3nde quieres guardar las capturas que conserves?", "Wo m\u00F6chtest du deine Aufnahmen speichern?");
 
@@ -226,7 +225,7 @@ namespace Stackshot
             reg("Checks GitHub for new versions on launch and every 3 hours. Does not send any personal data.", null, "Sucht beim Start und danach alle drei Stunden auf GitHub nach neuen Versionen. Dabei werden keine personenbezogenen Daten gesendet.");
             reg("Mascot settings", null, "Maskottchen-Einstellungen");
             reg("Personality, dialogue, and roaming the desktop.", null, "Persönlichkeit, Dialoge und Verhalten auf dem Desktop.");
-            reg("Character", null, "Figur");
+            reg("Character", "Personaje", "Figur");
             reg("On Home and at the bottom of the sidebar.", null, "Auf der Startseite und unten in der Seitenleiste.");
             reg("I'm back!", null, "Ich bin wieder da!");
             reg("Personality", null, "Persönlichkeit");
@@ -234,7 +233,7 @@ namespace Stackshot
             reg("Occasionally shares tips and tricks about Stackshot.", null, "Gibt gelegentlich Tipps zu Stackshot.");
             reg("Seasonal costume", null, "Kostüm zur Jahreszeit");
             reg("Without a hat, wears a pumpkin on Halloween and Santa hat at Christmas.", null, "Ohne eigenen Hut trägt das Maskottchen zu Halloween einen Kürbis und zu Weihnachten eine Weihnachtsmütze.");
-            reg("On desktop", null, "Auf dem Desktop");
+            reg("On desktop", "En el escritorio", "Auf dem Desktop");
             reg("Walks along taskbar, looks around, plays and naps.", null, "Läuft auf der Taskleiste herum, schaut sich um, spielt und schläft.");
             reg("Only with Full profile (in General \u203A Profile).", null, "Nur mit dem vollständigen Profil unter „Allgemein › Profil“.");
             reg("Enable \u201CShow mascot\u201D first.", null, "Aktiviere zuerst „Maskottchen anzeigen“.");
@@ -268,7 +267,7 @@ namespace Stackshot
             reg("Screen", null, "Bildschirm");
             reg("Window", null, "Fenster");
             reg("Finish scrolling", null, "Scrollaufnahme beenden");
-            reg("Scrolling", null, "Scrollaufnahme");
+            reg("Scrolling", "Con desplazamiento", "Scrollaufnahme");
             reg("Video", null, "Video");
             reg("Open Stackshot", null, "Stackshot öffnen");
             reg("Open saved captures", null, "Gespeicherte Aufnahmen öffnen");
@@ -281,7 +280,7 @@ namespace Stackshot
             reg("1 capture today", null, "Heute 1 Aufnahme");
             reg("{0} captures today", null, "Heute {0} Aufnahmen");
             reg("Ready to capture", null, "Bereit zur Aufnahme");
-            reg("Capture an area", null, "Bereich aufnehmen");
+            reg("Capture an area", "Capturar un área", "Bereich aufnehmen");
             reg("Record a video", null, "Video aufnehmen");
             reg("Open my captures", null, "Meine Aufnahmen öffnen");
             reg("Add a quick link\u2026", null, "Schnelllink hinzufügen\u2026");
@@ -295,19 +294,14 @@ namespace Stackshot
             reg("+1 glass", null, "+1 Glas");
             reg("How's your day going?", null, "Wie läuft dein Tag?");
             reg("My activity", null, "Meine Aktivität");
-            reg(" steps", null, " Schritte");
-            reg("Connect my watch", null, "Meine Uhr verbinden");
+            reg(" steps", " pasos", " Schritte");
+            reg("Connect my watch", "Conectar mi reloj", "Meine Uhr verbinden");
             reg("Opening the sign-in page in your browser.", null, "Die Anmeldeseite wird im Browser geöffnet.");
             reg("Change my outfit", null, "Mein Outfit ändern");
             reg("Go home", null, "Nach Hause gehen");
             reg("Capture full screen", "Capturar pantalla completa", "Vollbild aufnehmen");
-            reg("Capture region", "Capturar regi\u00F3n", "Bereich aufnehmen");
-            reg("Capture window", "Capturar ventana", "Fenster aufnehmen");
-            reg("Record screen", "Grabar pantalla", "Bildschirm aufnehmen");
             reg("Open folder", "Abrir carpeta", "Ordner \u00F6ffnen");
             reg("Open video\u2026", "Abrir v\u00EDdeo\u2026", "Video \u00F6ffnen\u2026");
-            reg("Latest XML", "\u00DAltimo XML", "Neuestes XML");
-            reg("Close all", "Cerrar todo", "Alle schlie\u00DFen");
             reg("Pause recording", "Pausar grabaci\u00F3n", "Aufnahme pausieren");
             reg("Resume recording", "Reanudar grabaci\u00F3n", "Aufnahme fortsetzen");
             reg("Stop recording", "Detener grabaci\u00F3n", "Aufnahme beenden");
@@ -377,10 +371,8 @@ namespace Stackshot
             reg("Text copied", "Texto copiado", "Text kopiert");
             reg("Image copied", "Imagen copiada", "Bild kopiert");
             reg("Saved", "Guardado", "Gespeichert");
-            reg("Capture saved", "Captura guardada", "Aufnahme gespeichert");
             reg("Audio clipped", "El sonido ha saturado", "Audio \u00FCbersteuert");
             reg("Cinema: lossless, verified", "Cine: sin p\u00E9rdidas, verificado", "Kino: verlustfrei, verifiziert");
-            reg("Sensitive data not reviewed", "No se han revisado los datos sensibles", "Sensible Daten nicht \u00FCberpr\u00FCft");
             reg("Could not combine", "No se pudieron unir", "Konnte nicht zusammengef\u00FCgt werden");
             reg("Recording was choppy", "La grabaci\u00F3n ha ido a tirones", "Aufnahme lief unruhig");
             reg("Print Screen now belongs to Stackshot", "Impr Pant ya es de Stackshot", "Druck-Taste geh\u00F6rt jetzt zu Stackshot");
@@ -395,6 +387,11 @@ namespace Stackshot
             RegisterGermanDocuments(reg);
 
             RegisterGermanCapture(reg);
+            RegisterGermanMascotTalk(reg);
+            RegisterGermanMascotCast(reg);
+            RegisterGermanMascotHome(reg);
+            RegisterGermanHome(reg);
+            RegisterGermanApp(reg);
 
             return Tuple.Create(enMap, esMap);
         }

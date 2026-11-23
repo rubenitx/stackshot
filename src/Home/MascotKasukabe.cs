@@ -105,8 +105,9 @@ namespace Stackshot
 
         static string[] NevadoLines()
         {
-            if (!I18n.IsSpanish) return new string[] { "Woof!", "Woof, woof!", "Grrr\u2026", "Awooo\u2026" };
-            return new string[] { "\u00A1Guau!", "\u00A1Guau, guau!", "Grrr\u2026", "Auuu\u2026" };
+            return I18n.IsSpanish ? new string[] { "\u00A1Guau!", "\u00A1Guau, guau!", "Grrr\u2026", "Auuu\u2026" }
+                 : I18n.IsGerman ? new string[] { "Wuff!", "Wuff, wuff!", "Grrr\u2026", "Auuu\u2026" }
+                 : new string[] { "Woof!", "Woof, woof!", "Grrr\u2026", "Awooo\u2026" };
         }
     }
 

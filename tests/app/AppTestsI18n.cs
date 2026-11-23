@@ -21,8 +21,8 @@ namespace Stackshot.Tests
     static class AppTestsI18n
     {
         const string Suite_ = "i18n";
-        const BindingFlags NP = BindingFlags.NonPublic | BindingFlags.Instance;
-        static readonly string[] Pages = { "home", "history", "keys", "general", "editor", "record", "mascot", "mascotset", "about" };
+        internal const BindingFlags NP = BindingFlags.NonPublic | BindingFlags.Instance;
+        internal static readonly string[] Pages = { "home", "history", "keys", "general", "editor", "record", "mascot", "mascotset", "about" };
 
         static void T(string name, Action body) { AppTests.Test(Suite_, name, body); }
         static void Check(bool ok, string what) { if (!ok) throw new InvalidOperationException(what); }
@@ -36,9 +36,19 @@ namespace Stackshot.Tests
             {
                 T("auto-follows-the-windows-language", AutoFollowsWindows);
                 T("existing-users-keep-spanish", ExistingUsers);
+                T("language-setting-contract", LanguageSettingContract);
                 T("english-offered-once-on-another-windows", EnglishOffered);
                 T("notice-kinds-match-in-both-languages", NoticeKinds);
                 T("english-audit-of-every-page", EnglishAudit);
+                T("german-audit-of-every-page", AppTestsI18nGerman.GermanAudit);
+                T("audit-covers-the-other-windows", AppTestsI18nGerman.ExtraWindowsAudit);
+                T("catalog-covers-every-call-site", AppTestsI18nCoverage.CatalogCoversEveryCallSite);
+                T("korean-catalog-covers-every-call-site", AppTestsI18nCoverage.KoreanCatalogCoversEveryCallSite);
+                T("korean-persona-lines-keep-their-meaning", AppTestsI18nCoverage.KoreanPersonaLinesKeepTheirMeaning);
+                T("no-unwrapped-spanish-in-ui", AppTestsI18nCoverage.NoUnwrappedSpanish);
+                T("german-placeholders-match", AppTestsI18nCoverage.GermanPlaceholdersMatch);
+                T("no-duplicate-german-keys", AppTestsI18nCoverage.NoDuplicateGermanKeys);
+                T("german-values-have-no-glued-english", AppTestsI18nCoverage.GermanValuesHaveNoGluedEnglish);
                 T("spanish-pages-unchanged-by-a-round-trip", RoundTrip);
                 T("editor-tool-keys-localized", EditorToolKeysLocalized);
                 T("german-localization-catalog", GermanLocalization);
@@ -46,10 +56,14 @@ namespace Stackshot.Tests
                 T("korean-switch-on-open-capture-surfaces", KoreanCaptureUpdates);
                 T("german-document-viewer-updates-while-open", GermanDocumentUpdates);
                 T("german-settings-welcome-and-tray", GermanSurfaces);
+                T("german-desktop-pet-menu-updates", GermanPetMenuUpdates);
                 T("language-picker-search-and-preview", LanguagePickerSearch);
                 T("korean-format-fields", KoreanFormatFields);
                 T("korean-selection-fallback-and-persistence", KoreanSelection);
                 T("korean-settings-search-and-tray", KoreanSurfaces);
+                T("numbers-follow-the-language", NumberCulture);
+                T("changed-listeners-are-independent", ChangedListeners);
+                T("reader-seek-parses-any-language", ReaderSeek);
             }
             finally
             {
@@ -107,6 +121,63 @@ namespace Stackshot.Tests
             finally { try { Directory.Delete(dir, true); } catch { } }
         }
 
+        // The Language line of the settings file: a known code is kept, an unknown or empty value is Automatic (as before
+        // the language work), and only a profile with no Language line at all keeps the Spanish it always had. The keys
+        // written to the file are exactly the ones the release before the language work wrote.
+        const string StoredKeys =
+            "SaveFolder SaveAll Sound CopyToClipboard FollowMouse StackTuck Region Screen Window Scroll Video " +
+            "Gif Text Markdown Repeat Delayed VideoFps GifFps Profile VideoQuality SystemAudio Microphone " +
+            "MicDevice SystemAudioDevice Webcam WebcamSize WebcamDevice Ffmpeg BgAuto BgPreset BgPadding " +
+            "BgRadius BgShadow BgRatio BgKind BgColor BgBlur BgShadowSize BgInset BgBalance BgAlign BgStyles " +
+            "Appearance Language LanguageOffered AllInOne AdjustFirst CaptureDelay ShowRecent TempKeep HomeStyle " +
+            "CloseToTray ShowIntro Mascot MascotName MascotColor MascotTalks MascotKind MascotHat MascotOutfit " +
+            "MascotFace MascotEyes MascotPersonality MascotSeasonal MascotDesktop MascotClimb MascotAllScreens " +
+            "MascotSpot MascotFavorites MascotLooks MascotAccessory MascotEnergy MascotChatter MascotAlone " +
+            "MascotSleepIdle MascotRhythm MascotHideFull WellOn WellWater WellEyes WellMove WellBreathe " +
+            "WellToasts FocusWork FocusShort FocusLong FocusRounds FocusAuto FocusSound FocusNotices WaterGoal " +
+            "StepsGoal SummaryHour SummaryMinute SummaryParts XmlFaultAlert HealthTalk CheckUpdates AutoUpdate " +
+            "CineFps CinePeakMemory RecordSetup RecordCountdown PlayerOpensVideos PlayerScaling PlayerFill " +
+            "PlayerVolume PlayerLoop ExportQuality XmlWatch XmlWatchFolder CaptureCursor FileNameTemplate " +
+            "SaveSubfolder SensitiveAuto HistorySearch RecordClicks RecordKeys FirstRunDone MascotLove WellDay " +
+            "WellDone FocusDay FocusBlocks FocusMinutes SummaryDay FitbitAsked HealthSaid FitbitLast " +
+            "ShortSleepDay StatsDay StatsCaptures LastUpdateCheck UpdateNotified NewsSeen ScrollGuides";
+
+        static void LanguageSettingContract()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-contract-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                string[,] cases =
+                {
+                    { "SaveAll = 1\nLanguage = auto\n", "auto" },
+                    { "SaveAll = 1\nLanguage = de\n", "de" },
+                    { "SaveAll = 1\nLanguage = ko\n", "ko" },
+                    { "SaveAll = 1\nLanguage = xx\n", "auto" },
+                    { "SaveAll = 1\nLanguage =\n", "auto" },
+                    { "SaveAll = 1\n", "es" }
+                };
+                for (int i = 0; i < cases.GetLength(0); i++)
+                {
+                    string file = Path.Combine(dir, "case" + i + ".ini");
+                    File.WriteAllText(file, cases[i, 0]);
+                    string got = Settings.Load(file).Language;
+                    Check(got == cases[i, 1], "settings '" + cases[i, 0].Replace("\n", "; ") + "' should read " + cases[i, 1] + ", not " + got);
+                }
+                string written = Path.Combine(dir, "written.ini");
+                typeof(Settings).GetMethod("Write", NP).Invoke(new Settings(), new object[] { written });
+                List<string> keys = new List<string>();
+                foreach (string line in File.ReadAllLines(written))
+                {
+                    int eq = line.IndexOf('=');
+                    if (line.StartsWith("#") || eq <= 0) continue;
+                    keys.Add(line.Substring(0, eq).Trim());
+                }
+                Check(string.Join(" ", keys.ToArray()) == StoredKeys.Replace("  ", " "), "the settings file keeps the same " + StoredKeys.Split(' ').Length + " keys as before (got " + keys.Count + ")");
+            }
+            finally { try { Directory.Delete(dir, true); } catch { } }
+        }
+
         // Only to whoever has Spanish on a Windows that is not in Spanish, and only until it was offered or chosen.
         static void EnglishOffered()
         {
@@ -123,6 +194,13 @@ namespace Stackshot.Tests
             Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo("en-US")), "Automatic already follows Windows");
             s.Language = "en";
             Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo("en-US")), "already in English");
+            s.Language = "es";
+            Check(ShotStack.ShouldOfferLanguage(s, new CultureInfo("de-DE")), "Spanish on German Windows: offered");
+            Check(ShotStack.OfferedLanguage(new CultureInfo("de-DE")) == "de" && ShotStack.OfferedLanguage(new CultureInfo("de-AT")) == "de", "German Windows is offered German");
+            Check(ShotStack.OfferedLanguage(new CultureInfo("ko-KR")) == "ko", "Korean Windows is offered Korean");
+            Check(ShotStack.OfferedLanguage(new CultureInfo("en-US")) == "en" && ShotStack.OfferedLanguage(new CultureInfo("fr-FR")) == "en", "other Windows is offered English");
+            foreach (string spanish in new[] { "es-ES", "ca-ES", "gl-ES", "eu-ES" })
+                Check(!ShotStack.ShouldOfferLanguage(s, new CultureInfo(spanish)), "Spanish on " + spanish + " Windows: nothing to offer");
             // An old settings file (no Language line) on English Windows is exactly the case.
             string dir = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-offer-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(dir);
@@ -154,6 +232,33 @@ namespace Stackshot.Tests
             for (int i = 0; i < pairs.GetLength(0); i++)
                 Check(Notice.KindFor(pairs[i, 0]) == Notice.KindFor(pairs[i, 1]),
                       "'" + pairs[i, 0] + "' is " + Notice.KindFor(pairs[i, 0]) + " but '" + pairs[i, 1] + "' is " + Notice.KindFor(pairs[i, 1]));
+
+            // German too: its titles put the verb at the end ("Die Aufnahme konnte nicht gespeichert werden."), so a
+            // prefix of the shown words cannot carry the kind; it must come from the English key the title translates.
+            string[,] german =
+            {
+                { "Die Aufnahme konnte nicht gespeichert werden.", "Could not save the recording." },
+                { "Scroll-Aufnahme", "Scrolling capture" },
+            };
+            for (int i = 0; i < german.GetLength(0); i++)
+                Check(Notice.KindFor(german[i, 0]) == Notice.KindFor(german[i, 1]),
+                      "'" + german[i, 0] + "' is " + Notice.KindFor(german[i, 0]) + " but '" + german[i, 1] + "' is " + Notice.KindFor(german[i, 1]));
+            // And every catalog entry whose English key carries a kind shows the same kind in German.
+            foreach (KeyValuePair<string, string> e in GermanByEnglish())
+            {
+                NoticeKind k = Notice.KindFor(e.Key);
+                if (k == NoticeKind.Info) continue;
+                Check(Notice.KindFor(e.Value) == k,
+                      "'" + e.Value + "' is " + Notice.KindFor(e.Value) + " but its English key '" + e.Key + "' is " + k);
+            }
+        }
+
+        // The German catalog's English key → shown German text, read by reflection (it is I18n's private Lazy).
+        internal static Dictionary<string, string> GermanByEnglish()
+        {
+            FieldInfo f = typeof(I18n).GetField("GermanCatalog", BindingFlags.NonPublic | BindingFlags.Static);
+            var lazy = (Lazy<Tuple<Dictionary<string, string>, Dictionary<string, string>>>)f.GetValue(null);
+            return lazy.Value.Item1;
         }
 
         // ---- The audit
@@ -162,7 +267,7 @@ namespace Stackshot.Tests
         // so is what Windows itself names in its own language (audio devices).
         static readonly Regex SpanishLetters = new Regex("[\u00E1\u00E9\u00ED\u00F3\u00FA\u00F1\u00C1\u00C9\u00CD\u00D3\u00DA\u00D1\u00BF\u00A1]");
         static readonly Regex SpanishWords = new Regex(@"\b(de|del|la|las|el|los|con|para|una|uno|que|por|sin|al|se|y|tu|tus|en|esta|este|hay|m\u00E1s|aqu\u00ED|nada|todo|captura|capturas|grabar|guardar|abrir|cerrar|ajustes|carpeta|archivo|ventana|pantalla|estilo|nivel|vaso|conmigo|recuperado|Captura|Capturas|Capturar|Grabar|Guardar|Abrir|Cerrar|Copiar|Pegar|Borrar|Quitar|Ajustes|Carpeta|Archivo|Ventana|Pantalla|Estilo|Nivel|Listo|Hecho|Buscar|Mostrar|Ocultar|Volver|Ver)\b");
-        static readonly string[] Allowed = { "Espa\u00F1ol", "Deutsch", "Stackshot", "Kero-chan", "Le\u00F3n", "Pok\u00E9mon" };
+        internal static readonly string[] Allowed = { "Espa\u00F1ol", "Deutsch", "Stackshot", "Kero-chan", "Le\u00F3n", "Pok\u00E9mon" };
 
         internal static bool LooksSpanish(string s)
         {
@@ -202,7 +307,7 @@ namespace Stackshot.Tests
         }
 
         // least: what that window shows at the very least, so one that hands over (almost) nothing does not pass unseen.
-        static void Other(List<string> found, string where, int least, Func<List<string>> texts)
+        internal static void Other(List<string> found, string where, int least, Func<List<string>> texts)
         {
             List<string> all;
             try { all = texts(); }
@@ -213,7 +318,7 @@ namespace Stackshot.Tests
         }
 
         // The Markdown/XML window empty, then with a Markdown document (read and edit) and an XML one.
-        static List<string> AuditMarkdown()
+        internal static List<string> AuditMarkdown()
         {
             string dir = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-docs");
             Directory.CreateDirectory(dir);
@@ -270,12 +375,14 @@ namespace Stackshot.Tests
             }
         }
 
-        static List<string> AuditEditor()
+        internal static List<string> AuditEditor()
         {
-            string png = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-editor.png");
+            // A unique file each call: the audit runs in several languages and the Editor keeps the bitmap open.
+            string png = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-editor-" + Guid.NewGuid().ToString("N") + ".png");
             Directory.CreateDirectory(Path.GetDirectoryName(png));
             using (System.Drawing.Bitmap b = new System.Drawing.Bitmap(320, 200)) b.Save(png, System.Drawing.Imaging.ImageFormat.Png);
-            System.Drawing.Bitmap img = new System.Drawing.Bitmap(png);
+            System.Drawing.Bitmap img;
+            using (System.Drawing.Bitmap load = new System.Drawing.Bitmap(png)) img = new System.Drawing.Bitmap(load);
             Editor e = new Editor(null, png, img);
             try
             {
@@ -295,7 +402,7 @@ namespace Stackshot.Tests
         }
 
         // The tray menu: what its rows say and what a screen reader hears.
-        static List<string> AuditTray()
+        internal static List<string> AuditTray()
         {
             TrayPanel t = new TrayPanel(new Settings());
             try
@@ -313,9 +420,9 @@ namespace Stackshot.Tests
         }
 
         // A capture's floating card and its buttons.
-        static List<string> AuditCard()
+        internal static List<string> AuditCard()
         {
-            string png = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-card.png");
+            string png = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-card-" + Guid.NewGuid().ToString("N") + ".png");
             Directory.CreateDirectory(Path.GetDirectoryName(png));
             using (System.Drawing.Bitmap b = new System.Drawing.Bitmap(320, 200)) b.Save(png, System.Drawing.Imaging.ImageFormat.Png);
             Card c = new Card(null, png);
@@ -328,7 +435,7 @@ namespace Stackshot.Tests
         }
 
         // What screen readers get from a WinForms window Stackshot draws itself: names, descriptions, help and values.
-        static List<string> Accessible(System.Windows.Forms.Control c)
+        internal static List<string> Accessible(System.Windows.Forms.Control c)
         {
             List<string> acc = new List<string>();
             AccessibleWalk(c.AccessibilityObject, acc, 0);
@@ -377,11 +484,11 @@ namespace Stackshot.Tests
             finally { hw.Shutdown(); }
         }
 
-        static void Add(List<string> found, string s) { if (!found.Contains(s)) found.Add(s); }
+        internal static void Add(List<string> found, string s) { if (!found.Contains(s)) found.Add(s); }
 
         // What a user can read or hear: text and runs, tooltips, and the names screen readers announce for the controls
         // Stackshot draws itself (segments, buttons, switches).
-        static List<string> Strings(object root)
+        internal static List<string> Strings(object root)
         {
             List<string> acc = new List<string>();
             HashSet<DependencyObject> seen = new HashSet<DependencyObject>();
@@ -426,7 +533,7 @@ namespace Stackshot.Tests
                 for (int i = 0; i < VisualTreeHelper.GetChildrenCount(d); i++) Walk(VisualTreeHelper.GetChild(d, i), seen, visit);
         }
 
-        static HomeWindow Make(int appearance)
+        internal static HomeWindow Make(int appearance)
         {
             Ds.Apply(appearance);
             Settings s = new Settings();
@@ -439,7 +546,7 @@ namespace Stackshot.Tests
             return new HomeWindow(owner, s);
         }
 
-        static void SetPage(HomeWindow hw, string id)
+        internal static void SetPage(HomeWindow hw, string id)
         {
             try { typeof(HomeWindow).GetMethod("SetPage", NP).Invoke(hw, new object[] { id, false }); }
             catch (TargetInvocationException ex) { throw new InvalidOperationException("page " + id + ": " + ex.InnerException, ex.InnerException); }
@@ -589,6 +696,40 @@ namespace Stackshot.Tests
             Check(tray.Contains("Bereich") && tray.Contains("Sprache auswählen\u2026"), "German actions appear in the tray");
         }
 
+        // The desktop mascot outlives a language change: with one of its menus open (a healthy-break reminder), a switch
+        // rebuilds it in place in the new language.
+        static void GermanPetMenuUpdates()
+        {
+            Settings s = new Settings();
+            s.SaveFolder = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-pet");
+            I18n.Apply("en");
+            ShotStack owner = (ShotStack)FormatterServices.GetUninitializedObject(typeof(ShotStack));
+            PetWindow pet = new PetWindow(owner, s);
+            try
+            {
+                IntPtr handle = pet.Handle;   // the rebuild is posted to the window: create the handle first
+                typeof(PetWindow).GetMethod("Remind", BindingFlags.Public | BindingFlags.Instance).Invoke(pet, new object[] { WellKind.Water, "Time for some water" });
+                Check(PetRows(pet).Contains("I'll drink a glass with you") && PetRows(pet).Contains("Already done"), "English reminder menu");
+                I18n.Apply("de");
+                System.Windows.Forms.Application.DoEvents();
+                Check(PetRows(pet).Contains("Ich trinke ein Glas mit dir") && PetRows(pet).Contains("Habe ich schon"), "open menu rebuilt in German");
+                I18n.Apply("es");
+                System.Windows.Forms.Application.DoEvents();
+                Check(PetRows(pet).Contains("Bebo un vaso contigo") && PetRows(pet).Contains("Ya lo he hecho"), "open menu rebuilt in Spanish");
+            }
+            finally { pet.Dispose(); }
+        }
+
+        static List<string> PetRows(PetWindow pet)
+        {
+            object menu = typeof(PetWindow).GetField("menu", NP).GetValue(pet);
+            Check(menu != null, "the pet's menu is open");
+            List<string> rows = new List<string>();
+            foreach (object c in (System.Collections.IEnumerable)menu)
+                rows.Add((string)c.GetType().GetField("Text").GetValue(c));
+            return rows;
+        }
+
         static void GermanDocumentUpdates()
         {
             I18n.Apply("en");
@@ -602,6 +743,48 @@ namespace Stackshot.Tests
                 Check(Strings(viewer.Content).Contains("Datei \u00F6ffnen\u2026"), "same viewer updates to German");
             }
             finally { viewer.Close(); }
+        }
+
+        // Shown numbers take the separators of the interface language, whatever Windows this runs on.
+        static void NumberCulture()
+        {
+            I18n.Apply("en");
+            Check(I18n.Culture.Name == "en-US", "English numbers are en-US, not " + I18n.Culture.Name);
+            Check(Timeline.Clock(0.5) == "0:00.5", "English clock keeps the dot, got " + Timeline.Clock(0.5));
+            I18n.Apply("de");
+            Check(I18n.Culture.Name == "de-DE", "German numbers are de-DE, not " + I18n.Culture.Name);
+            Check(Timeline.Clock(0.5) == "0:00,5", "German clock uses the comma, got " + Timeline.Clock(0.5));
+            I18n.Apply("es");
+            Check(I18n.Culture.Name == "es-ES", "Spanish numbers are es-ES, not " + I18n.Culture.Name);
+            Check(Timeline.Clock(0.5) == "0:00,5", "Spanish clock keeps the comma, got " + Timeline.Clock(0.5));
+        }
+
+        // One listener that throws must not take the others (their live relocalization) down with it.
+        static void ChangedListeners()
+        {
+            I18n.Apply("es");
+            int ran = 0;
+            Action broken = delegate { ran++; throw new InvalidOperationException("oyente roto"); };
+            Action healthy = delegate { ran++; };
+            I18n.Changed += broken;
+            I18n.Changed += healthy;
+            try { I18n.Apply("en"); }
+            finally { I18n.Changed -= broken; I18n.Changed -= healthy; }
+            Check(ran == 2, "a failing listener must not stop the others, ran " + ran);
+            I18n.Apply("es");
+        }
+
+        // The reader types a position into the slider's value ("0:05 de 1:00", "0:05 von 1:00"): the leading time
+        // counts whatever word the interface puts after it.
+        static void ReaderSeek()
+        {
+            MethodInfo m = typeof(PlayerWindow).GetMethod("AccessTime", BindingFlags.NonPublic | BindingFlags.Static);
+            foreach (object[] case_ in new object[][] { new object[] { "0:05 de 1:00", 5.0 }, new object[] { "0:05 von 1:00", 5.0 }, new object[] { "0:05 of 1:00", 5.0 }, new object[] { "1:05", 65.0 }, new object[] { "65", 65.0 } })
+            {
+                object[] args = { case_[0], 0.0 };
+                Check((bool)m.Invoke(null, args) && (double)args[1] == (double)case_[1],
+                      "'" + case_[0] + "' should be " + case_[1] + " seconds, got " + args[1]);
+            }
         }
 
         static void LanguagePickerSearch()
@@ -623,6 +806,11 @@ namespace Stackshot.Tests
                 search.Text = "not-a-language";
                 Check(list.Items.Count == 0, "list shows no matches");
                 Check(I18n.IsEnglish, "searching does not change the application language");
+                search.Text = "ko";
+                Check(list.Items.Count == 1 && (string)((ListBoxItem)list.Items[0]).Tag == "ko", "the Korean row exists");
+                Aurora.Ring ring = (Aurora.Ring)((ListBoxItem)list.Items[0]).Content;
+                Aurora.Monogram tile = (Aurora.Monogram)((Grid)ring.Child).Children[0];
+                Check((string)typeof(Aurora.Monogram).GetField("text", NP).GetValue(tile) == "\uD55C", "the Korean monogram is \uD55C");
             }
             finally { picker.Close(); }
             I18n.Apply("ar");
@@ -632,6 +820,11 @@ namespace Stackshot.Tests
                 var apply = (MacButton)typeof(LanguagePicker).GetField("apply", NP).GetValue(arabic);
                 Check(((FrameworkElement)apply.Parent).FlowDirection == FlowDirection.RightToLeft &&
                       apply.FlowDirection == FlowDirection.LeftToRight, "Arabic layout does not mirror the custom button glyphs");
+                var list = (ListBox)typeof(LanguagePicker).GetField("list", NP).GetValue(arabic);
+                Check(list.Items.Count > 1, "the Arabic picker lists the languages");
+                var tile = (Aurora.Monogram)((Grid)((Aurora.Ring)((ListBoxItem)list.Items[1]).Content).Child).Children[0];
+                Check(tile.FlowDirection == FlowDirection.LeftToRight, "Arabic layout does not mirror the monogram glyphs");
+                Check(System.Windows.Automation.AutomationProperties.GetName((ListBoxItem)list.Items[1]).Contains("\u0645\u0643\u062A\u0645\u0644\u0629"), "the Arabic picker says Complete in Arabic");
             }
             finally { arabic.Close(); }
             string path = Path.Combine(Path.GetTempPath(), "stackshot-languages-" + Guid.NewGuid().ToString("N") + ".ini");
@@ -745,7 +938,7 @@ namespace Stackshot.Tests
             Check(AuditTray().Contains("\uC601\uC5ED"), "Korean capture action in tray");
         }
 
-        static void Layout(HomeWindow hw)
+        internal static void Layout(HomeWindow hw)
         {
             UIElement root = (UIElement)hw.Content;
             root.Measure(new Size(980, 660));

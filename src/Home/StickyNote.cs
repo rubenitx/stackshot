@@ -80,6 +80,21 @@ namespace Stackshot
             ContextMenuStrip = BuildMenu();
             restyle = delegate { if (IsHandleCreated && !IsDisposed) BeginInvoke((Action)Redraw); };
             Ds.Changed += restyle;
+            I18n.Changed += Relocalize;
+        }
+
+        // The language changed while the note lives on the desktop: its menu says so again.
+        void Relocalize()
+        {
+            if (!IsHandleCreated || IsDisposed) return;
+            BeginInvoke((Action)delegate
+            {
+                if (IsDisposed) return;
+                if (topItem != null) topItem.Text = I18n.T("Siempre encima", "Always on top");
+                if (lockItem != null) lockItem.Text = I18n.T("Bloquear posici\u00F3n", "Lock position");
+                for (int i = 0; i < 4; i++) if (colorItems[i] != null) colorItems[i].Text = I18n.T(ColorNamesEs[i], ColorNamesEn[i]);
+                Redraw();
+            });
         }
 
         int P(float v) { return (int)Math.Round(v * s); }
@@ -128,7 +143,7 @@ namespace Stackshot
             for (int i = 0; i < 4; i++)
             {
                 int c = i;
-                string label = I18n.IsKorean ? string.Format(I18n.Localize("{0} color"), I18n.Localize(ColorNamesEn[i])) : I18n.T("Color " + ColorNamesEs[i].ToLowerInvariant(), ColorNamesEn[i] + " color");
+                string label = I18n.IsKorean ? string.Format(I18n.Localize("{0} color"), I18n.Localize(ColorNamesEn[i])) : I18n.T(ColorNamesEs[i], ColorNamesEn[i]);
                 colorItems[i] = TrayMenu.Item(label, null, delegate { color = c; Redraw(); StickyNotes.Save(); });
                 m.Items.Add(colorItems[i]);
             }
@@ -408,6 +423,7 @@ namespace Stackshot
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             base.OnFormClosed(e);
+            I18n.Changed -= Relocalize;
             Ds.Changed -= restyle;
             StickyNotes.Closed(this);
             if (dib != null) { dib.Dispose(); dib = null; }

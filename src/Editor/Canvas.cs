@@ -747,15 +747,16 @@ namespace Stackshot
 
         // 0 minus, 1 percentage, 2 plus, 3 fit; the last rectangle is the whole capsule.
         int pillFitW = -1;
-        string pillFitLang;
+        string pillFitShown;   // the text the width was measured for (the language it is in), not a language flag
 
         Rectangle[] PillParts()
         {
             int h = Pu(30), bw = Pu(30), pw = Pu(50);
-            if (pillFitW < 0 || pillFitLang != I18n.Language)
+            string shown = PillFitText;
+            if (pillFitW < 0 || pillFitShown != shown)
             {
-                pillFitLang = I18n.Language;
-                pillFitW = TextKit.Measure(PillFitText, PillFont, Size.Empty, TextFormatFlags.NoPadding).Width;
+                pillFitShown = shown;
+                pillFitW = TextKit.Measure(shown, PillFont, Size.Empty, TextFormatFlags.NoPadding).Width;
             }
             int fw = pillFitW + Pu(26);
             int w = Pu(3) + bw + pw + bw + Pu(5) + fw + Pu(3);

@@ -122,7 +122,7 @@ namespace Stackshot
         {
             double f = GifRate;
             return I18n.Fmt("Crear un GIF con el tramo marcado (E y S) \u00B7 {0}  (G)", "Create a GIF from marked clip (E & S) \u00B7 {0}  (G)",
-                (f > 0 ? f.ToString("0.##", CultureInfo.InvariantCulture).Replace('.', I18n.IsSpanish ? ',' : '.') + " fps" : I18n.T("al ritmo del GIF", "at GIF frame rate")));
+                (f > 0 ? f.ToString("0.##", I18n.Culture) + " fps" : I18n.T("al ritmo del GIF", "at GIF frame rate")));
         }
 
         // In Mas opciones, greyed out until there is a piece.
