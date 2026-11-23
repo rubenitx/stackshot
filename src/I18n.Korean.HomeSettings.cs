@@ -332,7 +332,7 @@ namespace Stackshot
             map["and {0} more"] = "\uC678 {0}\uAC1C";
             map["Also: {0}"] = "\uCD94\uAC00: {0}";
             map["Press the combination\u2026"] = "\uD0A4 \uC870\uD569\uC744 \uB204\uB974\uC138\uC694\u2026";
-            map["Print Screen now belongs to Stackshot"] = "\uC774\uC81C Print Screen\uC73C\uB85C Stackshot\uC744 \uC0AC\uC6A9\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4";
+            map["Print Screen now belongs to Stackshot"] = "Print Screen\uC740 Stackshot \uC804\uC6A9";
             map["Windows had reserved it for Snipping Tool; it is now freed for your user. If Snipping Tool still opens, sign out and back in."] = "Windows \uCEA1\uCC98 \uB3C4\uAD6C\uC5D0 \uD560\uB2F9\uB41C \uD0A4\uB97C \uC774 \uACC4\uC815\uC5D0\uC11C \uD574\uC81C\uD588\uC2B5\uB2C8\uB2E4. \uCEA1\uCC98 \uB3C4\uAD6C\uAC00 \uACC4\uC18D \uC5F4\uB9AC\uBA74 \uB85C\uADF8\uC544\uC6C3 \uD6C4 \uB2E4\uC2DC \uB85C\uADF8\uC778\uD558\uC138\uC694.";
             map["Where your saved captures go."] = "\uCEA1\uCC98\uB97C \uC800\uC7A5\uD560 \uD3F4\uB354\uC785\uB2C8\uB2E4.";
             map["Change\u2026"] = "\uBCC0\uACBD\u2026";

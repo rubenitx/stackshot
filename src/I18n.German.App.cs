@@ -56,7 +56,7 @@ namespace Stackshot
             reg("Videos|", "V\u00EDdeos|", "Videos|");
             reg("All files", "Todos los archivos", "Alle Dateien");
             reg("Pasted", "Pegada", "Eingef\u00FCgt");
-            reg("Could not save to your folder", "No se pudo guardar en tu carpeta", "In deinem Ordner konnte nicht gespeichert werden");
+            reg("Could not save to your folder", "No se pudo guardar en tu carpeta", "Nicht im Ordner gespeichert");
             reg(" The thumbnail remains in the stack: you can copy it or save it to your folder.", " La miniatura sigue en la pila: puedes copiarla o guardarla en tu carpeta.", " Die Miniaturansicht bleibt im Stapel: du kannst sie kopieren oder in deinem Ordner speichern.");
             reg(" The thumbnail remains in the stack: you can click Save again.", " La miniatura sigue en la pila: puedes volver a pulsar Guardar.", " Die Miniaturansicht bleibt im Stapel: du kannst erneut auf Speichern klicken.");
             reg("Stackshot closed while recording{0}. The recording is safe", "Stackshot se cerr\u00F3 mientras grababa{0}. Lo grabado est\u00E1 a salvo", "Stackshot wurde mitten in einer Aufnahme beendet{0}. Die Aufnahme ist in Sicherheit");
@@ -132,7 +132,7 @@ namespace Stackshot
             reg("I cannot find that folder or file.", "No encuentro esa carpeta o ese archivo.", "Diesen Ordner oder diese Datei finde ich nicht.");
             reg("Noted, with {0}.", "Apuntado, con {0}.", "Notiert, mit {0}.");
             reg("Note saved.", "Nota guardada.", "Notiz gespeichert.");
-            reg("Could not add note", "No se pudo apuntar", "Die Notiz konnte nicht gespeichert werden");
+            reg("Could not add note", "No se pudo apuntar", "Notiz nicht gespeichert");
             reg("Could not update note", "No se pudo cambiar la nota", "Die Notiz konnte nicht ge\u00E4ndert werden");
             reg("That note changed in Notas.md: open it to see it.", "Esa nota ha cambiado en Notas.md: \u00E1brela para verla.", "Diese Notiz hat sich in Notas.md ge\u00E4ndert: \u00F6ffne sie, um sie zu sehen.");
             reg("That note is no longer in Notas.md (it was deleted or changed outside).", "Esa nota ya no est\u00E1 en Notas.md (se borr\u00F3 o cambi\u00F3 fuera).", "Diese Notiz ist nicht mehr in Notas.md (gel\u00F6scht oder au\u00DFerhalb ge\u00E4ndert).");
@@ -352,7 +352,7 @@ namespace Stackshot
             reg("Copied in HD", "Copiado en HD", "In HD kopiert");
             reg("Reading\u2026", "Leyendo\u2026", "Wird gelesen\u2026");
             reg("Could not read", "No se pudo leer", "Konnte nicht gelesen werden");
-            reg("Could not pin capture", "No se pudo fijar la captura", "Die Aufnahme konnte nicht angeheftet werden");
+            reg("Could not pin capture", "No se pudo fijar la captura", "Anheften nicht möglich");
             reg("Could not read the image. Please try again.", "No se ha podido leer la imagen. Vuelve a intentarlo.", "Das Bild konnte nicht gelesen werden. Versuch es bitte erneut.");
             reg("Please try again.", "Vuelve a intentarlo.", "Versuch es bitte erneut.");
             reg("Could not show", "No se pudo mostrar", "Konnte nicht angezeigt werden");

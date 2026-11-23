@@ -722,6 +722,40 @@ namespace Stackshot.Tests
             return true;
         }
 
+        // One notice title as a call site writes it: the Spanish and English texts (and the German one when given), and the
+        // sample values a Fmt title takes.
+        internal sealed class TitleSite { public string Where, Es, En, De; public bool Fmt; public int Args; }
+
+        // Every notice raised with a title made by I18n.T or I18n.Fmt of literals: Notify, NotifyPage, PageNotice,
+        // FolderNotice and new Notice. Titles made any other way are not seen here.
+        internal static List<TitleSite> NoticeTitleSites()
+        {
+            List<TitleSite> found = new List<TitleSite>();
+            string[] calls = { "Notify", "NotifyPage", "PageNotice", "FolderNotice", "Notice" };
+            foreach (Source f in Sources())
+            {
+                List<Tok> toks = Tokenize(f.Text);
+                for (int i = 0; i < toks.Count - 1; i++)
+                {
+                    if (toks[i].Com || toks[i].Str || Array.IndexOf(calls, toks[i].S) < 0 || toks[i + 1].S != "(") continue;
+                    if (i > 0 && (toks[i - 1].S == "void" || toks[i - 1].S == "Notice" || toks[i - 1].S == "Notice") && toks[i].S != "Notice") continue;
+                    int line = toks[i].Line, at = i + 1;
+                    List<List<Tok>> args = CallArgs(toks, ref at);
+                    if (args.Count == 0) continue;
+                    List<Tok> a = args[0];
+                    if (a.Count < 5 || a[0].S != "I18n" || a[1].S != "." || (a[2].S != "T" && a[2].S != "Fmt") || a[3].S != "(") continue;
+                    int inner = 3;
+                    List<List<Tok>> parts = CallArgs(a, ref inner);
+                    string es, en, de = null;
+                    if (parts.Count < 2 || !LiteralOf(parts[0], out es) || !LiteralOf(parts[1], out en)) continue;
+                    bool isFmt = a[2].S == "Fmt";
+                    if (!isFmt && parts.Count == 3 && !LiteralOf(parts[2], out de)) continue;
+                    found.Add(new TitleSite { Where = f.Rel + ":" + line, Es = es, En = en, De = de, Fmt = isFmt, Args = isFmt ? parts.Count - 2 : 0 });
+                }
+            }
+            return found;
+        }
+
         static string Placeholders(string s)
         {
             SortedSet<int> set = new SortedSet<int>();

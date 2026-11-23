@@ -259,6 +259,7 @@ namespace Stackshot
         public double TextLeft, TitleTop, TextTop, LineHeight;
         public int Lines;                       // lines of text shown
         public bool Clipped;                    // the text did not fit in them
+        public bool TitleClipped;               // the title is wider than its line and ends in an ellipsis
         M.FormattedText title, text, label;
 
         ToastLook(Notice n, float scale)
@@ -290,6 +291,8 @@ namespace Stackshot
             title.MaxTextWidth = Math.Max(1, titleW);
             title.MaxLineCount = 1;
             title.Trimming = W.TextTrimming.CharacterEllipsis;
+            M.FormattedText whole = Ink.Px(Notice.Title, Ds.Semibold, F(13.5), pal.Label);
+            TitleClipped = whole.Width > titleW + 0.5;
             // A title alone sits level with the icon.
             TitleTop = Notice.Text.Length > 0 ? Math.Round(F(Inset) - F(1)) : Math.Round(Icon.Y + (Icon.Height - title.Height) / 2);
             TextTop = Math.Round(TitleTop + title.Height + F(2));

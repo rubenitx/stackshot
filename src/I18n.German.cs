@@ -359,7 +359,7 @@ namespace Stackshot
             reg("Download and install", null, "Herunterladen und installieren");
             reg("Updates are managed by IT on this computer: request the latest Stackshot.msi.", null, "Die IT verwaltet die Updates auf diesem Computer. Bitte frag nach der neuesten Stackshot.msi.");
             reg("On this machine updates are managed by IT. Would you like to view the new version?", null, "Die IT verwaltet die Updates auf diesem Computer. Möchtest du dir die neue Version ansehen?");
-            reg("Could not save capture", null, "Aufnahme konnte nicht gespeichert werden");
+            reg("Could not save capture", null, "Aufnahme nicht gespeichert");
             reg("The capture was discarded because it could not be checked for sensitive data.", null, "Die Aufnahme wurde verworfen, weil sie nicht auf sensible Daten geprüft werden konnte.");
             reg("Checking data\u2026", null, "Daten werden geprüft\u2026");
             reg("Unchecked", null, "Ungeprüft");

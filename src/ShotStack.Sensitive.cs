@@ -72,7 +72,7 @@ namespace Stackshot
         // The fail-closed notice when a capture cannot be covered at all.
         void DiscardCaptureNotice()
         {
-            Notify(I18n.T("No se pudo revisar la captura", "The capture could not be checked", "Die Aufnahme konnte nicht gepr\u00FCft werden"),
+            Notify(I18n.T("No se pudo revisar la captura", "The capture could not be checked", "Pr\u00FCfung fehlgeschlagen"),
                    I18n.T("No se pudieron tapar sus datos sensibles, as\u00ED que se ha descartado: nunca se muestra ni se guarda sin revisar.", "Its sensitive data could not be covered, so it was discarded: it is never shown or saved unchecked.", "Ihre sensiblen Daten konnten nicht geschw\u00E4rzt werden, deshalb wurde sie verworfen: Sie wird nie ungepr\u00FCft gezeigt oder gespeichert."),
                    NoticeKind.Error, null, null);
         }
@@ -96,7 +96,7 @@ namespace Stackshot
             // language (the German one comes from the same catalog key, never retyped here).
             string title = PolicyTitles.Sensitive;
             // What a policy forces cannot be turned off: say who requires it instead of naming a way out the user has.
-            Notify(I18n.T("Las capturas se descartan: no hay reconocimiento de texto (OCR)", "Captures are discarded: no text recognition (OCR)", "Aufnahmen werden verworfen: keine Texterkennung (OCR)"),
+            Notify(I18n.T("Capturas descartadas: falta el OCR", "Captures discarded: no OCR", "Aufnahmen verworfen: OCR fehlt"),
                    I18n.IsKorean
                        ? I18n.Fmt("", Policy.SensitiveForced
                              ? "Your organization requires \u201C{0}\u201D, but this Windows has no OCR installed, so every capture is discarded rather than shown unchecked. Install an OCR language (Windows Settings > Apps > Optional features) or contact IT."
