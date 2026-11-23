@@ -125,7 +125,7 @@ jobs:
         run: |
           v="${GITHUB_REF_NAME#v}"
           awk -v v="$v" '/^## /{p = index($0, "## " v) == 1; next} p' CHANGELOG.md > notes.md
-          # The same news in Spanish and English, between markers the app reads to tell what a new version brings before updating.
+          # The same news in Spanish, English, German and Korean, each between its own markers the app reads to tell what a new version brings before updating.
           awk -v v="$v" '/^## /{p = $0 == "## " v; next} p' docs/novedades.md > es.md
           if grep -q '^- ' es.md; then
             {
@@ -148,6 +148,32 @@ jobs:
               echo "<!-- novedades-en -->"
               cat en.md
               echo "<!-- /novedades-en -->"
+              echo
+              echo "</details>"
+            } >> notes.md
+          fi
+          awk -v v="$v" '/^## /{p = $0 == "## " v; next} p' docs/novedades.de.md > de.md
+          if grep -q '^- ' de.md; then
+            {
+              echo
+              echo "<details><summary>Neuigkeiten auf Deutsch</summary>"
+              echo
+              echo "<!-- novedades-de -->"
+              cat de.md
+              echo "<!-- /novedades-de -->"
+              echo
+              echo "</details>"
+            } >> notes.md
+          fi
+          awk -v v="$v" '/^## /{p = $0 == "## " v; next} p' docs/novedades.ko.md > ko.md
+          if grep -q '^- ' ko.md; then
+            {
+              echo
+              echo "<details><summary>한국어 변경 사항</summary>"
+              echo
+              echo "<!-- novedades-ko -->"
+              cat ko.md
+              echo "<!-- /novedades-ko -->"
               echo
               echo "</details>"
             } >> notes.md

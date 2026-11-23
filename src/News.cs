@@ -21,6 +21,9 @@ namespace Stackshot
         public const string Start = "<!-- novedades -->", End = "<!-- /novedades -->";
         // The same news in English, which the release workflow writes beside the Spanish ones.
         public const string StartEn = "<!-- novedades-en -->", EndEn = "<!-- /novedades-en -->";
+        // And in German and Korean, each between its own markers.
+        public const string StartDe = "<!-- novedades-de -->", EndDe = "<!-- /novedades-de -->";
+        public const string StartKo = "<!-- novedades-ko -->", EndKo = "<!-- /novedades-ko -->";
 
         static string embedded, testEn, testDe, testKo;
         static bool loaded;
@@ -126,6 +129,10 @@ namespace Stackshot
 
         // The same news in English (empty when the release only carries the Spanish ones).
         public static List<Item> FromReleaseEnglish(string body) { return Between(body, StartEn, EndEn); }
+
+        // The same news in German or Korean (empty when the release does not carry them: releases before 2.2.2).
+        public static List<Item> FromReleaseGerman(string body) { return Between(body, StartDe, EndDe); }
+        public static List<Item> FromReleaseKorean(string body) { return Between(body, StartKo, EndKo); }
 
         static List<Item> Between(string body, string start, string end)
         {

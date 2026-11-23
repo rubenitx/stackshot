@@ -42,7 +42,7 @@ namespace Stackshot.Tests
                             if (t == null || string.IsNullOrEmpty(t.Text) || t.ActualWidth <= 0) return;
                             // A title that ends in an ellipsis loses its end: its natural width is wider than the room it got.
                             // (A row named after the user's own folder or device, "Windows default: Speakers (Model)", runs as long as that name.)
-                            bool theirs = t.Text.Contains(":\\") || Regex.IsMatch(t.Text, @": .+ \(.+\)$");
+                            bool theirs = IsTheirs(t.Text);
                             if (!theirs && t.TextTrimming != TextTrimming.None && t.TextWrapping == TextWrapping.NoWrap)
                             {
                                 TextBlock whole = new TextBlock { Text = t.Text, FontFamily = t.FontFamily, FontSize = t.FontSize, FontWeight = t.FontWeight, FontStyle = t.FontStyle, FontStretch = t.FontStretch };
@@ -62,6 +62,13 @@ namespace Stackshot.Tests
             Check(squeezed.Count == 0, squeezed.Count + " squeezed text blocks");
             foreach (string c in cut) Console.WriteLine("    cut title: " + System.Text.RegularExpressions.Regex.Replace(c, "[^\\x20-\\x7e]", "?"));
             Check(cut.Count == 0, cut.Count + " settings titles end in an ellipsis");
+        }
+
+        // A row named after what the user owns: a folder (as "C:\...", or "~\..." under their profile) or a device,
+        // "Windows default: Speakers (Model)": it runs as long as that name, whatever the language.
+        internal static bool IsTheirs(string text)
+        {
+            return text.Contains(":\\") || text.Contains("~\\") || Regex.IsMatch(text, @": .+ \(.+\)$");
         }
 
         // Texts that are the same in every language: formats and product names.
@@ -111,7 +118,7 @@ namespace Stackshot.Tests
 
         const string SpanishHeadline = "Titular s\u00F3lo en espa\u00F1ol";
 
-        static Updater.Release ParseRelease(string body)
+        internal static Updater.Release ParseRelease(string body)
         {
             string json = "{\"tag_name\":\"v9.9.9\",\"body\":" + new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(body) + "}";
             return (Updater.Release)typeof(Updater).GetMethod("Parse", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, new object[] { json });
@@ -303,7 +310,7 @@ namespace Stackshot.Tests
                 Updater.Release r = ParseRelease(b.Value);
                 bool hasEs = b.Key == "spanish markers only" || b.Key == "crlf";
                 Check((r.News.Count == 1) == hasEs, b.Key + ": Spanish news read = " + r.News.Count);
-                Check(r.NewsEn.Count == 0, b.Key + ": English news appeared from nowhere");
+                Check(r.NewsEn.Count == 0 && r.NewsDe.Count == 0 && r.NewsKo.Count == 0, b.Key + ": English, German or Korean news appeared from nowhere");
                 I18n.Apply("es");
                 List<News.Item> es = r.Items();
                 if (hasEs) Check(es.Count == 1 && es[0].Title.Contains(SpanishHeadline), b.Key + ": Spanish does not read the Spanish news");
@@ -332,9 +339,20 @@ namespace Stackshot.Tests
             string yml = File.ReadAllText(Path.Combine(root, ".github", "workflows", "build.yml"));
             foreach (string marker in new[] { News.Start, News.End, News.StartEn, News.EndEn })
                 Check(yml.Contains("echo \"" + marker + "\""), "build.yml does not write " + marker);
-            Check(yml.Contains("docs/novedades.md") && yml.Contains("docs/novedades.en.md"), "build.yml does not read both news files");
-            Check(yml.IndexOf(News.Start, StringComparison.Ordinal) < yml.IndexOf(News.StartEn, StringComparison.Ordinal), "the Spanish block is written before the English one");
-            foreach (string file in new[] { "novedades.md", "novedades.en.md" })
+            foreach (string marker in new[] { News.StartDe, News.EndDe, News.StartKo, News.EndKo })
+                Check(yml.Contains("echo \"" + marker + "\""), "build.yml does not write " + marker);
+            foreach (string file in new[] { "novedades.md", "novedades.en.md", "novedades.de.md", "novedades.ko.md" })
+                Check(yml.Contains("docs/" + file), "build.yml does not read docs/" + file);
+            string[] order = { News.Start, News.StartEn, News.StartDe, News.StartKo };
+            for (int i = 1; i < order.Length; i++)
+                Check(yml.IndexOf(order[i - 1], StringComparison.Ordinal) < yml.IndexOf(order[i], StringComparison.Ordinal), "the blocks are written in the order es, en, de, ko");
+            // What the release job is allowed to do and run on does not change: only a v* tag releases, with the same
+            // permissions, and every action stays pinned to a commit.
+            Check(yml.Contains("if: startsWith(github.ref, 'refs/tags/v')"), "the release job no longer runs only for v* tags");
+            Check(yml.Contains("contents: write") && yml.Contains("id-token: write") && yml.Contains("attestations: write"), "the release permissions changed");
+            foreach (Match u in Regex.Matches(yml, @"uses: (\S+)"))
+                Check(Regex.IsMatch(u.Groups[1].Value, @"@[0-9a-f]{40}$"), "an action is not pinned to a commit: " + u.Groups[1].Value);
+            foreach (string file in new[] { "novedades.md", "novedades.en.md", "novedades.de.md", "novedades.ko.md" })
             {
                 string[] lines = File.ReadAllLines(Path.Combine(root, "docs", file));
                 int head = Array.FindIndex(lines, l => Regex.IsMatch(l, @"^## \d+\.\d+\.\d+\s*$"));

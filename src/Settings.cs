@@ -275,7 +275,7 @@ namespace Stackshot
                         case "showintro": s.ShowIntro = Bool(v, s.ShowIntro); break;
                         case "languageoffered": s.LanguageOffered = Bool(v, s.LanguageOffered); break;
                         case "mascot": s.MascotOnSaved = Bool(v, s.MascotOnSaved); break;
-                        case "mascotname": if (v.Length > 0) s.MascotName = Cut(v, 16); break;
+                        case "mascotname": { string n = global::Stackshot.MascotName.Clean(v); if (n.Length > 0) s.MascotName = n; break; }
                         case "mascotcolor": s.MascotColor = Int(v, s.MascotColor, 0, 99); break;
                         case "mascottalks": s.MascotTalks = Bool(v, s.MascotTalks); break;
                         case "mascotkind": s.MascotKind = Int(v, s.MascotKind, 0, 99); break;
