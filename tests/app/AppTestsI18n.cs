@@ -36,6 +36,7 @@ namespace Stackshot.Tests
             {
                 T("auto-follows-the-windows-language", AutoFollowsWindows);
                 T("existing-users-keep-spanish", ExistingUsers);
+                T("language-setting-contract", LanguageSettingContract);
                 T("english-offered-once-on-another-windows", EnglishOffered);
                 T("notice-kinds-match-in-both-languages", NoticeKinds);
                 T("english-audit-of-every-page", EnglishAudit);
@@ -108,15 +109,69 @@ namespace Stackshot.Tests
             Directory.CreateDirectory(dir);
             try
             {
-                string old = Path.Combine(dir, "old.ini"), chosen = Path.Combine(dir, "chosen.ini"), none = Path.Combine(dir, "none.ini"),
-                        bad = Path.Combine(dir, "bad.ini");
+                string old = Path.Combine(dir, "old.ini"), chosen = Path.Combine(dir, "chosen.ini"), none = Path.Combine(dir, "none.ini");
                 File.WriteAllText(old, "# Ajustes de Stackshot\nFirstRunDone = 1\nSound = 0\n");
                 File.WriteAllText(chosen, "FirstRunDone = 1\nLanguage = en\n");
-                File.WriteAllText(bad, "FirstRunDone = 1\nLanguage = xx\n");
                 Check(Settings.Load(old).Language == "es", "a file without Language should keep Spanish, not " + Settings.Load(old).Language);
                 Check(Settings.Load(chosen).Language == "en", "a chosen language is read back");
                 Check(Settings.Load(none).Language == "auto", "a new install (no file) follows Windows");
-                Check(Settings.Load(bad).Language == "es", "a file with an invalid Language keeps the legacy Spanish, not " + Settings.Load(bad).Language);
+            }
+            finally { try { Directory.Delete(dir, true); } catch { } }
+        }
+
+        // The Language line of the settings file: a known code is kept, an unknown or empty value is Automatic (as before
+        // the language work), and only a profile with no Language line at all keeps the Spanish it always had. The keys
+        // written to the file are exactly the ones the release before the language work wrote.
+        const string StoredKeys =
+            "SaveFolder SaveAll Sound CopyToClipboard FollowMouse StackTuck Region Screen Window Scroll Video " +
+            "Gif Text Markdown Repeat Delayed VideoFps GifFps Profile VideoQuality SystemAudio Microphone " +
+            "MicDevice SystemAudioDevice Webcam WebcamSize WebcamDevice Ffmpeg BgAuto BgPreset BgPadding " +
+            "BgRadius BgShadow BgRatio BgKind BgColor BgBlur BgShadowSize BgInset BgBalance BgAlign BgStyles " +
+            "Appearance Language LanguageOffered AllInOne AdjustFirst CaptureDelay ShowRecent TempKeep HomeStyle " +
+            "CloseToTray ShowIntro Mascot MascotName MascotColor MascotTalks MascotKind MascotHat MascotOutfit " +
+            "MascotFace MascotEyes MascotPersonality MascotSeasonal MascotDesktop MascotClimb MascotAllScreens " +
+            "MascotSpot MascotFavorites MascotLooks MascotAccessory MascotEnergy MascotChatter MascotAlone " +
+            "MascotSleepIdle MascotRhythm MascotHideFull WellOn WellWater WellEyes WellMove WellBreathe " +
+            "WellToasts FocusWork FocusShort FocusLong FocusRounds FocusAuto FocusSound FocusNotices WaterGoal " +
+            "StepsGoal SummaryHour SummaryMinute SummaryParts XmlFaultAlert HealthTalk CheckUpdates AutoUpdate " +
+            "CineFps CinePeakMemory RecordSetup RecordCountdown PlayerOpensVideos PlayerScaling PlayerFill " +
+            "PlayerVolume PlayerLoop ExportQuality XmlWatch XmlWatchFolder CaptureCursor FileNameTemplate " +
+            "SaveSubfolder SensitiveAuto HistorySearch RecordClicks RecordKeys FirstRunDone MascotLove WellDay " +
+            "WellDone FocusDay FocusBlocks FocusMinutes SummaryDay FitbitAsked HealthSaid FitbitLast " +
+            "ShortSleepDay StatsDay StatsCaptures LastUpdateCheck UpdateNotified NewsSeen ScrollGuides";
+
+        static void LanguageSettingContract()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "stackshot-app-tests", "i18n-contract-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                string[,] cases =
+                {
+                    { "SaveAll = 1\nLanguage = auto\n", "auto" },
+                    { "SaveAll = 1\nLanguage = de\n", "de" },
+                    { "SaveAll = 1\nLanguage = ko\n", "ko" },
+                    { "SaveAll = 1\nLanguage = xx\n", "auto" },
+                    { "SaveAll = 1\nLanguage =\n", "auto" },
+                    { "SaveAll = 1\n", "es" }
+                };
+                for (int i = 0; i < cases.GetLength(0); i++)
+                {
+                    string file = Path.Combine(dir, "case" + i + ".ini");
+                    File.WriteAllText(file, cases[i, 0]);
+                    string got = Settings.Load(file).Language;
+                    Check(got == cases[i, 1], "settings '" + cases[i, 0].Replace("\n", "; ") + "' should read " + cases[i, 1] + ", not " + got);
+                }
+                string written = Path.Combine(dir, "written.ini");
+                typeof(Settings).GetMethod("Write", NP).Invoke(new Settings(), new object[] { written });
+                List<string> keys = new List<string>();
+                foreach (string line in File.ReadAllLines(written))
+                {
+                    int eq = line.IndexOf('=');
+                    if (line.StartsWith("#") || eq <= 0) continue;
+                    keys.Add(line.Substring(0, eq).Trim());
+                }
+                Check(string.Join(" ", keys.ToArray()) == StoredKeys.Replace("  ", " "), "the settings file keeps the same " + StoredKeys.Split(' ').Length + " keys as before (got " + keys.Count + ")");
             }
             finally { try { Directory.Delete(dir, true); } catch { } }
         }

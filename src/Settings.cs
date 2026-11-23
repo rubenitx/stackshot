@@ -263,7 +263,7 @@ namespace Stackshot
                         case "window": s.HotWindow = v; break;
                         case "scroll": s.HotScroll = v; break;
                         case "appearance": s.Appearance = Int(v, s.Appearance, 0, 2); break;
-                        case "language": { string l = v.ToLowerInvariant().Trim(); if (I18n.FindLanguage(l) != null) { s.Language = l; hasLanguage = true; } break; }
+                        case "language": { string l = v.ToLowerInvariant().Trim(); if (I18n.FindLanguage(l) != null) s.Language = l; hasLanguage = true; break; }
                         case "allinone": s.AllInOne = Bool(v, s.AllInOne); break;
                         case "adjustfirst": s.AdjustFirst = Bool(v, s.AdjustFirst); break;
                         case "capturedelay": { int cd = Int(v, s.CaptureDelay, 0, 60); s.CaptureDelay = cd == 3 || cd == 5 || cd == 10 ? cd : s.CaptureDelay; break; }
