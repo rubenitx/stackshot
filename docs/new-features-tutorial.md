@@ -1,6 +1,6 @@
 # Stackshot: New Features Guide & Tutorial
 
-This guide provides a walkthrough of the new features added in the `feature/multi-language-support` release, explaining what each feature does, how to use it, and how it protects your sensitive information and speeds up your workflow.
+This guide provides a walkthrough of the language features that arrive with Stackshot 2.2.2, explaining what each feature does, how to use it, and how it protects your sensitive information and speeds up your workflow.
 
 ---
 
@@ -15,6 +15,7 @@ Stackshot adds **German (Deutsch)** alongside English and Spanish, and it is com
   - Korean Windows (`ko-KR`) -> Korean (`ko`)
   - Spanish Windows (`es-ES`, `es-MX`, `ca-ES`, `gl-ES`, `eu-ES`) -> Spanish (`es`)
   - All other display languages -> English (`en`)
+- **One-time offer**: If you already used Stackshot in Spanish and your Windows is in another language, Stackshot offers the matching language once in a notice; nothing changes unless you accept, and you can always change it later in the settings.
 - **Settings Selector**: Under **Settings › General › Appearance › Language**, open the picker and search by name or language code. Choose a language and select **Apply language**.
 - **Preview languages**: French, Portuguese, Simplified Chinese, Hindi, Arabic and Bengali translate the picker and common controls. Other text appears in English. Select these languages manually. Automatic mode continues to choose Spanish, German, Korean or English based on Windows.
 
