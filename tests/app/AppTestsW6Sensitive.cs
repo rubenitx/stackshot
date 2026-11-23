@@ -63,7 +63,7 @@ namespace Stackshot.Tests
                 AppTests.Test(SuiteName, "capture path on: OCR failure discards the capture", CaptureJobFailure);
                 AppTests.Test(SuiteName, "capture path on: out of memory making the veil discards the capture, with a notice", VeilOutOfMemory);
                 AppTests.Test(SuiteName, "capture path on: without OCR the capture is discarded and one warning per session says why", OcrMissingDiscards);
-                AppTests.Test(SuiteName, "redaction: the same findings with the interface in Spanish, English and German", LanguageIndependent);
+                AppTests.Test(SuiteName, "redaction: the same findings with the interface in every interface language", LanguageIndependent);
                 AppTests.Test(SuiteName, "redaction: 8 readers at once all read, none is told there is no OCR", EngineUnderThreads);
                 AppTests.Test(SuiteName, "redaction: without OCR an already-on switch stays reachable and cannot be turned on", SensitiveToggleGate);
                 AppTests.Test(SuiteName, "capture path on: the worker failing to start answers its jobs and the next capture recovers", StartFailureRecovers);
@@ -1374,7 +1374,10 @@ namespace Stackshot.Tests
             try
             {
                 string baseKinds = null;
-                foreach (string lang in new string[] { "es", "en", "de" })
+                string[] languages = Array.FindAll(Array.ConvertAll(I18n.Languages, delegate(I18n.LanguageOption o) { return o.Code; }),
+                                                   delegate(string code) { return code != "auto"; });
+                Check(languages.Length >= 10, "every interface language is checked, only " + languages.Length);
+                foreach (string lang in languages)
                 {
                     I18n.Apply(lang);
                     Bitmap values;
@@ -1389,7 +1392,7 @@ namespace Stackshot.Tests
                         string joined = string.Join(",", kinds);
                         if (baseKinds == null) baseKinds = joined;
                         else Check(joined == baseKinds, lang + " reads differently: " + joined + " vs " + baseKinds);
-                        // The engine itself cannot change with the language: the same recognizer reads in all three.
+                        // The engine itself cannot change with the language: the same recognizer reads in every language.
                         FieldInfo engineLang = typeof(Ocr).GetField("redactionLanguage", BindingFlags.NonPublic | BindingFlags.Static);
                         Check(engineLang != null, "the recognizer-language field must exist");
                         if (engineLang != null)
