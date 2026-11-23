@@ -10,9 +10,8 @@ Formato: una sección `## X.Y.Z` por versión y, en ella, una línea por novedad
 - **Interfaz en inglés.** Stackshot sigue el idioma de Windows: una instalación nueva en un Windows en inglés se abre en inglés. Puedes cambiarlo en Ajustes > General > Apariencia > Idioma.
 - **Alemán completo.** El alemán cubre ya toda la aplicación: captura, editor, grabación, la mascota, Inicio, el historial y los informes.
 - **Interfaz en coreano.** Elige 한국어 en Ajustes > General > Apariencia > Idioma. Gracias a @Hobeom por la traducción.
-- **Selector de idioma nuevo.** Busca el idioma por nombre o por código y comprueba si su traducción está completa o es una vista previa.
+- **Selector de idioma nuevo.** Busca el idioma por nombre o por código; cada uno indica que su traducción está completa.
 - **Idioma automático y una oferta única.** El modo automático sigue el idioma de Windows (español, inglés, alemán o coreano). Si ya usabas Stackshot en español en un Windows en otro idioma, se te ofrece una sola vez el idioma que corresponde; si no aceptas, no cambia nada.
-- **Idiomas en vista previa.** Francés, portugués, chino simplificado, hindi, árabe y bengalí aparecen en el selector como vista previa: traducen lo más común y el resto sigue en inglés.
 - **Datos sensibles tapados en cualquier idioma.** Detectar y tapar los datos sensibles de una captura funciona igual sea cual sea el idioma de la interfaz.
 
 ## 2.2.1
